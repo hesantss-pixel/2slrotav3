@@ -34,7 +34,10 @@ import logging
 import time
 from datetime import datetime, date
 
-import pyodbc          # pip install pyodbc
+try:
+    import pyodbc
+except ImportError:
+    pyodbc = None
 import requests        # pip install requests
 from dotenv import load_dotenv  # pip install python-dotenv
 
