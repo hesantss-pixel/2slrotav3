@@ -24,8 +24,12 @@ from pydantic import BaseModel
 
 from vrp_solver   import solve_vrp
 from gemini_agent import GeminiChat, analisar_rotas_geradas, consulta_unica
-from totvs_sync   import sincronizar
 
+try:
+    from totvs_sync import sincronizar
+except Exception:
+    def sincronizar():
+        raise RuntimeError("Sync TOTVS indisponivel neste ambiente.")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
