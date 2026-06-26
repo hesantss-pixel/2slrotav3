@@ -34,7 +34,7 @@ def _init_gemini():
             raise ValueError("GEMINI_API_KEY não definida. Defina no .env ou variáveis de ambiente do Railway.")
         genai.configure(api_key=api_key)
         _model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
+            model_name="gemini-2.0-flash",
             system_instruction=SYSTEM_PROMPT,
             generation_config={
                 "temperature":     0.3,   # mais determinístico para logística
@@ -43,7 +43,7 @@ def _init_gemini():
             },
         )
         _genai = genai
-        logger.info("Gemini 1.5 Flash inicializado com sucesso.")
+        logger.info("Gemini 2.0 Flash inicializado com sucesso.")
     except ImportError as e:
         raise RuntimeError(
             "SDK Gemini não instalado. Execute: pip install google-generativeai"
