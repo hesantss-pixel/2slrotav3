@@ -108,10 +108,37 @@ class Veiculo(BaseModel):
     maxPed: int = 10
 
 class SolveRequest(BaseModel):
-    veiculos:     list[Veiculo]
-    time_limit_s: int = 30          # tempo máximo solver (s)
-    # Opcionalmente passa pedidos direto (evita busca extra no Firebase)
+    """
+    Aceita dois formatos:
+      Novo:     {veiculos:[{id,nome,capKg,maxPed}], time_limit_s?, pedidos?}
+      Legado:   {pedidos:[...], capacidade_kg:float, max_paradas:int, veiculo?:str}
+    O legado é convertido internamente em um Veiculo único.
+    """
+    model_config = {"extra": "ignore"}
+
+    veiculos:     Optional[list[Veiculo]] = None
+    time_limit_s: int = 30
     pedidos:      Optional[list[dict]] = None
+
+    # Campos legado (frontend antigo)
+    capacidade_kg: Optional[float] = None
+    max_paradas:   Optional[int]   = None
+    veiculo:       Optional[str]   = None
+
+    def frota(self) -> list[Veiculo]:
+        if self.veiculos:
+            return self.veiculos
+        if self.capacidade_kg is not None:
+            return [Veiculo(
+                id     = "v1",
+                nome   = self.veiculo or "Veículo",
+                capKg  = float(self.capacidade_kg),
+                maxPed = int(self.max_paradas or 10),
+            )]
+        raise HTTPException(
+            status_code=422,
+            detail="Envie 'veiculos:[...]' ou 'capacidade_kg' + 'max_paradas'.",
+        )
 
 class ChatRequest(BaseModel):
     mensagem:   str
@@ -165,15 +192,22 @@ def solve(body: SolveRequest):
     5. Retorna rotas + análise
     """
     try:
-        # 1. Pedidos
+        # 1. Frota (aceita formato novo e legado)
+        frota = body.frota()
+
+        # 2. Pedidos
         pedidos = body.pedidos or _carregar_pedidos_firebase()
-        pendentes = [p for p in pedidos if p.get("status") == "pendente"]
+        pendentes = [p for p in pedidos if p.get("status", "pendente") == "pendente"]
 
         if not pendentes:
-            return {"routes": [], "analise_ia": "Nenhum pedido pendente encontrado.", "nao_alocados": []}
+            return {
+                "routes": [], "rotas": [],
+                "analise_ia": "Nenhum pedido pendente encontrado.",
+                "nao_alocados": [],
+            }
 
-        # 2. Solver
-        veiculos_dict = [v.model_dump() for v in body.veiculos]
+        # 3. Solver
+        veiculos_dict = [v.model_dump() for v in frota]
         resultado = solve_vrp(pendentes, veiculos_dict, body.time_limit_s)
 
         routes    = resultado["routes"]
@@ -184,9 +218,9 @@ def solve(body: SolveRequest):
         logger.info("Solver: %d rotas | %d não alocados | fonte: %s | status: %s",
                     len(routes), len(n_aloc), fonte, status_vp)
 
-        # 3. Salvar no Firebase
-        veiculo_nome = body.veiculos[0].nome if body.veiculos else "—"
-        cap_kg_val   = body.veiculos[0].capKg if body.veiculos else 0
+        # 4. Salvar no Firebase
+        veiculo_nome = frota[0].nome
+        cap_kg_val   = frota[0].capKg
 
         _salvar_rota_firebase({
             "criadoEm":    __import__("datetime").datetime.utcnow().isoformat(),
@@ -230,13 +264,17 @@ def solve(body: SolveRequest):
             )
 
         return {
+            # 'routes' (novo) e 'rotas' (legado) — mesmo payload, chaves diferentes
             "routes":            routes,
+            "rotas":             routes,
             "nao_alocados":      n_aloc,
             "fonte_distancia":   fonte,
             "solver_status":     status_vp,
             "analise_ia":        analise,
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.exception("Erro no /solve: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
