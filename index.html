@@ -127,6 +127,93 @@ button{font-family:inherit;}
 /* responsive */
 @media(max-width:1180px){.grid-main{grid-template-columns:1fr 1fr;}.col-c{grid-column:1/3;flex-direction:row;}.col-c>*{flex:1;}}
 @media(max-width:920px){.kpis{grid-template-columns:repeat(2,1fr);}.grid-main{grid-template-columns:1fr;}.col-c{grid-column:1;flex-direction:column;}}
+
+/* ── HEADER NAV ─────────────────────────────────────────────────────── */
+.hnav{display:flex;gap:4px;margin-left:22px;flex-wrap:wrap;}
+.hnav-item{display:flex;align-items:center;gap:6px;background:transparent;border:1px solid transparent;border-radius:9px;padding:7px 12px;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;transition:all .15s;}
+.hnav-item:hover{background:var(--s2);color:#fff;}
+.hnav-item.active{background:rgba(37,99,235,.14);border-color:rgba(37,99,235,.4);color:var(--blue4);}
+.hnav-item svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.9;}
+
+/* ── UPLOAD PAGE (Pedidos) ─────────────────────────────────────────── */
+.upl-grid{display:grid;grid-template-columns:1fr 320px;gap:18px;align-items:start;}
+@media(max-width:920px){.upl-grid{grid-template-columns:1fr;}}
+.upl-card{background:var(--s2);border:1px solid var(--border);border-radius:16px;padding:22px;}
+.upl-title{font-family:var(--sans);font-weight:800;font-size:15px;color:#fff;margin-bottom:4px;display:flex;align-items:center;gap:8px;}
+.upl-title svg{width:17px;height:17px;stroke:var(--blue4);fill:none;stroke-width:1.8;}
+.upl-sub{font-size:12px;color:var(--text3);margin-bottom:18px;}
+
+.drop{border:2px dashed var(--border2);border-radius:14px;padding:36px 20px;text-align:center;cursor:pointer;transition:all .15s;background:rgba(37,99,235,0.03);}
+.drop:hover, .drop.drag{border-color:var(--blue3);background:rgba(37,99,235,0.08);}
+.drop-ic{width:52px;height:52px;background:linear-gradient(135deg,var(--blue3),var(--blue2));border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;box-shadow:0 0 18px var(--blue-glow);}
+.drop-ic svg{width:26px;height:26px;fill:#fff;}
+.drop-t{font-family:var(--sans);font-weight:800;font-size:15px;color:#fff;margin-bottom:5px;}
+.drop-s{font-size:11.5px;color:var(--text2);margin-bottom:13px;line-height:1.5;}
+.drop-btn{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,var(--blue),var(--blue2));border:none;border-radius:10px;padding:10px 18px;font-family:var(--sans);font-weight:800;font-size:12.5px;color:#fff;cursor:pointer;}
+.drop-btn svg{width:14px;height:14px;fill:#fff;}
+
+.chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:14px;}
+.chip{display:inline-flex;align-items:center;gap:5px;background:var(--s3);border:1px solid var(--border);border-radius:14px;padding:4px 10px;font-size:10.5px;font-weight:700;color:var(--text2);font-family:var(--mono);}
+.chip.pdf{border-color:#ef4444;color:#f87171;}
+.chip.xml{border-color:#22c55e;color:#4ade80;}
+.chip.xlsx{border-color:#22c55e;color:#4ade80;}
+.chip.csv{border-color:#facc15;color:#facc15;}
+
+.file-list{margin-top:16px;display:flex;flex-direction:column;gap:7px;}
+.file-row{display:flex;align-items:center;gap:10px;background:var(--s3);border:1px solid var(--border);border-radius:9px;padding:9px 12px;font-size:12px;}
+.file-row .fr-ic{width:26px;height:26px;border-radius:7px;background:var(--s4);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:9px;font-weight:800;color:var(--blue4);flex-shrink:0;}
+.file-row .fr-name{flex:1;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.file-row .fr-size{color:var(--text3);font-size:10.5px;font-family:var(--mono);}
+.file-row .fr-x{background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:16px;line-height:1;padding:2px 5px;}
+.file-row .fr-x:hover{color:var(--red);}
+.file-row.err{border-color:var(--red);background:rgba(239,68,68,.06);}
+.file-row.err .fr-ic{background:rgba(239,68,68,.15);color:var(--red);}
+
+.upl-actions{display:flex;gap:9px;margin-top:16px;flex-wrap:wrap;}
+.btn-primary{flex:1;min-width:180px;background:linear-gradient(135deg,var(--blue),var(--blue2));border:none;border-radius:11px;padding:12px 16px;font-family:var(--sans);font-weight:800;font-size:12.5px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed;}
+.btn-primary svg{width:14px;height:14px;fill:#fff;}
+.btn-ghost{background:transparent;border:1px solid var(--border2);border-radius:11px;padding:12px 16px;font-family:var(--sans);font-weight:700;font-size:12.5px;color:var(--text2);cursor:pointer;}
+.btn-ghost:hover{color:#fff;border-color:var(--blue4);}
+
+.upl-progress{height:6px;background:var(--s3);border-radius:5px;overflow:hidden;margin-top:12px;display:none;}
+.upl-progress.on{display:block;}
+.upl-progress-bar{height:100%;background:linear-gradient(90deg,var(--blue3),var(--cyan));width:0%;transition:width .25s;animation:pulseBar 1.4s infinite;}
+@keyframes pulseBar{0%,100%{opacity:1}50%{opacity:.6}}
+
+.upl-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px;}
+.upl-mini{background:var(--s3);border:1px solid var(--border);border-radius:11px;padding:12px;text-align:center;}
+.upl-mini-v{font-family:var(--sans);font-weight:800;font-size:22px;color:#fff;line-height:1;}
+.upl-mini-l{font-size:10px;font-weight:700;letter-spacing:.4px;color:var(--text3);margin-top:5px;text-transform:uppercase;}
+
+.tbl-wrap{margin-top:16px;overflow-x:auto;border:1px solid var(--border);border-radius:11px;}
+table.tbl{width:100%;border-collapse:collapse;font-size:12px;}
+table.tbl th{background:var(--s3);color:var(--text2);font-size:10.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding:9px 11px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+table.tbl td{padding:9px 11px;border-bottom:1px solid var(--border);color:var(--text);}
+table.tbl tr:last-child td{border-bottom:none;}
+table.tbl tr:hover td{background:rgba(37,99,235,.05);}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;font-family:var(--mono);}
+.badge.pdf{background:rgba(239,68,68,.15);color:#f87171;}
+.badge.xml{background:rgba(34,197,94,.15);color:#4ade80;}
+.badge.xlsx{background:rgba(34,197,94,.15);color:#4ade80;}
+.badge.csv{background:rgba(250,204,21,.15);color:#facc15;}
+
+.err-list{margin-top:14px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.35);border-radius:11px;padding:11px 13px;}
+.err-list h4{font-family:var(--sans);font-weight:800;font-size:12px;color:#f87171;margin-bottom:6px;}
+.err-list ul{list-style:none;padding-left:0;}
+.err-list li{font-size:11.5px;color:var(--text2);padding:3px 0;font-family:var(--mono);}
+
+.toast{position:fixed;bottom:22px;right:22px;background:var(--s3);border:1px solid var(--border2);border-left:3px solid var(--blue3);border-radius:11px;padding:12px 16px;font-size:12.5px;color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:400;max-width:340px;font-weight:600;animation:toastIn .25s ease-out;}
+.toast.ok{border-left-color:var(--green);}
+.toast.err{border-left-color:var(--red);}
+@keyframes toastIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+
+.help-block{background:var(--s3);border:1px solid var(--border);border-radius:11px;padding:13px 14px;margin-top:14px;}
+.help-block h4{font-family:var(--sans);font-weight:800;font-size:12px;color:var(--blue4);margin-bottom:6px;display:flex;align-items:center;gap:6px;}
+.help-block h4 svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:1.9;}
+.help-block ul{list-style:none;padding-left:0;}
+.help-block li{font-size:11.5px;color:var(--text2);padding:3px 0;line-height:1.5;}
+.help-block code{font-family:var(--mono);background:var(--s4);padding:1px 5px;border-radius:4px;font-size:10.5px;color:var(--blue4);}
 </style>
 </head>
 <body>
@@ -142,6 +229,28 @@ button{font-family:inherit;}
         <div class="logo-name">2SL <span>LOG</span></div>
         <span class="logo-sub">Roteirização Inteligente</span>
       </div>
+      <nav class="hnav">
+        <button class="hnav-item active" data-page="dashboard">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+          Dashboard
+        </button>
+        <button class="hnav-item" data-page="pedidos">
+          <svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9l-6-6z"/><path d="M14 3v6h6M9 15h6M9 11h4"/></svg>
+          Pedidos
+        </button>
+        <button class="hnav-item" data-page="roteirizacao">
+          <svg viewBox="0 0 24 24"><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8.2 16.6 15.8 7.4"/></svg>
+          Roteirização
+        </button>
+        <button class="hnav-item" data-page="mapa">
+          <svg viewBox="0 0 24 24"><path d="M9 4 3 6.5v13L9 17l6 2.5 6-2.5v-13L15 6.5 9 4z"/></svg>
+          Mapa
+        </button>
+        <button class="hnav-item" data-page="ia">
+          <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="14" rx="3"/><circle cx="9" cy="10.5" r="1.2"/><circle cx="15" cy="10.5" r="1.2"/></svg>
+          IA
+        </button>
+      </nav>
       <div class="header-road">
         <div class="header-road-line"></div>
         <div class="header-truck">
@@ -211,6 +320,97 @@ button{font-family:inherit;}
         <div class="card">
           <div class="card-head"><div class="card-title"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9 2.8 17a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>Alertas</div><div class="card-link" data-page="pedidos">Ver todos →</div></div>
           <div id="alert-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PÁGINA: PEDIDOS / UPLOAD NF ── -->
+  <div class="page" id="page-pedidos" style="display:none">
+    <div class="page-head">
+      <div class="page-title">Notas Fiscais</div>
+      <div class="page-sub">Envie as notas fiscais para importar pedidos direto na roteirização.</div>
+    </div>
+
+    <div class="upl-grid">
+      <div>
+        <div class="upl-card">
+          <div class="upl-title">
+            <svg viewBox="0 0 24 24"><path d="M12 3v13M6 9l6-6 6 6M4 21h16"/></svg>
+            Enviar Notas Fiscais
+          </div>
+          <div class="upl-sub">Arraste os arquivos ou clique para selecionar. Aceita múltiplos arquivos.</div>
+
+          <label for="nf-input" id="nf-drop" class="drop">
+            <div class="drop-ic">
+              <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/><path d="M14 2v6h6"/><path d="M12 18v-6M9 15l3-3 3 3" stroke="#fff" fill="none" stroke-width="2"/></svg>
+            </div>
+            <div class="drop-t">Solte os arquivos aqui</div>
+            <div class="drop-s">ou clique para escolher no computador<br>PDF · XML NF-e · Excel (XLSX) · CSV</div>
+            <button type="button" class="drop-btn" id="nf-pick-btn">
+              <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="#fff" fill="none" stroke-width="2.5"/></svg>
+              Selecionar arquivos
+            </button>
+            <div class="chips">
+              <span class="chip pdf">PDF</span>
+              <span class="chip xml">XML NF-e</span>
+              <span class="chip xlsx">XLSX</span>
+              <span class="chip csv">CSV</span>
+            </div>
+          </label>
+          <input id="nf-input" type="file" multiple accept=".pdf,.xml,.xlsx,.xlsm,.csv,.txt,application/pdf,application/xml,text/xml,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none">
+
+          <div id="nf-files" class="file-list"></div>
+
+          <div class="upl-progress" id="nf-prog"><div class="upl-progress-bar" id="nf-prog-bar"></div></div>
+
+          <div class="upl-actions">
+            <button class="btn-primary" id="nf-send" disabled>
+              <svg viewBox="0 0 24 24"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z" fill="none" stroke="#fff" stroke-width="2"/></svg>
+              <span id="nf-send-lbl">Enviar e processar</span>
+            </button>
+            <button class="btn-ghost" id="nf-clear">Limpar</button>
+          </div>
+        </div>
+
+        <div class="upl-card" id="nf-result-card" style="display:none;margin-top:16px;">
+          <div class="upl-title"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Resultado da importação</div>
+          <div class="upl-summary">
+            <div class="upl-mini"><div class="upl-mini-v" id="rs-arq">0</div><div class="upl-mini-l">Arquivos</div></div>
+            <div class="upl-mini"><div class="upl-mini-v" id="rs-ped">0</div><div class="upl-mini-l">Pedidos lidos</div></div>
+            <div class="upl-mini"><div class="upl-mini-v" id="rs-sv">0</div><div class="upl-mini-l">Salvos no Firebase</div></div>
+          </div>
+
+          <div class="tbl-wrap" id="rs-tbl-wrap"></div>
+          <div id="rs-err"></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="upl-card">
+          <div class="upl-title"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>Como funciona</div>
+          <div class="help-block">
+            <h4><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/></svg>XML NF-e</h4>
+            <ul>
+              <li>Padrão SEFAZ 4.00 (nfeProc / NFe).</li>
+              <li>Extrai <code>nNF</code>, destinatário, município, peso bruto e volumes.</li>
+            </ul>
+          </div>
+          <div class="help-block">
+            <h4><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>Excel / CSV</h4>
+            <ul>
+              <li>Precisa das colunas: <code>nf</code>, <code>cidade</code>, <code>peso</code>, <code>itens</code>.</li>
+              <li>Opcional: <code>dest</code> (destinatário).</li>
+              <li>Aceita separador <code>,</code> ou <code>;</code>; decimal <code>,</code> ou <code>.</code>.</li>
+            </ul>
+          </div>
+          <div class="help-block">
+            <h4><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/></svg>PDF (DANFE)</h4>
+            <ul>
+              <li>Extrai texto do DANFE — número da NF, município, peso bruto e volumes.</li>
+              <li>PDFs escaneados (imagem) não são suportados.</li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
@@ -450,23 +650,188 @@ const PAGE_META = {
   ia:{title:'IA Assistente',sub:'Converse com o Gemini sobre suas operações'},
   config:{title:'Configurações',sub:'Integrações TOTVS, Firebase e backend Railway'},
 };
+function navegar(p){
+  document.querySelectorAll('.hnav-item').forEach(i=>i.classList.toggle('active', i.dataset.page===p));
+  const pages = ['page-dashboard','page-pedidos','page-other'];
+  pages.forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display='none'; });
+  if(p==='dashboard'){
+    document.getElementById('page-dashboard').style.display='block';
+  } else if(p==='pedidos'){
+    document.getElementById('page-pedidos').style.display='block';
+  } else {
+    document.getElementById('page-other').style.display='block';
+    const m=PAGE_META[p]||{title:p,sub:''};
+    document.getElementById('other-title').textContent=m.title;
+    document.getElementById('other-sub').textContent=m.sub;
+    document.getElementById('other-h3').textContent = `${m.title} em construção`;
+  }
+  try { window.scrollTo({top:0,behavior:'smooth'}); } catch(_) {}
+}
 document.querySelectorAll('[data-page]').forEach(el=>{
-  el.addEventListener('click',()=>{
-    const p=el.dataset.page;
-    document.querySelectorAll('.sb-item').forEach(i=>i.classList.toggle('active', i.dataset.page===p));
-    if(p==='dashboard'){
-      document.getElementById('page-dashboard').style.display='block';
-      document.getElementById('page-other').style.display='none';
-    } else {
-      document.getElementById('page-dashboard').style.display='none';
-      document.getElementById('page-other').style.display='block';
-      const m=PAGE_META[p]||{title:p,sub:''};
-      document.getElementById('other-title').textContent=m.title;
-      document.getElementById('other-sub').textContent=m.sub;
-      document.getElementById('other-h3').textContent = `${m.title} em construção`;
-    }
-  });
+  el.addEventListener('click',()=>navegar(el.dataset.page));
 });
+
+// ═════════════════════════════ UPLOAD NF ═══════════════════════════════════
+const nfInput   = document.getElementById('nf-input');
+const nfDrop    = document.getElementById('nf-drop');
+const nfPickBtn = document.getElementById('nf-pick-btn');
+const nfFiles   = document.getElementById('nf-files');
+const nfSend    = document.getElementById('nf-send');
+const nfClear   = document.getElementById('nf-clear');
+const nfProg    = document.getElementById('nf-prog');
+const nfProgBar = document.getElementById('nf-prog-bar');
+const nfSendLbl = document.getElementById('nf-send-lbl');
+
+const ACCEPT_EXT = /\.(pdf|xml|xlsx|xlsm|csv|txt)$/i;
+const MAX_ARQ_MB = 15;
+
+let selected = [];
+
+function fmtBytes(b){
+  if(b<1024) return b+' B';
+  if(b<1024*1024) return (b/1024).toFixed(1)+' KB';
+  return (b/1024/1024).toFixed(2)+' MB';
+}
+function extBadge(name){
+  const ext=(name.split('.').pop()||'').toLowerCase();
+  const map={pdf:'PDF',xml:'XML',xlsx:'XLSX',xlsm:'XLSX',csv:'CSV',txt:'CSV'};
+  return map[ext] || ext.toUpperCase() || '??';
+}
+function toast(msg, kind){
+  document.querySelectorAll('.toast').forEach(t=>t.remove());
+  const t=document.createElement('div');
+  t.className='toast'+(kind?' '+kind:'');
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(), 4200);
+}
+function renderFiles(){
+  if(!selected.length){
+    nfFiles.innerHTML='';
+    nfSend.disabled=true;
+    return;
+  }
+  nfFiles.innerHTML = selected.map((f,i)=>{
+    const errCls = f._err ? ' err' : '';
+    return `<div class="file-row${errCls}">
+      <div class="fr-ic">${extBadge(f.name)}</div>
+      <div class="fr-name" title="${f.name}">${f.name}${f._err?` — <span style="color:var(--red)">${f._err}</span>`:''}</div>
+      <div class="fr-size">${fmtBytes(f.size)}</div>
+      <button class="fr-x" data-idx="${i}" title="Remover">×</button>
+    </div>`;
+  }).join('');
+  nfFiles.querySelectorAll('.fr-x').forEach(b=>{
+    b.addEventListener('click',()=>{
+      selected.splice(+b.dataset.idx,1);
+      renderFiles();
+    });
+  });
+  nfSend.disabled = !selected.some(f=>!f._err);
+}
+function adicionarArquivos(list){
+  const novos = Array.from(list||[]);
+  for(const f of novos){
+    let err = null;
+    if(!ACCEPT_EXT.test(f.name)) err = 'formato não suportado';
+    else if(f.size > MAX_ARQ_MB*1024*1024) err = `>${MAX_ARQ_MB} MB`;
+    f._err = err;
+    if(!selected.some(s=>s.name===f.name && s.size===f.size)) selected.push(f);
+  }
+  renderFiles();
+}
+nfPickBtn.addEventListener('click', e=>{ e.preventDefault(); e.stopPropagation(); nfInput.click(); });
+nfInput.addEventListener('change', e=>adicionarArquivos(e.target.files));
+['dragenter','dragover'].forEach(ev=>nfDrop.addEventListener(ev, e=>{
+  e.preventDefault(); e.stopPropagation(); nfDrop.classList.add('drag');
+}));
+['dragleave','drop'].forEach(ev=>nfDrop.addEventListener(ev, e=>{
+  e.preventDefault(); e.stopPropagation(); nfDrop.classList.remove('drag');
+}));
+nfDrop.addEventListener('drop', e=>{ if(e.dataTransfer?.files) adicionarArquivos(e.dataTransfer.files); });
+nfClear.addEventListener('click', ()=>{
+  selected=[]; renderFiles();
+  document.getElementById('nf-result-card').style.display='none';
+  nfInput.value='';
+});
+
+function renderResult(json){
+  const card = document.getElementById('nf-result-card');
+  card.style.display='block';
+  document.getElementById('rs-arq').textContent = json.arquivos ?? 0;
+  document.getElementById('rs-ped').textContent = (json.pedidos||[]).length;
+  document.getElementById('rs-sv').textContent  = json.salvos_fb ?? 0;
+
+  const wrap = document.getElementById('rs-tbl-wrap');
+  const rows = json.pedidos||[];
+  if(rows.length){
+    wrap.innerHTML = `<table class="tbl">
+      <thead><tr>
+        <th>NF</th><th>Destinatário</th><th>Cidade</th>
+        <th style="text-align:right">Peso (kg)</th><th style="text-align:right">Volumes</th><th>Origem</th>
+      </tr></thead>
+      <tbody>${rows.map(p=>{
+        const tag = (p.origem||'').replace('upload_','').toLowerCase();
+        return `<tr>
+          <td><b>${p.nf}</b></td>
+          <td>${p.dest||'—'}</td>
+          <td>${p.cidade}</td>
+          <td style="text-align:right;font-family:var(--mono)">${(p.peso||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+          <td style="text-align:right;font-family:var(--mono)">${p.itens||1}</td>
+          <td><span class="badge ${tag}">${tag||'—'}</span></td>
+        </tr>`;
+      }).join('')}</tbody></table>`;
+  } else {
+    wrap.innerHTML = `<div class="empty-mini" style="padding:22px 0">Nenhum pedido foi extraído dos arquivos enviados.</div>`;
+  }
+
+  const errEl = document.getElementById('rs-err');
+  if((json.erros||[]).length){
+    errEl.innerHTML = `<div class="err-list">
+      <h4>Arquivos com erro</h4>
+      <ul>${json.erros.map(e=>`<li>${e.arquivo} — ${e.erro}</li>`).join('')}</ul>
+    </div>`;
+  } else {
+    errEl.innerHTML = '';
+  }
+}
+
+async function enviarNfs(){
+  const validos = selected.filter(f=>!f._err);
+  if(!validos.length){ toast('Adicione pelo menos um arquivo válido.', 'err'); return; }
+
+  nfSend.disabled=true; nfClear.disabled=true;
+  nfSendLbl.textContent='Enviando…';
+  nfProg.classList.add('on');
+  nfProgBar.style.width='15%';
+
+  const fd = new FormData();
+  validos.forEach(f=>fd.append('arquivos', f, f.name));
+  fd.append('persistir', 'true');
+
+  try{
+    const resp = await fetch(`${BACKEND_URL}/upload-nf`, { method:'POST', body: fd });
+    nfProgBar.style.width='80%';
+    const json = await resp.json();
+    if(!resp.ok){
+      throw new Error(json.detail || `HTTP ${resp.status}`);
+    }
+    nfProgBar.style.width='100%';
+    renderResult(json);
+    const nP = (json.pedidos||[]).length;
+    toast(nP
+      ? `${nP} pedido(s) importado(s) — ${json.salvos_fb||0} salvo(s) no Firebase.`
+      : `Nenhum pedido extraído dos arquivos.`,
+      nP ? 'ok' : 'err');
+  } catch(e){
+    console.error(e);
+    toast('Erro ao enviar: ' + (e.message||e), 'err');
+  } finally {
+    setTimeout(()=>{ nfProg.classList.remove('on'); nfProgBar.style.width='0%'; }, 700);
+    nfSendLbl.textContent='Enviar e processar';
+    nfSend.disabled=false; nfClear.disabled=false;
+  }
+}
+nfSend.addEventListener('click', enviarNfs);
 
 carregarPedidos();
 </script>
