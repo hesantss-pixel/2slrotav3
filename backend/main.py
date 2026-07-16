@@ -18,12 +18,13 @@ import uuid
 from typing import Optional
 
 import requests as req_lib
-from fastapi import FastAPI, HTTPException, Header
+from fastapi import FastAPI, HTTPException, Header, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from vrp_solver   import solve_vrp
 from gemini_agent import GeminiChat, analisar_rotas_geradas, consulta_unica
+from nf_parser    import parse_many
 
 try:
     from totvs_sync import sincronizar
@@ -73,6 +74,18 @@ def _carregar_pedidos_firebase() -> list[dict]:
 def _salvar_rota_firebase(payload: dict) -> None:
     req_lib.post(_fb("rotas"), json=payload, timeout=10)
 
+def _salvar_pedido_firebase(pedido: dict) -> bool:
+    """Upsert por NF em pedidos_rota/<nf>. Retorna True em sucesso."""
+    nf = str(pedido.get("nf", "")).strip()
+    if not nf:
+        return False
+    try:
+        r = req_lib.put(_fb(f"pedidos_rota/{nf}"), json=pedido, timeout=10)
+        return r.ok
+    except Exception as e:
+        logger.warning("Firebase upsert falhou nf=%s: %s", nf, e)
+        return False
+
 # ── Chaves de sessão chat (em memória; escala horizontal requer Redis) ────────
 
 _sessions: dict[str, GeminiChat] = {}
@@ -95,10 +108,37 @@ class Veiculo(BaseModel):
     maxPed: int = 10
 
 class SolveRequest(BaseModel):
-    veiculos:     list[Veiculo]
-    time_limit_s: int = 30          # tempo máximo solver (s)
-    # Opcionalmente passa pedidos direto (evita busca extra no Firebase)
+    """
+    Aceita dois formatos:
+      Novo:     {veiculos:[{id,nome,capKg,maxPed}], time_limit_s?, pedidos?}
+      Legado:   {pedidos:[...], capacidade_kg:float, max_paradas:int, veiculo?:str}
+    O legado é convertido internamente em um Veiculo único.
+    """
+    model_config = {"extra": "ignore"}
+
+    veiculos:     Optional[list[Veiculo]] = None
+    time_limit_s: int = 30
     pedidos:      Optional[list[dict]] = None
+
+    # Campos legado (frontend antigo)
+    capacidade_kg: Optional[float] = None
+    max_paradas:   Optional[int]   = None
+    veiculo:       Optional[str]   = None
+
+    def frota(self) -> list[Veiculo]:
+        if self.veiculos:
+            return self.veiculos
+        if self.capacidade_kg is not None:
+            return [Veiculo(
+                id     = "v1",
+                nome   = self.veiculo or "Veículo",
+                capKg  = float(self.capacidade_kg),
+                maxPed = int(self.max_paradas or 10),
+            )]
+        raise HTTPException(
+            status_code=422,
+            detail="Envie 'veiculos:[...]' ou 'capacidade_kg' + 'max_paradas'.",
+        )
 
 class ChatRequest(BaseModel):
     mensagem:   str
@@ -152,15 +192,22 @@ def solve(body: SolveRequest):
     5. Retorna rotas + análise
     """
     try:
-        # 1. Pedidos
+        # 1. Frota (aceita formato novo e legado)
+        frota = body.frota()
+
+        # 2. Pedidos
         pedidos = body.pedidos or _carregar_pedidos_firebase()
-        pendentes = [p for p in pedidos if p.get("status") == "pendente"]
+        pendentes = [p for p in pedidos if p.get("status", "pendente") == "pendente"]
 
         if not pendentes:
-            return {"routes": [], "analise_ia": "Nenhum pedido pendente encontrado.", "nao_alocados": []}
+            return {
+                "routes": [], "rotas": [],
+                "analise_ia": "Nenhum pedido pendente encontrado.",
+                "nao_alocados": [],
+            }
 
-        # 2. Solver
-        veiculos_dict = [v.model_dump() for v in body.veiculos]
+        # 3. Solver
+        veiculos_dict = [v.model_dump() for v in frota]
         resultado = solve_vrp(pendentes, veiculos_dict, body.time_limit_s)
 
         routes    = resultado["routes"]
@@ -171,9 +218,9 @@ def solve(body: SolveRequest):
         logger.info("Solver: %d rotas | %d não alocados | fonte: %s | status: %s",
                     len(routes), len(n_aloc), fonte, status_vp)
 
-        # 3. Salvar no Firebase
-        veiculo_nome = body.veiculos[0].nome if body.veiculos else "—"
-        cap_kg_val   = body.veiculos[0].capKg if body.veiculos else 0
+        # 4. Salvar no Firebase
+        veiculo_nome = frota[0].nome
+        cap_kg_val   = frota[0].capKg
 
         _salvar_rota_firebase({
             "criadoEm":    __import__("datetime").datetime.utcnow().isoformat(),
@@ -217,13 +264,17 @@ def solve(body: SolveRequest):
             )
 
         return {
+            # 'routes' (novo) e 'rotas' (legado) — mesmo payload, chaves diferentes
             "routes":            routes,
+            "rotas":             routes,
             "nao_alocados":      n_aloc,
             "fonte_distancia":   fonte,
             "solver_status":     status_vp,
             "analise_ia":        analise,
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.exception("Erro no /solve: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
@@ -255,6 +306,69 @@ def chat(body: ChatRequest):
     except Exception as e:
         logger.exception("Erro no /chat: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+MAX_UPLOAD_BYTES  = int(os.getenv("MAX_UPLOAD_BYTES",  str(15 * 1024 * 1024)))   # 15 MB/arquivo
+MAX_UPLOAD_TOTAL  = int(os.getenv("MAX_UPLOAD_TOTAL",  str(60 * 1024 * 1024)))   # 60 MB/req
+MAX_UPLOAD_FILES  = int(os.getenv("MAX_UPLOAD_FILES",  "40"))
+
+@app.post("/upload-nf")
+async def upload_nf(
+    arquivos: list[UploadFile] = File(..., description="PDF, XML NF-e, XLSX ou CSV"),
+    persistir: bool = Form(True, description="Se true, grava no Firebase"),
+):
+    """
+    Recebe uma ou várias notas fiscais em PDF, XML NF-e, XLSX ou CSV,
+    extrai os pedidos e (opcional) grava direto em pedidos_rota do Firebase.
+    """
+    if not arquivos:
+        raise HTTPException(status_code=400, detail="Nenhum arquivo enviado.")
+    if len(arquivos) > MAX_UPLOAD_FILES:
+        raise HTTPException(status_code=413, detail=f"Máximo {MAX_UPLOAD_FILES} arquivos por vez.")
+
+    buffers: list[tuple[str, bytes]] = []
+    total = 0
+    for up in arquivos:
+        blob = await up.read()
+        if len(blob) > MAX_UPLOAD_BYTES:
+            raise HTTPException(
+                status_code=413,
+                detail=f"Arquivo '{up.filename}' excede {MAX_UPLOAD_BYTES//1024//1024} MB.",
+            )
+        total += len(blob)
+        if total > MAX_UPLOAD_TOTAL:
+            raise HTTPException(
+                status_code=413,
+                detail=f"Envio total excede {MAX_UPLOAD_TOTAL//1024//1024} MB.",
+            )
+        buffers.append((up.filename or "sem_nome", blob))
+
+    try:
+        resultado = parse_many(buffers)
+    except Exception as e:
+        logger.exception("Falha no parse: %s", e)
+        raise HTTPException(status_code=500, detail=f"Falha ao processar arquivos: {e}")
+
+    pedidos = resultado["pedidos"]
+    erros   = resultado["erros"]
+
+    salvos = 0
+    if persistir and pedidos:
+        for p in pedidos:
+            if _salvar_pedido_firebase(p):
+                salvos += 1
+
+    logger.info("Upload NF: %d arquivos, %d pedidos extraídos, %d salvos, %d erros",
+                len(arquivos), len(pedidos), salvos, len(erros))
+
+    return {
+        "status":     "ok" if pedidos else "vazio",
+        "arquivos":   len(arquivos),
+        "pedidos":    pedidos,
+        "salvos_fb":  salvos,
+        "erros":      erros,
+        "persistido": persistir,
+    }
 
 
 @app.post("/sync")
