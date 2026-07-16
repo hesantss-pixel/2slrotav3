@@ -27,10 +27,29 @@ a{color:inherit;text-decoration:none;}
 button{font-family:inherit;}
 
 /* ── SIDEBAR ─────────────────────────────────────────────────────────── */
+.sidebar{position:fixed;top:0;left:0;bottom:0;width:var(--sidebar-w);background:var(--s1);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:300;}
+.sb-logo{display:flex;align-items:center;gap:10px;padding:20px 18px;border-bottom:1px solid var(--border);}
+.sb-logo-icon{width:36px;height:36px;background:linear-gradient(135deg,var(--blue3),var(--blue2));border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 16px var(--blue-glow);}
+.sb-logo-icon svg{width:19px;height:19px;fill:#fff;}
+.sb-logo-name{font-family:var(--sans);font-weight:800;font-size:16px;color:#fff;line-height:1;}
+.sb-logo-name span{color:var(--blue3);}
+.sb-logo-sub{font-size:7px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-top:3px;}
+.sb-nav{flex:1;padding:14px 10px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;}
+.sb-item{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;transition:all .15s;}
+.sb-item svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;flex-shrink:0;}
+.sb-item:hover{background:var(--s2);color:var(--text);}
+.sb-item.active{background:linear-gradient(135deg,rgba(37,99,235,.18),rgba(37,99,235,.06));color:#fff;box-shadow:inset 3px 0 0 var(--blue3);}
+.sb-item.active svg{stroke:var(--blue4);}
+.sb-footer{padding:14px 18px 18px;border-top:1px solid var(--border);}
+.sb-status{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;color:var(--green);margin-bottom:8px;}
+.sb-dot{width:7px;height:7px;border-radius:50%;background:var(--green);animation:pd 2s infinite;flex-shrink:0;}
 @keyframes pd{0%,100%{opacity:1}50%{opacity:.3}}
+.sb-bar{height:4px;border-radius:4px;background:var(--s3);overflow:hidden;}
+.sb-bar-fill{height:100%;background:linear-gradient(90deg,var(--blue3),var(--green));width:100%;}
+.sb-caption{font-size:10px;color:var(--text3);margin-top:6px;}
 
 /* ── MAIN ─────────────────────────────────────────────────────────────── */
-.main{margin-left:0;position:relative;z-index:1;min-height:100vh;}
+.main{margin-left:var(--sidebar-w);position:relative;z-index:1;min-height:100vh;}
 .header{background:rgba(7,13,26,.97);border-bottom:1px solid var(--border);backdrop-filter:blur(20px);padding:0 26px;position:sticky;top:0;z-index:200;}
 .header-inner{display:flex;align-items:center;gap:14px;height:78px;max-width:1440px;margin:0 auto;}
 .logo-wrap{display:flex;align-items:center;gap:10px;flex-shrink:0;cursor:pointer;padding:4px;border-radius:8px;transition:background .15s;}
@@ -134,100 +153,161 @@ button{font-family:inherit;}
 .placeholder h3{font-family:var(--sans);font-weight:800;font-size:16px;color:#fff;margin-bottom:6px;}
 .placeholder p{font-size:12.5px;color:var(--text3);max-width:360px;margin:0 auto;}
 
+.btn-voltar-topo{display:inline-flex;align-items:center;gap:7px;background:var(--s2);border:1px solid var(--border2);border-radius:10px;padding:8px 15px;font-family:var(--sans);font-weight:700;font-size:12.5px;color:var(--text2);cursor:pointer;transition:all .15s;margin-bottom:16px;}
+.btn-voltar-topo:hover{border-color:var(--blue3);color:var(--blue4);}
+.btn-voltar-topo svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;}
+
+/* ── MODAL (overlay genérico p/ agendamento e wizard de rota) ────────── */
+.modal-overlay{position:fixed;inset:0;background:rgba(3,7,15,.72);backdrop-filter:blur(3px);z-index:1000;display:none;align-items:flex-start;justify-content:center;padding:60px 20px;overflow-y:auto;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:var(--s2);border:1px solid var(--border2);border-radius:20px;padding:26px;width:100%;max-width:520px;box-shadow:0 20px 60px rgba(0,0,0,.5);}
+.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+.modal-title{font-family:var(--sans);font-weight:800;font-size:17px;color:#fff;}
+.modal-close{background:var(--s3);border:none;color:var(--text2);width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:16px;}
+.btn-add-ag{background:var(--s3);border:1px dashed var(--border2);border-radius:10px;padding:9px 14px;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;transition:all .15s;}
+.btn-add-ag:hover{border-color:var(--blue3);color:var(--blue4);}
+.field-lbl{display:block;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);margin-bottom:6px;margin-top:14px;}
+.field-inp{width:100%;background:var(--s3);border:1px solid var(--border2);border-radius:10px;padding:11px 13px;color:#fff;font-family:var(--mono);font-size:14px;outline:none;box-sizing:border-box;}
+.field-inp:focus{border-color:var(--blue3);}
+.field-inp-text{font-family:var(--body);}
+.search-results{display:flex;flex-direction:column;gap:6px;margin-top:10px;max-height:220px;overflow-y:auto;}
+.search-item{background:var(--s3);border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;transition:all .15s;}
+.search-item:hover{border-color:var(--blue3);}
+.search-item-nf{font-family:var(--mono);font-weight:700;font-size:13px;color:#fff;}
+.search-item-meta{font-size:11px;color:var(--text2);margin-top:2px;}
+.sugestao-box{background:rgba(37,99,235,.08);border:1px solid rgba(37,99,235,.25);border-radius:10px;padding:11px 13px;margin-top:14px;font-size:12.5px;color:var(--blue4);line-height:1.5;display:none;}
+.sugestao-box.show{display:block;}
+.btn-modal-primary{width:100%;background:linear-gradient(135deg,var(--blue),var(--blue2));border:none;border-radius:12px;padding:13px;font-family:var(--sans);font-weight:800;font-size:13px;color:#fff;cursor:pointer;margin-top:18px;}
+.btn-modal-sec{width:100%;background:none;border:none;color:var(--text3);font-size:12px;padding:10px;cursor:pointer;margin-top:4px;}
+.import-msg{border-radius:10px;padding:10px 13px;margin-top:12px;font-size:12px;line-height:1.5;display:none;}
+.import-msg.show{display:block;}
+.import-msg.ok{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);color:#4ade80;}
+.import-msg.err{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);color:#fca5a5;}
+
+/* ── PEDIDOS page ─────────────────────────────────────────────────────── */
+.pedidos-toolbar{display:flex;gap:10px;margin-bottom:20px;}
+.btn-toolbar{display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--border2);border-radius:12px;padding:11px 16px;font-family:var(--sans);font-weight:700;font-size:12.5px;color:var(--text2);cursor:pointer;transition:all .15s;}
+.btn-toolbar:hover{border-color:var(--green);color:var(--green);}
+.btn-toolbar svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;}
+.reg-cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;}
+.rc-card{background:var(--s2);border:1px solid var(--border);border-radius:16px;overflow:hidden;transition:border-color .15s;}
+.rc-card.exp{border-color:var(--rc,var(--blue3));}
+.rc-card-head{display:flex;align-items:center;gap:12px;padding:15px 16px;cursor:pointer;}
+.rc-card-icon{width:38px;height:38px;border-radius:10px;background:var(--s3);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;}
+.rc-card-info{flex:1;min-width:0;}
+.rc-card-name{font-family:var(--sans);font-weight:800;font-size:14px;color:#fff;}
+.rc-card-sub{font-size:11px;color:var(--text2);margin-top:1px;}
+.rc-card-n{font-family:var(--sans);font-weight:800;font-size:19px;color:var(--rc,var(--blue3));}
+.rc-card-chev{color:var(--text3);transition:transform .15s;}
+.rc-card.exp .rc-card-chev{transform:rotate(90deg);}
+.rc-card-body{display:none;padding:0 16px 15px;}
+.rc-card.exp .rc-card-body{display:block;}
+.nf-mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.nf-mini{background:var(--s3);border:1px solid var(--border);border-radius:9px;padding:9px 11px;}
+.nf-mini-code{font-family:var(--mono);font-size:12px;font-weight:700;color:#fff;}
+.nf-mini-end{font-size:10.5px;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.nf-mini-meta{font-size:9.5px;color:var(--text3);margin-top:2px;font-family:var(--mono);}
+
+/* ── ROTEIRIZAÇÃO page ────────────────────────────────────────────────── */
+.veh-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;}
+.veh-card{background:var(--s2);border:1px solid var(--border);border-radius:16px;padding:18px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden;}
+.veh-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--vc,var(--blue3));}
+.veh-card:hover{border-color:var(--vc,var(--blue3));transform:translateY(-2px);}
+.veh-card-icon{width:50px;height:50px;background:var(--s3);border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;}
+.veh-card-name{font-family:var(--sans);font-weight:800;font-size:15px;color:#fff;}
+.veh-card-tag{display:inline-block;background:rgba(37,99,235,.15);border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700;color:var(--blue4);margin:5px 0;font-family:var(--mono);}
+.veh-card-desc{font-size:11.5px;color:var(--text2);line-height:1.4;}
+.cap-form-box{background:var(--s2);border:1px solid var(--border2);border-radius:18px;padding:26px;max-width:420px;}
+.presets-row{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap;}
+.preset-chip{background:var(--s3);border:1px solid var(--border2);border-radius:20px;padding:7px 14px;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;font-family:var(--mono);}
+.preset-chip:hover,.preset-chip.on{background:rgba(37,99,235,.15);border-color:var(--blue3);color:var(--blue4);}
+#rota-map{width:100%;height:340px;border-radius:14px;border:1px solid var(--border2);margin-bottom:16px;}
+.rota-results-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;align-items:start;}
+.delivery-mini{display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:11px 13px;margin-bottom:7px;}
+.delivery-mini-num{width:26px;height:26px;background:linear-gradient(135deg,var(--blue3),var(--blue2));border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--sans);font-weight:800;font-size:11px;color:#fff;flex-shrink:0;}
+.rota-tabs-d{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+.rota-tab-d{background:var(--s2);border:1px solid var(--border2);border-radius:10px;padding:9px 13px;cursor:pointer;font-size:12px;}
+.rota-tab-d.active{background:rgba(37,99,235,.15);border-color:var(--blue3);}
+.nav-btns-d{display:flex;gap:10px;margin-bottom:14px;}
+.btn-nav-d{flex:1;text-align:center;padding:11px;border-radius:10px;font-weight:800;font-size:12.5px;color:#fff;text-decoration:none;}
+.btn-nav-d.waze{background:linear-gradient(135deg,#1a6dd8,#1347a0);}
+.btn-nav-d.gmaps{background:linear-gradient(135deg,#1a8050,#126038);}
+.load-ring-d{width:52px;height:52px;border:3px solid var(--border2);border-top-color:var(--blue3);border-radius:50%;animation:spin .9s linear infinite;margin:0 auto 20px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── IA CHAT page ─────────────────────────────────────────────────────── */
+.chat-box{background:var(--s2);border:1px solid var(--border2);border-radius:18px;display:flex;flex-direction:column;height:560px;max-width:760px;}
+.chat-msgs{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:12px;}
+.chat-msg{max-width:78%;padding:11px 15px;border-radius:14px;font-size:13.5px;line-height:1.6;}
+.chat-msg.user{align-self:flex-end;background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border-radius:14px 14px 3px 14px;}
+.chat-msg.bot{align-self:flex-start;background:var(--s3);border:1px solid var(--border2);white-space:pre-line;border-radius:14px 14px 14px 3px;}
+.chat-row{display:flex;gap:10px;padding:14px;border-top:1px solid var(--border);}
+.chat-inp{flex:1;background:var(--s3);border:1px solid var(--border2);border-radius:12px;padding:12px 15px;color:#fff;font-family:var(--body);font-size:13.5px;outline:none;resize:none;}
+.chat-send{width:46px;background:linear-gradient(135deg,var(--blue),var(--blue2));border:none;border-radius:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.chat-send svg{width:18px;height:18px;fill:#fff;}
+.chat-sugs{display:flex;flex-wrap:wrap;gap:8px;padding:14px 18px;border-top:1px solid var(--border);}
+.chat-sug{background:var(--s3);border:1px solid var(--border);border-radius:20px;padding:7px 13px;font-size:11.5px;color:var(--text2);cursor:pointer;}
+.chat-sug:hover{border-color:var(--blue3);color:#fff;}
+
 /* responsive */
 @media(max-width:1180px){.grid-main{grid-template-columns:1fr 1fr;}.col-c{grid-column:1/3;flex-direction:row;}.col-c>*{flex:1;}}
-@media(max-width:920px){.kpis{grid-template-columns:repeat(2,1fr);}.grid-main{grid-template-columns:1fr;}.col-c{grid-column:1;flex-direction:column;}}
-
-/* ── HEADER NAV ─────────────────────────────────────────────────────── */
-.hnav{display:flex;gap:4px;margin-left:16px;flex-shrink:0;}
-.hnav-item{display:flex;align-items:center;gap:6px;background:transparent;border:1px solid transparent;border-radius:10px;padding:9px 13px;font-size:12.5px;font-weight:700;color:var(--text2);cursor:pointer;transition:all .15s;white-space:nowrap;}
-.hnav-item:hover{background:var(--s2);color:#fff;}
-.hnav-item.active{background:rgba(37,99,235,.14);border-color:rgba(37,99,235,.4);color:var(--blue4);box-shadow:0 0 12px rgba(37,99,235,.15);}
-.hnav-item svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.9;}
-@media(max-width:960px){.hnav{margin-left:8px;gap:2px;}.hnav-item{padding:8px 10px;font-size:11.5px;}}
-
-/* ── UPLOAD PAGE (Pedidos) ─────────────────────────────────────────── */
-.upl-grid{display:grid;grid-template-columns:1fr 320px;gap:18px;align-items:start;}
-@media(max-width:920px){.upl-grid{grid-template-columns:1fr;}}
-.upl-card{background:var(--s2);border:1px solid var(--border);border-radius:16px;padding:22px;}
-.upl-title{font-family:var(--sans);font-weight:800;font-size:15px;color:#fff;margin-bottom:4px;display:flex;align-items:center;gap:8px;}
-.upl-title svg{width:17px;height:17px;stroke:var(--blue4);fill:none;stroke-width:1.8;}
-.upl-sub{font-size:12px;color:var(--text3);margin-bottom:18px;}
-
-.drop{border:2px dashed var(--border2);border-radius:14px;padding:36px 20px;text-align:center;cursor:pointer;transition:all .15s;background:rgba(37,99,235,0.03);}
-.drop:hover, .drop.drag{border-color:var(--blue3);background:rgba(37,99,235,0.08);}
-.drop-ic{width:52px;height:52px;background:linear-gradient(135deg,var(--blue3),var(--blue2));border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;box-shadow:0 0 18px var(--blue-glow);}
-.drop-ic svg{width:26px;height:26px;fill:#fff;}
-.drop-t{font-family:var(--sans);font-weight:800;font-size:15px;color:#fff;margin-bottom:5px;}
-.drop-s{font-size:11.5px;color:var(--text2);margin-bottom:13px;line-height:1.5;}
-.drop-btn{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,var(--blue),var(--blue2));border:none;border-radius:10px;padding:10px 18px;font-family:var(--sans);font-weight:800;font-size:12.5px;color:#fff;cursor:pointer;}
-.drop-btn svg{width:14px;height:14px;fill:#fff;}
-
-.chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:14px;}
-.chip{display:inline-flex;align-items:center;gap:5px;background:var(--s3);border:1px solid var(--border);border-radius:14px;padding:4px 10px;font-size:10.5px;font-weight:700;color:var(--text2);font-family:var(--mono);}
-.chip.pdf{border-color:#ef4444;color:#f87171;}
-.chip.xml{border-color:#22c55e;color:#4ade80;}
-.chip.xlsx{border-color:#22c55e;color:#4ade80;}
-.chip.csv{border-color:#facc15;color:#facc15;}
-
-.file-list{margin-top:16px;display:flex;flex-direction:column;gap:7px;}
-.file-row{display:flex;align-items:center;gap:10px;background:var(--s3);border:1px solid var(--border);border-radius:9px;padding:9px 12px;font-size:12px;}
-.file-row .fr-ic{width:26px;height:26px;border-radius:7px;background:var(--s4);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:9px;font-weight:800;color:var(--blue4);flex-shrink:0;}
-.file-row .fr-name{flex:1;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.file-row .fr-size{color:var(--text3);font-size:10.5px;font-family:var(--mono);}
-.file-row .fr-x{background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:16px;line-height:1;padding:2px 5px;}
-.file-row .fr-x:hover{color:var(--red);}
-.file-row.err{border-color:var(--red);background:rgba(239,68,68,.06);}
-.file-row.err .fr-ic{background:rgba(239,68,68,.15);color:var(--red);}
-
-.upl-actions{display:flex;gap:9px;margin-top:16px;flex-wrap:wrap;}
-.btn-primary{flex:1;min-width:180px;background:linear-gradient(135deg,var(--blue),var(--blue2));border:none;border-radius:11px;padding:12px 16px;font-family:var(--sans);font-weight:800;font-size:12.5px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;}
-.btn-primary:disabled{opacity:.4;cursor:not-allowed;}
-.btn-primary svg{width:14px;height:14px;fill:#fff;}
-.btn-ghost{background:transparent;border:1px solid var(--border2);border-radius:11px;padding:12px 16px;font-family:var(--sans);font-weight:700;font-size:12.5px;color:var(--text2);cursor:pointer;}
-.btn-ghost:hover{color:#fff;border-color:var(--blue4);}
-
-.upl-progress{height:6px;background:var(--s3);border-radius:5px;overflow:hidden;margin-top:12px;display:none;}
-.upl-progress.on{display:block;}
-.upl-progress-bar{height:100%;background:linear-gradient(90deg,var(--blue3),var(--cyan));width:0%;transition:width .25s;animation:pulseBar 1.4s infinite;}
-@keyframes pulseBar{0%,100%{opacity:1}50%{opacity:.6}}
-
-.upl-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px;}
-.upl-mini{background:var(--s3);border:1px solid var(--border);border-radius:11px;padding:12px;text-align:center;}
-.upl-mini-v{font-family:var(--sans);font-weight:800;font-size:22px;color:#fff;line-height:1;}
-.upl-mini-l{font-size:10px;font-weight:700;letter-spacing:.4px;color:var(--text3);margin-top:5px;text-transform:uppercase;}
-
-.tbl-wrap{margin-top:16px;overflow-x:auto;border:1px solid var(--border);border-radius:11px;}
-table.tbl{width:100%;border-collapse:collapse;font-size:12px;}
-table.tbl th{background:var(--s3);color:var(--text2);font-size:10.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding:9px 11px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
-table.tbl td{padding:9px 11px;border-bottom:1px solid var(--border);color:var(--text);}
-table.tbl tr:last-child td{border-bottom:none;}
-table.tbl tr:hover td{background:rgba(37,99,235,.05);}
-.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;letter-spacing:.3px;text-transform:uppercase;font-family:var(--mono);}
-.badge.pdf{background:rgba(239,68,68,.15);color:#f87171;}
-.badge.xml{background:rgba(34,197,94,.15);color:#4ade80;}
-.badge.xlsx{background:rgba(34,197,94,.15);color:#4ade80;}
-.badge.csv{background:rgba(250,204,21,.15);color:#facc15;}
-
-.err-list{margin-top:14px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.35);border-radius:11px;padding:11px 13px;}
-.err-list h4{font-family:var(--sans);font-weight:800;font-size:12px;color:#f87171;margin-bottom:6px;}
-.err-list ul{list-style:none;padding-left:0;}
-.err-list li{font-size:11.5px;color:var(--text2);padding:3px 0;font-family:var(--mono);}
-
-.toast{position:fixed;bottom:22px;right:22px;background:var(--s3);border:1px solid var(--border2);border-left:3px solid var(--blue3);border-radius:11px;padding:12px 16px;font-size:12.5px;color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:400;max-width:340px;font-weight:600;animation:toastIn .25s ease-out;}
-.toast.ok{border-left-color:var(--green);}
-.toast.err{border-left-color:var(--red);}
-@keyframes toastIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
-
-.help-block{background:var(--s3);border:1px solid var(--border);border-radius:11px;padding:13px 14px;margin-top:14px;}
-.help-block h4{font-family:var(--sans);font-weight:800;font-size:12px;color:var(--blue4);margin-bottom:6px;display:flex;align-items:center;gap:6px;}
-.help-block h4 svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:1.9;}
-.help-block ul{list-style:none;padding-left:0;}
-.help-block li{font-size:11.5px;color:var(--text2);padding:3px 0;line-height:1.5;}
-.help-block code{font-family:var(--mono);background:var(--s4);padding:1px 5px;border-radius:4px;font-size:10.5px;color:var(--blue4);}
+@media(max-width:920px){.sidebar{transform:translateX(-100%);}.main{margin-left:0;}.kpis{grid-template-columns:repeat(2,1fr);}.grid-main{grid-template-columns:1fr;}.col-c{grid-column:1;flex-direction:column;}}
 </style>
 </head>
 <body>
+
+<aside class="sidebar">
+  <div class="sb-logo">
+    <div class="sb-logo-icon"><svg viewBox="0 0 24 24"><path d="M3 13h10V6H3v7zm0 0v3a1 1 0 0 0 1 1h1m9-4h4l3 3v4a1 1 0 0 1-1 1h-1m-13 0a2 2 0 1 0 4 0m-4 0a2 2 0 1 1 4 0m9 0a2 2 0 1 0 4 0m-4 0a2 2 0 1 1 4 0"/></svg></div>
+    <div>
+      <div class="sb-logo-name">2SL <span>LOG</span></div>
+      <div class="sb-logo-sub">Roteirização IA</div>
+    </div>
+  </div>
+  <nav class="sb-nav" id="sb-nav">
+    <div class="sb-item active" data-page="dashboard">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+      Dashboard
+    </div>
+    <div class="sb-item" data-page="pedidos">
+      <svg viewBox="0 0 24 24"><path d="M4 7l8-4 8 4-8 4-8-4z"/><path d="M4 7v10l8 4 8-4V7"/><path d="M12 11v10"/></svg>
+      Pedidos
+    </div>
+    <div class="sb-item" data-page="roteirizacao">
+      <svg viewBox="0 0 24 24"><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8.2 16.6 15.8 7.4"/></svg>
+      Roteirização
+    </div>
+    <div class="sb-item" data-page="rotas">
+      <svg viewBox="0 0 24 24"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg>
+      Rotas
+    </div>
+    <div class="sb-item" data-page="motoristas">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c1.2-4 4-6 7.5-6s6.3 2 7.5 6"/></svg>
+      Motoristas
+    </div>
+    <div class="sb-item" data-page="mapa">
+      <svg viewBox="0 0 24 24"><path d="M9 4 3 6.5v13L9 17l6 2.5 6-2.5v-13L15 6.5 9 4z"/><path d="M9 4v13M15 6.5v13"/></svg>
+      Mapa
+    </div>
+    <div class="sb-item" data-page="relatorios">
+      <svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h6M9 16h6M9 8h3"/></svg>
+      Relatórios
+    </div>
+    <div class="sb-item" data-page="ia">
+      <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="14" rx="3"/><circle cx="9" cy="10.5" r="1.2"/><circle cx="15" cy="10.5" r="1.2"/><path d="M9 14.5c1 1 4 1 6 0M12 4V2"/></svg>
+      IA Assistente
+    </div>
+    <div class="sb-item" data-page="config">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.14.36.44.66 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Configurações
+    </div>
+  </nav>
+  <div class="sb-footer">
+    <div class="sb-status"><div class="sb-dot"></div><span id="sb-status-txt">Sistema Online</span></div>
+    <div class="sb-bar"><div class="sb-bar-fill"></div></div>
+    <div class="sb-caption" id="sb-caption">Todos os sistemas operacionais</div>
+  </div>
+</aside>
 
 <!-- ═══════════ MAIN ═══════════ -->
 <div class="main">
@@ -312,7 +392,7 @@ table.tbl tr:hover td{background:rgba(37,99,235,.05);}
           <div class="reg-total" id="reg-total">—</div>
         </div>
         <div class="card">
-          <div class="card-head"><div class="card-title"><svg viewBox="0 0 24 24"><path d="M8 2v4M16 2v4M3 10h18M5 6h14a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/></svg>Pedidos Agendados</div><div class="card-link" data-page="pedidos">Ver todos →</div></div>
+          <div class="card-head"><div class="card-title"><svg viewBox="0 0 24 24"><path d="M8 2v4M16 2v4M3 10h18M5 6h14a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/></svg>Pedidos Agendados</div><div class="btn-add-ag" onclick="abrirModalAgendar()">+ Agendar</div></div>
           <div id="ag-list"></div>
         </div>
       </div>
@@ -439,6 +519,7 @@ table.tbl tr:hover td{background:rgba(37,99,235,.05);}
 
   <!-- ── PÁGINAS PLACEHOLDER ── -->
   <div class="page" id="page-other" style="display:none">
+    <button class="btn-voltar-topo" onclick="irParaPagina('dashboard')"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Voltar ao Dashboard</button>
     <div class="page-head">
       <div class="page-head-txt">
         <div class="page-title" id="other-title">Página</div>
@@ -455,9 +536,112 @@ table.tbl tr:hover td{background:rgba(37,99,235,.05);}
       <p id="other-p">Esta seção ainda está sendo integrada com o backend (OR-Tools / Gemini / Firebase). O Dashboard já está funcionando com dados reais.</p>
     </div>
   </div>
+
+  <!-- ── PÁGINA: PEDIDOS ── -->
+  <div class="page" id="page-pedidos" style="display:none">
+    <button class="btn-voltar-topo" onclick="irParaPagina('dashboard')"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Voltar ao Dashboard</button>
+    <div class="page-head">
+      <div class="page-title">Pedidos</div>
+      <div class="page-sub">Lista completa por região e importação de notas fiscais</div>
+    </div>
+    <div class="pedidos-toolbar">
+      <div class="btn-toolbar" onclick="document.getElementById('file-input').click()">
+        <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+        Importar CSV / Excel / PDF
+      </div>
+    </div>
+    <input type="file" id="file-input" accept=".csv,.xlsx,.xls,.pdf" style="display:none" onchange="importarArquivo(this)">
+    <div id="import-msg-pedidos" class="import-msg" style="max-width:420px;"></div>
+    <div class="reg-cards-grid" id="reg-cards-grid"></div>
+  </div>
+
+  <!-- ── PÁGINA: ROTEIRIZAÇÃO ── -->
+  <div class="page" id="page-roteirizacao" style="display:none">
+    <button class="btn-voltar-topo" onclick="irParaPagina('dashboard')"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Voltar ao Dashboard</button>
+    <div class="page-head">
+      <div class="page-title">Roteirização</div>
+      <div class="page-sub">Geração de rotas com OR-Tools (backend Railway)</div>
+    </div>
+    <div id="rot-step-veiculo">
+      <div class="veh-grid" id="veh-grid"></div>
+    </div>
+    <div id="rot-step-cap" style="display:none">
+      <div class="cap-form-box">
+        <div class="veh-card-name" id="cap-veh-name" style="font-size:19px;margin-bottom:14px;"></div>
+        <span class="field-lbl">Capacidade máxima (kg)</span>
+        <div><input type="number" class="field-inp" id="cap-kg-d" placeholder="0"></div>
+        <div class="presets-row" id="presets-row-d"></div>
+        <span class="field-lbl">Máximo de pedidos por rota</span>
+        <div><input type="number" class="field-inp" id="cap-maxped-d" value="6"></div>
+        <button class="btn-modal-primary" onclick="irConfirmD()">Continuar →</button>
+        <button class="btn-modal-sec" onclick="voltarVeiculosD()">← Escolher outro veículo</button>
+      </div>
+    </div>
+    <div id="rot-step-confirm" style="display:none">
+      <div class="cap-form-box">
+        <div class="veh-card-name" id="confirm-veh-name" style="font-size:19px;margin-bottom:14px;"></div>
+        <div style="font-size:12.5px;color:var(--text2);line-height:2;" id="confirm-details-d"></div>
+        <button class="btn-modal-primary" onclick="executarVRPD()">✔ Gerar Rota Agora</button>
+        <button class="btn-modal-sec" onclick="voltarCapD()">← Voltar</button>
+      </div>
+    </div>
+    <div id="rot-step-loading" style="display:none;text-align:center;padding:60px 20px;">
+      <div class="load-ring-d"></div>
+      <div style="font-family:var(--sans);font-weight:700;font-size:15px;color:#fff;" id="load-txt-d">Calculando rotas...</div>
+    </div>
+    <div id="rot-step-results" style="display:none"></div>
+  </div>
+
+  <!-- ── PÁGINA: IA ASSISTENTE ── -->
+  <div class="page" id="page-ia" style="display:none">
+    <button class="btn-voltar-topo" onclick="irParaPagina('dashboard')"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Voltar ao Dashboard</button>
+    <div class="page-head">
+      <div class="page-title">IA Assistente</div>
+      <div class="page-sub">Converse com o Gemini sobre a operação de hoje</div>
+    </div>
+    <div class="chat-box">
+      <div class="chat-msgs" id="chat-msgs"></div>
+      <div class="chat-sugs" id="chat-sugs">
+        <div class="chat-sug" onclick="usarSugD(this)">Qual a melhor divisão das rotas hoje?</div>
+        <div class="chat-sug" onclick="usarSugD(this)">Tem algum cliente isolado?</div>
+        <div class="chat-sug" onclick="usarSugD(this)">Quais pedidos podem atrasar?</div>
+      </div>
+      <div class="chat-row">
+        <textarea class="chat-inp" id="chat-inp" rows="1" placeholder="Pergunte sobre a operação..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();enviarChatD();}"></textarea>
+        <button class="chat-send" onclick="enviarChatD()"><svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Agendar Entrega ── -->
+<div class="modal-overlay" id="modal-agendar">
+  <div class="modal-box">
+    <div class="modal-head"><div class="modal-title">Agendar Entrega</div><button class="modal-close" onclick="fecharModalAgendar()">✕</button></div>
+    <div id="ag-search-step-d">
+      <input type="text" class="field-inp field-inp-text" id="ag-search-inp-d" placeholder="Digite o número da NF..." oninput="buscarNFAgendarD(this.value)">
+      <div class="search-results" id="ag-search-results-d"></div>
+    </div>
+    <div id="ag-form-step-d" style="display:none">
+      <div class="veh-card-name" id="ag-form-nf-d" style="font-size:15px;"></div>
+      <span class="field-lbl">Data de entrega</span>
+      <input type="date" class="field-inp" id="ag-data-d" oninput="atualizarSugestaoD()">
+      <span class="field-lbl">Horário de entrega</span>
+      <input type="time" class="field-inp" id="ag-hora-d" oninput="atualizarSugestaoD()">
+      <div class="sugestao-box" id="ag-sugestao-d"></div>
+      <button class="btn-modal-primary" onclick="salvarAgendamentoD()">Salvar Agendamento</button>
+      <button class="btn-modal-sec" onclick="voltarBuscaD()">← Voltar à busca</button>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>if(window.pdfjsLib){pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';}</script>
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getDatabase, ref, onValue, set, update } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
 <!-- Config global (sempre carrega, mesmo sem Firebase) -->
 <script>
@@ -667,47 +851,443 @@ function atualizarMapa(grupos){
   });
 }
 
-carregarPedidos();
-</script>
+// ── Navegação sidebar ────────────────────────────────────────────────────
+const PAGE_META = {
+  pedidos:{title:'Pedidos',sub:'Lista completa e importação de notas fiscais'},
+  roteirizacao:{title:'Roteirização',sub:'Geração de rotas com OR-Tools (Clarke-Wright + 2-opt)'},
+  rotas:{title:'Rotas',sub:'Histórico e detalhamento das rotas geradas'},
+  motoristas:{title:'Motoristas',sub:'Cadastro e acompanhamento de motoristas e veículos'},
+  mapa:{title:'Mapa',sub:'Visualização completa da distribuição e trajetos'},
+  relatorios:{title:'Relatórios',sub:'KPIs, exportações e histórico de desempenho'},
+  ia:{title:'IA Assistente',sub:'Converse com o Gemini sobre suas operações'},
+  config:{title:'Configurações',sub:'Integrações TOTVS, Firebase e backend Railway'},
+};
 
-<!-- Navegação + Upload de NF (plain script — não depende do Firebase) -->
-<script>
-(function(){
-  const BACKEND_URL = window.BACKEND_URL;
+// páginas que têm implementação real (não placeholder)
+const PAGES_REAIS = ['dashboard','pedidos','roteirizacao','ia'];
+const TODAS_PAGES = ['dashboard','page-other','pedidos','roteirizacao','ia'];
 
-  // ── Navegação ─────────────────────────────────────────────────────────
-  const PAGE_META = {
-    pedidos:{title:'Pedidos',sub:'Lista completa e importação de notas fiscais'},
-    roteirizacao:{title:'Roteirização',sub:'Geração de rotas com OR-Tools (Clarke-Wright + 2-opt)'},
-    rotas:{title:'Rotas',sub:'Histórico e detalhamento das rotas geradas'},
-    motoristas:{title:'Motoristas',sub:'Cadastro e acompanhamento de motoristas e veículos'},
-    mapa:{title:'Mapa',sub:'Visualização completa da distribuição e trajetos'},
-    relatorios:{title:'Relatórios',sub:'KPIs, exportações e histórico de desempenho'},
-    ia:{title:'IA Assistente',sub:'Converse com o Gemini sobre suas operações'},
-    config:{title:'Configurações',sub:'Integrações TOTVS, Firebase e backend Railway'},
-  };
-  function navegar(p){
-    document.querySelectorAll('.hnav-item').forEach(i=>i.classList.toggle('active', i.dataset.page===p));
-    ['page-dashboard','page-pedidos','page-other'].forEach(id=>{
-      const el=document.getElementById(id); if(el) el.style.display='none';
-    });
-    if(p==='dashboard'){
-      document.getElementById('page-dashboard').style.display='block';
-    } else if(p==='pedidos'){
-      document.getElementById('page-pedidos').style.display='block';
-    } else {
-      document.getElementById('page-other').style.display='block';
-      const m=PAGE_META[p]||{title:p,sub:''};
-      document.getElementById('other-title').textContent=m.title;
-      document.getElementById('other-sub').textContent=m.sub;
-      document.getElementById('other-h3').textContent = `${m.title} em construção`;
-    }
-    try { window.scrollTo({top:0,behavior:'smooth'}); } catch(_) {}
-  }
-  window.navegar = navegar;
-  document.querySelectorAll('[data-page]').forEach(el=>{
-    el.addEventListener('click',()=>navegar(el.dataset.page));
+function irParaPagina(p){
+  document.querySelectorAll('.sb-item').forEach(i=>i.classList.toggle('active', i.dataset.page===p));
+  // esconde todas
+  ['page-dashboard','page-other','page-pedidos','page-roteirizacao','page-ia'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.style.display='none';
   });
+  if(p==='dashboard'){
+    document.getElementById('page-dashboard').style.display='block';
+  } else if(p==='pedidos'){
+    document.getElementById('page-pedidos').style.display='block';
+    renderPedidosPage();
+  } else if(p==='roteirizacao'){
+    document.getElementById('page-roteirizacao').style.display='block';
+    renderVeiculosD();
+  } else if(p==='ia'){
+    document.getElementById('page-ia').style.display='block';
+  } else {
+    // placeholder
+    document.getElementById('page-other').style.display='block';
+    const m=PAGE_META[p]||{title:p,sub:''};
+    document.getElementById('other-title').textContent=m.title;
+    document.getElementById('other-sub').textContent=m.sub;
+    document.getElementById('other-h3').textContent = `${m.title} em construção`;
+  }
+  window.scrollTo(0,0);
+}
+window.irParaPagina=irParaPagina;
+
+document.querySelectorAll('[data-page]').forEach(el=>{
+  el.addEventListener('click',()=>irParaPagina(el.dataset.page));
+});
+
+// ══════════════════════════════════════════════════════════════════════════
+// AGENDAMENTO (modal com busca de NF + data/hora + sugestão de saída)
+// ══════════════════════════════════════════════════════════════════════════
+let _nfSelDash=null;
+function abrirModalAgendar(){
+  document.getElementById('modal-agendar').classList.add('open');
+  voltarBuscaD();
+  document.getElementById('ag-search-inp-d').value='';
+  document.getElementById('ag-search-results-d').innerHTML='';
+}
+window.abrirModalAgendar=abrirModalAgendar;
+function fecharModalAgendar(){ document.getElementById('modal-agendar').classList.remove('open'); }
+window.fecharModalAgendar=fecharModalAgendar;
+
+function buscarNFAgendarD(termo){
+  const box=document.getElementById('ag-search-results-d');
+  if(!termo||termo.trim().length<2){ box.innerHTML=''; return; }
+  const t=termo.trim().toLowerCase();
+  const achados=allOrders.filter(o=>o.status==='pendente'&&o.nf.toLowerCase().includes(t)).slice(0,6);
+  box.innerHTML = achados.length ? achados.map(o=>
+    `<div class="search-item" onclick="selecionarNFAgendarD('${o.nf}')"><div class="search-item-nf">NF ${o.nf}</div><div class="search-item-meta">${o.cidade} · ${o.peso}kg</div></div>`
+  ).join('') : `<div class="search-item-meta" style="padding:8px">Nenhuma NF encontrada</div>`;
+}
+window.buscarNFAgendarD=buscarNFAgendarD;
+
+function selecionarNFAgendarD(nf){
+  _nfSelDash=nf;
+  const o=allOrders.find(x=>x.nf===nf);
+  document.getElementById('ag-form-nf-d').textContent=`NF ${nf} — ${o.cidade}`;
+  document.getElementById('ag-search-step-d').style.display='none';
+  document.getElementById('ag-form-step-d').style.display='block';
+  document.getElementById('ag-data-d').value='';
+  document.getElementById('ag-hora-d').value='';
+  document.getElementById('ag-sugestao-d').classList.remove('show');
+}
+window.selecionarNFAgendarD=selecionarNFAgendarD;
+
+function voltarBuscaD(){
+  _nfSelDash=null;
+  document.getElementById('ag-form-step-d').style.display='none';
+  document.getElementById('ag-search-step-d').style.display='block';
+}
+window.voltarBuscaD=voltarBuscaD;
+
+function _haversineKm(a,b){
+  const R=6371,dLat=(b.lat-a.lat)*Math.PI/180,dLng=(b.lng-a.lng)*Math.PI/180;
+  const x=Math.sin(dLat/2)**2+Math.cos(a.lat*Math.PI/180)*Math.cos(b.lat*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+}
+function calcularHoraSaida(cidade,horaEntregaStr){
+  if(!horaEntregaStr) return null;
+  const coord=CITY_COORDS[cidade]||DEPOT;
+  const km=_haversineKm(DEPOT,coord);
+  const viagemMin=Math.ceil((km/40)*60)+30;
+  const [h,m]=horaEntregaStr.split(':').map(Number);
+  let total=h*60+m-viagemMin; if(total<0) total+=1440;
+  return `${String(Math.floor(total/60)%24).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`;
+}
+function atualizarSugestaoD(){
+  if(!_nfSelDash) return;
+  const o=allOrders.find(x=>x.nf===_nfSelDash);
+  const hora=document.getElementById('ag-hora-d').value;
+  const sug=document.getElementById('ag-sugestao-d');
+  if(!hora){ sug.classList.remove('show'); return; }
+  sug.textContent=`Sugestão: saia até ${calcularHoraSaida(o.cidade,hora)} para chegar às ${hora} em ${o.cidade} (considerando trânsito e carregamento)`;
+  sug.classList.add('show');
+}
+window.atualizarSugestaoD=atualizarSugestaoD;
+
+async function salvarAgendamentoD(){
+  if(!_nfSelDash) return;
+  const data=document.getElementById('ag-data-d').value;
+  const hora=document.getElementById('ag-hora-d').value;
+  if(!data||!hora){ alert('Preencha data e horário de entrega'); return; }
+  const o=allOrders.find(x=>x.nf===_nfSelDash);
+  const payload={ agendado:true, dataAgendada:data, horaEntrega:hora, horaSaidaSugerida:calcularHoraSaida(o.cidade,hora) };
+  if(!modoDemo){ await update(ref(db,'pedidos_rota/'+_nfSelDash), payload); }
+  else { Object.assign(o,payload); }
+  fecharModalAgendar();
+  render();
+}
+window.salvarAgendamentoD=salvarAgendamentoD;
+
+// ══════════════════════════════════════════════════════════════════════════
+// PÁGINA PEDIDOS — cards de região expansíveis
+// ══════════════════════════════════════════════════════════════════════════
+function renderPedidosPage(){
+  const pend=allOrders.filter(o=>o.status==='pendente');
+  const grupos={}; REGIOES_DEF.forEach(r=>grupos[r.nome]=[]);
+  pend.forEach(o=>{ (grupos[o.cidade]||grupos['Outras Cidades']).push(o); });
+  const ativos=REGIOES_DEF.filter(r=>grupos[r.nome].length>0);
+  const grid=document.getElementById('reg-cards-grid');
+  grid.innerHTML = ativos.length ? ativos.map((r,i)=>{
+    const os=grupos[r.nome];
+    return `<div class="rc-card" id="rcd-${i}" style="--rc:${r.cor}">
+      <div class="rc-card-head" onclick="toggleRcCard(${i})">
+        <div class="rc-card-icon">${r.isolado?'⚠️':'📍'}</div>
+        <div class="rc-card-info"><div class="rc-card-name">${r.nome}</div><div class="rc-card-sub">${os.length} pedido(s)${r.isolado?' · região isolada':''}</div></div>
+        <div class="rc-card-n">${os.length}</div><div class="rc-card-chev">›</div>
+      </div>
+      <div class="rc-card-body"><div class="nf-mini-grid">${os.slice(0,10).map(o=>
+        `<div class="nf-mini"><div class="nf-mini-code">NF ${o.nf}</div><div class="nf-mini-meta">${o.peso}kg · ${o.itens} itens</div></div>`
+      ).join('')}</div>${os.length>10?`<div class="rc-card-sub" style="margin-top:8px">+ ${os.length-10} pedidos</div>`:''}</div>
+    </div>`;
+  }).join('') : `<div class="empty-mini">Nenhum pedido pendente. Importe um arquivo de NF acima.</div>`;
+}
+function toggleRcCard(i){ document.getElementById('rcd-'+i).classList.toggle('exp'); }
+window.toggleRcCard=toggleRcCard;
+
+// ══════════════════════════════════════════════════════════════════════════
+// IMPORTAÇÃO — CSV / Excel / PDF (com aviso p/ peso ausente e PDF experimental)
+// ══════════════════════════════════════════════════════════════════════════
+const COL_MAP={
+  nf:['nf','nota','numero','num','number','cte','pedido'],
+  cidade:['cidade','municipio','município','city','localidade','destino'],
+  peso:['peso','pesobruto','peso_bruto','kg','massa','pesoliquido'],
+  itens:['itens','quantidade','qtd','qty','volumes','vol','caixas'],
+  dest:['dest','destinatario','destinatário','endereco','endereço','cliente','razao'],
+};
+function _norm(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');}
+function _findCol(headers,keys){
+  const h=headers.map(_norm);
+  for(const k of keys){ const i=h.findIndex(x=>x.includes(_norm(k))); if(i>=0) return i; }
+  return -1;
+}
+function _cidadeNorm(raw){
+  if(!raw) return 'Outras Cidades';
+  const l=String(raw).toLowerCase();
+  const map={'guarulhos':'Guarulhos','santos':'Santos','guaruja':'Guarujá','guarujá':'Guarujá','sao paulo':'São Paulo','são paulo':'São Paulo','praia grande':'Praia Grande','sorocaba':'Sorocaba','itu':'Itu','mogi':'Mogi das Cruzes','santo andre':'Santo André','santo andré':'Santo André'};
+  for(const [k,v] of Object.entries(map)) if(l.includes(k)) return v;
+  return String(raw).trim();
+}
+function _pesoNum(v){ if(!v) return 100; const n=parseFloat(String(v).replace(',','.').replace(/[^\d.]/g,'')); return isNaN(n)?100:Math.max(n,1); }
+
+function _rowsToOrders(rows,headers){
+  const ci={ nf:_findCol(headers,COL_MAP.nf), cidade:_findCol(headers,COL_MAP.cidade), peso:_findCol(headers,COL_MAP.peso), itens:_findCol(headers,COL_MAP.itens), dest:_findCol(headers,COL_MAP.dest) };
+  const orders=[]; let auto=900000;
+  for(const row of rows){
+    if(!row||row.every(c=>!c)) continue;
+    const nf=(ci.nf>=0?String(row[ci.nf]||'').trim():'')||String(auto++);
+    const cidade=_cidadeNorm(ci.cidade>=0?row[ci.cidade]:'');
+    const coord=CITY_COORDS[cidade]||DEPOT;
+    orders.push({
+      nf, cidade, peso:_pesoNum(ci.peso>=0?row[ci.peso]:null),
+      itens:Math.max(1,ci.itens>=0?parseInt(row[ci.itens])||1:1),
+      dest:(ci.dest>=0?String(row[ci.dest]||'').trim():'')||cidade,
+      urgente:false, agendado:false, dataAgendada:'', status:'pendente', origem:'importado',
+      lat:coord.lat+(Math.random()-.5)*.015, lng:coord.lng+(Math.random()-.5)*.015,
+    });
+  }
+  return {orders,ci};
+}
+function _impMsg(tipo,txt){
+  const el=document.getElementById('import-msg-pedidos');
+  el.className=`import-msg show ${tipo}`; el.textContent=txt;
+  setTimeout(()=>{el.className='import-msg';},7000);
+}
+
+// leitura de PDF (experimental) — tenta achar linhas com nº de NF e peso no texto
+async function _parsePDF(file){
+  if(!window.pdfjsLib) throw new Error('Leitor de PDF não carregou. Use CSV ou Excel.');
+  const buf=await file.arrayBuffer();
+  const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+  let texto='';
+  for(let p=1;p<=pdf.numPages;p++){
+    const page=await pdf.getPage(p);
+    const content=await page.getTextContent();
+    texto+=' '+content.items.map(i=>i.str).join(' ');
+  }
+  // heurística simples: procura números de NF (5-9 dígitos) e pesos (nº com kg)
+  const nfs=[...texto.matchAll(/\b(\d{5,9})\b/g)].map(m=>m[1]);
+  const pesos=[...texto.matchAll(/(\d+[.,]?\d*)\s*kg/gi)].map(m=>parseFloat(m[1].replace(',','.')));
+  if(!nfs.length) throw new Error('Não foi possível identificar NFs neste PDF. Tente exportar em CSV/Excel pelo SSW.');
+  // monta 1 pedido por NF única encontrada (peso: 1º peso achado ou 100)
+  const vistas=new Set(); const orders=[]; const coord=CITY_COORDS['Guarulhos'];
+  nfs.forEach((nf,idx)=>{
+    if(vistas.has(nf)) return; vistas.add(nf);
+    orders.push({ nf, cidade:'Outras Cidades', peso:pesos[idx]||100, itens:1, dest:'Importado de PDF — conferir',
+      urgente:false, agendado:false, dataAgendada:'', status:'pendente', origem:'pdf',
+      lat:coord.lat+(Math.random()-.5)*.02, lng:coord.lng+(Math.random()-.5)*.02 });
+  });
+  return orders;
+}
+
+async function importarArquivo(input){
+  const file=input.files[0]; if(!file) return; input.value='';
+  const ext=file.name.split('.').pop().toLowerCase();
+  try{
+    let imported, ci={peso:-1};
+    if(ext==='pdf'){
+      const ok=confirm('⚠️ LEITURA DE PDF É EXPERIMENTAL.\n\nO sistema vai tentar extrair NFs e pesos do PDF, mas pode errar ou não achar peso. Confira os dados antes de gerar rota.\n\nPara resultado confiável, exporte CSV ou Excel pelo SSW.\n\nContinuar mesmo assim?');
+      if(!ok){ _impMsg('err','Importação de PDF cancelada.'); return; }
+      imported=await _parsePDF(file);
+    } else if(ext==='csv'){
+      const text=(await file.text()).replace(/^\uFEFF/,'');
+      const sep=text.includes(';')?';':',';
+      const lines=text.split(/\r?\n/).filter(l=>l.trim());
+      if(lines.length<2) throw new Error('CSV vazio ou sem dados.');
+      const headers=lines[0].split(sep).map(h=>h.trim().replace(/^"|"$/g,''));
+      const rows=lines.slice(1).map(l=>l.split(sep).map(v=>v.trim().replace(/^"|"$/g,'')));
+      ({orders:imported,ci}=_rowsToOrders(rows,headers));
+    } else if(ext==='xlsx'||ext==='xls'){
+      if(!window.XLSX) throw new Error('Leitor de Excel não carregou.');
+      const wb=XLSX.read(await file.arrayBuffer(),{type:'array'});
+      const data=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
+      if(data.length<2) throw new Error('Planilha vazia.');
+      ({orders:imported,ci}=_rowsToOrders(data.slice(1),data[0].map(h=>String(h||'').trim())));
+    } else throw new Error('Formato não suportado. Use CSV, Excel ou PDF.');
+
+    if(!imported.length) throw new Error('Nenhuma NF encontrada no arquivo.');
+
+    if(ext!=='pdf' && ci.peso<0){
+      const ok=confirm(`⚠️ Coluna de PESO não identificada.\n\nAs ${imported.length} NFs serão importadas com 100kg fixo — pode causar sobrecarga de veículo.\n\nImportar mesmo assim?`);
+      if(!ok){ _impMsg('err','Importação cancelada — peso não encontrado.'); return; }
+    }
+
+    if(!modoDemo){
+      const payload={}; imported.forEach(o=>payload[o.nf]=o);
+      await update(ref(db,'pedidos_rota'),payload);
+    } else {
+      allOrders=[...allOrders.filter(o=>o.status!=='pendente'||!imported.find(n=>n.nf===o.nf)),...imported];
+      render(); renderPedidosPage();
+    }
+    _impMsg('ok',`✅ ${imported.length} NF(s) importada(s) de "${file.name}"${ext==='pdf'?' (PDF — confira os dados!)':''}`);
+  }catch(e){ _impMsg('err','❌ '+e.message); }
+}
+window.importarArquivo=importarArquivo;
+
+// ══════════════════════════════════════════════════════════════════════════
+// ROTEIRIZAÇÃO — wizard veículo → capacidade → confirma → /solve backend
+// ══════════════════════════════════════════════════════════════════════════
+const VEICULOS=[
+  {id:'fiorino',nome:'Fiorino',tag:'até 1.5t',desc:'Furgão leve — entregas urbanas',presets:[500,800,1200],cor:'#3b82f6',emoji:'🚐'},
+  {id:'vuc',nome:'VUC',tag:'até 3t',desc:'Veículo Urbano de Carga',presets:[1500,2000,3000],cor:'#0284c7',emoji:'🚚'},
+  {id:'toco',nome:'Truck Toco',tag:'até 8t',desc:'Truck 2 eixos — cargas médias',presets:[4000,6000,8000],cor:'#1d4ed8',emoji:'🚛'},
+  {id:'bitruck',nome:'Bitruck',tag:'até 16t',desc:'Truck 3 eixos — cargas pesadas',presets:[10000,12000,16000],cor:'#1e40af',emoji:'🚛'},
+  {id:'carreta',nome:'Carreta',tag:'até 33t',desc:'Articulada — grandes volumes',presets:[20000,27000,32000],cor:'#172554',emoji:'🚛'},
+];
+let vehSel=null, capKgD=0, maxPedD=6, rotaGeradaD=[];
+
+function renderVeiculosD(){
+  document.getElementById('rot-step-veiculo').style.display='block';
+  document.getElementById('rot-step-cap').style.display='none';
+  document.getElementById('rot-step-confirm').style.display='none';
+  document.getElementById('rot-step-loading').style.display='none';
+  document.getElementById('rot-step-results').style.display='none';
+  document.getElementById('veh-grid').innerHTML=VEICULOS.map(v=>
+    `<div class="veh-card" style="--vc:${v.cor}" onclick="selVeicD('${v.id}')">
+      <div class="veh-card-icon" style="font-size:26px">${v.emoji}</div>
+      <div class="veh-card-name">${v.nome}</div><div class="veh-card-tag">${v.tag}</div>
+      <div class="veh-card-desc">${v.desc}</div></div>`).join('');
+}
+function selVeicD(id){
+  vehSel=VEICULOS.find(v=>v.id===id);
+  document.getElementById('cap-veh-name').textContent=vehSel.nome;
+  document.getElementById('cap-kg-d').value='';
+  document.getElementById('cap-maxped-d').value='6';
+  document.getElementById('presets-row-d').innerHTML=vehSel.presets.map(p=>
+    `<div class="preset-chip" onclick="setPresetD(${p},this)">${p>=1000?(p/1000)+'t':p+'kg'}</div>`).join('');
+  document.getElementById('rot-step-veiculo').style.display='none';
+  document.getElementById('rot-step-cap').style.display='block';
+}
+window.selVeicD=selVeicD;
+function setPresetD(v,el){ document.getElementById('cap-kg-d').value=v; document.querySelectorAll('.preset-chip').forEach(c=>c.classList.remove('on')); el.classList.add('on'); }
+window.setPresetD=setPresetD;
+function voltarVeiculosD(){ renderVeiculosD(); }
+window.voltarVeiculosD=voltarVeiculosD;
+function irConfirmD(){
+  const kg=parseInt(document.getElementById('cap-kg-d').value);
+  if(!kg||kg<=0){ alert('Informe a capacidade em kg'); return; }
+  capKgD=kg; maxPedD=parseInt(document.getElementById('cap-maxped-d').value)||6;
+  const pend=allOrders.filter(o=>o.status==='pendente').length;
+  document.getElementById('confirm-veh-name').textContent=vehSel.nome;
+  document.getElementById('confirm-details-d').innerHTML=`Capacidade: <b style="color:var(--blue4)">${kg.toLocaleString('pt-BR')} kg</b><br>Máx. pedidos/rota: <b>${maxPedD}</b><br>Pedidos pendentes: <b>${pend}</b><br>Motor: OR-Tools VRP (backend)`;
+  document.getElementById('rot-step-cap').style.display='none';
+  document.getElementById('rot-step-confirm').style.display='block';
+}
+window.irConfirmD=irConfirmD;
+function voltarCapD(){ document.getElementById('rot-step-confirm').style.display='none'; document.getElementById('rot-step-cap').style.display='block'; }
+window.voltarCapD=voltarCapD;
+
+async function executarVRPD(){
+  document.getElementById('rot-step-confirm').style.display='none';
+  document.getElementById('rot-step-loading').style.display='block';
+  const pend=allOrders.filter(o=>o.status==='pendente');
+  try{
+    const resp=await fetch(`${BACKEND_URL}/solve`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ pedidos:pend.map(o=>({nf:o.nf,lat:o.lat,lng:o.lng,peso:o.peso,cidade:o.cidade})), capacidade_kg:capKgD, max_paradas:maxPedD })
+    });
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    const data=await resp.json();
+    rotaGeradaD=data.rotas||data.routes||[];
+    renderRotasResultD(rotaGeradaD);
+  }catch(e){
+    document.getElementById('rot-step-loading').style.display='none';
+    document.getElementById('rot-step-results').style.display='block';
+    document.getElementById('rot-step-results').innerHTML=`<div class="import-msg show err">❌ Erro ao gerar rota no backend: ${e.message}.<br>Verifique se o servidor Railway está ativo.</div><button class="btn-modal-sec" onclick="renderVeiculosD()" style="max-width:300px">← Tentar novamente</button>`;
+  }
+}
+window.executarVRPD=executarVRPD;
+
+function renderRotasResultD(rotas){
+  document.getElementById('rot-step-loading').style.display='none';
+  const res=document.getElementById('rot-step-results'); res.style.display='block';
+  if(!rotas.length){ res.innerHTML=`<div class="empty-mini">Nenhuma rota gerada.</div><button class="btn-modal-sec" onclick="renderVeiculosD()">← Voltar</button>`; return; }
+  const totalKm=rotas.reduce((s,r)=>s+(r.km||r.distancia_km||0),0);
+  const totalE=rotas.reduce((s,r)=>s+(r.pedidos?.length||r.paradas?.length||0),0);
+  res.innerHTML=`
+    <button class="btn-voltar-topo" onclick="renderVeiculosD()"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Gerar outra rota</button>
+    <div class="kpis" style="max-width:640px;margin-bottom:18px">
+      <div class="kpi"><div class="kpi-lbl">VIAGENS</div><div class="kpi-val">${rotas.length}</div></div>
+      <div class="kpi"><div class="kpi-lbl">ENTREGAS</div><div class="kpi-val">${totalE}</div></div>
+      <div class="kpi"><div class="kpi-lbl">KM TOTAL</div><div class="kpi-val">${totalKm.toFixed(0)}</div></div>
+    </div>
+    <div class="rota-tabs-d" id="rota-tabs-d">${rotas.map((r,i)=>`<div class="rota-tab-d ${i===0?'active':''}" onclick="selRotaTabD(${i})">Rota ${i+1} · ${(r.pedidos?.length||r.paradas?.length||0)} entregas</div>`).join('')}</div>
+    <div id="rota-detail-d"></div>`;
+  selRotaTabD(0);
+}
+window.renderRotasResultD=renderRotasResultD;
+
+function selRotaTabD(idx){
+  document.querySelectorAll('.rota-tab-d').forEach((t,i)=>t.classList.toggle('active',i===idx));
+  const r=rotaGeradaD[idx];
+  const paradas=r.pedidos||r.paradas||[];
+  const last=paradas[paradas.length-1];
+  const wp=paradas.slice(0,-1).map(p=>`${p.lat},${p.lng}`).join('|');
+  const gmaps=last?`https://www.google.com/maps/dir/?api=1&origin=${DEPOT.lat},${DEPOT.lng}&destination=${last.lat},${last.lng}${wp?'&waypoints='+wp:''}&travelmode=driving`:'#';
+  const km=r.km||r.distancia_km||0, mins=r.mins||r.tempo_min||0, peso=r.peso_total||paradas.reduce((s,p)=>s+(p.peso||0),0);
+  document.getElementById('rota-detail-d').innerHTML=`
+    <div id="rota-map"></div>
+    <div class="nav-btns-d"><a href="${gmaps}" target="_blank" class="btn-nav-d gmaps">📍 Google Maps</a>${last?`<a href="https://waze.com/ul?ll=${last.lat},${last.lng}&navigate=yes" target="_blank" class="btn-nav-d waze">🚗 Waze</a>`:''}</div>
+    <div class="card" style="margin-bottom:14px"><div style="display:flex;gap:20px;font-size:13px;color:var(--text2)"><span>📦 <b style="color:#fff">${peso.toLocaleString('pt-BR')} kg</b></span><span>📍 <b style="color:#fff">${paradas.length}</b> paradas</span><span>🛣️ <b style="color:#fff">${km.toFixed(1)}</b> km</span>${mins?`<span>⏱️ <b style="color:#fff">${mins}</b> min</span>`:''}</div></div>
+    <div>${paradas.map((p,i)=>`<div class="delivery-mini"><div class="delivery-mini-num">${i+1}</div><div style="flex:1"><div style="font-family:var(--mono);font-weight:700;font-size:13px;color:#fff">NF ${p.nf}</div><div style="font-size:11px;color:var(--text3)">${p.cidade||''} · ${p.peso||0}kg</div></div></div>`).join('')}</div>`;
+  setTimeout(()=>desenharMapaRota(paradas),100);
+}
+window.selRotaTabD=selRotaTabD;
+
+let rotaMapInst=null;
+function desenharMapaRota(paradas){
+  if(rotaMapInst){ rotaMapInst.remove(); rotaMapInst=null; }
+  rotaMapInst=L.map('rota-map',{attributionControl:false}).setView([DEPOT.lat,DEPOT.lng],10);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(rotaMapInst);
+  L.circleMarker([DEPOT.lat,DEPOT.lng],{radius:7,color:'#fff',weight:2,fillColor:'#22c55e',fillOpacity:1}).addTo(rotaMapInst).bindTooltip('Saída');
+  const pts=[[DEPOT.lat,DEPOT.lng]];
+  paradas.forEach((p,i)=>{
+    const mk=L.divIcon({className:'',html:`<div style="background:#2563eb;color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;border:2px solid #fff;font-family:sans-serif">${i+1}</div>`,iconSize:[28,28],iconAnchor:[14,14]});
+    L.marker([p.lat,p.lng],{icon:mk}).addTo(rotaMapInst).bindTooltip(`NF ${p.nf}`);
+    pts.push([p.lat,p.lng]);
+  });
+  pts.push([DEPOT.lat,DEPOT.lng]);
+  L.polyline(pts,{color:'#2563eb',weight:3,opacity:.6,dashArray:'6,5'}).addTo(rotaMapInst);
+  rotaMapInst.fitBounds(pts,{padding:[40,40]});
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// IA CHAT — chama /chat do backend (Gemini real)
+// ══════════════════════════════════════════════════════════════════════════
+function usarSugD(el){ document.getElementById('chat-inp').value=el.textContent; enviarChatD(); }
+window.usarSugD=usarSugD;
+
+function addChatMsg(role,txt){
+  const box=document.getElementById('chat-msgs');
+  const d=document.createElement('div'); d.className='chat-msg '+role; d.textContent=txt;
+  box.appendChild(d); box.scrollTop=box.scrollHeight;
+}
+async function enviarChatD(){
+  const inp=document.getElementById('chat-inp'); const msg=inp.value.trim();
+  if(!msg) return; inp.value='';
+  addChatMsg('user',msg);
+  const pend=allOrders.filter(o=>o.status==='pendente');
+  const ctx=`Pedidos pendentes: ${pend.length}. Por região: ${REGIOES_DEF.map(r=>r.nome+':'+pend.filter(o=>o.cidade===r.nome).length).filter(x=>!x.endsWith(':0')).join(', ')}.`;
+  const loadingId='load-'+Date.now();
+  const box=document.getElementById('chat-msgs');
+  const ld=document.createElement('div'); ld.className='chat-msg bot'; ld.id=loadingId; ld.textContent='...'; box.appendChild(ld); box.scrollTop=box.scrollHeight;
+  try{
+    const resp=await fetch(`${BACKEND_URL}/chat`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ mensagem:msg, contexto:ctx })
+    });
+    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    const data=await resp.json();
+    document.getElementById(loadingId).textContent=data.resposta||data.reply||data.message||'(sem resposta)';
+  }catch(e){
+    document.getElementById(loadingId).textContent='Erro ao conectar ao Gemini: '+e.message+'. Verifique o backend Railway e a cota da API.';
+  }
+  box.scrollTop=box.scrollHeight;
+}
+window.enviarChatD=enviarChatD;
 
   // ═════════════════════════════ UPLOAD NF ═══════════════════════════════
   const nfInput   = document.getElementById('nf-input');
