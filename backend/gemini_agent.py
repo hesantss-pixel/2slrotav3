@@ -1,5 +1,5 @@
-8"""
-gemini_agent.py — Assistente de Logística com Gemini 1.5 Flash
+"""
+gemini_agent.py — Assistente de Logística com Gemini 3.5 Flash
 --------------------------------------------------------------
 Encapsula chamadas ao Google Gemini para o chat de operações da 2SL LOG.
 O agente recebe contexto operacional (pedidos, rotas, frotas) e responde
@@ -43,7 +43,7 @@ def _init_gemini():
             },
         )
         _genai = genai
-        logger.info("Gemini 2.0 Flash inicializado com sucesso.")
+        logger.info("Gemini 3.5 Flash inicializado com sucesso.")
     except ImportError as e:
         raise RuntimeError(
             "SDK Gemini não instalado. Execute: pip install google-generativeai"
