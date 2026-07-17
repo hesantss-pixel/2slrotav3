@@ -34,7 +34,7 @@ def _init_gemini():
             raise ValueError("GEMINI_API_KEY não definida. Defina no .env ou variáveis de ambiente do Railway.")
         genai.configure(api_key=api_key)
         _model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
+            model_name="gemini-3.5-flash",
             system_instruction=SYSTEM_PROMPT,
             generation_config={
                 "temperature":     0.3,   # mais determinístico para logística
