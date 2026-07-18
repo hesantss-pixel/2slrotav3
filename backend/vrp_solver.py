@@ -54,7 +54,7 @@ class RotaResultado(TypedDict):
 # ── Constantes ─────────────────────────────────────────────────────────────────
 
 OSRM_URL   = "https://router.project-osrm.org/table/v1/driving"
-DEPOT      = {"lat": -23.4566, "lng": -46.5055, "nome": "2SL LOG — Guarulhos"}
+DEPOT      = {"lat": -23.4542, "lng": -46.5338, "nome": "2SL LOG — Av. Júlia Gaiolli, 740 — Guarulhos"}
 OSRM_LIMIT = 100   # Máximo de pontos por chamada OSRM (servidor público)
 
 # Velocidade média estimada para fallback Haversine: 40 km/h

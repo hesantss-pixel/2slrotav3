@@ -485,7 +485,6 @@ button{font-family:inherit;}
       <div class="page-sub">Distribuição completa dos pedidos pendentes — sincronizado ao vivo</div>
     </div>
     <div id="mapa-completo" style="width:100%;height:560px;border-radius:16px;border:1px solid var(--border2);"></div>
-    <div id="mapa-completo-legenda" style="display:none;flex-wrap:wrap;gap:8px;margin-top:12px;padding:10px 14px;background:var(--s2);border:1px solid var(--border);border-radius:12px;align-items:center"></div>
   </div>
 
   <!-- ── PÁGINA: MOTORISTAS ── -->
@@ -636,11 +635,11 @@ function carregarPedidos(){
     render();
   }, ()=>{});
 
-  // rotas confirmadas (histórico permanente) — alimenta a página Rotas + overlay do Mapa
+  // rotas confirmadas (histórico permanente) — alimenta a página Rotas
   onValue(ref(db,'rotas_confirmadas'), snap=>{
     rotasFirebase = snap.val() || {};
+    // se estiver na página de rotas, re-renderiza ao vivo
     if(document.getElementById('page-rotas')?.style.display==='block'){ renderRotasConfirmadas(); }
-    if(document.getElementById('page-mapa')?.style.display==='block'){ atualizarMapaCompleto(); }
   }, ()=>{});
 
   // motoristas cadastrados (fixos)
@@ -787,35 +786,6 @@ function atualizarMapaCompleto(){
       .bindTooltip(`<b>${r.nome}</b><br>${n} pedido(s) pendente(s)<br>${lista.reduce((s,o)=>s+(o.peso||0),0).toLocaleString('pt-BR')} kg total`);
     L.polyline([[DEPOT.lat,DEPOT.lng],[coord.lat,coord.lng]],{color:r.cor,weight:1.4,opacity:.4,dashArray:'4,6'}).addTo(mapLayerFull);
   });
-
-  // ── Sobreposição: rotas confirmadas em andamento (status=em_rota) ───────
-  const rotasAtivas = Object.values(rotasFirebase||{}).filter(r=>r.status==='em_rota' && (r.paradas||[]).some(p=>p.lat && p.lng));
-  const legenda = [];
-  rotasAtivas.forEach((rota, idx)=>{
-    const cor = _corDaRota(rota.id || idx);
-    const paradas = (rota.paradas||[]).filter(p=>p.lat && p.lng);
-    if(!paradas.length) return;
-    const coords = [[DEPOT.lat,DEPOT.lng], ...paradas.map(p=>[p.lat,p.lng]), [DEPOT.lat,DEPOT.lng]];
-    L.polyline(coords,{color:cor,weight:3.5,opacity:.85}).addTo(mapLayerFull)
-      .bindTooltip(`<b>${rota.motorista||''} · ${rota.veiculo||''}</b><br>${paradas.length} paradas · ${(rota.km||0).toFixed?rota.km.toFixed(1):rota.km} km`);
-    paradas.forEach((p,i)=>{
-      L.circleMarker([p.lat,p.lng],{radius:5,color:'#fff',weight:1.5,fillColor:cor,fillOpacity:.95}).addTo(mapLayerFull)
-        .bindTooltip(`${i+1}. NF ${p.nf}${p.cidade?' · '+p.cidade:''}`);
-    });
-    legenda.push({cor, txt:`${rota.motorista||'—'} · ${rota.veiculo||''} (${paradas.length} paradas)`});
-  });
-
-  // Legenda no rodapé do mapa
-  const legEl = document.getElementById('mapa-completo-legenda');
-  if(legEl){
-    if(rotasAtivas.length){
-      legEl.style.display = 'flex';
-      legEl.innerHTML = `<span style="color:var(--text3);font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;margin-right:6px">Rotas em andamento:</span>` +
-        legenda.map(l=>`<span style="display:inline-flex;align-items:center;gap:6px;background:var(--s3);border:1px solid var(--border);border-radius:20px;padding:4px 10px;font-size:11.5px;color:var(--text2)"><span style="width:8px;height:8px;border-radius:50%;background:${l.cor};box-shadow:0 0 6px ${l.cor}"></span>${l.txt}</span>`).join('');
-    } else {
-      legEl.style.display = 'none';
-    }
-  }
 }
 window.atualizarMapaCompleto=atualizarMapaCompleto;
 
@@ -1317,49 +1287,6 @@ window.confirmarRotaD=confirmarRotaD;
 // ══════════════════════════════════════════════════════════════════════════
 let rotasFirebase={};  // preenchido pelo listener do Firebase
 
-// paleta de cores por rota (usada tanto no mini-map da Rotas quanto no
-// overlay do Mapa completo — mesma cor pra mesma rota nos dois lugares)
-const CORES_ROTA = ['#3b82f6','#22c55e','#f97316','#8b5cf6','#facc15','#06b6d4','#ec4899','#84cc16'];
-const _miniMaps = {};   // id → L.Map (pra invalidar/limpar antes de redesenhar)
-
-function _corDaRota(idxOuId){
-  const i = typeof idxOuId==='number' ? idxOuId
-          : Math.abs([...(String(idxOuId||''))].reduce((h,c)=>((h<<5)-h+c.charCodeAt(0))|0,0));
-  return CORES_ROTA[i % CORES_ROTA.length];
-}
-
-function desenharMiniMapaRota(rota, elId, cor){
-  const el = document.getElementById(elId);
-  if(!el || !window.L) return;
-  const paradas = (rota.paradas||[]).filter(p=>p.lat && p.lng);
-  if(!paradas.length){ el.innerHTML = '<div style="padding:22px;text-align:center;font-size:11.5px;color:var(--text3)">Rota sem coordenadas — mapa indisponível.</div>'; return; }
-
-  // limpa instância anterior (caso o Firebase re-render dispare)
-  if(_miniMaps[elId]){ _miniMaps[elId].remove(); delete _miniMaps[elId]; }
-  const map = L.map(el, {zoomControl:false, attributionControl:false, scrollWheelZoom:false});
-  _miniMaps[elId] = map;
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(map);
-
-  const coords = [[DEPOT.lat,DEPOT.lng], ...paradas.map(p=>[p.lat,p.lng]), [DEPOT.lat,DEPOT.lng]];
-  L.polyline(coords, {color:cor, weight:3, opacity:.85}).addTo(map);
-
-  // depot
-  L.circleMarker([DEPOT.lat,DEPOT.lng], {radius:6, color:'#fff', weight:2, fillColor:'#2563eb', fillOpacity:1})
-    .addTo(map).bindTooltip('Depósito');
-  // paradas numeradas
-  paradas.forEach((p,i)=>{
-    const icon = L.divIcon({
-      className:'',
-      html:`<div style="background:${cor};color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:800;border:2px solid rgba(255,255,255,.7);box-shadow:0 0 6px rgba(0,0,0,.4);">${i+1}</div>`,
-      iconSize:[22,22], iconAnchor:[11,11],
-    });
-    L.marker([p.lat,p.lng],{icon}).addTo(map)
-      .bindTooltip(`<b>${i+1}. NF ${p.nf}</b><br>${p.cidade||''}<br>${(p.peso||0).toLocaleString('pt-BR')} kg`);
-  });
-  map.fitBounds(L.latLngBounds(coords), {padding:[18,18]});
-}
-window.desenharMiniMapaRota = desenharMiniMapaRota;
-
 function renderRotasConfirmadas(){
   const cont=document.getElementById('rotas-confirmadas-lista');
   const lista = modoDemo
@@ -1370,20 +1297,15 @@ function renderRotasConfirmadas(){
     cont.innerHTML=`<div class="placeholder"><svg viewBox="0 0 24 24"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg><h3>Nenhuma rota confirmada ainda</h3><p>Gere uma rota em Roteirização e clique em "Confirmar Saída para Entrega". Ela aparecerá aqui e ficará salva.</p></div>`;
     return;
   }
-  cont.innerHTML = lista.map((r,idx)=>{
+  cont.innerHTML = lista.map(r=>{
     const dt=r.criada_em?new Date(r.criada_em):null;
     const dtTxt=dt?dt.toLocaleDateString('pt-BR')+' '+dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
     const paradas=r.paradas||[];
-    const cor = _corDaRota(r.id || idx);
-    const mapId = `mini-map-rota-${r.id || 'r'+idx}`;
     return `<div class="card" style="margin-bottom:14px">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px">
-        <div style="display:flex;align-items:center;gap:10px">
-          <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${cor};box-shadow:0 0 8px ${cor}"></span>
-          <div>
-            <div style="font-family:var(--sans);font-weight:800;font-size:15px;color:#fff">${r.motorista?r.motorista+' — ':''}${r.veiculo||'Rota'} · ${paradas.length} paradas</div>
-            <div style="font-size:11.5px;color:var(--text3);margin-top:2px">${dtTxt}</div>
-          </div>
+        <div>
+          <div style="font-family:var(--sans);font-weight:800;font-size:15px;color:#fff">${r.motorista?r.motorista+' — ':''}${r.veiculo||'Rota'} · ${paradas.length} paradas</div>
+          <div style="font-size:11.5px;color:var(--text3);margin-top:2px">${dtTxt}</div>
         </div>
         <div style="display:flex;gap:8px;align-items:center">
           <span style="background:rgba(37,99,235,.15);border:1px solid rgba(37,99,235,.3);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;color:var(--blue4)">${r.status==='entregue'?'✓ Entregue':'🚚 Em rota'}</span>
@@ -1394,20 +1316,11 @@ function renderRotasConfirmadas(){
         <span>🛣️ <b style="color:#fff">${(r.km||0).toFixed?(r.km).toFixed(1):r.km}</b> km</span>
         ${r.tempo_min?`<span>⏱️ <b style="color:#fff">${r.tempo_min}</b> min</span>`:''}
       </div>
-      <div id="${mapId}" style="height:220px;border-radius:11px;border:1px solid var(--border);margin-bottom:12px;overflow:hidden;background:var(--s3)"></div>
       <div style="display:flex;flex-wrap:wrap;gap:6px">
-        ${paradas.map((p,i)=>`<span style="background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:11px;font-family:var(--mono);color:var(--text2)"><b style="color:${cor}">${i+1}.</b> NF ${p.nf}${p.cidade?' · '+p.cidade:''}</span>`).join('')}
+        ${paradas.map((p,i)=>`<span style="background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:11px;font-family:var(--mono);color:var(--text2)">${i+1}. NF ${p.nf}</span>`).join('')}
       </div>
     </div>`;
   }).join('');
-
-  // desenha mini-mapas depois do innerHTML ter aterrissado no DOM
-  setTimeout(()=>{
-    lista.forEach((r,idx)=>{
-      const mapId = `mini-map-rota-${r.id || 'r'+idx}`;
-      desenharMiniMapaRota(r, mapId, _corDaRota(r.id || idx));
-    });
-  }, 40);
 }
 window.renderRotasConfirmadas=renderRotasConfirmadas;
 
