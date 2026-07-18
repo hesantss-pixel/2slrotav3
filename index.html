@@ -51,9 +51,7 @@ button{font-family:inherit;}
 /* ── MAIN ─────────────────────────────────────────────────────────────── */
 .main{margin-left:var(--sidebar-w);position:relative;z-index:1;min-height:100vh;}
 .header{background:rgba(7,13,26,.97);border-bottom:1px solid var(--border);backdrop-filter:blur(20px);padding:0 26px;position:sticky;top:0;z-index:200;}
-.header-inner{display:flex;align-items:center;gap:14px;height:78px;max-width:1440px;margin:0 auto;}
-.logo-wrap{display:flex;align-items:center;gap:10px;flex-shrink:0;cursor:pointer;padding:4px;border-radius:8px;transition:background .15s;}
-.logo-wrap:hover{background:var(--s2);}
+.header-inner{display:flex;align-items:center;gap:10px;height:78px;}
 .logo-icon{width:42px;height:42px;background:linear-gradient(135deg,var(--blue3),var(--blue2));border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 18px var(--blue-glow);}
 .logo-icon svg{width:23px;height:23px;fill:#fff;}
 .logo-name{font-family:var(--sans);font-weight:800;font-size:19px;color:#fff;line-height:1;}
@@ -65,20 +63,13 @@ button{font-family:inherit;}
 .hpill.ia{background:rgba(37,99,235,.1);border-color:rgba(37,99,235,.4);color:var(--blue3);}
 .hpill.ia .hdot{background:var(--blue3);}
 
-.page{max-width:1440px;margin:0 auto;padding:26px;}
-.page-head{margin-bottom:22px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;}
-.page-head-txt{flex:1;min-width:0;}
+.page{max-width:1360px;padding:26px;}
+.page-head{margin-bottom:22px;}
 .page-title{font-family:var(--sans);font-weight:800;font-size:26px;color:#fff;}
 .page-sub{font-size:12.5px;color:var(--text2);margin-top:4px;}
 
-/* ── BACK BUTTON ─────────────────────────────────────────────────────── */
-.btn-back{display:inline-flex;align-items:center;gap:7px;background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:9px 14px;font-family:var(--sans);font-weight:700;font-size:12px;color:var(--text2);cursor:pointer;transition:all .15s;flex-shrink:0;text-transform:uppercase;letter-spacing:.5px;}
-.btn-back:hover{background:var(--s3);border-color:var(--blue3);color:#fff;transform:translateX(-2px);}
-.btn-back:active{transform:translateX(0);}
-.btn-back svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2.2;}
-
 /* KPI CARDS */
-.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px;}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;max-width:640px;}
 .kpi{background:var(--s2);border:1px solid var(--border);border-radius:16px;padding:16px 17px;position:relative;overflow:hidden;}
 .kpi::after{content:'';position:absolute;right:-24px;top:-24px;width:90px;height:90px;background:radial-gradient(circle,var(--kc,rgba(37,99,235,.14)),transparent 70%);}
 .kpi-top{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
@@ -90,7 +81,7 @@ button{font-family:inherit;}
 .kpi-delta.up{color:var(--green);}
 
 /* GRID LAYOUT */
-.grid-main{display:grid;grid-template-columns:1fr 1.15fr 340px;gap:18px;align-items:start;}
+.grid-main{display:grid;grid-template-columns:1fr 1fr 300px;gap:16px;align-items:start;}
 .col-a,.col-b{display:flex;flex-direction:column;gap:16px;}
 .col-c{display:flex;flex-direction:column;gap:16px;}
 
@@ -113,8 +104,7 @@ button{font-family:inherit;}
 .leaflet-container{background:var(--s3)!important;}
 
 /* Caminhão animado no header */
-.header-road{flex:1;min-width:120px;position:relative;height:24px;margin:0 12px;overflow:hidden;align-self:center;}
-@media(max-width:1180px){.header-road{display:none;}}
+.header-road{flex:1;position:relative;height:24px;margin:0 20px;overflow:hidden;align-self:center;}
 .header-road::before{content:'';position:absolute;left:0;right:0;bottom:5px;height:2px;background:var(--border2);}
 .header-road-line{position:absolute;left:0;right:0;bottom:4px;height:4px;background-image:repeating-linear-gradient(90deg,var(--blue4) 0 16px,transparent 16px 32px);background-size:200% 100%;animation:roadmove 1s linear infinite;opacity:.5;}
 @keyframes roadmove{from{background-position:0 0}to{background-position:-32px 0}}
@@ -289,17 +279,9 @@ button{font-family:inherit;}
       <svg viewBox="0 0 24 24"><path d="M9 4 3 6.5v13L9 17l6 2.5 6-2.5v-13L15 6.5 9 4z"/><path d="M9 4v13M15 6.5v13"/></svg>
       Mapa
     </div>
-    <div class="sb-item" data-page="relatorios">
-      <svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h6M9 16h6M9 8h3"/></svg>
-      Relatórios
-    </div>
     <div class="sb-item" data-page="ia">
       <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="14" rx="3"/><circle cx="9" cy="10.5" r="1.2"/><circle cx="15" cy="10.5" r="1.2"/><path d="M9 14.5c1 1 4 1 6 0M12 4V2"/></svg>
       IA Assistente
-    </div>
-    <div class="sb-item" data-page="config">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.14.36.44.66 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      Configurações
     </div>
   </nav>
   <div class="sb-footer">
@@ -313,37 +295,13 @@ button{font-family:inherit;}
 <div class="main">
   <div class="header">
     <div class="header-inner">
-      <div class="logo-wrap" data-page="dashboard" title="Voltar ao Dashboard">
-        <div class="logo-icon">
-          <svg viewBox="0 0 24 24"><rect x="1" y="4" width="13" height="12" rx="1"/><path d="M14 8h4l3 3.5V16h-7V8z"/><circle cx="5.5" cy="17.5" r="2.5"/><circle cx="18.5" cy="17.5" r="2.5"/></svg>
-        </div>
-        <div>
-          <div class="logo-name">2SL <span>LOG</span></div>
-          <span class="logo-sub">Roteirização Inteligente</span>
-        </div>
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><rect x="1" y="4" width="13" height="12" rx="1"/><path d="M14 8h4l3 3.5V16h-7V8z"/><circle cx="5.5" cy="17.5" r="2.5"/><circle cx="18.5" cy="17.5" r="2.5"/></svg>
       </div>
-      <nav class="hnav">
-        <button class="hnav-item active" data-page="dashboard">
-          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
-          Dashboard
-        </button>
-        <button class="hnav-item" data-page="pedidos">
-          <svg viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9l-6-6z"/><path d="M14 3v6h6M9 15h6M9 11h4"/></svg>
-          Pedidos
-        </button>
-        <button class="hnav-item" data-page="roteirizacao">
-          <svg viewBox="0 0 24 24"><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8.2 16.6 15.8 7.4"/></svg>
-          Roteirização
-        </button>
-        <button class="hnav-item" data-page="mapa">
-          <svg viewBox="0 0 24 24"><path d="M9 4 3 6.5v13L9 17l6 2.5 6-2.5v-13L15 6.5 9 4z"/></svg>
-          Mapa
-        </button>
-        <button class="hnav-item" data-page="ia">
-          <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="14" rx="3"/><circle cx="9" cy="10.5" r="1.2"/><circle cx="15" cy="10.5" r="1.2"/></svg>
-          IA
-        </button>
-      </nav>
+      <div>
+        <div class="logo-name">2SL <span>LOG</span></div>
+        <span class="logo-sub">Roteirização Inteligente</span>
+      </div>
       <div class="header-road">
         <div class="header-road-line"></div>
         <div class="header-truck">
@@ -360,10 +318,8 @@ button{font-family:inherit;}
   <!-- ── PÁGINA: DASHBOARD ── -->
   <div class="page" id="page-dashboard">
     <div class="page-head">
-      <div class="page-head-txt">
-        <div class="page-title">Dashboard</div>
-        <div class="page-sub" id="page-date">Visão geral das operações</div>
-      </div>
+      <div class="page-title">Dashboard</div>
+      <div class="page-sub" id="page-date">Visão geral das operações</div>
     </div>
 
     <div class="kpis">
@@ -420,115 +376,12 @@ button{font-family:inherit;}
     </div>
   </div>
 
-  <!-- ── PÁGINA: PEDIDOS / UPLOAD NF ── -->
-  <div class="page" id="page-pedidos" style="display:none">
-    <div class="page-head">
-      <div class="page-head-txt">
-        <div class="page-title">Notas Fiscais</div>
-        <div class="page-sub">Envie as notas fiscais para importar pedidos direto na roteirização.</div>
-      </div>
-      <button class="btn-back" data-page="dashboard" title="Voltar ao Dashboard">
-        <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-        Voltar
-      </button>
-    </div>
-
-    <div class="upl-grid">
-      <div>
-        <div class="upl-card">
-          <div class="upl-title">
-            <svg viewBox="0 0 24 24"><path d="M12 3v13M6 9l6-6 6 6M4 21h16"/></svg>
-            Enviar Notas Fiscais
-          </div>
-          <div class="upl-sub">Arraste os arquivos ou clique para selecionar. Aceita múltiplos arquivos.</div>
-
-          <label for="nf-input" id="nf-drop" class="drop">
-            <div class="drop-ic">
-              <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/><path d="M14 2v6h6"/><path d="M12 18v-6M9 15l3-3 3 3" stroke="#fff" fill="none" stroke-width="2"/></svg>
-            </div>
-            <div class="drop-t">Solte os arquivos aqui</div>
-            <div class="drop-s">ou clique para escolher no computador<br>PDF · XML NF-e · Excel (XLSX) · CSV</div>
-            <button type="button" class="drop-btn" id="nf-pick-btn">
-              <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="#fff" fill="none" stroke-width="2.5"/></svg>
-              Selecionar arquivos
-            </button>
-            <div class="chips">
-              <span class="chip pdf">PDF</span>
-              <span class="chip xml">XML NF-e</span>
-              <span class="chip xlsx">XLSX</span>
-              <span class="chip csv">CSV</span>
-            </div>
-          </label>
-          <input id="nf-input" type="file" multiple accept=".pdf,.xml,.xlsx,.xlsm,.csv,.txt,application/pdf,application/xml,text/xml,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display:none">
-
-          <div id="nf-files" class="file-list"></div>
-
-          <div class="upl-progress" id="nf-prog"><div class="upl-progress-bar" id="nf-prog-bar"></div></div>
-
-          <div class="upl-actions">
-            <button class="btn-primary" id="nf-send" disabled>
-              <svg viewBox="0 0 24 24"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z" fill="none" stroke="#fff" stroke-width="2"/></svg>
-              <span id="nf-send-lbl">Enviar e processar</span>
-            </button>
-            <button class="btn-ghost" id="nf-clear">Limpar</button>
-          </div>
-        </div>
-
-        <div class="upl-card" id="nf-result-card" style="display:none;margin-top:16px;">
-          <div class="upl-title"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Resultado da importação</div>
-          <div class="upl-summary">
-            <div class="upl-mini"><div class="upl-mini-v" id="rs-arq">0</div><div class="upl-mini-l">Arquivos</div></div>
-            <div class="upl-mini"><div class="upl-mini-v" id="rs-ped">0</div><div class="upl-mini-l">Pedidos lidos</div></div>
-            <div class="upl-mini"><div class="upl-mini-v" id="rs-sv">0</div><div class="upl-mini-l">Salvos no Firebase</div></div>
-          </div>
-
-          <div class="tbl-wrap" id="rs-tbl-wrap"></div>
-          <div id="rs-err"></div>
-        </div>
-      </div>
-
-      <div>
-        <div class="upl-card">
-          <div class="upl-title"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>Como funciona</div>
-          <div class="help-block">
-            <h4><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/></svg>XML NF-e</h4>
-            <ul>
-              <li>Padrão SEFAZ 4.00 (nfeProc / NFe).</li>
-              <li>Extrai <code>nNF</code>, destinatário, município, peso bruto e volumes.</li>
-            </ul>
-          </div>
-          <div class="help-block">
-            <h4><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>Excel / CSV</h4>
-            <ul>
-              <li>Precisa das colunas: <code>nf</code>, <code>cidade</code>, <code>peso</code>, <code>itens</code>.</li>
-              <li>Opcional: <code>dest</code> (destinatário).</li>
-              <li>Aceita separador <code>,</code> ou <code>;</code>; decimal <code>,</code> ou <code>.</code>.</li>
-            </ul>
-          </div>
-          <div class="help-block">
-            <h4><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/></svg>PDF (DANFE)</h4>
-            <ul>
-              <li>Extrai texto do DANFE — número da NF, município, peso bruto e volumes.</li>
-              <li>PDFs escaneados (imagem) não são suportados.</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- ── PÁGINAS PLACEHOLDER ── -->
   <div class="page" id="page-other" style="display:none">
     <button class="btn-voltar-topo" onclick="irParaPagina('dashboard')"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Voltar ao Dashboard</button>
     <div class="page-head">
-      <div class="page-head-txt">
-        <div class="page-title" id="other-title">Página</div>
-        <div class="page-sub" id="other-sub"></div>
-      </div>
-      <button class="btn-back" data-page="dashboard" title="Voltar ao Dashboard">
-        <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-        Voltar
-      </button>
+      <div class="page-title" id="other-title">Página</div>
+      <div class="page-sub" id="other-sub"></div>
     </div>
     <div class="placeholder">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 3.5M12 16.5h.01"/></svg>
@@ -571,8 +424,9 @@ button{font-family:inherit;}
         <span class="field-lbl">Capacidade máxima (kg)</span>
         <div><input type="number" class="field-inp" id="cap-kg-d" placeholder="0"></div>
         <div class="presets-row" id="presets-row-d"></div>
-        <span class="field-lbl">Máximo de pedidos por rota</span>
-        <div><input type="number" class="field-inp" id="cap-maxped-d" value="6"></div>
+        <span class="field-lbl">Máximo de pedidos nesta rota (1 a 20)</span>
+        <div><input type="number" class="field-inp" id="cap-maxped-d" value="8" min="1" max="20"></div>
+        <div style="font-size:11px;color:var(--text3);margin-top:6px">O sistema monta a melhor rota possível com até esse número — pode gerar menos se for mais eficiente.</div>
         <button class="btn-modal-primary" onclick="irConfirmD()">Continuar →</button>
         <button class="btn-modal-sec" onclick="voltarVeiculosD()">← Escolher outro veículo</button>
       </div>
@@ -612,6 +466,48 @@ button{font-family:inherit;}
       </div>
     </div>
   </div>
+
+  <!-- ── PÁGINA: ROTAS CONFIRMADAS ── -->
+  <div class="page" id="page-rotas" style="display:none">
+    <button class="btn-voltar-topo" onclick="irParaPagina('dashboard')"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Voltar ao Dashboard</button>
+    <div class="page-head">
+      <div class="page-title">Rotas</div>
+      <div class="page-sub">Rotas confirmadas e despachadas — histórico salvo no Firebase</div>
+    </div>
+    <div id="rotas-confirmadas-lista"></div>
+  </div>
+
+  <!-- ── PÁGINA: MAPA ── -->
+  <div class="page" id="page-mapa" style="display:none">
+    <button class="btn-voltar-topo" onclick="irParaPagina('dashboard')"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Voltar ao Dashboard</button>
+    <div class="page-head">
+      <div class="page-title">Mapa</div>
+      <div class="page-sub">Distribuição completa dos pedidos pendentes — sincronizado ao vivo</div>
+    </div>
+    <div id="mapa-completo" style="width:100%;height:560px;border-radius:16px;border:1px solid var(--border2);"></div>
+    <div id="mapa-completo-legenda" style="display:none;flex-wrap:wrap;gap:8px;margin-top:12px;padding:10px 14px;background:var(--s2);border:1px solid var(--border);border-radius:12px;align-items:center"></div>
+  </div>
+
+  <!-- ── PÁGINA: MOTORISTAS ── -->
+  <div class="page" id="page-motoristas" style="display:none">
+    <button class="btn-voltar-topo" onclick="irParaPagina('dashboard')"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Voltar ao Dashboard</button>
+    <div class="page-head">
+      <div class="page-title">Motoristas</div>
+      <div class="page-sub">Motoristas fixos cadastrados — clique em Roteirização pra usar direto</div>
+    </div>
+    <div class="btn-add-ag" style="margin-bottom:18px;display:inline-block" onclick="toggleFormMotorista()">+ Adicionar Motorista</div>
+    <div id="form-motorista-box" class="cap-form-box" style="display:none;margin-bottom:20px;max-width:420px">
+      <span class="field-lbl">Nome do motorista</span>
+      <input type="text" class="field-inp field-inp-text" id="mot-nome" placeholder="Ex: João Silva">
+      <span class="field-lbl" style="margin-top:14px">Veículo</span>
+      <div class="veh-grid" id="mot-veh-grid" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px"></div>
+      <span class="field-lbl">Capacidade (kg)</span>
+      <input type="number" class="field-inp" id="mot-cap-kg" placeholder="0">
+      <button class="btn-modal-primary" onclick="salvarMotorista()">Salvar Motorista</button>
+      <button class="btn-modal-sec" onclick="toggleFormMotorista()">Cancelar</button>
+    </div>
+    <div id="motoristas-lista" class="reg-cards-grid"></div>
+  </div>
 </div>
 
 <!-- ── MODAL: Agendar Entrega ── -->
@@ -643,10 +539,10 @@ button{font-family:inherit;}
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getDatabase, ref, onValue, set, update } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
-<!-- Config global (sempre carrega, mesmo sem Firebase) -->
-<script>
-window.BACKEND_URL = 'https://rotainteligente2sl-production.up.railway.app';
-window.FB_CFG = {
+// ══════════════════════════════════════════════════════════════════════════
+// CONFIG — mesmos valores do app original (index.html)
+// ══════════════════════════════════════════════════════════════════════════
+const FB_CFG = {
   apiKey:            'AIzaSyB5r3CJSf0N_bepvFDkyYVPZ9oC3tPt2w8',
   authDomain:        'slog-pedidos.firebaseapp.com',
   databaseURL:       'https://slog-pedidos-default-rtdb.firebaseio.com',
@@ -655,18 +551,14 @@ window.FB_CFG = {
   messagingSenderId: '551825837735',
   appId:             '1:551825837735:web:35b90c1fbdff468f8dd582'
 };
-</script>
+const BACKEND_URL = 'https://rotainteligente2sl-production.up.railway.app';
 
-<script type="module">
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getDatabase, ref, onValue } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-
-const app = initializeApp(window.FB_CFG);
+const app = initializeApp(FB_CFG);
 const db  = getDatabase(app);
 
-const DEPOT = { lat: -23.4566, lng: -46.5055, name: '2SL Log — Guarulhos' };
+const DEPOT = { lat: -23.424492, lng: -46.387695, name: '2SL Log — Av. Júlia Gaiolli, 740 — Guarulhos' };
 const CITY_COORDS = {
-  'Guarulhos':{lat:-23.4566,lng:-46.5055},'Santos':{lat:-23.9617,lng:-46.3322},
+  'Guarulhos':{lat:-23.424492,lng:-46.387695},'Santos':{lat:-23.9617,lng:-46.3322},
   'Guarujá':{lat:-23.9928,lng:-46.2569},'São Paulo':{lat:-23.5614,lng:-46.6559},
   'Praia Grande':{lat:-23.9864,lng:-46.4119},'Sorocaba':{lat:-23.5015,lng:-47.4581},
   'Itu':{lat:-23.2644,lng:-47.2996},'Mogi das Cruzes':{lat:-23.5234,lng:-46.1845},
@@ -742,6 +634,19 @@ function carregarPedidos(){
     const entries=Object.values(data);
     ultimaRota = entries.sort((a,b)=>new Date(b.criadoEm)-new Date(a.criadoEm))[0];
     render();
+  }, ()=>{});
+
+  // rotas confirmadas (histórico permanente) — alimenta a página Rotas + overlay do Mapa
+  onValue(ref(db,'rotas_confirmadas'), snap=>{
+    rotasFirebase = snap.val() || {};
+    if(document.getElementById('page-rotas')?.style.display==='block'){ renderRotasConfirmadas(); }
+    if(document.getElementById('page-mapa')?.style.display==='block'){ atualizarMapaCompleto(); }
+  }, ()=>{});
+
+  // motoristas cadastrados (fixos)
+  onValue(ref(db,'motoristas'), snap=>{
+    motoristasFirebase = snap.val() || {};
+    if(document.getElementById('page-motoristas')?.style.display==='block'){ renderMotoristasPage(); }
   }, ()=>{});
 }
 
@@ -851,6 +756,69 @@ function atualizarMapa(grupos){
   });
 }
 
+// Versão em página cheia do mesmo mapa — mesma fonte de dados (allOrders),
+// sempre sincronizada com o que está pendente agora.
+let mapInstFull=null, mapLayerFull=null;
+function atualizarMapaCompleto(){
+  const el=document.getElementById('mapa-completo');
+  if(!el) return;
+  const pendentes=allOrders.filter(o=>o.status==='pendente');
+  const grupos={}; REGIOES_DEF.forEach(r=>grupos[r.nome]=[]);
+  pendentes.forEach(o=>{ const k=grupos[o.cidade]?o.cidade:'Outras Cidades'; grupos[k].push(o); });
+
+  if(!mapInstFull){
+    mapInstFull=L.map('mapa-completo',{attributionControl:false}).setView([DEPOT.lat,DEPOT.lng],9.2);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(mapInstFull);
+  } else {
+    mapInstFull.invalidateSize();
+  }
+  if(mapLayerFull) mapInstFull.removeLayer(mapLayerFull);
+  mapLayerFull=L.layerGroup().addTo(mapInstFull);
+  L.circleMarker([DEPOT.lat,DEPOT.lng],{radius:9,color:'#fff',weight:2,fillColor:'#2563eb',fillOpacity:1}).addTo(mapLayerFull).bindTooltip('Base — '+DEPOT.name,{permanent:false});
+
+  REGIOES_DEF.forEach(r=>{
+    const lista=grupos[r.nome]||[];
+    const n=lista.length;
+    if(!n) return;
+    const coord=CITY_COORDS[r.nome];
+    if(!coord) return;
+    const radius=9+Math.min(28,n*1.1);
+    L.circleMarker([coord.lat,coord.lng],{radius,color:r.cor,weight:2,fillColor:r.cor,fillOpacity:.4}).addTo(mapLayerFull)
+      .bindTooltip(`<b>${r.nome}</b><br>${n} pedido(s) pendente(s)<br>${lista.reduce((s,o)=>s+(o.peso||0),0).toLocaleString('pt-BR')} kg total`);
+    L.polyline([[DEPOT.lat,DEPOT.lng],[coord.lat,coord.lng]],{color:r.cor,weight:1.4,opacity:.4,dashArray:'4,6'}).addTo(mapLayerFull);
+  });
+
+  // ── Sobreposição: rotas confirmadas em andamento (status=em_rota) ───────
+  const rotasAtivas = Object.values(rotasFirebase||{}).filter(r=>r.status==='em_rota' && (r.paradas||[]).some(p=>p.lat && p.lng));
+  const legenda = [];
+  rotasAtivas.forEach((rota, idx)=>{
+    const cor = _corDaRota(rota.id || idx);
+    const paradas = (rota.paradas||[]).filter(p=>p.lat && p.lng);
+    if(!paradas.length) return;
+    const coords = [[DEPOT.lat,DEPOT.lng], ...paradas.map(p=>[p.lat,p.lng]), [DEPOT.lat,DEPOT.lng]];
+    L.polyline(coords,{color:cor,weight:3.5,opacity:.85}).addTo(mapLayerFull)
+      .bindTooltip(`<b>${rota.motorista||''} · ${rota.veiculo||''}</b><br>${paradas.length} paradas · ${(rota.km||0).toFixed?rota.km.toFixed(1):rota.km} km`);
+    paradas.forEach((p,i)=>{
+      L.circleMarker([p.lat,p.lng],{radius:5,color:'#fff',weight:1.5,fillColor:cor,fillOpacity:.95}).addTo(mapLayerFull)
+        .bindTooltip(`${i+1}. NF ${p.nf}${p.cidade?' · '+p.cidade:''}`);
+    });
+    legenda.push({cor, txt:`${rota.motorista||'—'} · ${rota.veiculo||''} (${paradas.length} paradas)`});
+  });
+
+  // Legenda no rodapé do mapa
+  const legEl = document.getElementById('mapa-completo-legenda');
+  if(legEl){
+    if(rotasAtivas.length){
+      legEl.style.display = 'flex';
+      legEl.innerHTML = `<span style="color:var(--text3);font-size:11px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;margin-right:6px">Rotas em andamento:</span>` +
+        legenda.map(l=>`<span style="display:inline-flex;align-items:center;gap:6px;background:var(--s3);border:1px solid var(--border);border-radius:20px;padding:4px 10px;font-size:11.5px;color:var(--text2)"><span style="width:8px;height:8px;border-radius:50%;background:${l.cor};box-shadow:0 0 6px ${l.cor}"></span>${l.txt}</span>`).join('');
+    } else {
+      legEl.style.display = 'none';
+    }
+  }
+}
+window.atualizarMapaCompleto=atualizarMapaCompleto;
+
 // ── Navegação sidebar ────────────────────────────────────────────────────
 const PAGE_META = {
   pedidos:{title:'Pedidos',sub:'Lista completa e importação de notas fiscais'},
@@ -870,7 +838,7 @@ const TODAS_PAGES = ['dashboard','page-other','pedidos','roteirizacao','ia'];
 function irParaPagina(p){
   document.querySelectorAll('.sb-item').forEach(i=>i.classList.toggle('active', i.dataset.page===p));
   // esconde todas
-  ['page-dashboard','page-other','page-pedidos','page-roteirizacao','page-ia'].forEach(id=>{
+  ['page-dashboard','page-other','page-pedidos','page-roteirizacao','page-ia','page-rotas','page-mapa','page-motoristas'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.style.display='none';
   });
   if(p==='dashboard'){
@@ -881,6 +849,15 @@ function irParaPagina(p){
   } else if(p==='roteirizacao'){
     document.getElementById('page-roteirizacao').style.display='block';
     renderVeiculosD();
+  } else if(p==='rotas'){
+    document.getElementById('page-rotas').style.display='block';
+    renderRotasConfirmadas();
+  } else if(p==='mapa'){
+    document.getElementById('page-mapa').style.display='block';
+    setTimeout(()=>atualizarMapaCompleto(),50);
+  } else if(p==='motoristas'){
+    document.getElementById('page-motoristas').style.display='block';
+    renderMotoristasPage();
   } else if(p==='ia'){
     document.getElementById('page-ia').style.display='block';
   } else {
@@ -1137,7 +1114,10 @@ const VEICULOS=[
   {id:'bitruck',nome:'Bitruck',tag:'até 16t',desc:'Truck 3 eixos — cargas pesadas',presets:[10000,12000,16000],cor:'#1e40af',emoji:'🚛'},
   {id:'carreta',nome:'Carreta',tag:'até 33t',desc:'Articulada — grandes volumes',presets:[20000,27000,32000],cor:'#172554',emoji:'🚛'},
 ];
-let vehSel=null, capKgD=0, maxPedD=6, rotaGeradaD=[];
+let vehSel=null, capKgD=0, maxPedD=6, rotaGeradaD=[], fonteDistanciaD='—';
+let rotasConfirmadasDemo=[];
+let motoristasFirebase={}, motoristasDemo=[], motoristaSelecionadoD=null;
+let chatSessionId='';
 
 function renderVeiculosD(){
   document.getElementById('rot-step-veiculo').style.display='block';
@@ -1145,12 +1125,56 @@ function renderVeiculosD(){
   document.getElementById('rot-step-confirm').style.display='none';
   document.getElementById('rot-step-loading').style.display='none';
   document.getElementById('rot-step-results').style.display='none';
+  motoristaSelecionadoD=null;
+
+  // Atalho: motoristas fixos cadastrados (clica → pula direto pra confirmação)
+  const mots = modoDemo ? motoristasDemo : Object.values(motoristasFirebase);
+  const veicMap=Object.fromEntries(VEICULOS.map(v=>[v.id,v]));
+  const atalhoHtml = mots.length ? `
+    <div class="sec-title" style="font-family:var(--sans);font-weight:700;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text2);margin-bottom:12px">Motoristas fixos — clique pra usar direto</div>
+    <div class="veh-grid" style="margin-bottom:26px">${mots.map(m=>{
+      const v=veicMap[m.veiculo_id];
+      return `<div class="veh-card" style="--vc:${v?.cor||'#3b82f6'}" onclick="usarMotoristaD('${m.id}')">
+        <div class="veh-card-icon" style="font-size:24px">${v?.emoji||'🚚'}</div>
+        <div class="veh-card-name">${m.nome}</div>
+        <div class="veh-card-tag">${m.veiculo_nome} · ${(m.cap_kg||0).toLocaleString('pt-BR')}kg</div>
+        <div class="veh-card-desc">Clique pra gerar rota com este motorista</div>
+      </div>`;
+    }).join('')}</div>
+    <div class="sec-title" style="font-family:var(--sans);font-weight:700;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text2);margin-bottom:12px">Ou escolha o veículo manualmente</div>` : '';
+
   document.getElementById('veh-grid').innerHTML=VEICULOS.map(v=>
     `<div class="veh-card" style="--vc:${v.cor}" onclick="selVeicD('${v.id}')">
       <div class="veh-card-icon" style="font-size:26px">${v.emoji}</div>
       <div class="veh-card-name">${v.nome}</div><div class="veh-card-tag">${v.tag}</div>
       <div class="veh-card-desc">${v.desc}</div></div>`).join('');
+  // injeta o atalho ANTES do grid de veículos
+  const wrap=document.getElementById('rot-step-veiculo');
+  let atalhoDiv=document.getElementById('motoristas-atalho');
+  if(!atalhoDiv){
+    atalhoDiv=document.createElement('div');
+    atalhoDiv.id='motoristas-atalho';
+    wrap.insertBefore(atalhoDiv, wrap.firstChild);
+  }
+  atalhoDiv.innerHTML=atalhoHtml;
 }
+window.renderVeiculosD=renderVeiculosD;
+
+// Atalho: usa motorista fixo — preenche veículo+capacidade e vai direto pra tela de limite de pedidos
+function usarMotoristaD(motId){
+  const mots = modoDemo ? motoristasDemo : Object.values(motoristasFirebase);
+  const m=mots.find(x=>x.id===motId);
+  if(!m) return;
+  motoristaSelecionadoD=m;
+  vehSel=VEICULOS.find(v=>v.id===m.veiculo_id)||VEICULOS[0];
+  document.getElementById('cap-veh-name').textContent=`${m.nome} — ${m.veiculo_nome}`;
+  document.getElementById('cap-kg-d').value=m.cap_kg;
+  document.getElementById('cap-maxped-d').value='8';
+  document.getElementById('presets-row-d').innerHTML='';
+  document.getElementById('rot-step-veiculo').style.display='none';
+  document.getElementById('rot-step-cap').style.display='block';
+}
+window.usarMotoristaD=usarMotoristaD;
 function selVeicD(id){
   vehSel=VEICULOS.find(v=>v.id===id);
   document.getElementById('cap-veh-name').textContent=vehSel.nome;
@@ -1169,10 +1193,10 @@ window.voltarVeiculosD=voltarVeiculosD;
 function irConfirmD(){
   const kg=parseInt(document.getElementById('cap-kg-d').value);
   if(!kg||kg<=0){ alert('Informe a capacidade em kg'); return; }
-  capKgD=kg; maxPedD=parseInt(document.getElementById('cap-maxped-d').value)||6;
+  capKgD=kg; maxPedD=Math.min(20,Math.max(1,parseInt(document.getElementById('cap-maxped-d').value)||8));
   const pend=allOrders.filter(o=>o.status==='pendente').length;
   document.getElementById('confirm-veh-name').textContent=vehSel.nome;
-  document.getElementById('confirm-details-d').innerHTML=`Capacidade: <b style="color:var(--blue4)">${kg.toLocaleString('pt-BR')} kg</b><br>Máx. pedidos/rota: <b>${maxPedD}</b><br>Pedidos pendentes: <b>${pend}</b><br>Motor: OR-Tools VRP (backend)`;
+  document.getElementById('confirm-details-d').innerHTML=`Capacidade: <b style="color:var(--blue4)">${kg.toLocaleString('pt-BR')} kg</b><br>Máx. pedidos nesta rota: <b>${maxPedD}</b><br>Pedidos pendentes: <b>${pend}</b><br>Motor: OR-Tools VRP (backend)`;
   document.getElementById('rot-step-cap').style.display='none';
   document.getElementById('rot-step-confirm').style.display='block';
 }
@@ -1187,11 +1211,19 @@ async function executarVRPD(){
   try{
     const resp=await fetch(`${BACKEND_URL}/solve`,{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ pedidos:pend.map(o=>({nf:o.nf,lat:o.lat,lng:o.lng,peso:o.peso,cidade:o.cidade})), capacidade_kg:capKgD, max_paradas:maxPedD })
+      body:JSON.stringify({
+        veiculos: [{ id:vehSel.id, nome:vehSel.nome, capKg:capKgD, maxPed:maxPedD }],
+        time_limit_s: 30,
+        pedidos: pend,
+      })
     });
-    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    if(!resp.ok){
+      const err=await resp.json().catch(()=>({}));
+      throw new Error(err.detail || 'HTTP '+resp.status);
+    }
     const data=await resp.json();
-    rotaGeradaD=data.rotas||data.routes||[];
+    rotaGeradaD=data.routes||data.rotas||[];
+    fonteDistanciaD=data.fonte_distancia||'—';
     renderRotasResultD(rotaGeradaD);
   }catch(e){
     document.getElementById('rot-step-loading').style.display='none';
@@ -1215,10 +1247,243 @@ function renderRotasResultD(rotas){
       <div class="kpi"><div class="kpi-lbl">KM TOTAL</div><div class="kpi-val">${totalKm.toFixed(0)}</div></div>
     </div>
     <div class="rota-tabs-d" id="rota-tabs-d">${rotas.map((r,i)=>`<div class="rota-tab-d ${i===0?'active':''}" onclick="selRotaTabD(${i})">Rota ${i+1} · ${(r.pedidos?.length||r.paradas?.length||0)} entregas</div>`).join('')}</div>
-    <div id="rota-detail-d"></div>`;
+    <div id="rota-detail-d"></div>
+    <div id="confirmar-rota-wrap" style="margin-top:18px;max-width:640px">
+      <button class="btn-modal-primary" id="btn-confirmar-rota" onclick="confirmarRotaD()" style="margin-top:0">✔ Confirmar Saída para Entrega</button>
+      <div style="font-size:11.5px;color:var(--text3);margin-top:8px;text-align:center">Ao confirmar, os pedidos saem da lista de pendentes e a rota fica salva na aba Rotas.</div>
+    </div>`;
   selRotaTabD(0);
 }
 window.renderRotasResultD=renderRotasResultD;
+
+// Confirma TODAS as rotas geradas nesta sessão: muda status dos pedidos e salva no Firebase
+async function confirmarRotaD(){
+  if(!rotaGeradaD.length){ return; }
+  const btn=document.getElementById('btn-confirmar-rota');
+  btn.disabled=true; btn.textContent='Confirmando...';
+  try{
+    const agora=new Date().toISOString();
+    const nfsConfirmadas=[];
+    // coleta todas as NFs de todas as rotas geradas
+    rotaGeradaD.forEach(r=>{
+      (r.pedidos||r.paradas||[]).forEach(p=>{ if(p.nf) nfsConfirmadas.push(String(p.nf)); });
+    });
+    if(!nfsConfirmadas.length){ throw new Error('Nenhuma NF nas rotas.'); }
+
+    if(!modoDemo){
+      // 1) muda status de cada NF para despachado (não some, só sai de pendente)
+      const updStatus={};
+      nfsConfirmadas.forEach(nf=>{ updStatus['pedidos_rota/'+nf+'/status']='despachado'; });
+      await update(ref(db), updStatus);
+      // 2) salva a(s) rota(s) numa seção própria do Firebase (histórico permanente)
+      const rotaId='rota_'+Date.now();
+      const payloadRota={};
+      rotaGeradaD.forEach((r,i)=>{
+        const paradas=(r.pedidos||r.paradas||[]).map(p=>({nf:String(p.nf),cidade:p.cidade||'',peso:p.peso||0,lat:p.lat,lng:p.lng}));
+        payloadRota[rotaId+'_'+(i+1)]={
+          id:rotaId+'_'+(i+1), criada_em:agora, veiculo:vehSel?.nome||'', motorista:motoristaSelecionadoD?.nome||'', cap_kg:capKgD,
+          km:r.km||r.distancia_km||0, tempo_min:r.mins||r.tempo_min||0,
+          peso_total:r.peso_total||paradas.reduce((s,p)=>s+(p.peso||0),0),
+          num_paradas:paradas.length, status:'em_rota', paradas,
+        };
+      });
+      await update(ref(db,'rotas_confirmadas'),payloadRota);
+    } else {
+      // modo demo: só marca localmente
+      nfsConfirmadas.forEach(nf=>{ const o=allOrders.find(x=>String(x.nf)===nf); if(o) o.status='despachado'; });
+      rotasConfirmadasDemo.push({
+        id:'rota_'+Date.now(), criada_em:agora, veiculo:vehSel?.nome||'', motorista:motoristaSelecionadoD?.nome||'',
+        km:rotaGeradaD.reduce((s,r)=>s+(r.km||0),0),
+        num_paradas:nfsConfirmadas.length,
+        paradas:nfsConfirmadas.map(nf=>{const o=allOrders.find(x=>String(x.nf)===nf);return{nf,cidade:o?.cidade||'',peso:o?.peso||0};}),
+      });
+    }
+    // feedback e volta pro dashboard
+    btn.textContent='✔ Rota confirmada!';
+    setTimeout(()=>{
+      rotaGeradaD=[];
+      irParaPagina('rotas');
+      render();
+    },900);
+  }catch(e){
+    btn.disabled=false; btn.textContent='✔ Confirmar Saída para Entrega';
+    alert('Erro ao confirmar rota: '+e.message);
+  }
+}
+window.confirmarRotaD=confirmarRotaD;
+
+// ══════════════════════════════════════════════════════════════════════════
+// PÁGINA ROTAS — lista rotas confirmadas (Firebase ou demo)
+// ══════════════════════════════════════════════════════════════════════════
+let rotasFirebase={};  // preenchido pelo listener do Firebase
+
+// paleta de cores por rota (usada tanto no mini-map da Rotas quanto no
+// overlay do Mapa completo — mesma cor pra mesma rota nos dois lugares)
+const CORES_ROTA = ['#3b82f6','#22c55e','#f97316','#8b5cf6','#facc15','#06b6d4','#ec4899','#84cc16'];
+const _miniMaps = {};   // id → L.Map (pra invalidar/limpar antes de redesenhar)
+
+function _corDaRota(idxOuId){
+  const i = typeof idxOuId==='number' ? idxOuId
+          : Math.abs([...(String(idxOuId||''))].reduce((h,c)=>((h<<5)-h+c.charCodeAt(0))|0,0));
+  return CORES_ROTA[i % CORES_ROTA.length];
+}
+
+function desenharMiniMapaRota(rota, elId, cor){
+  const el = document.getElementById(elId);
+  if(!el || !window.L) return;
+  const paradas = (rota.paradas||[]).filter(p=>p.lat && p.lng);
+  if(!paradas.length){ el.innerHTML = '<div style="padding:22px;text-align:center;font-size:11.5px;color:var(--text3)">Rota sem coordenadas — mapa indisponível.</div>'; return; }
+
+  // limpa instância anterior (caso o Firebase re-render dispare)
+  if(_miniMaps[elId]){ _miniMaps[elId].remove(); delete _miniMaps[elId]; }
+  const map = L.map(el, {zoomControl:false, attributionControl:false, scrollWheelZoom:false});
+  _miniMaps[elId] = map;
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(map);
+
+  const coords = [[DEPOT.lat,DEPOT.lng], ...paradas.map(p=>[p.lat,p.lng]), [DEPOT.lat,DEPOT.lng]];
+  L.polyline(coords, {color:cor, weight:3, opacity:.85}).addTo(map);
+
+  // depot
+  L.circleMarker([DEPOT.lat,DEPOT.lng], {radius:6, color:'#fff', weight:2, fillColor:'#2563eb', fillOpacity:1})
+    .addTo(map).bindTooltip('Depósito');
+  // paradas numeradas
+  paradas.forEach((p,i)=>{
+    const icon = L.divIcon({
+      className:'',
+      html:`<div style="background:${cor};color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:800;border:2px solid rgba(255,255,255,.7);box-shadow:0 0 6px rgba(0,0,0,.4);">${i+1}</div>`,
+      iconSize:[22,22], iconAnchor:[11,11],
+    });
+    L.marker([p.lat,p.lng],{icon}).addTo(map)
+      .bindTooltip(`<b>${i+1}. NF ${p.nf}</b><br>${p.cidade||''}<br>${(p.peso||0).toLocaleString('pt-BR')} kg`);
+  });
+  map.fitBounds(L.latLngBounds(coords), {padding:[18,18]});
+}
+window.desenharMiniMapaRota = desenharMiniMapaRota;
+
+function renderRotasConfirmadas(){
+  const cont=document.getElementById('rotas-confirmadas-lista');
+  const lista = modoDemo
+    ? rotasConfirmadasDemo.slice().reverse()
+    : Object.values(rotasFirebase).sort((a,b)=>(b.criada_em||'').localeCompare(a.criada_em||''));
+
+  if(!lista.length){
+    cont.innerHTML=`<div class="placeholder"><svg viewBox="0 0 24 24"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg><h3>Nenhuma rota confirmada ainda</h3><p>Gere uma rota em Roteirização e clique em "Confirmar Saída para Entrega". Ela aparecerá aqui e ficará salva.</p></div>`;
+    return;
+  }
+  cont.innerHTML = lista.map((r,idx)=>{
+    const dt=r.criada_em?new Date(r.criada_em):null;
+    const dtTxt=dt?dt.toLocaleDateString('pt-BR')+' '+dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):'';
+    const paradas=r.paradas||[];
+    const cor = _corDaRota(r.id || idx);
+    const mapId = `mini-map-rota-${r.id || 'r'+idx}`;
+    return `<div class="card" style="margin-bottom:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${cor};box-shadow:0 0 8px ${cor}"></span>
+          <div>
+            <div style="font-family:var(--sans);font-weight:800;font-size:15px;color:#fff">${r.motorista?r.motorista+' — ':''}${r.veiculo||'Rota'} · ${paradas.length} paradas</div>
+            <div style="font-size:11.5px;color:var(--text3);margin-top:2px">${dtTxt}</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span style="background:rgba(37,99,235,.15);border:1px solid rgba(37,99,235,.3);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;color:var(--blue4)">${r.status==='entregue'?'✓ Entregue':'🚚 Em rota'}</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:18px;font-size:12.5px;color:var(--text2);flex-wrap:wrap;margin-bottom:12px">
+        <span>📦 <b style="color:#fff">${(r.peso_total||0).toLocaleString('pt-BR')} kg</b></span>
+        <span>🛣️ <b style="color:#fff">${(r.km||0).toFixed?(r.km).toFixed(1):r.km}</b> km</span>
+        ${r.tempo_min?`<span>⏱️ <b style="color:#fff">${r.tempo_min}</b> min</span>`:''}
+      </div>
+      <div id="${mapId}" style="height:220px;border-radius:11px;border:1px solid var(--border);margin-bottom:12px;overflow:hidden;background:var(--s3)"></div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${paradas.map((p,i)=>`<span style="background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:11px;font-family:var(--mono);color:var(--text2)"><b style="color:${cor}">${i+1}.</b> NF ${p.nf}${p.cidade?' · '+p.cidade:''}</span>`).join('')}
+      </div>
+    </div>`;
+  }).join('');
+
+  // desenha mini-mapas depois do innerHTML ter aterrissado no DOM
+  setTimeout(()=>{
+    lista.forEach((r,idx)=>{
+      const mapId = `mini-map-rota-${r.id || 'r'+idx}`;
+      desenharMiniMapaRota(r, mapId, _corDaRota(r.id || idx));
+    });
+  }, 40);
+}
+window.renderRotasConfirmadas=renderRotasConfirmadas;
+
+// ══════════════════════════════════════════════════════════════════════════
+// PÁGINA MOTORISTAS — cadastro fixo (nome + veículo + capacidade)
+// ══════════════════════════════════════════════════════════════════════════
+function toggleFormMotorista(){
+  const box=document.getElementById('form-motorista-box');
+  const abrir=box.style.display==='none';
+  box.style.display=abrir?'block':'none';
+  if(abrir){
+    document.getElementById('mot-nome').value='';
+    document.getElementById('mot-cap-kg').value='';
+    document.getElementById('mot-veh-grid').innerHTML=VEICULOS.map(v=>
+      `<div class="veh-card" style="--vc:${v.cor};padding:12px" onclick="selVeicMotorista('${v.id}',this)">
+        <div style="font-size:20px;margin-bottom:4px">${v.emoji}</div>
+        <div class="veh-card-name" style="font-size:12.5px">${v.nome}</div>
+        <div class="veh-card-tag" style="margin:3px 0 0">${v.tag}</div>
+      </div>`).join('');
+  }
+}
+window.toggleFormMotorista=toggleFormMotorista;
+
+let _vehMotoristaSel=null;
+function selVeicMotorista(id,el){
+  _vehMotoristaSel=VEICULOS.find(v=>v.id===id);
+  document.querySelectorAll('#mot-veh-grid .veh-card').forEach(c=>c.style.opacity='.5');
+  el.style.opacity='1';
+  // pré-preenche capacidade com o preset médio do veículo, se ainda vazio
+  const capInp=document.getElementById('mot-cap-kg');
+  if(!capInp.value) capInp.value=_vehMotoristaSel.presets[1];
+}
+window.selVeicMotorista=selVeicMotorista;
+
+async function salvarMotorista(){
+  const nome=document.getElementById('mot-nome').value.trim();
+  const cap=parseInt(document.getElementById('mot-cap-kg').value);
+  if(!nome){ alert('Informe o nome do motorista'); return; }
+  if(!_vehMotoristaSel){ alert('Selecione o veículo'); return; }
+  if(!cap||cap<=0){ alert('Informe a capacidade em kg'); return; }
+
+  const id='mot_'+Date.now();
+  const motorista={ id, nome, veiculo_id:_vehMotoristaSel.id, veiculo_nome:_vehMotoristaSel.nome, cap_kg:cap };
+
+  if(!modoDemo){
+    await update(ref(db,'motoristas'),{[id]:motorista});
+  } else {
+    motoristasDemo.push(motorista);
+  }
+  toggleFormMotorista();
+  renderMotoristasPage();
+}
+window.salvarMotorista=salvarMotorista;
+
+function renderMotoristasPage(){
+  const cont=document.getElementById('motoristas-lista');
+  const lista = modoDemo ? motoristasDemo : Object.values(motoristasFirebase);
+  if(!lista.length){
+    cont.innerHTML=`<div class="placeholder"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c1.2-4 4-6 7.5-6s6.3 2 7.5 6"/></svg><h3>Nenhum motorista cadastrado</h3><p>Clique em "+ Adicionar Motorista" pra cadastrar os fixos da equipe.</p></div>`;
+    return;
+  }
+  const veicMap=Object.fromEntries(VEICULOS.map(v=>[v.id,v]));
+  cont.innerHTML = lista.map(m=>{
+    const v=veicMap[m.veiculo_id];
+    return `<div class="rc-card" style="--rc:${v?.cor||'#3b82f6'}">
+      <div class="rc-card-head" style="cursor:default">
+        <div class="rc-card-icon" style="font-size:20px">${v?.emoji||'🚚'}</div>
+        <div class="rc-card-info">
+          <div class="rc-card-name">${m.nome}</div>
+          <div class="rc-card-sub">${m.veiculo_nome} · ${(m.cap_kg||0).toLocaleString('pt-BR')} kg</div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+window.renderMotoristasPage=renderMotoristasPage;
 
 function selRotaTabD(idx){
   document.querySelectorAll('.rota-tab-d').forEach((t,i)=>t.classList.toggle('active',i===idx));
@@ -1231,7 +1496,10 @@ function selRotaTabD(idx){
   document.getElementById('rota-detail-d').innerHTML=`
     <div id="rota-map"></div>
     <div class="nav-btns-d"><a href="${gmaps}" target="_blank" class="btn-nav-d gmaps">📍 Google Maps</a>${last?`<a href="https://waze.com/ul?ll=${last.lat},${last.lng}&navigate=yes" target="_blank" class="btn-nav-d waze">🚗 Waze</a>`:''}</div>
-    <div class="card" style="margin-bottom:14px"><div style="display:flex;gap:20px;font-size:13px;color:var(--text2)"><span>📦 <b style="color:#fff">${peso.toLocaleString('pt-BR')} kg</b></span><span>📍 <b style="color:#fff">${paradas.length}</b> paradas</span><span>🛣️ <b style="color:#fff">${km.toFixed(1)}</b> km</span>${mins?`<span>⏱️ <b style="color:#fff">${mins}</b> min</span>`:''}</div></div>
+    <div class="card" style="margin-bottom:14px"><div style="display:flex;gap:20px;font-size:13px;color:var(--text2);flex-wrap:wrap"><span>📦 <b style="color:#fff">${peso.toLocaleString('pt-BR')} kg</b></span><span>📍 <b style="color:#fff">${paradas.length}</b> paradas</span><span>🛣️ <b style="color:#fff">${km.toFixed(1)}</b> km</span>${mins?`<span>⏱️ <b style="color:#fff">${mins}</b> min</span>`:''}</div>
+      ${fonteDistanciaD==='Haversine'?`<div style="margin-top:10px;font-size:11.5px;color:#fbbf24;background:rgba(250,204,21,.08);border:1px solid rgba(250,204,21,.25);border-radius:8px;padding:8px 12px">⚠️ Distância calculada em linha reta (OSRM indisponível) — km real de estrada costuma ser maior.</div>`
+      :fonteDistanciaD==='OSRM'?`<div style="margin-top:10px;font-size:11px;color:var(--text3)">✓ Distância real via OSRM (rota de estrada)</div>`:''}
+    </div>
     <div>${paradas.map((p,i)=>`<div class="delivery-mini"><div class="delivery-mini-num">${i+1}</div><div style="flex:1"><div style="font-family:var(--mono);font-weight:700;font-size:13px;color:#fff">NF ${p.nf}</div><div style="font-size:11px;color:var(--text3)">${p.cidade||''} · ${p.peso||0}kg</div></div></div>`).join('')}</div>`;
   setTimeout(()=>desenharMapaRota(paradas),100);
 }
@@ -1270,18 +1538,27 @@ async function enviarChatD(){
   if(!msg) return; inp.value='';
   addChatMsg('user',msg);
   const pend=allOrders.filter(o=>o.status==='pendente');
-  const ctx=`Pedidos pendentes: ${pend.length}. Por região: ${REGIOES_DEF.map(r=>r.nome+':'+pend.filter(o=>o.cidade===r.nome).length).filter(x=>!x.endsWith(':0')).join(', ')}.`;
   const loadingId='load-'+Date.now();
   const box=document.getElementById('chat-msgs');
   const ld=document.createElement('div'); ld.className='chat-msg bot'; ld.id=loadingId; ld.textContent='...'; box.appendChild(ld); box.scrollTop=box.scrollHeight;
   try{
     const resp=await fetch(`${BACKEND_URL}/chat`,{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({ mensagem:msg, contexto:ctx })
+      body:JSON.stringify({
+        mensagem: msg,
+        session_id: chatSessionId,
+        rotas:    rotaGeradaD.length ? rotaGeradaD : null,
+        veiculo:  vehSel?.nome || null,
+        cap_kg:   capKgD || null,
+      })
     });
-    if(!resp.ok) throw new Error('HTTP '+resp.status);
+    if(!resp.ok){
+      const err=await resp.json().catch(()=>({}));
+      throw new Error(err.detail || 'HTTP '+resp.status);
+    }
     const data=await resp.json();
-    document.getElementById(loadingId).textContent=data.resposta||data.reply||data.message||'(sem resposta)';
+    chatSessionId=data.session_id||chatSessionId;
+    document.getElementById(loadingId).textContent=data.resposta||'(sem resposta)';
   }catch(e){
     document.getElementById(loadingId).textContent='Erro ao conectar ao Gemini: '+e.message+'. Verifique o backend Railway e a cota da API.';
   }
@@ -1289,153 +1566,7 @@ async function enviarChatD(){
 }
 window.enviarChatD=enviarChatD;
 
-  // ═════════════════════════════ UPLOAD NF ═══════════════════════════════
-  const nfInput   = document.getElementById('nf-input');
-  const nfDrop    = document.getElementById('nf-drop');
-  const nfPickBtn = document.getElementById('nf-pick-btn');
-  const nfFiles   = document.getElementById('nf-files');
-  const nfSend    = document.getElementById('nf-send');
-  const nfClear   = document.getElementById('nf-clear');
-  const nfProg    = document.getElementById('nf-prog');
-  const nfProgBar = document.getElementById('nf-prog-bar');
-  const nfSendLbl = document.getElementById('nf-send-lbl');
-  if(!nfInput) return; // pedidos page absent
-
-  const ACCEPT_EXT = /\.(pdf|xml|xlsx|xlsm|csv|txt)$/i;
-  const MAX_ARQ_MB = 15;
-  let selected = [];
-
-  function fmtBytes(b){
-    if(b<1024) return b+' B';
-    if(b<1024*1024) return (b/1024).toFixed(1)+' KB';
-    return (b/1024/1024).toFixed(2)+' MB';
-  }
-  function extBadge(name){
-    const ext=(name.split('.').pop()||'').toLowerCase();
-    const map={pdf:'PDF',xml:'XML',xlsx:'XLSX',xlsm:'XLSX',csv:'CSV',txt:'CSV'};
-    return map[ext] || ext.toUpperCase() || '??';
-  }
-  function toast(msg, kind){
-    document.querySelectorAll('.toast').forEach(t=>t.remove());
-    const t=document.createElement('div');
-    t.className='toast'+(kind?' '+kind:'');
-    t.textContent=msg;
-    document.body.appendChild(t);
-    setTimeout(()=>t.remove(), 4200);
-  }
-  function renderFiles(){
-    if(!selected.length){ nfFiles.innerHTML=''; nfSend.disabled=true; return; }
-    nfFiles.innerHTML = selected.map((f,i)=>{
-      const errCls = f._err ? ' err' : '';
-      return `<div class="file-row${errCls}">
-        <div class="fr-ic">${extBadge(f.name)}</div>
-        <div class="fr-name" title="${f.name}">${f.name}${f._err?` — <span style="color:var(--red)">${f._err}</span>`:''}</div>
-        <div class="fr-size">${fmtBytes(f.size)}</div>
-        <button class="fr-x" data-idx="${i}" title="Remover">×</button>
-      </div>`;
-    }).join('');
-    nfFiles.querySelectorAll('.fr-x').forEach(b=>{
-      b.addEventListener('click',()=>{ selected.splice(+b.dataset.idx,1); renderFiles(); });
-    });
-    nfSend.disabled = !selected.some(f=>!f._err);
-  }
-  function adicionarArquivos(list){
-    const novos = Array.from(list||[]);
-    for(const f of novos){
-      let err = null;
-      if(!ACCEPT_EXT.test(f.name)) err = 'formato não suportado';
-      else if(f.size > MAX_ARQ_MB*1024*1024) err = `>${MAX_ARQ_MB} MB`;
-      f._err = err;
-      if(!selected.some(s=>s.name===f.name && s.size===f.size)) selected.push(f);
-    }
-    renderFiles();
-  }
-  nfPickBtn.addEventListener('click', e=>{ e.preventDefault(); e.stopPropagation(); nfInput.click(); });
-  nfInput.addEventListener('change', e=>adicionarArquivos(e.target.files));
-  ['dragenter','dragover'].forEach(ev=>nfDrop.addEventListener(ev, e=>{
-    e.preventDefault(); e.stopPropagation(); nfDrop.classList.add('drag');
-  }));
-  ['dragleave','drop'].forEach(ev=>nfDrop.addEventListener(ev, e=>{
-    e.preventDefault(); e.stopPropagation(); nfDrop.classList.remove('drag');
-  }));
-  nfDrop.addEventListener('drop', e=>{ if(e.dataTransfer?.files) adicionarArquivos(e.dataTransfer.files); });
-  nfClear.addEventListener('click', ()=>{
-    selected=[]; renderFiles();
-    document.getElementById('nf-result-card').style.display='none';
-    nfInput.value='';
-  });
-
-  function renderResult(json){
-    const card = document.getElementById('nf-result-card');
-    card.style.display='block';
-    document.getElementById('rs-arq').textContent = json.arquivos ?? 0;
-    document.getElementById('rs-ped').textContent = (json.pedidos||[]).length;
-    document.getElementById('rs-sv').textContent  = json.salvos_fb ?? 0;
-
-    const wrap = document.getElementById('rs-tbl-wrap');
-    const rows = json.pedidos||[];
-    if(rows.length){
-      wrap.innerHTML = `<table class="tbl">
-        <thead><tr>
-          <th>NF</th><th>Destinatário</th><th>Cidade</th>
-          <th style="text-align:right">Peso (kg)</th><th style="text-align:right">Volumes</th><th>Origem</th>
-        </tr></thead>
-        <tbody>${rows.map(p=>{
-          const tag = (p.origem||'').replace('upload_','').toLowerCase();
-          return `<tr>
-            <td><b>${p.nf}</b></td>
-            <td>${p.dest||'—'}</td>
-            <td>${p.cidade}</td>
-            <td style="text-align:right;font-family:var(--mono)">${(p.peso||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
-            <td style="text-align:right;font-family:var(--mono)">${p.itens||1}</td>
-            <td><span class="badge ${tag}">${tag||'—'}</span></td>
-          </tr>`;
-        }).join('')}</tbody></table>`;
-    } else {
-      wrap.innerHTML = `<div class="empty-mini" style="padding:22px 0">Nenhum pedido foi extraído dos arquivos enviados.</div>`;
-    }
-    const errEl = document.getElementById('rs-err');
-    if((json.erros||[]).length){
-      errEl.innerHTML = `<div class="err-list">
-        <h4>Arquivos com erro</h4>
-        <ul>${json.erros.map(e=>`<li>${e.arquivo} — ${e.erro}</li>`).join('')}</ul>
-      </div>`;
-    } else { errEl.innerHTML = ''; }
-  }
-
-  async function enviarNfs(){
-    const validos = selected.filter(f=>!f._err);
-    if(!validos.length){ toast('Adicione pelo menos um arquivo válido.', 'err'); return; }
-    nfSend.disabled=true; nfClear.disabled=true;
-    nfSendLbl.textContent='Enviando…';
-    nfProg.classList.add('on');
-    nfProgBar.style.width='15%';
-    const fd = new FormData();
-    validos.forEach(f=>fd.append('arquivos', f, f.name));
-    fd.append('persistir', 'true');
-    try{
-      const resp = await fetch(`${BACKEND_URL}/upload-nf`, { method:'POST', body: fd });
-      nfProgBar.style.width='80%';
-      const json = await resp.json();
-      if(!resp.ok) throw new Error(json.detail || `HTTP ${resp.status}`);
-      nfProgBar.style.width='100%';
-      renderResult(json);
-      const nP = (json.pedidos||[]).length;
-      toast(nP
-        ? `${nP} pedido(s) importado(s) — ${json.salvos_fb||0} salvo(s) no Firebase.`
-        : `Nenhum pedido extraído dos arquivos.`,
-        nP ? 'ok' : 'err');
-    } catch(e){
-      console.error(e);
-      toast('Erro ao enviar: ' + (e.message||e), 'err');
-    } finally {
-      setTimeout(()=>{ nfProg.classList.remove('on'); nfProgBar.style.width='0%'; }, 700);
-      nfSendLbl.textContent='Enviar e processar';
-      nfSend.disabled=false; nfClear.disabled=false;
-    }
-  }
-  nfSend.addEventListener('click', enviarNfs);
-})();
+carregarPedidos();
 </script>
 </body>
 </html>

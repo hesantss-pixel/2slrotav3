@@ -23,7 +23,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from vrp_solver   import solve_vrp
-from gemini_agent import GeminiChat, analisar_rotas_geradas, consulta_unica
+from groq_agent import GroqChat as GeminiChat, consulta_unica, analisar_rotas_geradas
 from nf_parser    import parse_many
 
 try:
@@ -74,17 +74,32 @@ def _carregar_pedidos_firebase() -> list[dict]:
 def _salvar_rota_firebase(payload: dict) -> None:
     req_lib.post(_fb("rotas"), json=payload, timeout=10)
 
-def _salvar_pedido_firebase(pedido: dict) -> bool:
-    """Upsert por NF em pedidos_rota/<nf>. Retorna True em sucesso."""
+_STATUS_FINAIS = {"despachado", "entregue", "confirmado"}
+
+def _salvar_pedido_firebase(pedido: dict) -> str:
+    """
+    Upsert idempotente por NF em pedidos_rota/<nf>.
+    - Se a NF já existe com status em {despachado, entregue, confirmado}:
+      não sobrescreve (preserva o histórico).
+    - Se existe como 'pendente' ou é novo: grava.
+    Retorna: 'novo', 'atualizado', 'preservado' ou 'erro'.
+    """
     nf = str(pedido.get("nf", "")).strip()
     if not nf:
-        return False
+        return "erro"
     try:
+        atual = req_lib.get(_fb(f"pedidos_rota/{nf}"), timeout=5)
+        existente = atual.json() if atual.ok else None
+        if isinstance(existente, dict):
+            if existente.get("status") in _STATUS_FINAIS:
+                return "preservado"
+            r = req_lib.put(_fb(f"pedidos_rota/{nf}"), json=pedido, timeout=10)
+            return "atualizado" if r.ok else "erro"
         r = req_lib.put(_fb(f"pedidos_rota/{nf}"), json=pedido, timeout=10)
-        return r.ok
+        return "novo" if r.ok else "erro"
     except Exception as e:
         logger.warning("Firebase upsert falhou nf=%s: %s", nf, e)
-        return False
+        return "erro"
 
 # ── Chaves de sessão chat (em memória; escala horizontal requer Redis) ────────
 
@@ -195,9 +210,11 @@ def solve(body: SolveRequest):
         # 1. Frota (aceita formato novo e legado)
         frota = body.frota()
 
-        # 2. Pedidos
+        # 2. Pedidos — inclui tudo que NÃO foi despachado/entregue/confirmado.
+        # /solve é apenas PREVIEW; a "consumação" da NF acontece só quando o
+        # frontend chama confirmarRotaD() e grava status=despachado.
         pedidos = body.pedidos or _carregar_pedidos_firebase()
-        pendentes = [p for p in pedidos if p.get("status", "pendente") == "pendente"]
+        pendentes = [p for p in pedidos if p.get("status", "pendente") not in _STATUS_FINAIS]
 
         if not pendentes:
             return {
@@ -239,17 +256,11 @@ def solve(body: SolveRequest):
             ],
         })
 
-        # Marca pedidos roteirizados no Firebase
-        for r in routes:
-            for p in r["pedidos"]:
-                try:
-                    req_lib.patch(
-                        _fb(f"pedidos_rota/{p['nf']}"),
-                        json={"status": "roteirizado"},
-                        timeout=5,
-                    )
-                except Exception:
-                    pass
+        # NÃO marca pedidos aqui — o /solve é PREVIEW. O status muda pra
+        # "despachado" só quando o frontend chama confirmarRotaD() e o
+        # usuário aperta "Confirmar Saída para Entrega". Isso permite gerar
+        # várias previews (com veículos/capacidades diferentes) sem "queimar"
+        # os pedidos pendentes.
 
         # 4. Análise Gemini
         try:
@@ -352,22 +363,25 @@ async def upload_nf(
     pedidos = resultado["pedidos"]
     erros   = resultado["erros"]
 
-    salvos = 0
+    resumo = {"novo": 0, "atualizado": 0, "preservado": 0, "erro": 0}
     if persistir and pedidos:
         for p in pedidos:
-            if _salvar_pedido_firebase(p):
-                salvos += 1
+            r = _salvar_pedido_firebase(p)
+            resumo[r] = resumo.get(r, 0) + 1
 
-    logger.info("Upload NF: %d arquivos, %d pedidos extraídos, %d salvos, %d erros",
-                len(arquivos), len(pedidos), salvos, len(erros))
+    logger.info("Upload NF: %d arquivos, %d extraídos, novos=%d atualizados=%d preservados=%d erros=%d",
+                len(arquivos), len(pedidos),
+                resumo["novo"], resumo["atualizado"], resumo["preservado"], resumo["erro"])
 
     return {
-        "status":     "ok" if pedidos else "vazio",
-        "arquivos":   len(arquivos),
-        "pedidos":    pedidos,
-        "salvos_fb":  salvos,
-        "erros":      erros,
-        "persistido": persistir,
+        "status":       "ok" if pedidos else "vazio",
+        "arquivos":     len(arquivos),
+        "pedidos":      pedidos,
+        # salvos_fb mantido pra compat com frontend antigo (soma novos+atualizados)
+        "salvos_fb":    resumo["novo"] + resumo["atualizado"],
+        "resumo":       resumo,
+        "erros":        erros + ([{"arquivo":"—","erro":"falha ao gravar no Firebase"}] if resumo["erro"] else []),
+        "persistido":   persistir,
     }
 
 
