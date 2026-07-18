@@ -23,7 +23,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from vrp_solver   import solve_vrp
-from gemini_agent import GeminiChat, analisar_rotas_geradas, consulta_unica
+from groq_agent import GroqChat as GeminiChat, consulta_unica, analisar_rotas_geradas
 from nf_parser    import parse_many
 
 try:
