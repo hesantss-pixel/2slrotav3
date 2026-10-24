@@ -442,6 +442,9 @@ body:not(.autorizado)>.sidebar,body:not(.autorizado)>.main,body:not(.autorizado)
 .nf-mini-code .tipo-tag,.delivery-mini .tipo-tag,.search-item-nf .tipo-tag,.li-title .tipo-tag{margin-left:7px;}
 .delivery-mini-num.c{background:#fff;border:2px solid var(--navy);color:var(--navy);}
 .kpi-split{font-size:11.5px;font-weight:600;color:var(--text2);margin-top:6px;}
+.leaflet-container .leaflet-control-attribution{font-size:9.5px;background:rgba(255,255,255,.8);}
+.aprox{font-family:var(--body);font-size:10px;font-weight:700;color:#8a5a06;background:#fff3df;border:1px solid #f6dca6;border-radius:6px;padding:1px 6px;margin-left:7px;white-space:nowrap;}
+.mapa-nota{font-size:12px;line-height:1.5;color:#8a5a06;background:#fff8ea;border:1px solid #f6dca6;border-radius:10px;padding:8px 12px;margin:-6px 0 12px;}
 @media(max-width:520px){#rot-tipo{display:grid;grid-template-columns:1fr 1fr;}#rot-tipo button[data-v="todos"]{grid-column:1/-1;}.seg button{padding:8px 12px;}}
 .dup{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 .hora-par{display:flex;align-items:center;gap:8px;}
@@ -1186,12 +1189,50 @@ function render(){
   renderFiltros();
 }
 
+// ── Fundo dos mapas ───────────────────────────────────────────────────────
+// A CARTO passou a exigir chave (set/2026; grátis para uso comercial até 1 milhão
+// de blocos por mês). Sem chave, o fundo é o do OpenStreetMap, com o crédito exigido.
+// Ao colocar a chave, confira na documentação da CARTO o nome do parâmetro na URL.
+const CARTO_KEY = '';
+function _fundoMapa(map){
+  const url = CARTO_KEY
+    ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?api_key='+encodeURIComponent(CARTO_KEY)
+    : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+  L.control.attribution({prefix:false}).addTo(map);
+  L.tileLayer(url,{maxZoom:19, attribution: CARTO_KEY ? '© OpenStreetMap · © CARTO' : '© OpenStreetMap'}).addTo(map);
+}
+// Paradas no mesmo lugar (até 30 m) viram um marcador só: "1–3" ou "2·5"
+function _agruparParadas(paradas){
+  const grupos=[];
+  paradas.forEach((p,i)=>{
+    if(!Number.isFinite(p.lat)||!Number.isFinite(p.lng)) return;
+    const g=grupos.find(x=>_haversineKm(x,p)<0.03);
+    if(g) g.idx.push(i); else grupos.push({lat:p.lat,lng:p.lng,idx:[i]});
+  });
+  return grupos;
+}
+function _rotuloGrupo(idx){
+  const n=idx.map(i=>i+1);
+  if(n.length===1) return String(n[0]);
+  return n.every((v,k)=>!k||v===n[k-1]+1) ? `${n[0]}–${n[n.length-1]}` : n.join('·');
+}
+function _iconeGrupo(paradas,g,cor,tam){
+  const col=g.idx.every(i=>_tipoDe(paradas[i])==='coleta'), txt=_rotuloGrupo(g.idx);
+  const larg=Math.max(tam, 12+txt.length*7);
+  return L.divIcon({className:'', iconSize:[larg,tam], iconAnchor:[larg/2,tam/2],
+    html:`<div style="background:${col?'#fff':cor};color:${col?cor:'#fff'};min-width:${tam}px;height:${tam}px;padding:0 6px;border-radius:${tam}px;display:flex;align-items:center;justify-content:center;font:800 ${tam>24?12:11}px sans-serif;border:2px solid ${col?cor:'#fff'};box-sizing:border-box;box-shadow:0 1px 4px rgba(13,27,46,.3);white-space:nowrap">${txt}</div>`});
+}
+function _textoGrupo(paradas,g){
+  return g.idx.map(i=>{ const p=paradas[i]; return `<b>${i+1}.</b> ${_tipoDe(p)==='coleta'?'Coleta':'Entrega'} · NF ${esc(p.nf)}${p.dest&&p.dest!==p.cidade?' — '+esc(p.dest):''}`; }).join('<br>')
+    + (g.idx.length>1?'<br><span style="color:#8a5a06">Mesmo ponto no mapa</span>':'');
+}
+
 // ── Mapa Leaflet ─────────────────────────────────────────────────────────
 let mapInst=null, mapLayer=null;
 function atualizarMapa(regioes){
   if(!mapInst){
     mapInst=L.map('mapa-dist',{zoomControl:false,attributionControl:false}).setView([DEPOT.lat,DEPOT.lng],8.4);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(mapInst);
+    _fundoMapa(mapInst);
   }
   if(mapLayer) mapInst.removeLayer(mapLayer);
   mapLayer=L.layerGroup().addTo(mapInst);
@@ -1223,7 +1264,7 @@ function atualizarMapaCompleto(){
 
   if(!mapInstFull){
     mapInstFull=L.map('mapa-completo',{attributionControl:false}).setView([DEPOT.lat,DEPOT.lng],9.2);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(mapInstFull);
+    _fundoMapa(mapInstFull);
   } else {
     mapInstFull.invalidateSize();
   }
@@ -1967,7 +2008,7 @@ function renderRotasResultD(rotas){
       <div class="kpi"><div class="kpi-lbl">KM TOTAL</div><div class="kpi-val">${totalKm.toFixed(0)}</div></div>
     </div>
     ${regraCargaD==='soma_entregas_e_coletas'?'<div class="import-msg show warn" style="max-width:640px;margin:0 0 16px">Nesta rota o peso das entregas e das coletas foi somado para caber no veículo (regra mais conservadora).</div>':''}
-    ${naoAlocD.length?`<div class="import-msg show warn" style="max-width:640px;margin:0 0 16px">${_plural(naoAlocD.length,'pedido ficou','pedidos ficaram')} de fora desta viagem${foraJanelaD.length?` (${foraJanelaD.length} com horário que não dá para cumprir saindo às ${_hhmm(rotaCtxD.saida)})`:''}: NF ${naoAlocD.slice(0,12).map(esc).join(', ')}${naoAlocD.length>12?'…':''}. Continuam pendentes para outra viagem.</div>`:''}
+    ${naoAlocD.length?`<div class="import-msg show info" style="max-width:640px;margin:0 0 16px">Esta viagem levou <b>${totalE} de ${totalE+naoAlocD.length}</b> pedidos: o limite foi de ${maxPedD} paradas e ${capKgD.toLocaleString('pt-BR')} kg. Os outros ${naoAlocD.length} continuam pendentes para a próxima viagem (gere outra com o próximo veículo).${foraJanelaD.length?` Atenção: ${_plural(foraJanelaD.length,'pedido tem','pedidos têm')} horário que não dá para cumprir saindo às ${_hhmm(rotaCtxD.saida)} (NF ${foraJanelaD.slice(0,8).map(esc).join(', ')}).`:''}</div>`:''}
     <div class="rota-tabs-d" id="rota-tabs-d">${rotas.map((r,i)=>`<div class="rota-tab-d ${i===0?'active':''}" onclick="selRotaTabD(${i})">Rota ${i+1} · ${(r.pedidos?.length||r.paradas?.length||0)} paradas</div>`).join('')}</div>
     <div id="rota-detail-d"></div>
     <div id="confirmar-rota-wrap" style="margin-top:18px;max-width:640px">
@@ -2167,24 +2208,15 @@ function desenharMiniMapaRota(rota, elId, cor){
   if(_miniMaps[elId]){ _miniMaps[elId].remove(); delete _miniMaps[elId]; }
   const map = L.map(el, {zoomControl:false, attributionControl:false, scrollWheelZoom:false});
   _miniMaps[elId] = map;
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(map);
+  _fundoMapa(map);
 
   const coords = [[DEPOT.lat,DEPOT.lng], ...paradas.map(p=>[p.lat,p.lng]), [DEPOT.lat,DEPOT.lng]];
   L.polyline(coords, {color:cor, weight:3, opacity:.85}).addTo(map);
-
-  // depot
   L.circleMarker([DEPOT.lat,DEPOT.lng], {radius:6, color:'#fff', weight:2, fillColor:'#e09c12', fillOpacity:1})
     .addTo(map).bindTooltip(esc(DEPOT.name));
-  // paradas numeradas (coleta: círculo vazado)
-  paradas.forEach((p,i)=>{
-    const col=_tipoDe(p)==='coleta';
-    const icon = L.divIcon({
-      className:'',
-      html:`<div style="background:${col?'#fff':cor};color:${col?cor:'#fff'};width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:800;border:2px solid ${col?cor:'rgba(255,255,255,.7)'};box-shadow:0 0 6px rgba(22,53,42,.22);">${i+1}</div>`,
-      iconSize:[22,22], iconAnchor:[11,11],
-    });
-    L.marker([p.lat,p.lng],{icon}).addTo(map)
-      .bindTooltip(`<b>${i+1}. ${col?'Coleta':'Entrega'} · NF ${esc(p.nf)}</b><br>${esc(p.cidade||'')}<br>${(p.peso||0).toLocaleString('pt-BR')} kg`);
+  // paradas numeradas (coleta: vazado); no mesmo ponto viram um marcador só
+  _agruparParadas(paradas).forEach(g=>{
+    L.marker([g.lat,g.lng],{icon:_iconeGrupo(paradas,g,cor,22)}).addTo(map).bindTooltip(_textoGrupo(paradas,g));
   });
   map.fitBounds(L.latLngBounds(coords), {padding:[18,18]});
 }
@@ -2407,12 +2439,13 @@ function selRotaTabD(idx){
   const km=r.km||r.distancia_km||0, mins=r.mins||r.tempo_min||0, peso=r.peso_total||paradas.reduce((s,p)=>s+(p.peso||0),0);
   document.getElementById('rota-detail-d').innerHTML=`
     <div id="rota-map"></div>
+    ${paradas.some(p=>p.geoStatus&&p.geoStatus!=='ok')?`<div class="mapa-nota">⚠️ ${_plural(paradas.filter(p=>p.geoStatus&&p.geoStatus!=='ok').length,'parada está','paradas estão')} sem endereço exato (sem CEP ou CEP não localizado). Elas aparecem no centro da cidade, umas em cima das outras, e a ordem e os km delas são aproximados. Com o XML da nota, cada uma vai para a rua certa.</div>`:''}
     <div class="nav-btns-d"><a href="${gmaps}" target="_blank" class="btn-nav-d gmaps">📍 Google Maps</a>${last?`<a href="https://waze.com/ul?ll=${last.lat},${last.lng}&navigate=yes" target="_blank" class="btn-nav-d waze">🚗 Waze</a>`:''}</div>
     <div class="card" style="margin-bottom:14px"><div style="display:flex;gap:20px;font-size:13px;color:var(--text2);flex-wrap:wrap"><span>📦 <b style="color:var(--text)">${peso.toLocaleString('pt-BR')} kg</b></span><span>📍 <b style="color:var(--text)">${paradas.length}</b> paradas</span>${_contarTipos(paradas).coleta&&_contarTipos(paradas).entrega?`<span>🚚 sai com <b style="color:var(--text)">${_perfilCarga(paradas).saida.toLocaleString('pt-BR')} kg</b> · no máximo <b style="color:var(--text)">${_perfilCarga(paradas).max.toLocaleString('pt-BR')} kg</b> a bordo</span>`:''}<span>🛣️ <b style="color:var(--text)">${km.toFixed(1)}</b> km</span>${mins?`<span>⏱️ <b style="color:var(--text)">${mins}</b> min</span>`:''}</div>
       ${fonteDistanciaD==='Haversine'?`<div style="margin-top:10px;font-size:11.5px;color:#8a5a06;background:rgba(250,204,21,.16);border:1px solid rgba(202,138,4,.35);border-radius:8px;padding:8px 12px">⚠️ Distância calculada em linha reta (OSRM indisponível) — km real de estrada costuma ser maior.</div>`
       :fonteDistanciaD==='OSRM'?`<div style="margin-top:10px;font-size:11px;color:var(--text3)">✓ Distância real via OSRM (rota de estrada)</div>`:''}
     </div>
-    <div>${paradas.map((p,i)=>`<div class="delivery-mini"><div class="delivery-mini-num${_tipoDe(p)==='coleta'?' c':''}">${i+1}</div><div style="flex:1;min-width:0"><div style="font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text)">NF ${esc(p.nf)}${_tag(p)}${p.chegada_min!=null?`<span class="cheg">~${_hhmm(p.chegada_min)}</span>`:''}</div><div style="font-size:11px;color:var(--text3)">${p.janela_ini!=null?`Horário ${_hhmm(p.janela_ini)}–${_hhmm(p.janela_fim)} · `:''}${p.dest&&p.dest!==p.cidade?esc(p.dest)+' · ':''}${p.endereco?esc(p.endereco)+' · ':''}${esc(p.cidade||'')} · ${(+p.peso||0).toLocaleString('pt-BR')} kg</div></div></div>`).join('')}</div>`;
+    <div>${paradas.map((p,i)=>`<div class="delivery-mini"><div class="delivery-mini-num${_tipoDe(p)==='coleta'?' c':''}">${i+1}</div><div style="flex:1;min-width:0"><div style="font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text)">NF ${esc(p.nf)}${_tag(p)}${p.chegada_min!=null?`<span class="cheg">~${_hhmm(p.chegada_min)}</span>`:''}${p.geoStatus&&p.geoStatus!=='ok'?'<span class="aprox">local aproximado</span>':''}</div><div style="font-size:11px;color:var(--text3)">${p.janela_ini!=null?`Horário ${_hhmm(p.janela_ini)}–${_hhmm(p.janela_fim)} · `:''}${p.dest&&p.dest!==p.cidade?esc(p.dest)+' · ':''}${p.endereco?esc(p.endereco)+' · ':''}${esc(p.cidade||'')} · ${(+p.peso||0).toLocaleString('pt-BR')} kg</div></div></div>`).join('')}</div>`;
   setTimeout(()=>desenharMapaRota(paradas),100);
 }
 window.selRotaTabD=selRotaTabD;
@@ -2421,17 +2454,15 @@ let rotaMapInst=null;
 function desenharMapaRota(paradas){
   if(rotaMapInst){ rotaMapInst.remove(); rotaMapInst=null; }
   rotaMapInst=L.map('rota-map',{attributionControl:false}).setView([DEPOT.lat,DEPOT.lng],10);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(rotaMapInst);
-  L.circleMarker([DEPOT.lat,DEPOT.lng],{radius:7,color:'#fff',weight:2,fillColor:'#e09c12',fillOpacity:1}).addTo(rotaMapInst).bindTooltip('Saída — '+DEPOT.name);
+  _fundoMapa(rotaMapInst);
+  L.circleMarker([DEPOT.lat,DEPOT.lng],{radius:7,color:'#fff',weight:2,fillColor:'#e09c12',fillOpacity:1}).addTo(rotaMapInst).bindTooltip('Saída — '+esc(DEPOT.name));
   const pts=[[DEPOT.lat,DEPOT.lng]];
-  paradas.forEach((p,i)=>{
-    const col=_tipoDe(p)==='coleta';
-    const mk=L.divIcon({className:'',html:`<div style="background:${col?'#fff':'#0d1b2e'};color:${col?'#0d1b2e':'#fff'};width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;border:2px solid ${col?'#0d1b2e':'#fff'};font-family:sans-serif;box-sizing:border-box">${i+1}</div>`,iconSize:[28,28],iconAnchor:[14,14]});
-    L.marker([p.lat,p.lng],{icon:mk}).addTo(rotaMapInst).bindTooltip(`${col?'Coleta':'Entrega'} · NF ${esc(p.nf)}`);
-    pts.push([p.lat,p.lng]);
-  });
+  paradas.forEach(p=>{ if(Number.isFinite(p.lat)&&Number.isFinite(p.lng)) pts.push([p.lat,p.lng]); });
   pts.push([DEPOT.lat,DEPOT.lng]);
   L.polyline(pts,{color:'#2f6fe4',weight:3,opacity:.7,dashArray:'6,5'}).addTo(rotaMapInst);
+  _agruparParadas(paradas).forEach(g=>{
+    L.marker([g.lat,g.lng],{icon:_iconeGrupo(paradas,g,'#0d1b2e',28)}).addTo(rotaMapInst).bindTooltip(_textoGrupo(paradas,g));
+  });
   rotaMapInst.fitBounds(pts,{padding:[40,40]});
 }
 

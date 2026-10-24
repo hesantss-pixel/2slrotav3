@@ -73,6 +73,14 @@ Onde fica no banco: `entregador/<código>` com `info`, `paradas` (sem as chaves 
 vale. A foto fica no próprio banco (não precisa de plano pago); o plano gratuito do Firebase
 guarda 1 GB, o que dá alguns milhares de fotos.
 
+## Fundo dos mapas
+
+O fundo dos mapas é o do **OpenStreetMap** (com o crédito exigido). O da CARTO (Voyager), usado
+antes, passou a exigir chave em set/2026 e mostrava "API KEY REQUIRED". A chave da CARTO é
+grátis (uso comercial até 1 milhão de blocos por mês); com ela, preencha `CARTO_KEY` no
+`index.html` e confira o nome do parâmetro na documentação da CARTO. Paradas no mesmo ponto
+(até 30 m) aparecem num marcador só ("1–6"), e paradas sem endereço exato são avisadas.
+
 ## Janela de horário (agendados)
 
 - Agendar pede **"Chegar entre"** início e fim (sem fim: 1 hora). Agendamentos antigos, só com
