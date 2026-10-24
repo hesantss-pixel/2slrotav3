@@ -4,9 +4,10 @@ vrp_solver.py — Motor de roteirização (OR-Tools VRP) do ROTAV3
 Resolve Vehicle Routing Problem com:
   - Capacidade por peso (kg)
   - Limite de paradas por veículo
-  - Janelas de tempo (VRPTW) para pedidos agendados
+  - Limite de 8 horas por viagem (estrada + 15 min por parada)
   - Penalidade por pedido não atendido (solução parcial)
   - Suporte a múltiplos veículos
+  - Coletas e entregas na mesma viagem (entregas primeiro, coletas depois)
 
 Dependências:
     pip install ortools requests
@@ -24,8 +25,10 @@ logger = logging.getLogger(__name__)
 
 # ── Tipos ──────────────────────────────────────────────────────────────────────
 
-class Pedido(TypedDict):
+class Pedido(TypedDict, total=False):
+    id: str            # chave do pedido no banco (pode ser diferente do número da NF)
     nf: str
+    tipo: str          # "entrega" (padrão) ou "coleta"
     dest: str
     cidade: str
     peso: float        # kg
@@ -49,6 +52,9 @@ class RotaResultado(TypedDict):
     mins: int
     peso_total: float
     itens_total: int
+    entregas: int
+    coletas: int
+    carga_maxima_kg: int
     sequencia_coords: list[dict]  # [{lat, lng}] para desenhar no mapa
 
 # ── Constantes ─────────────────────────────────────────────────────────────────
@@ -127,7 +133,70 @@ def build_distance_matrix(points: list[dict]) -> tuple[list[list[int]], list[lis
         return d, t, "Haversine"
 
 
+# ── Coletas e entregas ─────────────────────────────────────────────────────────
+#
+# Cada pedido é uma ENTREGA (leva do centro de distribuição até o destinatário)
+# ou uma COLETA (busca no remetente e traz para o centro de distribuição).
+# Pedido sem "tipo" é entrega (era assim antes desta versão).
+#
+# Na mesma viagem, o veículo sai com todas as entregas, faz as entregas e só
+# depois começa as coletas. Assim a carga a bordo nunca passa da capacidade:
+# na saída é o peso das entregas e, no fim, o peso das coletas.
+
+def _tipo(p: dict) -> str:
+    return "coleta" if str(p.get("tipo", "")).strip().lower() == "coleta" else "entrega"
+
+
+def _kg(p: dict) -> int:
+    """Peso inteiro em kg, arredondado para cima (nunca subestima a carga)."""
+    try:
+        return max(0, int(math.ceil(float(p.get("peso") or 0))))
+    except (TypeError, ValueError):
+        return 0
+
+
+def perfil_carga(pedidos_em_ordem: list[dict]) -> dict:
+    """Carga a bordo ao longo da viagem, na ordem das paradas."""
+    carga = sum(_kg(p) for p in pedidos_em_ordem if _tipo(p) == "entrega")
+    saida = maxima = carga
+    for p in pedidos_em_ordem:
+        carga += _kg(p) if _tipo(p) == "coleta" else -_kg(p)
+        maxima = max(maxima, carga)
+    return {"saida_kg": saida, "retorno_kg": carga, "maxima_kg": maxima}
+
+
+def _entrega_depois_de_coleta(pedidos_em_ordem: list[dict]) -> bool:
+    viu_coleta = False
+    for p in pedidos_em_ordem:
+        if _tipo(p) == "coleta":
+            viu_coleta = True
+        elif viu_coleta:
+            return True
+    return False
+
+
+def _rotas_dentro_da_regra(routes: list[dict], veiculos: list[dict]) -> bool:
+    caps = {v["id"]: int(v["capKg"]) for v in veiculos}
+    maxp = {v["id"]: int(v["maxPed"]) for v in veiculos}
+    for r in routes:
+        peds = r["pedidos"]
+        if perfil_carga(peds)["maxima_kg"] > caps.get(r["veiculo_id"], 0):
+            return False
+        if len(peds) > maxp.get(r["veiculo_id"], 0) or _entrega_depois_de_coleta(peds):
+            return False
+    return True
+
+
 # ── OR-Tools VRP ───────────────────────────────────────────────────────────────
+
+STATUS_MAP = {
+    0: "não encontrada",
+    1: "ótima",
+    2: "viável",
+    3: "inviável",
+    4: "sem modelo",
+}
+
 
 def solve_vrp(
     pedidos: list[Pedido],
@@ -140,7 +209,7 @@ def solve_vrp(
 
     Parâmetros
     ----------
-    pedidos      : lista de pedidos pendentes com lat/lng
+    pedidos      : lista de pedidos pendentes com lat/lng (e "tipo": entrega | coleta)
     veiculos     : lista de veículos disponíveis
     time_limit_s : tempo máximo do solver em segundos
     deposito     : {lat, lng, nome} de onde as rotas saem (padrão: DEPOT)
@@ -152,6 +221,8 @@ def solve_vrp(
         "nao_alocados": [nf, ...],
         "fonte_distancia": "OSRM" | "Haversine",
         "solver_status": str,
+        "regra_carga": "so_entregas" | "so_coletas" | "entregas_antes_das_coletas"
+                       | "soma_entregas_e_coletas",
     }
     """
     # Import tardio para não travar se OR-Tools não estiver instalado
@@ -164,22 +235,55 @@ def solve_vrp(
         ) from e
 
     if not pedidos:
-        return {"routes": [], "nao_alocados": [], "fonte_distancia": "—", "solver_status": "vazio"}
+        return {"routes": [], "nao_alocados": [], "fonte_distancia": "—",
+                "solver_status": "vazio", "regra_carga": "—"}
 
     dep = deposito if deposito and deposito.get("lat") is not None and deposito.get("lng") is not None else DEPOT
 
-    # ── 1. Pontos: depósito (índice 0) + pedidos ──────────────────────────────
+    # Pontos: depósito (índice 0) + pedidos
     points = [{"lat": float(dep["lat"]), "lng": float(dep["lng"])}] + [{"lat": p["lat"], "lng": p["lng"]} for p in pedidos]
-    n_nodes   = len(points)
-    n_veics   = len(veiculos)
-
     dist_mx, dur_mx, fonte = build_distance_matrix(points)
 
-    # ── 2. Cria modelo ────────────────────────────────────────────────────────
+    tipos = [_tipo(p) for p in pedidos]
+    misto = "coleta" in tipos and "entrega" in tipos
+
+    def rodar(modo: str, limite: int) -> dict:
+        return _resolver(pywrapcp, routing_enums_pb2, pedidos, tipos, veiculos,
+                         dep, dist_mx, dur_mx, limite, modo)
+
+    if not misto:
+        res = rodar("simples", time_limit_s)
+        regra = "so_coletas" if tipos[0] == "coleta" else "so_entregas"
+    else:
+        try:
+            res = rodar("ordem", time_limit_s)
+            if not _rotas_dentro_da_regra(res["routes"], veiculos):
+                raise ValueError("rota mista fora da regra de carga")
+            regra = "entregas_antes_das_coletas"
+        except Exception as exc:
+            # Plano B, sempre seguro: soma entregas + coletas na capacidade
+            # (a carga a bordo nunca passa dessa soma, em qualquer ordem).
+            logger.warning("Rota mista: usando a soma das cargas (%s)", exc)
+            res = rodar("simples", min(time_limit_s, 15))
+            regra = "soma_entregas_e_coletas"
+
+    res["fonte_distancia"] = fonte
+    res["regra_carga"] = regra
+    return res
+
+
+def _resolver(pywrapcp, routing_enums_pb2, pedidos, tipos, veiculos, dep,
+              dist_mx, dur_mx, time_limit_s, modo) -> dict:
+    """Monta e resolve o modelo. modo: "simples" (uma soma de peso) ou
+    "ordem" (entregas e coletas separadas, entregas antes das coletas)."""
+    n_nodes = len(pedidos) + 1
+    n_veics = len(veiculos)
+
+    # ── Cria modelo ───────────────────────────────────────────────────────────
     manager = pywrapcp.RoutingIndexManager(n_nodes, n_veics, 0)
     routing = pywrapcp.RoutingModel(manager)
 
-    # ── 3. Callback de distância ──────────────────────────────────────────────
+    # ── Callback de distância ─────────────────────────────────────────────────
     def dist_cb(from_idx, to_idx):
         i = manager.IndexToNode(from_idx)
         j = manager.IndexToNode(to_idx)
@@ -188,7 +292,7 @@ def solve_vrp(
     transit_cb_idx = routing.RegisterTransitCallback(dist_cb)
     routing.SetArcCostEvaluatorOfAllVehicles(transit_cb_idx)
 
-    # ── 4. Callback de duração (para janelas de tempo) ────────────────────────
+    # ── Callback de duração (para janelas de tempo) ───────────────────────────
     def dur_cb(from_idx, to_idx):
         i = manager.IndexToNode(from_idx)
         j = manager.IndexToNode(to_idx)
@@ -196,51 +300,60 @@ def solve_vrp(
 
     dur_cb_idx = routing.RegisterTransitCallback(dur_cb)
 
-    # ── 5. Dimensão tempo (VRPTW) ─────────────────────────────────────────────
+    # ── Dimensão tempo ────────────────────────────────────────────────────────
     routing.AddDimension(
         dur_cb_idx,
-        slack_max=3600,          # espera máxima em um nó (1 hora)
-        capacity=8 * 3600,       # janela do dia: 8 horas
-        fix_start_cumul_to_zero=True,
-        name="Tempo",
+        3600,          # espera máxima em um nó (1 hora)
+        8 * 3600,      # janela do dia: 8 horas
+        True,
+        "Tempo",
     )
 
-    # ── 6. Dimensão capacidade (peso) ─────────────────────────────────────────
-    def demand_cb(idx):
-        node = manager.IndexToNode(idx)
-        if node == 0:
-            return 0
-        return int(pedidos[node - 1]["peso"])
-
-    demand_cb_idx = routing.RegisterUnaryTransitCallback(demand_cb)
-
-    # Cada veículo tem sua própria capacidade — define por veículo
+    # ── Capacidade (peso) ─────────────────────────────────────────────────────
     caps = [int(v["capKg"]) for v in veiculos]
-    routing.AddDimensionWithVehicleCapacity(
-        demand_cb_idx,
-        slack_max=0,
-        vehicle_capacities=caps,
-        fix_start_cumul_to_zero=True,
-        name="Peso",
-    )
 
-    # ── 7. Limite de paradas por veículo ──────────────────────────────────────
+    def demanda(filtro):
+        def cb(idx):
+            node = manager.IndexToNode(idx)
+            if node == 0 or (filtro and tipos[node - 1] != filtro):
+                return 0
+            return _kg(pedidos[node - 1])
+        return routing.RegisterUnaryTransitCallback(cb)
+
+    if modo == "ordem":
+        # Peso das entregas (o que sai carregado) e das coletas (o que volta):
+        # cada um cabe na capacidade.
+        routing.AddDimensionWithVehicleCapacity(demanda("entrega"), 0, caps, True, "PesoEntregas")
+        routing.AddDimensionWithVehicleCapacity(demanda("coleta"), 0, caps, True, "PesoColetas")
+        # "Fase" conta as coletas já feitas; uma entrega só acontece com zero coletas antes.
+        fase_cb = routing.RegisterUnaryTransitCallback(
+            lambda idx: 1 if manager.IndexToNode(idx) != 0 and tipos[manager.IndexToNode(idx) - 1] == "coleta" else 0
+        )
+        routing.AddDimension(fase_cb, 0, n_nodes, True, "Fase")
+        fase = routing.GetDimensionOrDie("Fase")
+        for node in range(1, n_nodes):
+            if tipos[node - 1] == "entrega":
+                fase.CumulVar(manager.NodeToIndex(node)).SetRange(0, 0)
+    else:
+        routing.AddDimensionWithVehicleCapacity(demanda(None), 0, caps, True, "Peso")
+
+    # ── Limite de paradas por veículo ─────────────────────────────────────────
     count_cb_idx = routing.RegisterUnaryTransitCallback(
         lambda idx: 0 if manager.IndexToNode(idx) == 0 else 1
     )
     routing.AddDimensionWithVehicleCapacity(
         count_cb_idx,
-        slack_max=0,
-        vehicle_capacities=[int(v["maxPed"]) for v in veiculos],
-        fix_start_cumul_to_zero=True,
-        name="Paradas",
+        0,
+        [int(v["maxPed"]) for v in veiculos],
+        True,
+        "Paradas",
     )
 
-    # ── 8. Penalidade por pedido não atendido ─────────────────────────────────
+    # ── Penalidade por pedido não atendido ────────────────────────────────────
     for node in range(1, n_nodes):
         routing.AddDisjunction([manager.NodeToIndex(node)], PENALTY)
 
-    # ── 9. Parâmetros do solver ───────────────────────────────────────────────
+    # ── Parâmetros do solver ──────────────────────────────────────────────────
     params = pywrapcp.DefaultRoutingSearchParameters()
     params.first_solution_strategy = (
         routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
@@ -251,26 +364,17 @@ def solve_vrp(
     params.time_limit.seconds = time_limit_s
     params.log_search = False
 
-    # ── 10. Solve ─────────────────────────────────────────────────────────────
+    # ── Solve ─────────────────────────────────────────────────────────────────
     solution = routing.SolveWithParameters(params)
-
-    STATUS_MAP = {
-        0: "não encontrada",
-        1: "ótima",
-        2: "viável",
-        3: "inviável",
-        4: "sem modelo",
-    }
 
     if not solution:
         return {
             "routes": [],
             "nao_alocados": [p["nf"] for p in pedidos],
-            "fonte_distancia": fonte,
             "solver_status": STATUS_MAP.get(routing.status(), "desconhecido"),
         }
 
-    # ── 11. Extrai rotas ──────────────────────────────────────────────────────
+    # ── Extrai rotas ──────────────────────────────────────────────────────────
     routes: list[RotaResultado] = []
     alocados: set[int] = set()
 
@@ -289,10 +393,7 @@ def solve_vrp(
             continue
 
         peds_rota = [pedidos[n - 1] for n in seq]
-
-        # Métricas
-        km = _calc_km(seq, dist_mx)
-        mins = _calc_mins(seq, dur_mx)
+        carga = perfil_carga(peds_rota)
 
         # Coordenadas para polilinha no mapa
         coords = [{"lat": float(dep["lat"]), "lng": float(dep["lng"])}]
@@ -303,10 +404,16 @@ def solve_vrp(
             "veiculo": veiculo["nome"],
             "veiculo_id": veiculo["id"],
             "pedidos": peds_rota,
-            "km": km,
-            "mins": mins,
+            "km": _calc_km(seq, dist_mx),
+            "mins": _calc_mins(seq, dur_mx),
             "peso_total": sum(p["peso"] for p in peds_rota),
             "itens_total": sum(p["itens"] for p in peds_rota),
+            "entregas": sum(1 for p in peds_rota if _tipo(p) == "entrega"),
+            "coletas": sum(1 for p in peds_rota if _tipo(p) == "coleta"),
+            "peso_entregas": sum(p["peso"] for p in peds_rota if _tipo(p) == "entrega"),
+            "peso_coletas": sum(p["peso"] for p in peds_rota if _tipo(p) == "coleta"),
+            "carga_saida_kg": carga["saida_kg"],
+            "carga_maxima_kg": carga["maxima_kg"],
             "sequencia_coords": coords,
         })
 
@@ -321,7 +428,6 @@ def solve_vrp(
     return {
         "routes": routes,
         "nao_alocados": nao_alocados,
-        "fonte_distancia": fonte,
         "solver_status": STATUS_MAP.get(routing.status(), "desconhecido"),
     }
 

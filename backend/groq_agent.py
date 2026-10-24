@@ -50,6 +50,9 @@ Você conversa com a equipe de logística da empresa que usa o sistema.
 
 Você recebe, a cada pergunta, o resumo dos pedidos pendentes (por cidade, peso,
 urgência e agendamento) e, quando houver, as rotas geradas pelo sistema.
+Cada pedido é uma ENTREGA (sai do centro de distribuição para o destinatário) ou uma
+COLETA (busca no remetente e traz para o centro de distribuição). Quando uma viagem
+tem os dois, o sistema faz as entregas primeiro e as coletas depois.
 
 Sua função é ajudar a equipe a:
 - Analisar e dividir rotas de entrega e de coleta
@@ -72,6 +75,10 @@ Regras de resposta:
 
 # ── Contexto operacional (idêntico ao gemini_agent.py, copiado sem mudança) ──
 
+def _eh_coleta(p: dict) -> bool:
+    return str(p.get("tipo", "")).strip().lower() == "coleta"
+
+
 def montar_contexto(
     pedidos: list[dict],
     rotas: list[dict] | None = None,
@@ -84,19 +91,23 @@ def montar_contexto(
     for p in pendentes:
         c = p.get("cidade", "Outros")
         if c not in por_cidade:
-            por_cidade[c] = {"qtd": 0, "peso": 0.0, "urg": 0, "agendados": 0}
+            por_cidade[c] = {"qtd": 0, "peso": 0.0, "urg": 0, "agendados": 0, "coletas": 0}
         por_cidade[c]["qtd"]  += 1
+        if _eh_coleta(p):
+            por_cidade[c]["coletas"] += 1
         por_cidade[c]["peso"] += float(p.get("peso", 0))
         if p.get("urgente"):
             por_cidade[c]["urg"] += 1
         if p.get("agendado"):
             por_cidade[c]["agendados"] += 1
 
-    ctx = f"OPERAÇÃO\nTotal pendentes: {len(pendentes)} pedidos\n\n"
+    n_col = sum(1 for p in pendentes if _eh_coleta(p))
+    ctx = (f"OPERAÇÃO\nTotal pendentes: {len(pendentes)} pedidos "
+           f"({len(pendentes) - n_col} entregas, {n_col} coletas)\n\n")
     ctx += "POR CIDADE:\n"
     for c, v in sorted(por_cidade.items(), key=lambda x: -x[1]["qtd"]):
         ctx += (
-            f"- {c}: {v['qtd']} pedidos | "
+            f"- {c}: {v['qtd']} pedidos ({v['qtd'] - v['coletas']} entregas, {v['coletas']} coletas) | "
             f"{v['peso']/1000:.1f}t | "
             f"{v['urg']} urgentes | "
             f"{v['agendados']} agendados\n"
@@ -112,11 +123,11 @@ def montar_contexto(
         ctx += f" | {total_km:.0f} km total):\n"
         for i, r in enumerate(rotas, 1):
             nfs = " → ".join(
-                f"NF{p['nf']}({p.get('cidade','?')},{p.get('peso',0):.0f}kg)"
+                f"{'Coleta' if _eh_coleta(p) else 'Entrega'} NF{p['nf']}({p.get('cidade','?')},{p.get('peso',0):.0f}kg)"
                 for p in r.get("pedidos", [])
             )
             ctx += (
-                f"Rota {i}: {len(r.get('pedidos', []))} entregas | "
+                f"Rota {i}: {len(r.get('pedidos', []))} paradas | "
                 f"{r.get('km', 0)}km | {r.get('mins', 0)}min\n"
                 f"  Seq: {nfs}\n"
             )

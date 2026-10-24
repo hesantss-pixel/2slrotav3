@@ -26,6 +26,28 @@ Banco e login: Firebase, projeto `slog-pedidos` (Realtime Database + Authenticat
 4. O **servidor** confere o mesmo login em toda chamada (menos `/status`), perguntando ao
    próprio Firebase se aquele token pode ler `acesso/<código>` (`backend/auth_firebase.py`).
 
+## Entregas e coletas
+
+- Cada pedido é uma **entrega** (do centro de distribuição para o destinatário) ou uma
+  **coleta** (do remetente para o centro de distribuição). Pedido antigo, sem tipo, é entrega.
+- **Importar** (página Pedidos): escolha "Estas notas são: Entregas | Coletas" e selecione um ou
+  vários arquivos (XML da NF-e, Excel, CSV ou PDF).
+  - XML: entrega usa o endereço do **destinatário** (ou o grupo `entrega`, se a nota tiver);
+    coleta usa o endereço do **emitente** (ou o grupo `retirada`). Peso = soma do peso bruto dos
+    volumes (`transp/vol/pesoB`). CT-e e eventos são recusados com aviso.
+  - Excel/CSV: uma coluna `tipo` com "coleta" ou "entrega" vale linha a linha; vazia = o que foi
+    escolhido na tela.
+  - Nota que já saiu para rota (despachada/entregue) não é alterada se for importada de novo.
+- **Chave no banco** (`pedidos_rota/<chave>`): entrega = chave de acesso da NF-e (44 dígitos) ou o
+  número da nota (planilha); coleta = `C_` + o mesmo. Assim a coleta e a entrega da mesma nota
+  convivem, e notas de mesmo número de emitentes diferentes não se sobrescrevem (no XML).
+- **Filtro** Todos / Entregas / Coletas nas páginas Pedidos e Mapa.
+- **Roteirização**: escolha Entregas, Coletas ou Entregas e coletas. Na viagem mista, o veículo
+  sai com as entregas, faz todas elas e só depois as coletas: a carga a bordo nunca passa da
+  capacidade (peso das entregas na saída; peso das coletas no fim). Se esse modelo falhar por
+  qualquer motivo, o servidor refaz somando entregas + coletas na capacidade (mais conservador) e
+  avisa na tela (`regra_carga` na resposta do `/solve`).
+
 ## Colocar no ar (primeira vez)
 
 ### 1. Firebase — ativar o login (console.firebase.google.com → projeto `slog-pedidos`)
@@ -62,7 +84,7 @@ Variáveis de ambiente usadas:
 | `DOCS_PUBLICAS=1` | Mostra a documentação em `/docs` | Não |
 
 Verificação: `https://rotainteligente2sl-production.up.railway.app/status` deve responder
-`"versao": "3.0.0"` e `"login": "obrigatório"`.
+`"versao": "3.1.0"` e `"login": "obrigatório"`.
 
 ### 4. Tela (GitHub Pages)
 
@@ -86,12 +108,20 @@ troque `BACKEND_URL` no `index.html`.
 
 ## Testes
 
-- Servidor: `cd backend && python3 -m unittest discover -s tests` (login: token ausente,
-  malformado, de outro projeto, vencido, recusado pelo Firebase, usuário sem liberação,
-  liberado com cache, Firebase fora do ar; e confere que toda rota, menos `/status`, exige login).
+- Servidor: `cd backend && python3 -m unittest discover -s tests`.
+  - Login: token ausente, malformado, de outro projeto, vencido, recusado pelo Firebase, usuário
+    sem liberação, liberado com cache, Firebase fora do ar; toda rota, menos `/status`, exige login.
+  - Motor de rotas (`tests/test_vrp_coletas.py`): só entregas, só coletas, pedidos antigos sem
+    tipo, viagem mista com entregas antes das coletas, capacidade, limite de paradas e o plano B.
+    Roda com um OR-Tools simulado (`tests/fake_ortools.py`, força bruta com as mesmas regras de
+    dimensão), porque o pacote não instala no ambiente de testes; as chamadas usadas são as dos
+    exemplos oficiais do OR-Tools 9.9.
 - Tela: testada com um Firebase simulado (login, senha errada, esqueci a senha, acesso
   pendente, liberação, dashboard, regiões a partir dos pedidos, importação de CSV,
-  roteirização com o token, confirmação de saída, motoristas, agendamento, chat, sair),
+  roteirização com o token, confirmação de saída, motoristas, agendamento, chat, sair; e
+  coletas/entregas: XML como coleta e como entrega, local de retirada/entrega, nota sem peso,
+  CT-e e XML quebrado recusados, CSV com coluna tipo, nota já em rota preservada, nomes com HTML
+  exibidos como texto, filtros, mapa, rota mista, confirmação e devolução por chave),
   em 1440 px e no celular (390 px).
 
 Não testado daqui: o Firebase e o Railway de verdade (bloqueados neste ambiente), o motor
@@ -99,6 +129,10 @@ OR-Tools rodando (não instalado aqui) e o mapa com as ruas.
 
 ## Histórico
 
+- Versão 3.1 (24/10/2026): entregas e coletas — importação como entrega ou coleta (inclui XML da
+  NF-e, vários arquivos de uma vez), filtro nas páginas Pedidos e Mapa, pinos diferentes,
+  roteirização de entregas, coletas ou as duas na mesma viagem (entregas primeiro), chave única por
+  nota, reimportação não mexe em nota já despachada, aviso de pedidos sem localização exata.
 - Versão 3 (24/10/2026): identidade ROTAV3, login com e-mail e senha, liberação por usuário,
   regras do banco, servidor exigindo login, regiões montadas a partir dos próprios pedidos,
   centro de distribuição configurável, nomes de cidades padronizados na importação, cópias

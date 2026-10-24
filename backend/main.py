@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="ROTAV3 — Servidor de rotas",
     description="Roteirização (OR-Tools VRP), assistente de IA e leitura de notas fiscais",
-    version="3.0.0",
+    version="3.1.0",
     docs_url="/docs" if os.getenv("DOCS_PUBLICAS", "0") == "1" else None,
     redoc_url=None,
 )
@@ -200,7 +200,7 @@ def status():
     """Verificação de funcionamento (pública, sem dados da operação)."""
     return {
         "status": "online",
-        "versao": "3.0.0",
+        "versao": "3.1.0",
         "login": "obrigatório" if auth_firebase.AUTH_REQUIRED else "desligado (teste local)",
     }
 
@@ -276,7 +276,7 @@ def solve(body: SolveRequest, uid: str = Depends(exigir_login)):
                             "veiculo":  r["veiculo"],
                             "km":       r["km"],
                             "mins":     r["mins"],
-                            "pedidos":  [p["nf"] for p in r["pedidos"]],
+                            "pedidos":  [str(p.get("id") or p["nf"]) for p in r["pedidos"]],
                         }
                         for r in routes
                     ],
@@ -301,7 +301,7 @@ def solve(body: SolveRequest, uid: str = Depends(exigir_login)):
             logger.warning("IA indisponível: %s", e)
             analise = (
                 f"Motor OR-Tools gerou {len(routes)} rota(s) com {sum(len(r['pedidos']) for r in routes)} "
-                f"entregas totais. {('Pedidos não alocados: ' + ', '.join(n_aloc)) if n_aloc else 'Todos os pedidos foram alocados.'}"
+                f"paradas (entregas e coletas). {('Pedidos não alocados: ' + ', '.join(n_aloc)) if n_aloc else 'Todos os pedidos foram alocados.'}"
             )
 
         return {
@@ -311,6 +311,7 @@ def solve(body: SolveRequest, uid: str = Depends(exigir_login)):
             "nao_alocados":      n_aloc,
             "fonte_distancia":   fonte,
             "solver_status":     status_vp,
+            "regra_carga":       resultado.get("regra_carga", "—"),
             "analise_ia":        analise,
             "salvo":             salvo,
         }

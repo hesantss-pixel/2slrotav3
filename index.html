@@ -415,6 +415,34 @@ body:not(.autorizado)>.sidebar,body:not(.autorizado)>.main,body:not(.autorizado)
   .grid-main{grid-template-columns:1fr;}.page-title{font-size:26px;}.rota-results-grid{grid-template-columns:1fr;}
 }
 @media(max-width:520px){.user-t{display:none;}.user{padding:3px;border:none;}.avatar{width:34px;height:34px;}.user-sair{margin-left:2px;}.kpi{padding:16px;}.kpi-val{font-size:28px;}.chat-box{height:70vh;}}
+/* ── Coletas e entregas ───────────────────────────────────────────── */
+.tipo-tag{display:inline-flex;align-items:center;height:18px;padding:0 7px;border-radius:6px;font:700 9.5px/1 var(--body);letter-spacing:.4px;text-transform:uppercase;vertical-align:1px;white-space:nowrap;}
+.tipo-tag.e{background:#e8f7ef;color:#0f7a4c;border:1px solid #c9ecd9;}
+.tipo-tag.c{background:#e9eef6;color:var(--navy);border:1px solid #c8d3e3;}
+.seg{display:inline-flex;flex-wrap:wrap;gap:3px;padding:3px;background:var(--s3);border:1px solid var(--border2);border-radius:12px;}
+.seg button{border:none;background:none;border-radius:9px;padding:8px 14px;font:700 12.5px var(--body);color:var(--text2);cursor:pointer;white-space:nowrap;}
+.seg button:hover{color:var(--text);}
+.seg button[aria-pressed="true"]{background:#fff;color:var(--navy);box-shadow:0 1px 3px rgba(13,27,46,.12),inset 0 0 0 1px var(--border2);}
+.seg button:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
+.seg .n{font-family:var(--mono);font-weight:700;color:var(--text3);margin-left:6px;}
+.imp-box{background:var(--s2);border:1px solid var(--border);border-radius:16px;padding:16px 18px;margin-bottom:6px;max-width:760px;}
+.imp-row{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap;}
+.imp-row .field-lbl{margin-top:0;}
+.imp-row .btn-toolbar{height:44px;}
+.imp-help{font-size:12px;line-height:1.55;color:var(--text3);margin-top:10px;}
+.imp-help b{color:var(--text2);}
+.import-msg.warn{background:rgba(250,204,21,.14);border:1px solid rgba(202,138,4,.35);color:#8a5a06;}
+.import-msg.info{background:var(--s3);border:1px solid var(--border2);color:var(--text2);}
+.filtro-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:16px 0;}
+.filtro-row .field-lbl{margin:0;}
+.map-leg{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:12px;padding:10px 14px;background:var(--s2);border:1px solid var(--border);border-radius:12px;font-size:12px;color:var(--text2);}
+.map-leg span{display:inline-flex;align-items:center;gap:7px;}
+.map-leg i{display:inline-block;width:12px;height:12px;border-radius:50%;box-sizing:border-box;}
+.rot-nota{font-size:11.5px;line-height:1.5;color:var(--text3);margin-top:8px;}
+.nf-mini-code .tipo-tag,.delivery-mini .tipo-tag,.search-item-nf .tipo-tag,.li-title .tipo-tag{margin-left:7px;}
+.delivery-mini-num.c{background:#fff;border:2px solid var(--navy);color:var(--navy);}
+.kpi-split{font-size:11.5px;font-weight:600;color:var(--text2);margin-top:6px;}
+@media(max-width:520px){#rot-tipo{display:grid;grid-template-columns:1fr 1fr;}#rot-tipo button[data-v="todos"]{grid-column:1/-1;}.seg button{padding:8px 12px;}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
 </style>
 </head>
@@ -523,6 +551,7 @@ body:not(.autorizado)>.sidebar,body:not(.autorizado)>.main,body:not(.autorizado)
       <div class="kpi" style="--kbg:#fff3df">
         <div class="kpi-top"><div class="kpi-icon"><img src="assets/em/package_3d.png" alt=""></div><div class="kpi-lbl">PEDIDOS</div></div>
         <div class="kpi-val" id="kpi-pedidos">—</div>
+        <div class="kpi-split" id="kpi-split"></div>
         <div class="kpi-delta" id="kpi-pedidos-d"></div>
       </div>
       <div class="kpi" style="--kbg:#ffe9e7">
@@ -587,16 +616,27 @@ body:not(.autorizado)>.sidebar,body:not(.autorizado)>.main,body:not(.autorizado)
     <button class="btn-voltar-topo" onclick="irParaPagina('dashboard')"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Voltar ao Dashboard</button>
     <div class="page-head">
       <div class="page-title">Pedidos</div>
-      <div class="page-sub">Lista completa por região e importação de notas fiscais</div>
+      <div class="page-sub">Entregas e coletas por região e importação das notas fiscais</div>
     </div>
-    <div class="pedidos-toolbar">
-      <div class="btn-toolbar" onclick="document.getElementById('file-input').click()">
-        <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
-        Importar CSV / Excel / PDF
+    <div class="imp-box">
+      <div class="imp-row">
+        <div>
+          <span class="field-lbl">Estas notas são</span>
+          <div class="seg" id="imp-tipo" role="group" aria-label="Tipo das notas a importar">
+            <button type="button" data-tipo="entrega" aria-pressed="true">Entregas</button>
+            <button type="button" data-tipo="coleta" aria-pressed="false">Coletas</button>
+          </div>
+        </div>
+        <button type="button" class="btn-toolbar" id="btn-importar" onclick="document.getElementById('file-input').click()">
+          <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+          Importar notas
+        </button>
       </div>
+      <div class="imp-help" id="imp-help">XML da NF-e, Excel, CSV ou PDF. Pode escolher vários arquivos de uma vez. <b>Entrega:</b> o sistema usa o endereço do <b>destinatário</b> (ou o local de entrega, se a nota tiver). Na planilha, uma coluna <b>tipo</b> com "coleta" ou "entrega" vale linha a linha.</div>
     </div>
-    <input type="file" id="file-input" accept=".csv,.xlsx,.xls,.pdf" style="display:none" onchange="importarArquivo(this)">
-    <div id="import-msg-pedidos" class="import-msg" style="max-width:420px;"></div>
+    <input type="file" id="file-input" accept=".xml,.csv,.xlsx,.xls,.pdf" multiple hidden onchange="importarArquivo(this)">
+    <div id="import-msg-pedidos" class="import-msg" role="status" style="max-width:760px;"></div>
+    <div class="filtro-row"><span class="field-lbl">Mostrar</span><div class="seg" data-filtro role="group" aria-label="Mostrar pedidos"></div></div>
     <div class="reg-cards-grid" id="reg-cards-grid"></div>
   </div>
 
@@ -613,10 +653,13 @@ body:not(.autorizado)>.sidebar,body:not(.autorizado)>.main,body:not(.autorizado)
     <div id="rot-step-cap" style="display:none">
       <div class="cap-form-box">
         <div class="veh-card-name" id="cap-veh-name" style="font-size:19px;margin-bottom:14px;"></div>
+        <span class="field-lbl" style="margin-top:0">O que entra nesta viagem</span>
+        <div class="seg" id="rot-tipo" role="group" aria-label="O que entra nesta viagem"></div>
+        <div class="rot-nota" id="rot-tipo-nota"></div>
         <span class="field-lbl">Capacidade máxima (kg)</span>
         <div><input type="number" class="field-inp" id="cap-kg-d" placeholder="0"></div>
         <div class="presets-row" id="presets-row-d"></div>
-        <span class="field-lbl">Máximo de pedidos nesta rota (1 a 20)</span>
+        <span class="field-lbl">Máximo de paradas nesta viagem (1 a 20)</span>
         <div><input type="number" class="field-inp" id="cap-maxped-d" value="8" min="1" max="20"></div>
         <div style="font-size:11px;color:var(--text3);margin-top:6px">O sistema monta a melhor rota possível com até esse número — pode gerar menos se for mais eficiente.</div>
         <button class="btn-modal-primary" onclick="irConfirmD()">Continuar →</button>
@@ -674,10 +717,11 @@ body:not(.autorizado)>.sidebar,body:not(.autorizado)>.main,body:not(.autorizado)
     <button class="btn-voltar-topo" onclick="irParaPagina('dashboard')"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Voltar ao Dashboard</button>
     <div class="page-head">
       <div class="page-title">Mapa</div>
-      <div class="page-sub">Distribuição completa dos pedidos pendentes — sincronizado ao vivo</div>
+      <div class="page-sub">Entregas e coletas pendentes — atualizado ao vivo</div>
     </div>
+    <div class="filtro-row" style="margin-top:0"><span class="field-lbl">Mostrar</span><div class="seg" data-filtro role="group" aria-label="Mostrar no mapa"></div></div>
     <div id="mapa-completo" style="width:100%;height:560px;border-radius:16px;border:1px solid var(--border2);"></div>
-    <div id="mapa-completo-legenda" style="display:none;flex-wrap:wrap;gap:8px;margin-top:12px;padding:10px 14px;background:var(--s2);border:1px solid var(--border);border-radius:12px;align-items:center"></div>
+    <div id="mapa-completo-legenda" class="map-leg"></div>
   </div>
 
   <!-- ── PÁGINA: MOTORISTAS ── -->
@@ -705,16 +749,16 @@ body:not(.autorizado)>.sidebar,body:not(.autorizado)>.main,body:not(.autorizado)
 <!-- ── MODAL: Agendar Entrega ── -->
 <div class="modal-overlay" id="modal-agendar">
   <div class="modal-box">
-    <div class="modal-head"><div class="modal-title">Agendar Entrega</div><button class="modal-close" onclick="fecharModalAgendar()">✕</button></div>
+    <div class="modal-head"><div class="modal-title">Agendar entrega ou coleta</div><button class="modal-close" onclick="fecharModalAgendar()">✕</button></div>
     <div id="ag-search-step-d">
       <input type="text" class="field-inp field-inp-text" id="ag-search-inp-d" placeholder="Digite o número da NF..." oninput="buscarNFAgendarD(this.value)">
       <div class="search-results" id="ag-search-results-d"></div>
     </div>
     <div id="ag-form-step-d" style="display:none">
       <div class="veh-card-name" id="ag-form-nf-d" style="font-size:15px;"></div>
-      <span class="field-lbl">Data de entrega</span>
+      <span class="field-lbl">Data</span>
       <input type="date" class="field-inp" id="ag-data-d" oninput="atualizarSugestaoD()">
-      <span class="field-lbl">Horário de entrega</span>
+      <span class="field-lbl">Horário</span>
       <input type="time" class="field-inp" id="ag-hora-d" oninput="atualizarSugestaoD()">
       <div class="sugestao-box" id="ag-sugestao-d"></div>
       <button class="btn-modal-primary" onclick="salvarAgendamentoD()">Salvar Agendamento</button>
@@ -881,8 +925,9 @@ function gerarDemoOrders(){
   for(const g of base){
     const coord=CITY_COORDS[g.cidade]||DEPOT;
     for(let i=0;i<g.qtd;i++){
+      const tipo=Math.random()<0.28?'coleta':'entrega', nf=String(nfBase++);
       orders.push({
-        nf:String(nfBase++), cidade:g.cidade,
+        id:_chaveId(nf,tipo), nf, tipo, cidade:g.cidade,
         peso:50+Math.floor(Math.random()*750), itens:1+Math.floor(Math.random()*12),
         urgente:Math.random()<0.05, agendado:false, dataAgendada:'', horaEntrega:'',
         status:'pendente', lat:coord.lat+(Math.random()-.5)*.02, lng:coord.lng+(Math.random()-.5)*.02,
@@ -901,13 +946,70 @@ function gerarDemoOrders(){
   return orders;
 }
 
+// ── Coletas e entregas ───────────────────────────────────────────────────
+// Cada pedido é 'entrega' (do centro de distribuição para o destinatário) ou
+// 'coleta' (do remetente para o centro de distribuição). Pedido antigo, sem
+// tipo, é entrega. A chave no banco (id) separa os dois: entrega = número ou
+// chave da nota; coleta = "C_" + número ou chave.
+const FINAIS=['despachado','entregue','confirmado'];
+let filtroTipo='todos';      // filtro de Pedidos e Mapa: 'todos' | 'entrega' | 'coleta'
+let tipoImport='entrega';    // o que as notas importadas são
+let _statusPorId={};         // status de todas as notas do banco (para não reimportar as que já saíram)
+function esc(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function _tipoDe(o){ return o&&o.tipo==='coleta'?'coleta':'entrega'; }
+function _tag(o){ return _tipoDe(o)==='coleta'?'<span class="tipo-tag c">Coleta</span>':'<span class="tipo-tag e">Entrega</span>'; }
+function _idDe(o){ return String(o.id||o.nf); }
+function _chaveId(base,tipo){
+  const b=String(base||'').trim().replace(/[^A-Za-z0-9_-]+/g,'-').replace(/^-+|-+$/g,'')||('SN-'+Date.now().toString(36));
+  return (tipo==='coleta'?'C_':'')+b;
+}
+function _contarTipos(lista){ let c=0; lista.forEach(o=>{ if(_tipoDe(o)==='coleta') c++; }); return {entrega:lista.length-c, coleta:c, todos:lista.length}; }
+function _plural(n,um,varios){ return `${n} ${n===1?um:varios}`; }
+function _resumoTipos(n,sep=' · '){ return [n.entrega?_plural(n.entrega,'entrega','entregas'):'', n.coleta?_plural(n.coleta,'coleta','coletas'):''].filter(Boolean).join(sep); }
+function _filtrar(lista,f){ return f==='todos'?lista:lista.filter(o=>_tipoDe(o)===f); }
+function _perfilCarga(seq){
+  let c=seq.filter(p=>_tipoDe(p)==='entrega').reduce((s,p)=>s+(+p.peso||0),0);
+  const saida=c; let max=c;
+  seq.forEach(p=>{ c+=_tipoDe(p)==='coleta'?(+p.peso||0):-(+p.peso||0); if(c>max) max=c; });
+  return {saida, max};
+}
+function renderFiltros(){
+  const n=_contarTipos(allOrders.filter(o=>o.status==='pendente'));
+  const ops=[['todos','Todos'],['entrega','Entregas'],['coleta','Coletas']];
+  document.querySelectorAll('[data-filtro]').forEach(el=>{
+    el.innerHTML=ops.map(([v,t])=>`<button type="button" data-v="${v}" aria-pressed="${filtroTipo===v}">${t}<span class="n">${n[v]}</span></button>`).join('');
+  });
+}
+function setFiltroTipo(v){
+  filtroTipo=['entrega','coleta'].includes(v)?v:'todos';
+  renderFiltros();
+  if(document.getElementById('page-pedidos')?.style.display==='block') renderPedidosPage();
+  if(document.getElementById('page-mapa')?.style.display==='block') atualizarMapaCompleto();
+}
+function setTipoImport(v){
+  tipoImport=v==='coleta'?'coleta':'entrega';
+  document.querySelectorAll('#imp-tipo button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.tipo===tipoImport)));
+  document.getElementById('imp-help').innerHTML = 'XML da NF-e, Excel, CSV ou PDF. Pode escolher vários arquivos de uma vez. ' + (tipoImport==='coleta'
+    ? '<b>Coleta:</b> o sistema usa o endereço do <b>remetente</b>, quem emitiu a nota (ou o local de retirada, se a nota tiver).'
+    : '<b>Entrega:</b> o sistema usa o endereço do <b>destinatário</b> (ou o local de entrega, se a nota tiver).')
+    + ' Na planilha, uma coluna <b>tipo</b> com "coleta" ou "entrega" vale linha a linha.';
+}
+document.addEventListener('click',e=>{
+  const f=e.target.closest('[data-filtro] button'); if(f){ setFiltroTipo(f.dataset.v); return; }
+  const t=e.target.closest('#imp-tipo button'); if(t){ setTipoImport(t.dataset.tipo); return; }
+  const r=e.target.closest('#rot-tipo button'); if(r){ setRotTipoD(r.dataset.v); }
+});
+
 function carregarPedidos(){
   onValue(ref(db,'pedidos_rota'), snap=>{
     const data=snap.val();
     if(data && Object.keys(data).length>0){
       modoDemo=false;
-      allOrders=Object.entries(data).map(([nf,p])=>({
-        nf, cidade:p.cidade||'Sem cidade', peso:p.peso||100, itens:p.itens||1,
+      _statusPorId=Object.fromEntries(Object.entries(data).map(([k,p])=>[k,(p&&p.status)||'pendente']));
+      allOrders=Object.entries(data).map(([key,p])=>({
+        id:key, nf:String(p.nf||key), tipo:p.tipo==='coleta'?'coleta':'entrega',
+        dest:p.dest||'', endereco:p.endereco||'', uf:p.uf||'',
+        cidade:p.cidade||'Sem cidade', peso:p.peso||100, itens:p.itens||1,
         urgente:p.urgente||false, agendado:p.agendado||false, dataAgendada:p.dataAgendada||'',
         horaEntrega:p.horaEntrega||'', status:p.status||'pendente',
         cep:p.cep||'', geoStatus:p.geoStatus||(p.cep?'pendente':'sem_cep'), bairro:p.bairro||'',
@@ -915,6 +1017,7 @@ function carregarPedidos(){
       })).filter(o=>o.status!=='entregue');
     } else {
       modoDemo=true;
+      _statusPorId={};
       allOrders=gerarDemoOrders();
     }
     render();
@@ -954,6 +1057,8 @@ function render(){
 
   // KPI Pedidos
   document.getElementById('kpi-pedidos').textContent=total;
+  const nT=_contarTipos(pendentes);
+  document.getElementById('kpi-split').textContent = _resumoTipos(nT);
   document.getElementById('hdr-total').textContent=total;
   document.getElementById('kpi-pedidos-d').textContent=modoDemo?'dados de demonstração':'atualizado em tempo real';
   document.getElementById('hpill-demo').hidden=!modoDemo;
@@ -995,8 +1100,8 @@ function render(){
   agList.innerHTML = agendados.length ? agendados.map(o=>{
     const d=new Date(o.dataAgendada+'T00:00:00');
     const dd=String(d.getDate()).padStart(2,'0'), mm=String(d.getMonth()+1).padStart(2,'0');
-    let txt = o._diff<0?'Atrasado':o._diff===0?'Precisa sair <b>hoje</b>':o._diff===1?'Precisa sair <b>amanhã</b>':'Entrega programada';
-    return `<div class="li-item"><div class="li-icn">${dd}/${mm}</div><div class="li-body"><div class="li-title">NF ${o.nf}</div><div class="li-sub">${txt} · ${o.cidade}</div></div><div class="li-chev">›</div></div>`;
+    let txt = o._diff<0?'Atrasado':o._diff===0?'Precisa sair <b>hoje</b>':o._diff===1?'Precisa sair <b>amanhã</b>':(_tipoDe(o)==='coleta'?'Coleta programada':'Entrega programada');
+    return `<div class="li-item"><div class="li-icn">${dd}/${mm}</div><div class="li-body"><div class="li-title">NF ${esc(o.nf)}${_tag(o)}</div><div class="li-sub">${txt} · ${esc(o.cidade)}</div></div><div class="li-chev">›</div></div>`;
   }).join('') : `<div class="empty-mini">Nenhuma entrega agendada</div>`;
 
   // Alertas reais (atrasados, urgentes, isolados)
@@ -1004,7 +1109,7 @@ function render(){
   const urgentes  = pendentes.filter(o=>o.urgente).length;
   const isolados  = pendentes.filter(_pedidoIsolado).length;
   const alerts=[
-    {cor:'var(--red)',    txt:'Pedidos com entrega atrasada', n:atrasados},
+    {cor:'var(--red)',    txt:'Pedidos agendados atrasados', n:atrasados},
     {cor:'var(--yellow)', txt:'Pedidos marcados como urgentes', n:urgentes},
     {cor:'var(--vv)',   txt:`Pedidos a mais de ${RAIO_ISOLADO_KM} km do centro de distribuição`, n:isolados},
     {cor:'var(--text3)',  txt:'Modo demonstração ativo',       n: modoDemo?1:0},
@@ -1024,6 +1129,7 @@ function render(){
     `<div class="ia-insight" style="--kc:${i.cor}"><div class="ia-insight-h">${i.h}</div><div class="ia-insight-t">${i.t}</div></div>`).join('');
 
   atualizarMapa(ativos);
+  renderFiltros();
 }
 
 // ── Mapa Leaflet ─────────────────────────────────────────────────────────
@@ -1054,7 +1160,7 @@ let mapInstFull=null, mapLayerFull=null;
 function atualizarMapaCompleto(){
   const el=document.getElementById('mapa-completo');
   if(!el) return;
-  const pendentes=allOrders.filter(o=>o.status==='pendente');
+  const pendentes=_filtrar(allOrders.filter(o=>o.status==='pendente'),filtroTipo);
 
   // separa: geocodificados (pino individual exato) vs sem geo (bolha de cidade)
   const comGeo  = pendentes.filter(o=>o.geoStatus==='ok');
@@ -1073,8 +1179,9 @@ function atualizarMapaCompleto(){
 
   // ── Pinos individuais: pedidos com coordenada real via CEP ────────────
   comGeo.forEach(o=>{
-    L.circleMarker([o.lat,o.lng],{radius:6,color:'#fff',weight:1.5,fillColor:'#16a36a',fillOpacity:.92}).addTo(mapLayerFull)
-      .bindTooltip(`<b>NF ${o.nf}</b><br>${o.bairro?o.bairro+' — ':''}${o.cidade}<br>${(o.peso||0).toLocaleString('pt-BR')} kg · ${o.itens||1} item(ns)<br><span style="color:#1f7a4a">📍 Localização via CEP</span>`);
+    const col=_tipoDe(o)==='coleta';
+    L.circleMarker([o.lat,o.lng],{radius:col?6.5:6,color:col?'#f3b62b':'#fff',weight:col?2:1.5,fillColor:col?'#0d1b2e':'#16a36a',fillOpacity:.92}).addTo(mapLayerFull)
+      .bindTooltip(`<b>${col?'Coleta':'Entrega'} · NF ${esc(o.nf)}</b>${o.dest&&o.dest!==o.cidade?'<br>'+esc(o.dest):''}<br>${o.bairro?esc(o.bairro)+' — ':''}${esc(o.cidade)}<br>${(o.peso||0).toLocaleString('pt-BR')} kg · ${o.itens||1} volume(s)<br><span style="color:#1f7a4a">📍 Localização via CEP</span>`);
   });
 
   // ── Bolhas de cidade: só pros que ainda não têm CEP geocodificado ─────
@@ -1085,20 +1192,20 @@ function atualizarMapaCompleto(){
     const coord={lat:r.lat,lng:r.lng};
     const radius=9+Math.min(28,n*1.1);
     L.circleMarker([coord.lat,coord.lng],{radius,color:r.cor,weight:2,fillColor:r.cor,fillOpacity:.4}).addTo(mapLayerFull)
-      .bindTooltip(`<b>${r.nome}</b><br>${n} pedido(s) sem CEP exato<br>${lista.reduce((s,o)=>s+(o.peso||0),0).toLocaleString('pt-BR')} kg total`);
+      .bindTooltip(`<b>${esc(r.nome)}</b><br>${n} pedido(s) sem endereço exato (${_plural(_contarTipos(lista).entrega,'entrega','entregas')}, ${_plural(_contarTipos(lista).coleta,'coleta','coletas')})<br>${lista.reduce((s,o)=>s+(o.peso||0),0).toLocaleString('pt-BR')} kg total`);
     L.polyline([[DEPOT.lat,DEPOT.lng],[coord.lat,coord.lng]],{color:r.cor,weight:1.4,opacity:.4,dashArray:'4,6'}).addTo(mapLayerFull);
   });
 
   // Mapa geral mostra só pedidos pendentes — rotas confirmadas têm seu próprio
   // mini-mapa individual na aba Rotas (fica mais limpo, sem misturar as duas coisas).
   const legEl = document.getElementById('mapa-completo-legenda');
-  if(legEl) legEl.style.display = 'none';
+  if(legEl) legEl.innerHTML = `<span><i style="background:#16a36a;border:2px solid #fff;box-shadow:0 0 0 1px #9fd8bb"></i>Entrega</span><span><i style="background:#0d1b2e;border:2px solid #f3b62b"></i>Coleta</span><span><i style="background:#e09c12;border:2px solid #fff;box-shadow:0 0 0 1px #e09c12"></i>${esc(DEPOT.name)}</span><span><i style="background:rgba(148,163,184,.35);border:2px solid #94a3b8"></i>Cidade (pedidos ainda sem endereço exato)</span>`;
 }
 window.atualizarMapaCompleto=atualizarMapaCompleto;
 
 // ── Navegação sidebar ────────────────────────────────────────────────────
 const PAGE_META = {
-  pedidos:{title:'Pedidos',sub:'Lista completa e importação de notas fiscais'},
+  pedidos:{title:'Pedidos',sub:'Entregas e coletas por região e importação das notas fiscais'},
   roteirizacao:{title:'Roteirização',sub:'Escolha o veículo e a capacidade e gere a melhor sequência'},
   rotas:{title:'Rotas',sub:'Histórico e detalhamento das rotas geradas'},
   motoristas:{title:'Motoristas',sub:'Cadastro e acompanhamento de motoristas e veículos'},
@@ -1172,17 +1279,17 @@ function buscarNFAgendarD(termo){
   const box=document.getElementById('ag-search-results-d');
   if(!termo||termo.trim().length<2){ box.innerHTML=''; return; }
   const t=termo.trim().toLowerCase();
-  const achados=allOrders.filter(o=>o.status==='pendente'&&o.nf.toLowerCase().includes(t)).slice(0,6);
+  const achados=allOrders.filter(o=>o.status==='pendente'&&String(o.nf).toLowerCase().includes(t)).slice(0,6);
   box.innerHTML = achados.length ? achados.map(o=>
-    `<div class="search-item" onclick="selecionarNFAgendarD('${o.nf}')"><div class="search-item-nf">NF ${o.nf}</div><div class="search-item-meta">${o.cidade} · ${o.peso}kg</div></div>`
+    `<div class="search-item" onclick="selecionarNFAgendarD('${esc(o.id)}')"><div class="search-item-nf">NF ${esc(o.nf)}${_tag(o)}</div><div class="search-item-meta">${o.dest&&o.dest!==o.cidade?esc(o.dest)+' · ':''}${esc(o.cidade)} · ${o.peso}kg</div></div>`
   ).join('') : `<div class="search-item-meta" style="padding:8px">Nenhuma NF encontrada</div>`;
 }
 window.buscarNFAgendarD=buscarNFAgendarD;
 
-function selecionarNFAgendarD(nf){
-  _nfSelDash=nf;
-  const o=allOrders.find(x=>x.nf===nf);
-  document.getElementById('ag-form-nf-d').textContent=`NF ${nf} — ${o.cidade}`;
+function selecionarNFAgendarD(id){
+  _nfSelDash=id;
+  const o=allOrders.find(x=>x.id===id);
+  document.getElementById('ag-form-nf-d').textContent=`${_tipoDe(o)==='coleta'?'Coleta':'Entrega'} · NF ${o.nf} — ${o.cidade}`;
   document.getElementById('ag-search-step-d').style.display='none';
   document.getElementById('ag-form-step-d').style.display='block';
   document.getElementById('ag-data-d').value='';
@@ -1214,7 +1321,7 @@ function calcularHoraSaida(cidade,horaEntregaStr){
 }
 function atualizarSugestaoD(){
   if(!_nfSelDash) return;
-  const o=allOrders.find(x=>x.nf===_nfSelDash);
+  const o=allOrders.find(x=>x.id===_nfSelDash);
   const hora=document.getElementById('ag-hora-d').value;
   const sug=document.getElementById('ag-sugestao-d');
   if(!hora){ sug.classList.remove('show'); return; }
@@ -1228,7 +1335,7 @@ async function salvarAgendamentoD(){
   const data=document.getElementById('ag-data-d').value;
   const hora=document.getElementById('ag-hora-d').value;
   if(!data||!hora){ alert('Preencha data e horário de entrega'); return; }
-  const o=allOrders.find(x=>x.nf===_nfSelDash);
+  const o=allOrders.find(x=>x.id===_nfSelDash);
   const payload={ agendado:true, dataAgendada:data, horaEntrega:hora, horaSaidaSugerida:calcularHoraSaida(o.cidade,hora) };
   if(!modoDemo){ await update(ref(db,'pedidos_rota/'+_nfSelDash), payload); }
   else { Object.assign(o,payload); }
@@ -1241,22 +1348,25 @@ window.salvarAgendamentoD=salvarAgendamentoD;
 // PÁGINA PEDIDOS — cards de região expansíveis
 // ══════════════════════════════════════════════════════════════════════════
 function renderPedidosPage(){
-  const pend=allOrders.filter(o=>o.status==='pendente');
+  renderFiltros();
+  const pend=_filtrar(allOrders.filter(o=>o.status==='pendente'),filtroTipo);
   const ativos=calcularRegioes(pend);
   const grid=document.getElementById('reg-cards-grid');
+  const vazio = filtroTipo==='coleta'?'Nenhuma coleta pendente.':filtroTipo==='entrega'?'Nenhuma entrega pendente.':'Nenhum pedido pendente. Importe as notas acima.';
   grid.innerHTML = ativos.length ? ativos.map((r,i)=>{
-    const os=r.lista;
+    const os=r.lista, nt=_contarTipos(os);
+    const partes=_resumoTipos(nt);
     return `<div class="rc-card" id="rcd-${i}" style="--rc:${r.cor}">
       <div class="rc-card-head" onclick="toggleRcCard(${i})">
         <div class="rc-card-icon">${r.isolado?'⚠️':'📍'}</div>
-        <div class="rc-card-info"><div class="rc-card-name">${r.nome}</div><div class="rc-card-sub">${os.length} pedido(s)${r.isolado?` · a mais de ${RAIO_ISOLADO_KM} km do CD`:''}</div></div>
+        <div class="rc-card-info"><div class="rc-card-name">${esc(r.nome)}</div><div class="rc-card-sub">${partes}${r.isolado?` · a mais de ${RAIO_ISOLADO_KM} km do CD`:''}</div></div>
         <div class="rc-card-n">${os.length}</div><div class="rc-card-chev">›</div>
       </div>
       <div class="rc-card-body"><div class="nf-mini-grid">${os.slice(0,10).map(o=>
-        `<div class="nf-mini"><div class="nf-mini-code">NF ${o.nf}</div><div class="nf-mini-meta">${o.peso}kg · ${o.itens} itens</div></div>`
+        `<div class="nf-mini"><div class="nf-mini-code">NF ${esc(o.nf)}${_tag(o)}</div>${o.dest&&o.dest!==o.cidade?`<div class="nf-mini-end">${esc(o.dest)}</div>`:''}<div class="nf-mini-meta">${(+o.peso||0).toLocaleString('pt-BR')} kg · ${o.itens} vol.</div></div>`
       ).join('')}</div>${os.length>10?`<div class="rc-card-sub" style="margin-top:8px">+ ${os.length-10} pedidos</div>`:''}</div>
     </div>`;
-  }).join('') : `<div class="empty-mini">Nenhum pedido pendente. Importe um arquivo de NF acima.</div>`;
+  }).join('') : `<div class="empty-mini">${vazio}</div>`;
 }
 function toggleRcCard(i){ document.getElementById('rcd-'+i).classList.toggle('exp'); }
 window.toggleRcCard=toggleRcCard;
@@ -1271,6 +1381,7 @@ const COL_MAP={
   itens:['itens','quantidade','qtd','qty','volumes','vol','caixas'],
   dest:['dest','destinatario','destinatário','endereco','endereço','cliente','razao'],
   cep:['cep','codigopostal','codpostal','postal','zipcode','zip'],
+  tipo:['tipo','operacao','coletaentrega'],
 };
 function _norm(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');}
 function _findCol(headers,keys){
@@ -1293,32 +1404,92 @@ function _cidadeNorm(raw){
 }
 function _pesoNum(v){ if(!v) return 100; const n=parseFloat(String(v).replace(',','.').replace(/[^\d.]/g,'')); return isNaN(n)?100:Math.max(n,1); }
 
-function _rowsToOrders(rows,headers){
-  const ci={ nf:_findCol(headers,COL_MAP.nf), cidade:_findCol(headers,COL_MAP.cidade), peso:_findCol(headers,COL_MAP.peso), itens:_findCol(headers,COL_MAP.itens), dest:_findCol(headers,COL_MAP.dest), cep:_findCol(headers,COL_MAP.cep) };
-  const orders=[]; let auto=900000;
+function _tipoCelula(v,padrao){ const t=_norm(v); if(t.includes('colet')) return 'coleta'; if(t.includes('entreg')) return 'entrega'; return padrao; }
+function _rowsToOrders(rows,headers,tipoPadrao){
+  const ci={ nf:_findCol(headers,COL_MAP.nf), cidade:_findCol(headers,COL_MAP.cidade), peso:_findCol(headers,COL_MAP.peso), itens:_findCol(headers,COL_MAP.itens), dest:_findCol(headers,COL_MAP.dest), cep:_findCol(headers,COL_MAP.cep), tipo:_findCol(headers,COL_MAP.tipo) };
+  const orders=[]; let semNumero=0;
   for(const row of rows){
     if(!row||row.every(c=>!c)) continue;
-    const nf=(ci.nf>=0?String(row[ci.nf]||'').trim():'')||String(auto++);
+    const nfLido=ci.nf>=0?String(row[ci.nf]||'').trim():'';
+    const nf=nfLido||'S/N';
+    const tipo=ci.tipo>=0?_tipoCelula(row[ci.tipo],tipoPadrao):tipoPadrao;
     const cidade=_cidadeNorm(ci.cidade>=0?row[ci.cidade]:'');
     const coord=CITY_COORDS[cidade]||DEPOT;
     const cepRaw=ci.cep>=0?String(row[ci.cep]||'').replace(/\D/g,''):'';
     const cep=cepRaw.length===8?cepRaw:'';
     orders.push({
-      nf, cidade, peso:_pesoNum(ci.peso>=0?row[ci.peso]:null),
+      id:_chaveId(nfLido||('SN-'+Date.now().toString(36)+'-'+(++semNumero)),tipo), nf, tipo,
+      cidade, peso:_pesoNum(ci.peso>=0?row[ci.peso]:null),
       itens:Math.max(1,ci.itens>=0?parseInt(row[ci.itens])||1:1),
       dest:(ci.dest>=0?String(row[ci.dest]||'').trim():'')||cidade,
       cep,
       geoStatus: cep ? 'pendente' : 'sem_cep',
-      urgente:false, agendado:false, dataAgendada:'', status:'pendente', origem:'importado',
+      urgente:false, agendado:false, dataAgendada:'', status:'pendente', origem:'planilha',
       lat:coord.lat+(Math.random()-.5)*.015, lng:coord.lng+(Math.random()-.5)*.015,
     });
   }
   return {orders,ci};
 }
+
+// XML da NF-e (layout 4.00 da SEFAZ). Entrega usa o destinatário (ou o grupo
+// "entrega", se houver); coleta usa o emitente (ou o grupo "retirada").
+function _filho(el,nome){ if(!el) return null; for(const c of el.children){ if(c.localName===nome) return c; } return null; }
+function _txtXml(el,nome){ const c=_filho(el,nome); return c?c.textContent.trim():''; }
+function _numXml(v){ const n=parseFloat(String(v||'').replace(',','.')); return Number.isFinite(n)?n:0; }
+function _lerXmlNFe(texto,tipo){
+  const doc=new DOMParser().parseFromString(String(texto).replace(/^﻿/,''),'application/xml');
+  if(doc.getElementsByTagName('parsererror').length) throw new Error('XML inválido ou corrompido');
+  const infs=[...doc.getElementsByTagNameNS('*','infNFe')];
+  if(!infs.length){
+    if(doc.getElementsByTagNameNS('*','infCte').length) throw new Error('é um CT-e; por enquanto o sistema lê o XML da NF-e');
+    if(doc.getElementsByTagNameNS('*','infEvento').length) throw new Error('é um evento (cancelamento ou carta de correção), não uma nota');
+    throw new Error('não é o XML de uma NF-e');
+  }
+  let semPeso=0;
+  const orders=infs.map(inf=>{
+    const ide=_filho(inf,'ide'), emit=_filho(inf,'emit'), dest=_filho(inf,'dest');
+    const grpEntrega=_filho(inf,'entrega'), grpRetirada=_filho(inf,'retirada');
+    const coleta=tipo==='coleta';
+    const local=coleta?(grpRetirada||_filho(emit,'enderEmit')):(grpEntrega||_filho(dest,'enderDest'));
+    const remetente=_txtXml(emit,'xFant')||_txtXml(emit,'xNome');
+    const destinatario=_txtXml(dest,'xNome');
+    const nf=_txtXml(ide,'nNF')||'S/N';
+    const chave=(inf.getAttribute('Id')||'').replace(/^NFe/,'');
+    const base=/^\d{44}$/.test(chave)?chave:`${_txtXml(emit,'CNPJ')||_txtXml(emit,'CPF')}-${_txtXml(ide,'serie')}-${nf}`;
+    let peso=0, vols=0;
+    for(const v of (_filho(inf,'transp')?.children||[])){
+      if(v.localName!=='vol') continue;
+      peso+=_numXml(_txtXml(v,'pesoB'))||_numXml(_txtXml(v,'pesoL'));
+      vols+=parseInt(_txtXml(v,'qVol'))||0;
+    }
+    if(!peso) semPeso++;
+    const itens=vols||[...inf.children].filter(c=>c.localName==='det').length||1;
+    const cidade=_cidadeNorm(_txtXml(local,'xMun'));
+    const cepRaw=_txtXml(local,'CEP').replace(/\D/g,'');
+    const cep=cepRaw.length===8?cepRaw:'';
+    const lgr=_txtXml(local,'xLgr'), nro=_txtXml(local,'nro'), cpl=_txtXml(local,'xCpl');
+    const coord=CITY_COORDS[cidade]||DEPOT;
+    return {
+      id:_chaveId(base,tipo), nf, tipo, chave:/^\d{44}$/.test(chave)?chave:'',
+      dest:(coleta?remetente:(_txtXml(grpEntrega,'xNome')||destinatario))||cidade,
+      remetente, destinatario,
+      endereco:[lgr&&nro?`${lgr}, ${nro}`:lgr, cpl].filter(Boolean).join(' - '),
+      bairro:_txtXml(local,'xBairro'), uf:_txtXml(local,'UF'),
+      cidade, cep, geoStatus: cep?'pendente':'sem_cep',
+      peso:peso?Math.round(peso*100)/100:100, itens,
+      urgente:false, agendado:false, dataAgendada:'', status:'pendente', origem:'xml',
+      lat:coord.lat+(Math.random()-.5)*.015, lng:coord.lng+(Math.random()-.5)*.015,
+    };
+  });
+  return {orders, semPeso};
+}
+
+let _impTimer=null;
 function _impMsg(tipo,txt){
   const el=document.getElementById('import-msg-pedidos');
   el.className=`import-msg show ${tipo}`; el.textContent=txt;
-  setTimeout(()=>{el.className='import-msg';},7000);
+  clearTimeout(_impTimer);
+  if(tipo==='ok') _impTimer=setTimeout(()=>{el.className='import-msg';},12000);
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -1408,18 +1579,18 @@ async function _processarFilaGeo(){
         cidade: g.cidade || o.cidade,
       };
       if(!modoDemo){
-        await update(ref(db,'pedidos_rota/'+o.nf), payload);
+        await update(ref(db,'pedidos_rota/'+o.id), payload);
       } else {
-        const local = allOrders.find(x=>x.nf===o.nf);
+        const local = allOrders.find(x=>x.id===o.id);
         if(local) Object.assign(local, payload);
       }
       ok++;
     }catch(e){
       falhou++;
       if(!modoDemo){
-        update(ref(db,'pedidos_rota/'+o.nf), { geoStatus:'falhou' }).catch(()=>{});
+        update(ref(db,'pedidos_rota/'+o.id), { geoStatus:'falhou' }).catch(()=>{});
       } else {
-        const local = allOrders.find(x=>x.nf===o.nf);
+        const local = allOrders.find(x=>x.id===o.id);
         if(local) local.geoStatus='falhou';
       }
     }
@@ -1447,7 +1618,7 @@ function _geoStatusUI(txt){
 
 // Enfileira todos os pedidos com CEP ainda não geocodificado
 function agendarGeocodificacao(pedidos){
-  const candidatos = pedidos.filter(o=>o.cep && o.geoStatus==='pendente' && !_geoFila.find(f=>f.nf===o.nf));
+  const candidatos = pedidos.filter(o=>o.cep && o.geoStatus==='pendente' && !_geoFila.find(f=>f.id===o.id));
   if(!candidatos.length) return;
   _geoFila.push(...candidatos);
   _processarFilaGeo();
@@ -1455,7 +1626,7 @@ function agendarGeocodificacao(pedidos){
 window.agendarGeocodificacao = agendarGeocodificacao;
 
 // leitura de PDF (experimental) — tenta achar linhas com nº de NF e peso no texto
-async function _parsePDF(file){
+async function _parsePDF(file,tipo){
   if(!window.pdfjsLib) throw new Error('Leitor de PDF não carregou. Use CSV ou Excel.');
   const buf=await file.arrayBuffer();
   const pdf=await pdfjsLib.getDocument({data:buf}).promise;
@@ -1468,60 +1639,81 @@ async function _parsePDF(file){
   // heurística simples: procura números de NF (5-9 dígitos) e pesos (nº com kg)
   const nfs=[...texto.matchAll(/\b(\d{5,9})\b/g)].map(m=>m[1]);
   const pesos=[...texto.matchAll(/(\d+[.,]?\d*)\s*kg/gi)].map(m=>parseFloat(m[1].replace(',','.')));
-  if(!nfs.length) throw new Error('Não foi possível identificar NFs neste PDF. Tente exportar em CSV/Excel pelo SSW.');
+  if(!nfs.length) throw new Error('não foi possível achar números de nota neste PDF. Use o XML da nota ou uma planilha');
   // monta 1 pedido por NF única encontrada (peso: 1º peso achado ou 100)
-  const vistas=new Set(); const orders=[]; const coord=CITY_COORDS['Guarulhos'];
+  const vistas=new Set(); const orders=[]; const coord=DEPOT;
   nfs.forEach((nf,idx)=>{
     if(vistas.has(nf)) return; vistas.add(nf);
-    orders.push({ nf, cidade:'Sem cidade', peso:pesos[idx]||100, itens:1, dest:'Importado de PDF — conferir',
+    orders.push({ id:_chaveId(nf,tipo), nf, tipo, cidade:'Sem cidade', peso:pesos[idx]||100, itens:1, dest:'Importado de PDF — conferir',
       urgente:false, agendado:false, dataAgendada:'', status:'pendente', origem:'pdf',
       lat:coord.lat+(Math.random()-.5)*.02, lng:coord.lng+(Math.random()-.5)*.02 });
   });
   return orders;
 }
 
-async function importarArquivo(input){
-  const file=input.files[0]; if(!file) return; input.value='';
+async function _lerArquivo(file,tipo){
   const ext=file.name.split('.').pop().toLowerCase();
-  try{
-    let imported, ci={peso:-1};
-    if(ext==='pdf'){
-      const ok=confirm('⚠️ LEITURA DE PDF É EXPERIMENTAL.\n\nO sistema vai tentar extrair NFs e pesos do PDF, mas pode errar ou não achar peso. Confira os dados antes de gerar rota.\n\nPara resultado confiável, exporte CSV ou Excel pelo SSW.\n\nContinuar mesmo assim?');
-      if(!ok){ _impMsg('err','Importação de PDF cancelada.'); return; }
-      imported=await _parsePDF(file);
-    } else if(ext==='csv'){
-      const text=(await file.text()).replace(/^\uFEFF/,'');
-      const sep=text.includes(';')?';':',';
-      const lines=text.split(/\r?\n/).filter(l=>l.trim());
-      if(lines.length<2) throw new Error('CSV vazio ou sem dados.');
-      const headers=lines[0].split(sep).map(h=>h.trim().replace(/^"|"$/g,''));
-      const rows=lines.slice(1).map(l=>l.split(sep).map(v=>v.trim().replace(/^"|"$/g,'')));
-      ({orders:imported,ci}=_rowsToOrders(rows,headers));
-    } else if(ext==='xlsx'||ext==='xls'){
-      if(!window.XLSX) throw new Error('Leitor de Excel não carregou.');
-      const wb=XLSX.read(await file.arrayBuffer(),{type:'array'});
-      const data=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
-      if(data.length<2) throw new Error('Planilha vazia.');
-      ({orders:imported,ci}=_rowsToOrders(data.slice(1),data[0].map(h=>String(h||'').trim())));
-    } else throw new Error('Formato não suportado. Use CSV, Excel ou PDF.');
+  if(ext==='xml'){ const r=_lerXmlNFe(await file.text(),tipo); return {orders:r.orders, semPeso:r.semPeso}; }
+  if(ext==='pdf'){ return {orders:await _parsePDF(file,tipo), semPeso:0}; }
+  if(ext==='csv'){
+    const text=(await file.text()).replace(/^﻿/,'');
+    const sep=text.includes(';')?';':',';
+    const lines=text.split(/\r?\n/).filter(l=>l.trim());
+    if(lines.length<2) throw new Error('arquivo vazio ou sem dados');
+    const headers=lines[0].split(sep).map(h=>h.trim().replace(/^"|"$/g,''));
+    const rows=lines.slice(1).map(l=>l.split(sep).map(v=>v.trim().replace(/^"|"$/g,'')));
+    const {orders,ci}=_rowsToOrders(rows,headers,tipo);
+    return {orders, semPeso:ci.peso<0?orders.length:0};
+  }
+  if(ext==='xlsx'||ext==='xls'){
+    if(!window.XLSX) throw new Error('o leitor de Excel não carregou; recarregue a página');
+    const wb=XLSX.read(await file.arrayBuffer(),{type:'array'});
+    const data=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
+    if(data.length<2) throw new Error('planilha vazia');
+    const {orders,ci}=_rowsToOrders(data.slice(1),data[0].map(h=>String(h||'').trim()),tipo);
+    return {orders, semPeso:ci.peso<0?orders.length:0};
+  }
+  throw new Error('formato não suportado (use XML, Excel, CSV ou PDF)');
+}
 
-    if(!imported.length) throw new Error('Nenhuma NF encontrada no arquivo.');
-
-    if(ext!=='pdf' && ci.peso<0){
-      const ok=confirm(`⚠️ Coluna de PESO não identificada.\n\nAs ${imported.length} NFs serão importadas com 100kg fixo — pode causar sobrecarga de veículo.\n\nImportar mesmo assim?`);
-      if(!ok){ _impMsg('err','Importação cancelada — peso não encontrado.'); return; }
-    }
-
-    // Importar arquivo real SEMPRE grava no Firebase — mesmo que o sistema
-    // esteja em "modo demonstração" agora (banco vazio). É exatamente essa
-    // gravação que faz o Firebase deixar de estar vazio, e o listener
-    // troca sozinho pro modo real na sequência, sumindo com os pedidos fictícios.
-    const payload={}; imported.forEach(o=>payload[o.nf]=o);
-    await update(ref(db,'pedidos_rota'),payload);
-    _impMsg('ok',`✅ ${imported.length} NF(s) importada(s) de "${file.name}"${ext==='pdf'?' (PDF — confira os dados!)':''}`);
-    // dispara geocodificação em background dos que vieram com CEP
-    agendarGeocodificacao(imported);
-  }catch(e){ _impMsg('err','❌ '+e.message); }
+async function importarArquivo(input){
+  const files=[...(input.files||[])]; input.value='';
+  if(!files.length) return;
+  const tipo=tipoImport;
+  if(files.some(f=>/\.pdf$/i.test(f.name))){
+    const ok=confirm('⚠️ A LEITURA DE PDF É EXPERIMENTAL.\n\nO sistema tenta achar os números das notas e os pesos no PDF, mas pode errar. Confira os dados antes de gerar a rota.\n\nPara um resultado confiável, use o XML da nota ou uma planilha (Excel/CSV).\n\nContinuar mesmo assim?');
+    if(!ok){ _impMsg('err','Importação cancelada.'); return; }
+  }
+  _impMsg('info',`Lendo ${_plural(files.length,'arquivo','arquivos')}...`);
+  const lidos=[], erros=[]; let semPeso=0;
+  for(const f of files){
+    try{
+      const r=await _lerArquivo(f,tipo);
+      if(!r.orders.length) throw new Error('nenhuma nota encontrada');
+      lidos.push(...r.orders); semPeso+=r.semPeso;
+    }catch(e){ erros.push(`${f.name}: ${e.message}`); }
+  }
+  if(!lidos.length){ _impMsg('err','❌ Nada foi importado. '+erros.join(' · ')); return; }
+  if(semPeso){
+    const ok=confirm(`⚠️ ${_plural(semPeso,'nota está','notas estão')} sem peso no arquivo.\n\nElas entram com 100 kg cada. Confira antes de roteirizar, para não passar da capacidade do veículo.\n\nImportar mesmo assim?`);
+    if(!ok){ _impMsg('err','Importação cancelada: notas sem peso.'); return; }
+  }
+  // Nota que já saiu para rota (despachada/entregue) não é alterada.
+  const payload={}; let jaEmRota=0;
+  lidos.forEach(o=>{ if(FINAIS.includes(_statusPorId[o.id])){ jaEmRota++; return; } payload[o.id]=o; });
+  const novos=Object.values(payload);
+  try{ if(novos.length) await update(ref(db,'pedidos_rota'),payload); }
+  catch(e){ _impMsg('err','❌ Não foi possível salvar as notas: '+e.message); return; }
+  const nT=_contarTipos(novos);
+  let msg = !novos.length ? 'Nenhuma nota nova.'
+    : nT.entrega&&nT.coleta ? `✅ ${_plural(novos.length,'nota importada','notas importadas')}: ${_resumoTipos(nT,' e ')}.`
+    : nT.coleta ? `✅ ${_plural(nT.coleta,'coleta importada','coletas importadas')}.`
+    : `✅ ${_plural(nT.entrega,'entrega importada','entregas importadas')}.`;
+  if(jaEmRota) msg+=` ${_plural(jaEmRota,'nota já estava','notas já estavam')} em rota e não ${jaEmRota===1?'foi alterada':'foram alteradas'}.`;
+  if(erros.length) msg+=` Não deu para ler: ${erros.join(' · ')}.`;
+  _impMsg(erros.length||!novos.length?'warn':'ok', msg);
+  // localiza no mapa em segundo plano as que vieram com CEP
+  agendarGeocodificacao(novos);
 }
 window.importarArquivo=importarArquivo;
 
@@ -1537,6 +1729,19 @@ const VEICULOS=[
 ];
 let vehSel=null, capKgD=0, maxPedD=6, rotaGeradaD=[], fonteDistanciaD='—';
 let rotasConfirmadasDemo=[];
+let rotTipoD='todos', regraCargaD='';
+function _pendPorTipo(){ return _contarTipos(allOrders.filter(o=>o.status==='pendente')); }
+function renderRotTipoD(inicial){
+  const n=_pendPorTipo();
+  if(inicial) rotTipoD = filtroTipo!=='todos'&&n[filtroTipo] ? filtroTipo : (n.entrega&&n.coleta ? 'todos' : (n.coleta?'coleta':'entrega'));
+  const ops=[['entrega','Entregas'],['coleta','Coletas'],['todos','Entregas e coletas']];
+  document.getElementById('rot-tipo').innerHTML=ops.map(([v,t])=>`<button type="button" data-v="${v}" aria-pressed="${rotTipoD===v}">${t}<span class="n">${n[v]}</span></button>`).join('');
+  document.getElementById('rot-tipo-nota').textContent =
+    rotTipoD==='coleta' ? 'O veículo sai vazio e volta com as coletas para o centro de distribuição.'
+    : rotTipoD==='todos' ? 'O veículo sai com as entregas, faz todas elas e só depois as coletas. Assim a carga a bordo nunca passa da capacidade.'
+    : 'O veículo sai carregado com as entregas.';
+}
+function setRotTipoD(v){ rotTipoD=['entrega','coleta'].includes(v)?v:'todos'; renderRotTipoD(false); }
 let motoristasFirebase={}, motoristasDemo=[], motoristaSelecionadoD=null;
 let chatSessionId='';
 
@@ -1594,6 +1799,7 @@ function usarMotoristaD(motId){
   document.getElementById('presets-row-d').innerHTML='';
   document.getElementById('rot-step-veiculo').style.display='none';
   document.getElementById('rot-step-cap').style.display='block';
+  renderRotTipoD(true);
 }
 window.usarMotoristaD=usarMotoristaD;
 function selVeicD(id){
@@ -1605,6 +1811,7 @@ function selVeicD(id){
     `<div class="preset-chip" onclick="setPresetD(${p},this)">${p>=1000?(p/1000)+'t':p+'kg'}</div>`).join('');
   document.getElementById('rot-step-veiculo').style.display='none';
   document.getElementById('rot-step-cap').style.display='block';
+  renderRotTipoD(true);
 }
 window.selVeicD=selVeicD;
 function setPresetD(v,el){ document.getElementById('cap-kg-d').value=v; document.querySelectorAll('.preset-chip').forEach(c=>c.classList.remove('on')); el.classList.add('on'); }
@@ -1615,9 +1822,14 @@ function irConfirmD(){
   const kg=parseInt(document.getElementById('cap-kg-d').value);
   if(!kg||kg<=0){ alert('Informe a capacidade em kg'); return; }
   capKgD=kg; maxPedD=Math.min(20,Math.max(1,parseInt(document.getElementById('cap-maxped-d').value)||8));
-  const pend=allOrders.filter(o=>o.status==='pendente').length;
+  const n=_pendPorTipo();
+  if(!n[rotTipoD]){ alert(rotTipoD==='coleta'?'Não há coletas pendentes.':rotTipoD==='entrega'?'Não há entregas pendentes.':'Não há pedidos pendentes.'); return; }
+  const oque = rotTipoD==='coleta' ? _plural(n.coleta,'coleta pendente','coletas pendentes')
+    : rotTipoD==='entrega' ? _plural(n.entrega,'entrega pendente','entregas pendentes')
+    : `${_plural(n.entrega,'entrega','entregas')} e ${_plural(n.coleta,'coleta','coletas')} pendentes`;
+  const semLocal=_filtrar(allOrders.filter(o=>o.status==='pendente'),rotTipoD).filter(o=>o.geoStatus!=='ok').length;
   document.getElementById('confirm-veh-name').textContent=vehSel.nome;
-  document.getElementById('confirm-details-d').innerHTML=`Capacidade: <b style="color:var(--ac)">${kg.toLocaleString('pt-BR')} kg</b><br>Máx. pedidos nesta rota: <b>${maxPedD}</b><br>Pedidos pendentes: <b>${pend}</b><br>Saída: <b>${DEPOT.name}</b>`;
+  document.getElementById('confirm-details-d').innerHTML=`Capacidade: <b style="color:var(--ac)">${kg.toLocaleString('pt-BR')} kg</b><br>Máx. de paradas: <b>${maxPedD}</b><br>Nesta viagem: <b>${oque}</b>${rotTipoD==='todos'?' <span style="color:var(--text3)">(entregas primeiro, coletas depois)</span>':''}<br>Saída: <b>${esc(DEPOT.name)}</b>${semLocal?`<br><span style="color:#8a5a06">⚠️ ${_plural(semLocal,'pedido ainda está','pedidos ainda estão')} sem localização exata (só a cidade). A ordem e os km desses pedidos são aproximados.</span>`:''}`;
   document.getElementById('rot-step-cap').style.display='none';
   document.getElementById('rot-step-confirm').style.display='block';
 }
@@ -1628,7 +1840,7 @@ window.voltarCapD=voltarCapD;
 async function executarVRPD(){
   document.getElementById('rot-step-confirm').style.display='none';
   document.getElementById('rot-step-loading').style.display='block';
-  const pend=allOrders.filter(o=>o.status==='pendente');
+  const pend=_filtrar(allOrders.filter(o=>o.status==='pendente'),rotTipoD);
   try{
     const data=await apiPost('/solve',{
       veiculos: [{ id:vehSel.id, nome:vehSel.nome, capKg:capKgD, maxPed:maxPedD }],
@@ -1638,13 +1850,14 @@ async function executarVRPD(){
     });
     rotaGeradaD=data.routes||data.rotas||[];
     fonteDistanciaD=data.fonte_distancia||'—';
+    regraCargaD=data.regra_carga||'';
     if(!data.salvo && rotaGeradaD.length){
       // prévia da rota (alimenta o indicador "Rotas" do Dashboard); se falhar, a rota continua na tela
       try{
         Promise.resolve(push(ref(db,'rotas'),{
           criadoEm: new Date().toISOString(), veiculo: vehSel.nome, status:'ativa',
           total_rotas: rotaGeradaD.length, fonte_dist: fonteDistanciaD,
-          rotas: rotaGeradaD.map(r=>({veiculo:r.veiculo||vehSel.nome, km:r.km||0, mins:r.mins||0, pedidos:(r.pedidos||[]).map(p=>String(p.nf))})),
+          rotas: rotaGeradaD.map(r=>({veiculo:r.veiculo||vehSel.nome, km:r.km||0, mins:r.mins||0, pedidos:(r.pedidos||[]).map(p=>_idDe(p))})),
         })).catch(()=>{});
       }catch(e){}
     }
@@ -1663,18 +1876,20 @@ function renderRotasResultD(rotas){
   if(!rotas.length){ res.innerHTML=`<div class="empty-mini">Nenhuma rota gerada.</div><button class="btn-modal-sec" onclick="renderVeiculosD()">← Voltar</button>`; return; }
   const totalKm=rotas.reduce((s,r)=>s+(r.km||r.distancia_km||0),0);
   const totalE=rotas.reduce((s,r)=>s+(r.pedidos?.length||r.paradas?.length||0),0);
+  const tT=_contarTipos(rotas.flatMap(r=>r.pedidos||r.paradas||[]));
   res.innerHTML=`
     <button class="btn-voltar-topo" onclick="renderVeiculosD()"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Gerar outra rota</button>
     <div class="kpis" style="max-width:640px;margin-bottom:18px">
       <div class="kpi"><div class="kpi-lbl">VIAGENS</div><div class="kpi-val">${rotas.length}</div></div>
-      <div class="kpi"><div class="kpi-lbl">ENTREGAS</div><div class="kpi-val">${totalE}</div></div>
+      <div class="kpi"><div class="kpi-lbl">PARADAS</div><div class="kpi-val">${totalE}</div><div class="kpi-split">${_resumoTipos(tT)}</div></div>
       <div class="kpi"><div class="kpi-lbl">KM TOTAL</div><div class="kpi-val">${totalKm.toFixed(0)}</div></div>
     </div>
-    <div class="rota-tabs-d" id="rota-tabs-d">${rotas.map((r,i)=>`<div class="rota-tab-d ${i===0?'active':''}" onclick="selRotaTabD(${i})">Rota ${i+1} · ${(r.pedidos?.length||r.paradas?.length||0)} entregas</div>`).join('')}</div>
+    ${regraCargaD==='soma_entregas_e_coletas'?'<div class="import-msg show warn" style="max-width:640px;margin:0 0 16px">Nesta rota o peso das entregas e das coletas foi somado para caber no veículo (regra mais conservadora).</div>':''}
+    <div class="rota-tabs-d" id="rota-tabs-d">${rotas.map((r,i)=>`<div class="rota-tab-d ${i===0?'active':''}" onclick="selRotaTabD(${i})">Rota ${i+1} · ${(r.pedidos?.length||r.paradas?.length||0)} paradas</div>`).join('')}</div>
     <div id="rota-detail-d"></div>
     <div id="confirmar-rota-wrap" style="margin-top:18px;max-width:640px">
-      <button class="btn-modal-primary" id="btn-confirmar-rota" onclick="confirmarRotaD()" style="margin-top:0">✔ Confirmar Saída para Entrega</button>
-      <div style="font-size:11.5px;color:var(--text3);margin-top:8px;text-align:center">Ao confirmar, os pedidos saem da lista de pendentes e a rota fica salva na aba Rotas.</div>
+      <button class="btn-modal-primary" id="btn-confirmar-rota" onclick="confirmarRotaD()" style="margin-top:0">✔ Confirmar saída do veículo</button>
+      <div style="font-size:11.5px;color:var(--text3);margin-top:8px;text-align:center">Ao confirmar, as entregas e coletas desta rota saem da lista de pendentes e a rota fica salva na aba Rotas.</div>
     </div>`;
   selRotaTabD(0);
 }
@@ -1690,7 +1905,7 @@ async function confirmarRotaD(){
     const nfsConfirmadas=[];
     // coleta todas as NFs de todas as rotas geradas
     rotaGeradaD.forEach(r=>{
-      (r.pedidos||r.paradas||[]).forEach(p=>{ if(p.nf) nfsConfirmadas.push(String(p.nf)); });
+      (r.pedidos||r.paradas||[]).forEach(p=>{ if(p.id||p.nf) nfsConfirmadas.push(_idDe(p)); });
     });
     if(!nfsConfirmadas.length){ throw new Error('Nenhuma NF nas rotas.'); }
 
@@ -1703,23 +1918,24 @@ async function confirmarRotaD(){
       const rotaId='rota_'+Date.now();
       const payloadRota={};
       rotaGeradaD.forEach((r,i)=>{
-        const paradas=(r.pedidos||r.paradas||[]).map(p=>({nf:String(p.nf),cidade:p.cidade||'',peso:p.peso||0,lat:p.lat,lng:p.lng}));
+        const paradas=(r.pedidos||r.paradas||[]).map(p=>({id:_idDe(p),nf:String(p.nf),tipo:_tipoDe(p),dest:p.dest||'',endereco:p.endereco||'',cidade:p.cidade||'',peso:p.peso||0,lat:p.lat,lng:p.lng}));
+        const nP=_contarTipos(paradas);
         payloadRota[rotaId+'_'+(i+1)]={
           id:rotaId+'_'+(i+1), criada_em:agora, veiculo:vehSel?.nome||'', motorista:motoristaSelecionadoD?.nome||'', cap_kg:capKgD,
           km:r.km||r.distancia_km||0, tempo_min:r.mins||r.tempo_min||0,
           peso_total:r.peso_total||paradas.reduce((s,p)=>s+(p.peso||0),0),
-          num_paradas:paradas.length, status:'em_rota', paradas,
+          num_paradas:paradas.length, entregas:nP.entrega, coletas:nP.coleta, status:'em_rota', paradas,
         };
       });
       await update(ref(db,'rotas_confirmadas'),payloadRota);
     } else {
       // modo demo: só marca localmente
-      nfsConfirmadas.forEach(nf=>{ const o=allOrders.find(x=>String(x.nf)===nf); if(o) o.status='despachado'; });
+      nfsConfirmadas.forEach(id=>{ const o=allOrders.find(x=>x.id===id); if(o) o.status='despachado'; });
       rotasConfirmadasDemo.push({
         id:'rota_'+Date.now(), criada_em:agora, veiculo:vehSel?.nome||'', motorista:motoristaSelecionadoD?.nome||'',
         km:rotaGeradaD.reduce((s,r)=>s+(r.km||0),0),
         num_paradas:nfsConfirmadas.length,
-        paradas:nfsConfirmadas.map(nf=>{const o=allOrders.find(x=>String(x.nf)===nf);return{nf,cidade:o?.cidade||'',peso:o?.peso||0};}),
+        paradas:nfsConfirmadas.map(id=>{const o=allOrders.find(x=>x.id===id);return{id,nf:o?.nf||id,tipo:_tipoDe(o),dest:o?.dest||'',cidade:o?.cidade||'',peso:o?.peso||0,lat:o?.lat,lng:o?.lng};}),
       });
     }
     // feedback e volta pro dashboard
@@ -1730,7 +1946,7 @@ async function confirmarRotaD(){
       render();
     },900);
   }catch(e){
-    btn.disabled=false; btn.textContent='✔ Confirmar Saída para Entrega';
+    btn.disabled=false; btn.textContent='✔ Confirmar saída do veículo';
     alert('Erro ao confirmar rota: '+e.message);
   }
 }
@@ -1769,16 +1985,17 @@ function desenharMiniMapaRota(rota, elId, cor){
 
   // depot
   L.circleMarker([DEPOT.lat,DEPOT.lng], {radius:6, color:'#fff', weight:2, fillColor:'#e09c12', fillOpacity:1})
-    .addTo(map).bindTooltip('Depósito');
-  // paradas numeradas
+    .addTo(map).bindTooltip(esc(DEPOT.name));
+  // paradas numeradas (coleta: círculo vazado)
   paradas.forEach((p,i)=>{
+    const col=_tipoDe(p)==='coleta';
     const icon = L.divIcon({
       className:'',
-      html:`<div style="background:${cor};color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:800;border:2px solid rgba(255,255,255,.7);box-shadow:0 0 6px rgba(22,53,42,.22);">${i+1}</div>`,
+      html:`<div style="background:${col?'#fff':cor};color:${col?cor:'#fff'};width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:800;border:2px solid ${col?cor:'rgba(255,255,255,.7)'};box-shadow:0 0 6px rgba(22,53,42,.22);">${i+1}</div>`,
       iconSize:[22,22], iconAnchor:[11,11],
     });
     L.marker([p.lat,p.lng],{icon}).addTo(map)
-      .bindTooltip(`<b>${i+1}. NF ${p.nf}</b><br>${p.cidade||''}<br>${(p.peso||0).toLocaleString('pt-BR')} kg`);
+      .bindTooltip(`<b>${i+1}. ${col?'Coleta':'Entrega'} · NF ${esc(p.nf)}</b><br>${esc(p.cidade||'')}<br>${(p.peso||0).toLocaleString('pt-BR')} kg`);
   });
   map.fitBounds(L.latLngBounds(coords), {padding:[18,18]});
 }
@@ -1808,7 +2025,7 @@ function renderRotasConfirmadas(){
         <div style="display:flex;align-items:center;gap:10px">
           <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${cor};box-shadow:0 0 8px ${cor}"></span>
           <div>
-            <div style="font-family:var(--sans);font-weight:800;font-size:15px;color:var(--text)">${r.motorista?r.motorista+' — ':''}${r.veiculo||'Rota'} · ${paradas.length} paradas</div>
+            <div style="font-family:var(--sans);font-weight:800;font-size:15px;color:var(--text)">${r.motorista?esc(r.motorista)+' — ':''}${esc(r.veiculo||'Rota')} · ${paradas.length} paradas${_contarTipos(paradas).coleta?` (${_plural(_contarTipos(paradas).entrega,'entrega','entregas')}, ${_plural(_contarTipos(paradas).coleta,'coleta','coletas')})`:''}</div>
             <div style="font-size:11.5px;color:var(--text3);margin-top:2px">${dtTxt}</div>
           </div>
         </div>
@@ -1823,7 +2040,7 @@ function renderRotasConfirmadas(){
       </div>
       <div id="${mapId}" style="height:220px;border-radius:11px;border:1px solid var(--border);margin-bottom:12px;overflow:hidden;background:var(--s3)"></div>
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
-        ${paradas.map((p,i)=>`<span style="background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:11px;font-family:var(--mono);color:var(--text2)"><b style="color:${cor}">${i+1}.</b> NF ${p.nf}${p.cidade?' · '+p.cidade:''}</span>`).join('')}
+        ${paradas.map((p,i)=>`<span style="background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:11px;font-family:var(--mono);color:var(--text2)"><b style="color:${cor}">${i+1}.</b> ${_tipoDe(p)==='coleta'?'Coleta':'Entrega'} NF ${esc(p.nf)}${p.cidade?' · '+esc(p.cidade):''}</span>`).join('')}
       </div>
       <div style="display:flex;gap:8px;border-top:1px solid var(--border);padding-top:12px">
         <button class="btn-toolbar" style="flex:1;justify-content:center;color:#a16207;border-color:rgba(161,98,7,.4)" onclick="devolverRotaD('${ridSafe}')">↩ Devolver ao sistema</button>
@@ -1856,13 +2073,13 @@ async function devolverRotaD(rotaId){
       const rota = rotasFirebase[rotaId];
       if(!rota) throw new Error('Rota não encontrada');
       const upd={};
-      (rota.paradas||[]).forEach(p=>{ upd['pedidos_rota/'+p.nf+'/status']='pendente'; });
+      (rota.paradas||[]).forEach(p=>{ upd['pedidos_rota/'+_idDe(p)+'/status']='pendente'; });
       upd['rotas_confirmadas/'+rotaId+'/status']='devolvida';
       await update(ref(db), upd);
     } else {
       const rota = rotasConfirmadasDemo.find(r=>r.id===rotaId);
       if(rota){
-        (rota.paradas||[]).forEach(p=>{ const o=allOrders.find(x=>x.nf===p.nf); if(o) o.status='pendente'; });
+        (rota.paradas||[]).forEach(p=>{ const o=allOrders.find(x=>x.id===_idDe(p)); if(o) o.status='pendente'; });
         rota.status='devolvida';
       }
       render();
@@ -1979,11 +2196,11 @@ function selRotaTabD(idx){
   document.getElementById('rota-detail-d').innerHTML=`
     <div id="rota-map"></div>
     <div class="nav-btns-d"><a href="${gmaps}" target="_blank" class="btn-nav-d gmaps">📍 Google Maps</a>${last?`<a href="https://waze.com/ul?ll=${last.lat},${last.lng}&navigate=yes" target="_blank" class="btn-nav-d waze">🚗 Waze</a>`:''}</div>
-    <div class="card" style="margin-bottom:14px"><div style="display:flex;gap:20px;font-size:13px;color:var(--text2);flex-wrap:wrap"><span>📦 <b style="color:var(--text)">${peso.toLocaleString('pt-BR')} kg</b></span><span>📍 <b style="color:var(--text)">${paradas.length}</b> paradas</span><span>🛣️ <b style="color:var(--text)">${km.toFixed(1)}</b> km</span>${mins?`<span>⏱️ <b style="color:var(--text)">${mins}</b> min</span>`:''}</div>
+    <div class="card" style="margin-bottom:14px"><div style="display:flex;gap:20px;font-size:13px;color:var(--text2);flex-wrap:wrap"><span>📦 <b style="color:var(--text)">${peso.toLocaleString('pt-BR')} kg</b></span><span>📍 <b style="color:var(--text)">${paradas.length}</b> paradas</span>${_contarTipos(paradas).coleta&&_contarTipos(paradas).entrega?`<span>🚚 sai com <b style="color:var(--text)">${_perfilCarga(paradas).saida.toLocaleString('pt-BR')} kg</b> · no máximo <b style="color:var(--text)">${_perfilCarga(paradas).max.toLocaleString('pt-BR')} kg</b> a bordo</span>`:''}<span>🛣️ <b style="color:var(--text)">${km.toFixed(1)}</b> km</span>${mins?`<span>⏱️ <b style="color:var(--text)">${mins}</b> min</span>`:''}</div>
       ${fonteDistanciaD==='Haversine'?`<div style="margin-top:10px;font-size:11.5px;color:#8a5a06;background:rgba(250,204,21,.16);border:1px solid rgba(202,138,4,.35);border-radius:8px;padding:8px 12px">⚠️ Distância calculada em linha reta (OSRM indisponível) — km real de estrada costuma ser maior.</div>`
       :fonteDistanciaD==='OSRM'?`<div style="margin-top:10px;font-size:11px;color:var(--text3)">✓ Distância real via OSRM (rota de estrada)</div>`:''}
     </div>
-    <div>${paradas.map((p,i)=>`<div class="delivery-mini"><div class="delivery-mini-num">${i+1}</div><div style="flex:1"><div style="font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text)">NF ${p.nf}</div><div style="font-size:11px;color:var(--text3)">${p.cidade||''} · ${p.peso||0}kg</div></div></div>`).join('')}</div>`;
+    <div>${paradas.map((p,i)=>`<div class="delivery-mini"><div class="delivery-mini-num${_tipoDe(p)==='coleta'?' c':''}">${i+1}</div><div style="flex:1;min-width:0"><div style="font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text)">NF ${esc(p.nf)}${_tag(p)}</div><div style="font-size:11px;color:var(--text3)">${p.dest&&p.dest!==p.cidade?esc(p.dest)+' · ':''}${p.endereco?esc(p.endereco)+' · ':''}${esc(p.cidade||'')} · ${(+p.peso||0).toLocaleString('pt-BR')} kg</div></div></div>`).join('')}</div>`;
   setTimeout(()=>desenharMapaRota(paradas),100);
 }
 window.selRotaTabD=selRotaTabD;
@@ -1996,8 +2213,9 @@ function desenharMapaRota(paradas){
   L.circleMarker([DEPOT.lat,DEPOT.lng],{radius:7,color:'#fff',weight:2,fillColor:'#e09c12',fillOpacity:1}).addTo(rotaMapInst).bindTooltip('Saída — '+DEPOT.name);
   const pts=[[DEPOT.lat,DEPOT.lng]];
   paradas.forEach((p,i)=>{
-    const mk=L.divIcon({className:'',html:`<div style="background:#0d1b2e;color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;border:2px solid #fff;font-family:sans-serif">${i+1}</div>`,iconSize:[28,28],iconAnchor:[14,14]});
-    L.marker([p.lat,p.lng],{icon:mk}).addTo(rotaMapInst).bindTooltip(`NF ${p.nf}`);
+    const col=_tipoDe(p)==='coleta';
+    const mk=L.divIcon({className:'',html:`<div style="background:${col?'#fff':'#0d1b2e'};color:${col?'#0d1b2e':'#fff'};width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;border:2px solid ${col?'#0d1b2e':'#fff'};font-family:sans-serif;box-sizing:border-box">${i+1}</div>`,iconSize:[28,28],iconAnchor:[14,14]});
+    L.marker([p.lat,p.lng],{icon:mk}).addTo(rotaMapInst).bindTooltip(`${col?'Coleta':'Entrega'} · NF ${esc(p.nf)}`);
     pts.push([p.lat,p.lng]);
   });
   pts.push([DEPOT.lat,DEPOT.lng]);
