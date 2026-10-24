@@ -76,8 +76,9 @@ def _carregar_pedidos_firebase() -> list[dict]:
     data = resp.json()
     return list(data.values()) if isinstance(data, dict) else []
 
-def _salvar_rota_firebase(payload: dict) -> None:
-    req_lib.post(_fb("rotas"), json=payload, timeout=10)
+def _salvar_rota_firebase(payload: dict) -> bool:
+    r = req_lib.post(_fb("rotas"), json=payload, timeout=10)
+    return r.ok
 
 _STATUS_FINAIS = {"despachado", "entregue", "confirmado"}
 
@@ -264,7 +265,7 @@ def solve(body: SolveRequest, uid: str = Depends(exigir_login)):
         salvo = False
         if _tem_segredo():
             try:
-                _salvar_rota_firebase({
+                salvo = _salvar_rota_firebase({
                     "criadoEm":    __import__("datetime").datetime.utcnow().isoformat(),
                     "veiculo":     veiculo_nome,
                     "status":      "ativa",
@@ -280,7 +281,6 @@ def solve(body: SolveRequest, uid: str = Depends(exigir_login)):
                         for r in routes
                     ],
                 })
-                salvo = True
             except Exception as e:
                 logger.warning("Não salvou a prévia da rota no Firebase: %s", e)
         # Sem a chave do Firebase no servidor, a própria tela grava a prévia
