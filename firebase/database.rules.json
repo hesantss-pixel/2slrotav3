@@ -35,6 +35,34 @@
     "sync_log": {
       ".read": "auth != null && root.child('acesso').child(auth.uid).val() === true",
       ".write": false
+    },
+    "entregador": {
+      ".read": "auth != null && root.child('acesso').child(auth.uid).val() === true",
+      ".write": "auth != null && root.child('acesso').child(auth.uid).val() === true",
+      "$token": {
+        ".read": "$token.length >= 20 && data.child('expira').val() > now",
+        "baixas": {
+          "$i": {
+            ".write": "root.child('entregador').child($token).child('expira').val() > now && root.child('entregador').child($token).child('paradas').child($i).exists()",
+            ".validate": "newData.hasChildren(['status', 'hora'])",
+            "status": { ".validate": "newData.val() === 'feito' || newData.val() === 'nao_feito'" },
+            "hora": { ".validate": "newData.isNumber() && newData.val() <= now + 60000" },
+            "motivo": { ".validate": "newData.isString() && newData.val().length <= 120" },
+            "obs": { ".validate": "newData.isString() && newData.val().length <= 300" },
+            "recebedor": { ".validate": "newData.isString() && newData.val().length <= 80" },
+            "temFoto": { ".validate": "newData.isBoolean()" },
+            "lat": { ".validate": "newData.isNumber()" },
+            "lng": { ".validate": "newData.isNumber()" },
+            "$outro": { ".validate": false }
+          }
+        },
+        "fotos": {
+          "$i": {
+            ".write": "root.child('entregador').child($token).child('expira').val() > now && root.child('entregador').child($token).child('paradas').child($i).exists()",
+            ".validate": "newData.isString() && newData.val().beginsWith('data:image/jpeg;base64,') && newData.val().length < 400000"
+          }
+        }
+      }
     }
   }
 }
