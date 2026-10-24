@@ -1,5 +1,5 @@
 """
-vrp_solver.py — Motor OR-Tools VRP para 2SL LOG
+vrp_solver.py — Motor de roteirização (OR-Tools VRP) do ROTAV3
 ------------------------------------------------
 Resolve Vehicle Routing Problem com:
   - Capacidade por peso (kg)
@@ -54,7 +54,8 @@ class RotaResultado(TypedDict):
 # ── Constantes ─────────────────────────────────────────────────────────────────
 
 OSRM_URL   = "https://router.project-osrm.org/table/v1/driving"
-DEPOT      = {"lat": -23.4542, "lng": -46.5338, "nome": "2SL LOG — Av. Júlia Gaiolli, 740 — Guarulhos"}
+# Centro de distribuição padrão; a tela manda o da conta em "deposito".
+DEPOT      = {"lat": -23.424492, "lng": -46.387695, "nome": "Centro de distribuição"}
 OSRM_LIMIT = 100   # Máximo de pontos por chamada OSRM (servidor público)
 
 # Velocidade média estimada para fallback Haversine: 40 km/h
@@ -132,6 +133,7 @@ def solve_vrp(
     pedidos: list[Pedido],
     veiculos: list[Veiculo],
     time_limit_s: int = 30,
+    deposito: dict | None = None,
 ) -> dict:
     """
     Resolve VRP com OR-Tools.
@@ -141,6 +143,7 @@ def solve_vrp(
     pedidos      : lista de pedidos pendentes com lat/lng
     veiculos     : lista de veículos disponíveis
     time_limit_s : tempo máximo do solver em segundos
+    deposito     : {lat, lng, nome} de onde as rotas saem (padrão: DEPOT)
 
     Retorna
     -------
@@ -163,8 +166,10 @@ def solve_vrp(
     if not pedidos:
         return {"routes": [], "nao_alocados": [], "fonte_distancia": "—", "solver_status": "vazio"}
 
+    dep = deposito if deposito and deposito.get("lat") is not None and deposito.get("lng") is not None else DEPOT
+
     # ── 1. Pontos: depósito (índice 0) + pedidos ──────────────────────────────
-    points = [DEPOT] + [{"lat": p["lat"], "lng": p["lng"]} for p in pedidos]
+    points = [{"lat": float(dep["lat"]), "lng": float(dep["lng"])}] + [{"lat": p["lat"], "lng": p["lng"]} for p in pedidos]
     n_nodes   = len(points)
     n_veics   = len(veiculos)
 
@@ -290,9 +295,9 @@ def solve_vrp(
         mins = _calc_mins(seq, dur_mx)
 
         # Coordenadas para polilinha no mapa
-        coords = [{"lat": DEPOT["lat"], "lng": DEPOT["lng"]}]
+        coords = [{"lat": float(dep["lat"]), "lng": float(dep["lng"])}]
         coords += [{"lat": p["lat"], "lng": p["lng"]} for p in peds_rota]
-        coords += [{"lat": DEPOT["lat"], "lng": DEPOT["lng"]}]
+        coords += [{"lat": float(dep["lat"]), "lng": float(dep["lng"])}]
 
         routes.append({
             "veiculo": veiculo["nome"],

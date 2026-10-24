@@ -1,5 +1,5 @@
 """
-nf_parser.py — Parsers de notas fiscais para 2SL LOG
+nf_parser.py — Parsers de notas fiscais para o ROTAV3
 ------------------------------------------------------
 Extrai pedidos (nf, cidade, peso, itens, destinatario) a partir de:
   - XML NF-e (padrão SEFAZ 4.00)

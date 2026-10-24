@@ -99,8 +99,8 @@ CITY_COORDS: dict[str, dict] = {
 # ── Conexão TOTVS ─────────────────────────────────────────────────────────────
 
 def conectar_totvs():
-  if pyodbc is None:
-        raise RuntimeError("pyodbc não disponível neste ambiente. Execute localmente na rede da empresa.") -> pyodbc.Connection:
+    if pyodbc is None:
+        raise RuntimeError("pyodbc não disponível neste ambiente. Execute localmente na rede da empresa.")
     conn_str = (
         f"DRIVER={{{TOTVS_DRIVER}}};"
         f"SERVER={TOTVS_SERVER};"

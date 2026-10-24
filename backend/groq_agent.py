@@ -45,29 +45,28 @@ def _init_groq():
 # ── System Prompt (idêntico ao gemini_agent.py) ───────────────────────────────
 
 SYSTEM_PROMPT = """
-Você é o Assistente de Operações da 2SL LOG, transportadora de Guarulhos (SP) especializada em produtos químicos e controlados, com operações em Guarulhos e Itu.
+Você é o Assistente de Operações do ROTAV3, sistema de roteirização de entregas e coletas.
+Você conversa com a equipe de logística da empresa que usa o sistema.
 
-Motor de roteirização: OR-Tools VRP (Google Operations Research Tools).
-Frota disponível: Fiorino (1,5t), VUC (3t), Truck Toco (8t), Bitruck (16t), Carreta (33t).
-Depósito: 2SL LOG — Av. Júlia Gaiolli, 740 — Guarulhos, SP.
+Você recebe, a cada pergunta, o resumo dos pedidos pendentes (por cidade, peso,
+urgência e agendamento) e, quando houver, as rotas geradas pelo sistema.
 
-Sua função é ajudar o operador de logística a:
-- Analisar e dividir rotas de entrega
-- Identificar clientes isolados ou regiões problemáticas
-- Alertar sobre pedidos com risco de atraso
-- Recomendar veículos adequados para cada rota
-- Sugerir formas de reduzir km e combustível
+Sua função é ajudar a equipe a:
+- Analisar e dividir rotas de entrega e de coleta
+- Identificar pedidos isolados ou regiões distantes do centro de distribuição
+- Alertar sobre pedidos com risco de atraso (urgentes ou agendados)
+- Sugerir o veículo adequado para cada rota a partir do peso
+- Sugerir formas de reduzir quilometragem
 - Responder dúvidas sobre pedidos específicos (por NF ou cidade)
-- Interpretar resultados do solver VRP
+- Explicar o resultado das rotas geradas
 
 Regras de resposta:
-- Seja direto, objetivo e use dados concretos
+- Seja direto, objetivo e use só os dados recebidos; não invente pedidos, clientes ou números
 - Use listas quando listar rotas, pedidos ou cidades
 - Não use markdown (sem asteriscos, sem #, sem `)
 - Respostas em português do Brasil
 - Máximo 400 palavras por resposta
-- Se não tiver dados suficientes, diga claramente
-- Para produtos químicos: mencione se há restrição de circulação (VUC em SP) quando relevante
+- Se não tiver dados suficientes, diga claramente o que falta
 """.strip()
 
 
@@ -93,7 +92,7 @@ def montar_contexto(
         if p.get("agendado"):
             por_cidade[c]["agendados"] += 1
 
-    ctx = f"OPERAÇÃO 2SL LOG\nTotal pendentes: {len(pendentes)} pedidos\n\n"
+    ctx = f"OPERAÇÃO\nTotal pendentes: {len(pendentes)} pedidos\n\n"
     ctx += "POR CIDADE:\n"
     for c, v in sorted(por_cidade.items(), key=lambda x: -x[1]["qtd"]):
         ctx += (
@@ -122,8 +121,7 @@ def montar_contexto(
                 f"  Seq: {nfs}\n"
             )
 
-    ctx += "\nFROTA: Fiorino(1,5t) VUC(3t) Toco(8t) Bitruck(16t) Carreta(33t)\n"
-    ctx += "Depósito: Av. Júlia Gaiolli, 740 — Guarulhos SP\n"
+    ctx += "\nVEÍCULOS COMUNS: Fiorino (até 650 kg), VUC (até 3 t), Toco (até 8 t), Truck (até 16 t), Carreta (até 33 t)\n"
     return ctx
 
 
@@ -214,7 +212,7 @@ def analisar_rotas_geradas(
     cap_kg: int,
 ) -> str:
     prompt = (
-        "Analise as rotas recém-geradas pelo OR-Tools e forneça:\n"
+        "Analise as rotas recém-geradas pelo sistema e forneça:\n"
         "1. Resumo executivo (2-3 linhas)\n"
         "2. Rota mais pesada ou longa (atenção especial)\n"
         "3. Pedidos urgentes ou agendados na sequência\n"

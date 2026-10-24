@@ -1,12 +1,13 @@
 """
-main.py — Backend 2SL LOG (FastAPI)
-------------------------------------
-Endpoints:
-  POST /solve       — Executa OR-Tools VRP e retorna rotas otimizadas
-  POST /chat        — Chat com Gemini (com histórico por session_id)
-  POST /sync        — Dispara sincronização manual TOTVS → Firebase
-  GET  /status      — Health check + info da última sincronização
-  GET  /pedidos     — Lista pedidos pendentes do Firebase (proxy)
+main.py — Servidor de rotas do ROTAV3 (FastAPI)
+-----------------------------------------------
+Endpoints (todos, menos /status, exigem login — ver auth_firebase.py):
+  POST /solve       — Monta as rotas (OR-Tools VRP) a partir dos pedidos
+  POST /chat        — Assistente de IA (com histórico por session_id)
+  POST /upload-nf   — Lê notas fiscais (PDF, XML, XLSX, CSV)
+  POST /sync        — Sincronização manual TOTVS → Firebase (opcional)
+  GET  /status      — Verificação de funcionamento (público)
+  GET  /pedidos     — Lista pedidos pendentes do Firebase
 
 Deploy: Railway.app (ver railway.toml)
 Docs:   http://localhost:8000/docs  (Swagger automático do FastAPI)
@@ -18,13 +19,14 @@ import uuid
 from typing import Optional
 
 import requests as req_lib
-from fastapi import FastAPI, HTTPException, Header, UploadFile, File, Form
+from fastapi import Depends, FastAPI, HTTPException, Header, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from vrp_solver   import solve_vrp
 from groq_agent import GroqChat as GeminiChat, consulta_unica, analisar_rotas_geradas
 from nf_parser    import parse_many
+import auth_firebase
 
 try:
     from totvs_sync import sincronizar
@@ -37,16 +39,19 @@ logger = logging.getLogger(__name__)
 # ── App ───────────────────────────────────────────────────────────────────────
 
 app = FastAPI(
-    title="2SL LOG — Backend",
-    description="Motor OR-Tools VRP + Gemini AI + Sync TOTVS",
-    version="2.0.0",
+    title="ROTAV3 — Servidor de rotas",
+    description="Roteirização (OR-Tools VRP), assistente de IA e leitura de notas fiscais",
+    version="3.0.0",
+    docs_url="/docs" if os.getenv("DOCS_PUBLICAS", "0") == "1" else None,
+    redoc_url=None,
 )
 
-# CORS — permite chamadas do GitHub Pages (ajuste o domínio conforme necessário)
-ALLOWED_ORIGINS = os.getenv(
+# CORS — de onde a tela pode chamar este servidor (separe por vírgula)
+ALLOWED_ORIGINS = [o.strip() for o in os.getenv(
     "ALLOWED_ORIGINS",
-    "https://seu-usuario.github.io,http://localhost:3000,http://127.0.0.1:5500"
-).split(",")
+    "https://hesantss-pixel.github.io,https://app.rotav3.com.br,"
+    "http://localhost:8080,http://127.0.0.1:8080,http://127.0.0.1:5500"
+).split(",") if o.strip()]
 
 app.add_middleware(
     CORSMiddleware,
@@ -101,6 +106,24 @@ def _salvar_pedido_firebase(pedido: dict) -> str:
         logger.warning("Firebase upsert falhou nf=%s: %s", nf, e)
         return "erro"
 
+def _tem_segredo() -> bool:
+    return bool(FIREBASE_SECRET)
+
+
+def exigir_login(authorization: Optional[str] = Header(None)) -> str:
+    """Dependência dos endpoints protegidos: devolve o uid do usuário liberado."""
+    try:
+        return auth_firebase.verificar(authorization)
+    except auth_firebase.AuthError as e:
+        raise HTTPException(status_code=e.status, detail=e.mensagem)
+
+
+class Deposito(BaseModel):
+    lat:  float
+    lng:  float
+    nome: str = "Centro de distribuição"
+
+
 # ── Chaves de sessão chat (em memória; escala horizontal requer Redis) ────────
 
 _sessions: dict[str, GeminiChat] = {}
@@ -134,6 +157,7 @@ class SolveRequest(BaseModel):
     veiculos:     Optional[list[Veiculo]] = None
     time_limit_s: int = 30
     pedidos:      Optional[list[dict]] = None
+    deposito:     Optional[Deposito] = None
 
     # Campos legado (frontend antigo)
     capacidade_kg: Optional[float] = None
@@ -162,6 +186,7 @@ class ChatRequest(BaseModel):
     rotas:      Optional[list[dict]] = None
     veiculo:    Optional[str] = None
     cap_kg:     Optional[int] = None
+    pedidos:    Optional[list[dict]] = None
 
 class SyncRequest(BaseModel):
     # Corpo vazio — apenas POST para disparar
@@ -171,20 +196,16 @@ class SyncRequest(BaseModel):
 
 @app.get("/status")
 def status():
-    """Health check. Retorna versão e última sincronização TOTVS."""
-    sync_resp = req_lib.get(_fb("sync_log/ultimo"), timeout=5)
-    sync_data = sync_resp.json() if sync_resp.ok else {}
+    """Verificação de funcionamento (pública, sem dados da operação)."""
     return {
         "status": "online",
-        "versao": "2.0.0",
-        "motor": "OR-Tools VRP",
-        "ia": "Gemini 1.5 Flash",
-        "ultima_sync": sync_data,
+        "versao": "3.0.0",
+        "login": "obrigatório" if auth_firebase.AUTH_REQUIRED else "desligado (teste local)",
     }
 
 
 @app.get("/pedidos")
-def listar_pedidos():
+def listar_pedidos(uid: str = Depends(exigir_login)):
     """Retorna pedidos pendentes do Firebase."""
     try:
         pedidos = _carregar_pedidos_firebase()
@@ -195,7 +216,7 @@ def listar_pedidos():
 
 
 @app.post("/solve")
-def solve(body: SolveRequest):
+def solve(body: SolveRequest, uid: str = Depends(exigir_login)):
     """
     Executa OR-Tools VRP.
 
@@ -225,7 +246,8 @@ def solve(body: SolveRequest):
 
         # 3. Solver
         veiculos_dict = [v.model_dump() for v in frota]
-        resultado = solve_vrp(pendentes, veiculos_dict, body.time_limit_s)
+        deposito = body.deposito.model_dump() if body.deposito else None
+        resultado = solve_vrp(pendentes, veiculos_dict, body.time_limit_s, deposito)
 
         routes    = resultado["routes"]
         n_aloc    = resultado["nao_alocados"]
@@ -239,22 +261,30 @@ def solve(body: SolveRequest):
         veiculo_nome = frota[0].nome
         cap_kg_val   = frota[0].capKg
 
-        _salvar_rota_firebase({
-            "criadoEm":    __import__("datetime").datetime.utcnow().isoformat(),
-            "veiculo":     veiculo_nome,
-            "status":      "ativa",
-            "total_rotas": len(routes),
-            "fonte_dist":  fonte,
-            "rotas": [
-                {
-                    "veiculo":  r["veiculo"],
-                    "km":       r["km"],
-                    "mins":     r["mins"],
-                    "pedidos":  [p["nf"] for p in r["pedidos"]],
-                }
-                for r in routes
-            ],
-        })
+        salvo = False
+        if _tem_segredo():
+            try:
+                _salvar_rota_firebase({
+                    "criadoEm":    __import__("datetime").datetime.utcnow().isoformat(),
+                    "veiculo":     veiculo_nome,
+                    "status":      "ativa",
+                    "total_rotas": len(routes),
+                    "fonte_dist":  fonte,
+                    "rotas": [
+                        {
+                            "veiculo":  r["veiculo"],
+                            "km":       r["km"],
+                            "mins":     r["mins"],
+                            "pedidos":  [p["nf"] for p in r["pedidos"]],
+                        }
+                        for r in routes
+                    ],
+                })
+                salvo = True
+            except Exception as e:
+                logger.warning("Não salvou a prévia da rota no Firebase: %s", e)
+        # Sem a chave do Firebase no servidor, a própria tela grava a prévia
+        # (com o login do usuário) — ver executarVRPD() no index.html.
 
         # NÃO marca pedidos aqui — o /solve é PREVIEW. O status muda pra
         # "despachado" só quando o frontend chama confirmarRotaD() e o
@@ -262,13 +292,13 @@ def solve(body: SolveRequest):
         # várias previews (com veículos/capacidades diferentes) sem "queimar"
         # os pedidos pendentes.
 
-        # 4. Análise Gemini
+        # 5. Análise automática da IA
         try:
             analise = analisar_rotas_geradas(
                 routes, pendentes, n_aloc, veiculo_nome, int(cap_kg_val)
             )
         except Exception as e:
-            logger.warning("Gemini indisponível: %s", e)
+            logger.warning("IA indisponível: %s", e)
             analise = (
                 f"Motor OR-Tools gerou {len(routes)} rota(s) com {sum(len(r['pedidos']) for r in routes)} "
                 f"entregas totais. {('Pedidos não alocados: ' + ', '.join(n_aloc)) if n_aloc else 'Todos os pedidos foram alocados.'}"
@@ -282,6 +312,7 @@ def solve(body: SolveRequest):
             "fonte_distancia":   fonte,
             "solver_status":     status_vp,
             "analise_ia":        analise,
+            "salvo":             salvo,
         }
 
     except HTTPException:
@@ -292,7 +323,7 @@ def solve(body: SolveRequest):
 
 
 @app.post("/chat")
-def chat(body: ChatRequest):
+def chat(body: ChatRequest, uid: str = Depends(exigir_login)):
     """
     Chat com Gemini.
     Mantém histórico por session_id.
@@ -302,8 +333,8 @@ def chat(body: ChatRequest):
         sid = body.session_id or str(uuid.uuid4())
         session = _get_session(sid)
 
-        # Atualiza contexto com dados frescos
-        pedidos = _carregar_pedidos_firebase()
+        # Atualiza contexto com os pedidos enviados pela tela (ou do Firebase)
+        pedidos = body.pedidos if body.pedidos is not None else (_carregar_pedidos_firebase() if _tem_segredo() else [])
         session.atualizar_contexto(
             pedidos,
             rotas=body.rotas,
@@ -327,6 +358,7 @@ MAX_UPLOAD_FILES  = int(os.getenv("MAX_UPLOAD_FILES",  "40"))
 async def upload_nf(
     arquivos: list[UploadFile] = File(..., description="PDF, XML NF-e, XLSX ou CSV"),
     persistir: bool = Form(True, description="Se true, grava no Firebase"),
+    uid: str = Depends(exigir_login),
 ):
     """
     Recebe uma ou várias notas fiscais em PDF, XML NF-e, XLSX ou CSV,
@@ -364,7 +396,7 @@ async def upload_nf(
     erros   = resultado["erros"]
 
     resumo = {"novo": 0, "atualizado": 0, "preservado": 0, "erro": 0}
-    if persistir and pedidos:
+    if persistir and pedidos and _tem_segredo():
         for p in pedidos:
             r = _salvar_pedido_firebase(p)
             resumo[r] = resumo.get(r, 0) + 1
@@ -386,7 +418,7 @@ async def upload_nf(
 
 
 @app.post("/sync")
-def sync_totvs():
+def sync_totvs(uid: str = Depends(exigir_login)):
     """Dispara sincronização manual TOTVS → Firebase."""
     try:
         sincronizar()

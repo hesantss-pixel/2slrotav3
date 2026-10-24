@@ -1,0 +1,40 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "acesso": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": false
+      }
+    },
+    "config": {
+      ".read": "auth != null && root.child('acesso').child(auth.uid).val() === true",
+      ".write": false
+    },
+    "pedidos_rota": {
+      ".read": "auth != null && root.child('acesso').child(auth.uid).val() === true",
+      ".write": "auth != null && root.child('acesso').child(auth.uid).val() === true"
+    },
+    "rotas": {
+      ".read": "auth != null && root.child('acesso').child(auth.uid).val() === true",
+      ".write": "auth != null && root.child('acesso').child(auth.uid).val() === true"
+    },
+    "rotas_confirmadas": {
+      ".read": "auth != null && root.child('acesso').child(auth.uid).val() === true",
+      ".write": "auth != null && root.child('acesso').child(auth.uid).val() === true"
+    },
+    "motoristas": {
+      ".read": "auth != null && root.child('acesso').child(auth.uid).val() === true",
+      ".write": "auth != null && root.child('acesso').child(auth.uid).val() === true"
+    },
+    "geo_cache": {
+      ".read": "auth != null && root.child('acesso').child(auth.uid).val() === true",
+      ".write": "auth != null && root.child('acesso').child(auth.uid).val() === true"
+    },
+    "sync_log": {
+      ".read": "auth != null && root.child('acesso').child(auth.uid).val() === true",
+      ".write": false
+    }
+  }
+}

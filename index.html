@@ -3,25 +3,30 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#3a9a66">
-<title>Via Verde Transportes — Roteirização</title>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Barlow+Condensed:ital,wght@1,700;1,800&family=Barlow+Semi+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#0d1b2e">
+<meta name="robots" content="noindex">
+<title>ROTAV3 — Roteirização</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <style>
 :root{
-  --bg:#f5f8f6;--s1:#ffffff;--s2:#ffffff;--s3:#f3f6f4;--s4:#e8eeea;
-  --border:#e6ece8;--border2:#d3ddd7;
-  --vv:#3a9a66;--vv2:#2f8657;--mid:#3a9a66;--ac:#2b8a57;--brand:#3a9a66;--lime:#a6ce39;
-  --vv-glow:rgba(58,154,102,0.16);
-  --green:#2b8a57;--red:#d64545;--yellow:#e0a21b;--cyan:#1f8fa6;--purple:#7c5cc4;
-  --text:#18211d;--text2:#4b5a53;--text3:#66756e;
-  --sans:'Plus Jakarta Sans',sans-serif;--logo:'Barlow Condensed',sans-serif;--body:'Plus Jakarta Sans','Inter',sans-serif;--mono:'JetBrains Mono',monospace;
+  --bg:#f3f6fa;--s1:#ffffff;--s2:#ffffff;--s3:#f1f4f8;--s4:#e7ecf3;
+  --border:#e6ebf2;--border2:#d5dde8;
+  --vv:#f3b62b;--vv2:#e09c12;--mid:#b07b12;--ac:#94650a;--brand:#f3b62b;--lime:#f8d77a;
+  --vv-glow:rgba(243,182,43,0.22);
+  --navy:#0d1b2e;--gold-grad:linear-gradient(180deg,#f8d77a 0%,#f3b62b 55%,#e09c12 100%);
+  --green:#16a36a;--red:#d64545;--yellow:#e0a21b;--cyan:#1f8fa6;--purple:#7c5cc4;--blue:#2f6fe4;--amber:#e08a00;
+  --text:#0d1b2e;--text2:#475569;--text3:#64748b;
+  --sans:'Sora','Inter',sans-serif;--logo:'Sora',sans-serif;--body:'Inter',sans-serif;--mono:'JetBrains Mono',monospace;
   --sidebar-w:256px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;}
 body{background:var(--bg);color:var(--text);font-family:var(--body);min-height:100vh;overflow-x:hidden;}
-body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle,rgba(47,143,95,0.04) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:0;}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle,rgba(243,182,43,0.04) 1px,transparent 1px);background-size:28px 28px;pointer-events:none;z-index:0;}
 ::-webkit-scrollbar{width:8px;height:8px;}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:8px;}
 a{color:inherit;text-decoration:none;}
@@ -39,7 +44,7 @@ button{font-family:inherit;}
 .sb-item{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:10px;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;transition:all .15s;}
 .sb-item svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;flex-shrink:0;}
 .sb-item:hover{background:var(--s2);color:var(--text);}
-.sb-item.active{background:linear-gradient(135deg,rgba(47,143,95,.18),rgba(47,143,95,.06));color:var(--text);box-shadow:inset 3px 0 0 var(--mid);}
+.sb-item.active{background:linear-gradient(135deg,rgba(243,182,43,.18),rgba(243,182,43,.06));color:var(--text);box-shadow:inset 3px 0 0 var(--mid);}
 .sb-item.active svg{stroke:var(--ac);}
 .sb-footer{padding:14px 18px 18px;border-top:1px solid var(--border);}
 .sb-status{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;color:var(--green);margin-bottom:8px;}
@@ -61,7 +66,7 @@ button{font-family:inherit;}
 .hpills{margin-left:auto;display:flex;gap:7px;flex-shrink:0;}
 .hpill{display:flex;align-items:center;gap:5px;background:var(--s2);border:1px solid var(--border);border-radius:20px;padding:5px 10px;font-size:11px;font-weight:700;color:var(--text2);white-space:nowrap;}
 .hdot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pd 2s infinite;flex-shrink:0;}
-.hpill.ia{background:rgba(47,143,95,.1);border-color:rgba(47,143,95,.4);color:var(--mid);}
+.hpill.ia{background:rgba(243,182,43,.1);border-color:rgba(243,182,43,.4);color:var(--mid);}
 .hpill.ia .hdot{background:var(--mid);}
 
 .page{max-width:1360px;padding:26px;}
@@ -72,9 +77,9 @@ button{font-family:inherit;}
 /* KPI CARDS */
 .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;max-width:640px;}
 .kpi{background:var(--s2);border:1px solid var(--border);border-radius:16px;padding:16px 17px;position:relative;overflow:hidden;}
-.kpi::after{content:'';position:absolute;right:-24px;top:-24px;width:90px;height:90px;background:radial-gradient(circle,var(--kc,rgba(47,143,95,.14)),transparent 70%);}
+.kpi::after{content:'';position:absolute;right:-24px;top:-24px;width:90px;height:90px;background:radial-gradient(circle,var(--kc,rgba(243,182,43,.14)),transparent 70%);}
 .kpi-top{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
-.kpi-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:var(--kbg,rgba(47,143,95,.15));flex-shrink:0;}
+.kpi-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:var(--kbg,rgba(243,182,43,.15));flex-shrink:0;}
 .kpi-icon svg{width:17px;height:17px;stroke:var(--kfg,var(--ac));fill:none;stroke-width:1.8;}
 .kpi-lbl{font-size:10.5px;font-weight:700;letter-spacing:.5px;color:var(--text2);}
 .kpi-val{font-family:var(--sans);font-weight:800;font-size:24px;color:var(--text);line-height:1;}
@@ -149,9 +154,9 @@ button{font-family:inherit;}
 .btn-voltar-topo svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;}
 
 /* ── MODAL (overlay genérico p/ agendamento e wizard de rota) ────────── */
-.modal-overlay{position:fixed;inset:0;background:rgba(22,53,42,.42);backdrop-filter:blur(3px);z-index:1000;display:none;align-items:flex-start;justify-content:center;padding:60px 20px;overflow-y:auto;}
+.modal-overlay{position:fixed;inset:0;background:rgba(13,27,46,.45);backdrop-filter:blur(3px);z-index:1000;display:none;align-items:flex-start;justify-content:center;padding:60px 20px;overflow-y:auto;}
 .modal-overlay.open{display:flex;}
-.modal-box{background:var(--s2);border:1px solid var(--border2);border-radius:20px;padding:26px;width:100%;max-width:520px;box-shadow:0 20px 60px rgba(22,53,42,.22);}
+.modal-box{background:var(--s2);border:1px solid var(--border2);border-radius:20px;padding:26px;width:100%;max-width:520px;box-shadow:0 20px 60px rgba(13,27,46,.22);}
 .modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
 .modal-title{font-family:var(--sans);font-weight:800;font-size:17px;color:var(--text);}
 .modal-close{background:var(--s3);border:none;color:var(--text2);width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:16px;}
@@ -166,7 +171,7 @@ button{font-family:inherit;}
 .search-item:hover{border-color:var(--mid);}
 .search-item-nf{font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text);}
 .search-item-meta{font-size:11px;color:var(--text2);margin-top:2px;}
-.sugestao-box{background:rgba(47,143,95,.08);border:1px solid rgba(47,143,95,.25);border-radius:10px;padding:11px 13px;margin-top:14px;font-size:12.5px;color:var(--ac);line-height:1.5;display:none;}
+.sugestao-box{background:rgba(243,182,43,.08);border:1px solid rgba(243,182,43,.25);border-radius:10px;padding:11px 13px;margin-top:14px;font-size:12.5px;color:var(--ac);line-height:1.5;display:none;}
 .sugestao-box.show{display:block;}
 .btn-modal-primary{width:100%;background:linear-gradient(135deg,var(--vv),var(--vv2));border:none;border-radius:12px;padding:13px;font-family:var(--sans);font-weight:800;font-size:13px;color:var(--text);cursor:pointer;margin-top:18px;}
 .btn-modal-sec{width:100%;background:none;border:none;color:var(--text3);font-size:12px;padding:10px;cursor:pointer;margin-top:4px;}
@@ -206,23 +211,23 @@ button{font-family:inherit;}
 .veh-card:hover{border-color:var(--vc,var(--mid));transform:translateY(-2px);}
 .veh-card-icon{width:50px;height:50px;background:var(--s3);border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;}
 .veh-card-name{font-family:var(--sans);font-weight:800;font-size:15px;color:var(--text);}
-.veh-card-tag{display:inline-block;background:rgba(47,143,95,.15);border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700;color:var(--ac);margin:5px 0;font-family:var(--mono);}
+.veh-card-tag{display:inline-block;background:rgba(243,182,43,.15);border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700;color:var(--ac);margin:5px 0;font-family:var(--mono);}
 .veh-card-desc{font-size:11.5px;color:var(--text2);line-height:1.4;}
 .cap-form-box{background:var(--s2);border:1px solid var(--border2);border-radius:18px;padding:26px;max-width:420px;}
 .presets-row{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap;}
 .preset-chip{background:var(--s3);border:1px solid var(--border2);border-radius:20px;padding:7px 14px;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;font-family:var(--mono);}
-.preset-chip:hover,.preset-chip.on{background:rgba(47,143,95,.15);border-color:var(--mid);color:var(--ac);}
+.preset-chip:hover,.preset-chip.on{background:rgba(243,182,43,.15);border-color:var(--mid);color:var(--ac);}
 #rota-map{width:100%;height:340px;border-radius:14px;border:1px solid var(--border2);margin-bottom:16px;}
 .rota-results-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:16px;align-items:start;}
 .delivery-mini{display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:11px 13px;margin-bottom:7px;}
 .delivery-mini-num{width:26px;height:26px;background:linear-gradient(135deg,var(--mid),var(--vv2));border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--sans);font-weight:800;font-size:11px;color:var(--text);flex-shrink:0;}
 .rota-tabs-d{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
 .rota-tab-d{background:var(--s2);border:1px solid var(--border2);border-radius:10px;padding:9px 13px;cursor:pointer;font-size:12px;}
-.rota-tab-d.active{background:rgba(47,143,95,.15);border-color:var(--mid);}
+.rota-tab-d.active{background:rgba(243,182,43,.15);border-color:var(--mid);}
 .nav-btns-d{display:flex;gap:10px;margin-bottom:14px;}
 .btn-nav-d{flex:1;text-align:center;padding:11px;border-radius:10px;font-weight:800;font-size:12.5px;color:var(--text);text-decoration:none;}
 .btn-nav-d.waze{background:linear-gradient(135deg,#1a6dd8,#1347a0);}
-.btn-nav-d.gmaps{background:linear-gradient(135deg,#1a8050,#126038);}
+.btn-nav-d.gmaps{background:linear-gradient(135deg,#1e3a5f,#0d1b2e);}
 .load-ring-d{width:52px;height:52px;border:3px solid var(--border2);border-top-color:var(--mid);border-radius:50%;animation:spin .9s linear infinite;margin:0 auto 20px;}
 @keyframes spin{to{transform:rotate(360deg);}}
 
@@ -244,133 +249,216 @@ button{font-family:inherit;}
 @media(max-width:1180px){.grid-main{grid-template-columns:1fr 1fr;}.col-c{grid-column:1/3;flex-direction:row;}.col-c>*{flex:1;}}
 @media(max-width:920px){.sidebar{transform:translateX(-100%);}.main{margin-left:0;}.kpis{grid-template-columns:repeat(2,1fr);}.grid-main{grid-template-columns:1fr;}.col-c{grid-column:1;flex-direction:column;}}
 
-/* ── VIA VERDE · modelo claro (sidebar branca, verde suave) ─────────── */
+/* ── ROTAV3 · identidade (sidebar branca, dourado e azul-marinho) ───── */
+[hidden]{display:none!important;}
 body{font-family:var(--body);background:var(--bg);color:var(--text);}
 body::before{display:none;}
 .sidebar{background:#fff;border-right:1px solid var(--border);box-shadow:none;overflow:hidden;}
-.sb-logo{height:76px;box-sizing:border-box;padding:0 24px;background:none;border-bottom:none;display:flex;align-items:center;gap:12px;}
-.sb-logo-icon,.logo-icon{background:none;box-shadow:none;border-radius:0;width:44px;height:28px;flex-shrink:0;}
-.sb-logo-icon svg,.logo-icon svg{width:44px;height:28px;fill:#8cc63f;}
-.sb-logo-name,.logo-name{white-space:nowrap;font-family:var(--logo);font-style:italic;font-weight:800;font-size:26px;line-height:.9;color:#0f6b3e;}
-.sb-logo-sub,.logo-sub{font-family:var(--logo);font-style:italic;font-weight:700;font-size:15px;text-transform:none;letter-spacing:.3px;line-height:1;color:var(--vv);margin-top:2px;}
+.sb-logo{height:76px;box-sizing:border-box;padding:0 22px;border-bottom:none;display:flex;align-items:center;}
+.sb-logo img{width:152px;height:auto;display:block;}
 .sb-nav{padding:10px 14px;display:flex;flex-direction:column;gap:6px;}
-.sb-item{display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:12px;font-family:var(--sans);font-size:14.5px;font-weight:600;color:var(--text2);box-shadow:none;border-left:none;}
-.sb-item svg{width:20px;height:20px;stroke:#7d8c85;fill:none;stroke-width:1.7;flex-shrink:0;}
+.sb-item{display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:12px;font-family:var(--body);font-size:14.5px;font-weight:600;color:var(--text2);box-shadow:none;border-left:none;}
+.sb-item svg{width:20px;height:20px;stroke:#64748b;fill:none;stroke-width:1.7;flex-shrink:0;}
 .sb-item:hover{background:var(--s3);color:var(--text);}
-.sb-item.active{background:#e3f3e8;color:var(--text);box-shadow:none;}
-.sb-item.active svg{stroke:var(--vv);fill:rgba(58,154,102,.2);}
-.sb-footer{position:relative;margin-top:auto;height:176px;padding:0;border:none;background:none;}
-.sb-tag{position:relative;z-index:1;display:flex;gap:10px;align-items:flex-start;padding:0 24px;font-size:13px;font-weight:600;line-height:1.35;color:var(--text);}
-.sb-tag svg{width:20px;height:20px;stroke:var(--vv);fill:none;stroke-width:1.8;stroke-linecap:round;flex-shrink:0;margin-top:1px;}
-.sb-art{position:absolute;left:0;right:0;bottom:0;width:100%;height:100%;}
+.sb-item.active{background:var(--gold-grad);color:var(--navy);box-shadow:0 8px 18px -10px rgba(224,156,18,.8),inset 0 1px 0 rgba(255,255,255,.55);}
+.sb-item.active svg{stroke:var(--navy);fill:none;}
+.sb-footer{position:relative;margin-top:auto;height:190px;padding:0;border:none;background:none;overflow:hidden;}
+.sb-mark{position:absolute;left:-34px;bottom:34px;width:220px;height:auto;opacity:.07;pointer-events:none;}
+.sb-slogan{position:absolute;left:22px;bottom:26px;font-style:italic;font-size:12.5px;line-height:1.5;color:var(--text2);}
+.sb-slogan::after{content:'';display:block;width:30px;height:2px;margin-top:10px;background:var(--vv);border-radius:2px;}
 .header{background:#fff;border-bottom:1px solid var(--border);backdrop-filter:none;padding:0 32px;}
 .header-inner{height:72px;gap:16px;}
-.hdr-logo{display:none;align-items:center;gap:10px;}
+.hdr-logo{display:none;align-items:center;}
+.hdr-logo img{width:118px;height:auto;display:block;}
 .menu-btn{display:none;background:#fff;border:1px solid var(--border2);border-radius:10px;width:40px;height:40px;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;}
 .menu-btn svg{width:22px;height:22px;stroke:var(--text);fill:none;stroke-width:2;stroke-linecap:round;}
 .search{display:flex;align-items:center;gap:10px;flex:1;max-width:580px;height:44px;padding:0 14px;background:#fff;border:1px solid var(--border2);border-radius:12px;cursor:text;transition:border-color .15s,box-shadow .15s;}
 .search:focus-within{border-color:var(--vv);box-shadow:0 0 0 3px var(--vv-glow);}
-.search svg{width:18px;height:18px;stroke:#7d8c85;fill:none;stroke-width:1.8;stroke-linecap:round;flex-shrink:0;}
+.search svg{width:18px;height:18px;stroke:#64748b;fill:none;stroke-width:1.8;stroke-linecap:round;flex-shrink:0;}
 .search input{flex:1;min-width:0;border:none;outline:none;background:none;font:500 13.5px var(--body);color:var(--text);}
 .search input::placeholder{color:var(--text3);}
 .bell{position:relative;margin-left:auto;width:40px;height:40px;background:none;border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;}
 .bell:hover{background:var(--s3);}
 .bell svg{width:22px;height:22px;stroke:var(--text);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
-.bell-dot{display:none;position:absolute;top:7px;right:8px;width:9px;height:9px;border-radius:50%;background:var(--vv);border:2px solid #fff;}
+.bell-dot{display:none;position:absolute;top:7px;right:8px;width:9px;height:9px;border-radius:50%;background:#ef4444;border:2px solid #fff;}
 .bell.has .bell-dot{display:block;}
-.user{display:flex;align-items:center;gap:11px;padding:6px 16px 6px 6px;border:1px solid var(--border);border-radius:14px;}
-.avatar{width:38px;height:38px;border-radius:50%;background:#56635d;display:flex;align-items:center;justify-content:center;}
+.user{display:flex;align-items:center;gap:11px;padding:6px 8px 6px 6px;border:1px solid var(--border);border-radius:14px;}
+.avatar{width:38px;height:38px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .avatar svg{width:22px;height:22px;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;}
-.user-t b{display:block;font-size:13px;font-weight:700;line-height:1.2;}
+.user-t{min-width:0;}
+.user-t b{display:block;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:700;line-height:1.2;}
 .user-t span{display:block;font-size:12px;color:var(--text3);}
+.user-sair{margin-left:6px;height:32px;padding:0 12px;border-radius:9px;border:1px solid var(--border2);background:#fff;font:600 12.5px var(--body);color:var(--text2);cursor:pointer;}
+.user-sair:hover{border-color:var(--vv);color:var(--text);}
 .page{max-width:1400px;padding:30px 32px 40px;}
 .head-row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:24px;}
-.page-title{font-family:var(--sans);font-style:normal;font-weight:800;font-size:30px;letter-spacing:-.4px;color:var(--text);}
+.page-title{font-family:var(--sans);font-style:normal;font-weight:700;font-size:30px;letter-spacing:-.6px;color:var(--text);}
 .page-title::after{display:none;}
 .page-sub{font-size:14px;color:var(--text3);margin-top:4px;}
-.hpills{margin-left:0;display:flex;gap:10px;}
-.hpill{display:flex;align-items:center;gap:8px;height:40px;padding:0 18px;border-radius:12px;background:#e9f6ee;border:1px solid #d3ecdc;color:var(--ac);font-size:13px;font-weight:700;}
-.hpill .hdot{width:9px;height:9px;border-radius:50%;background:var(--vv);}
-.hpill.ia{background:#fff;border-color:var(--border2);color:#3b63c9;cursor:pointer;}
-.hpill.ia svg{width:16px;height:16px;fill:#3b63c9;stroke:none;}
-.hpill.ia:hover{border-color:#3b63c9;}
+.hpills{margin-left:0;display:flex;gap:10px;flex-wrap:wrap;}
+.hpill{display:flex;align-items:center;gap:8px;height:40px;padding:0 18px;border-radius:12px;background:#e8f7ef;border:1px solid #c9ecd9;color:#0f7a4c;font-size:13px;font-weight:700;}
+.hpill .hdot{width:9px;height:9px;border-radius:50%;background:var(--green);}
+.hpill.ia{background:#fff;border:1.5px solid var(--vv);color:var(--navy);cursor:pointer;}
+.hpill.ia img{width:18px;height:18px;}
+.hpill.ia:hover{background:#fff8e6;}
+.hpill.demo{background:#fff8e6;border-color:#f6d98b;color:#7a5408;}
 .kpis{max-width:none;gap:20px;margin-bottom:20px;}
-.kpi,.card{background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:0 1px 2px rgba(20,40,30,.04),0 8px 24px rgba(20,40,30,.05);}
+.kpi,.card{background:#fff;border:1px solid var(--border);border-radius:16px;box-shadow:0 1px 2px rgba(13,27,46,.04),0 8px 24px rgba(13,27,46,.05);}
 .kpi{padding:20px 22px;}
 .kpi::after{display:none;}
 .kpi-top{gap:14px;margin-bottom:14px;}
-.kpi .kpi-icon{width:44px;height:44px;border-radius:12px;background:#e3f3e8;}
-.kpi .kpi-icon svg{width:22px;height:22px;stroke:var(--vv);}
+.kpi .kpi-icon{width:48px;height:48px;border-radius:12px;background:var(--kbg,#fff5d9);}
+.kpi .kpi-icon img{width:30px;height:30px;display:block;}
 .kpi-lbl{font-size:12px;letter-spacing:.7px;color:var(--text2);}
-.kpi-val{font-size:34px;font-weight:800;letter-spacing:-.5px;}
+.kpi-val{font-family:var(--sans);font-size:34px;font-weight:700;letter-spacing:-.8px;}
 .kpi-delta{font-size:13px;font-weight:500;color:var(--text3);margin-top:8px;}
-.kpi-delta.up,#kpi-pedidos-d,#kpi-rotas-d{color:var(--ac);}
-#kpi-pedidos-d:not(:empty)::before{content:'↑ ';font-weight:800;}
+.kpi-delta.up,#kpi-rotas-d.up{color:#0f7a4c;font-weight:600;}
+#kpi-pedidos-d.up::before{content:'↑ ';font-weight:800;}
 .grid-main{grid-template-columns:minmax(0,1.08fr) minmax(0,1fr);gap:20px;}
 .col-a,.col-b{gap:20px;}
 .card{padding:22px;}
 .card-head{margin-bottom:16px;}
-.card-title{gap:10px;font-size:15px;font-weight:700;}
-.card-title svg{width:28px;height:28px;padding:6px;box-sizing:border-box;background:#e3f3e8;border-radius:9px;stroke:var(--vv);}
-.card-link{font-size:12.5px;font-weight:500;color:var(--text3);}
+.card-title{gap:10px;font-family:var(--body);font-size:15px;font-weight:700;}
+.card-title .em{width:26px;height:26px;display:block;flex-shrink:0;}
+.card-title svg{width:28px;height:28px;padding:6px;box-sizing:border-box;background:#fff5d9;border-radius:9px;stroke:var(--mid);}
+.card-link{font-size:12.5px;font-weight:600;color:var(--text);}
 .card-link:hover{color:var(--ac);}
 .reg-row{gap:14px;margin-bottom:13px;font-size:13px;}
-.reg-name{width:104px;font-weight:500;color:var(--text);}
-.reg-bar-wrap{height:11px;background:#eef2ef;border-radius:6px;}
-.reg-bar-fill{border-radius:6px;background-image:linear-gradient(90deg,rgba(255,255,255,.4),rgba(255,255,255,0))!important;}
-.reg-val{width:92px;font-family:var(--sans);font-size:13px;font-weight:600;color:var(--text);}
+.reg-name{width:112px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.reg-bar-wrap{height:11px;background:#eef2f7;border-radius:6px;}
+.reg-bar-fill{border-radius:6px;background-image:linear-gradient(90deg,rgba(255,255,255,.35),rgba(255,255,255,0))!important;}
+.reg-val{width:92px;font-family:var(--body);font-size:13px;font-weight:600;color:var(--text);}
 .reg-total{font-size:13px;color:var(--text3);border-top:1px solid var(--border);padding-top:14px;margin-top:6px;}
-.btn-add-ag{background:#e3f3e8;border:none;border-radius:10px;padding:9px 16px;font-size:13px;font-weight:700;color:var(--ac);}
-.btn-add-ag:hover{background:#d3ecdc;color:var(--ac);}
+.btn-add-ag{background:#fff;border:1.5px solid var(--vv);border-radius:10px;padding:8px 16px;font-size:13px;font-weight:700;color:var(--navy);cursor:pointer;}
+.btn-add-ag:hover{background:#fff8e6;color:var(--navy);}
 .empty-mini{text-align:center;color:var(--text3);font-size:14px;padding:10px 0 6px;}
-#ag-list .empty-mini::before{content:'';display:block;width:28px;height:28px;margin:0 auto 10px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2366756e' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M8 2v4M16 2v4M3 10h18M5 6h14a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z'/%3E%3C/svg%3E") center/contain no-repeat;}
+#ag-list .empty-mini::before{content:'';display:block;width:28px;height:28px;margin:0 auto 10px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M8 2v4M16 2v4M3 10h18M5 6h14a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z'/%3E%3C/svg%3E") center/contain no-repeat;}
 .ia-panel{background:#fff;border:1px solid var(--border);}
-.ia-hello{background:#f4f6f5;border-radius:12px;padding:14px 16px;margin-bottom:12px;}
+.ia-hello{background:#f6f8fb;border-radius:12px;padding:14px 16px;margin-bottom:12px;}
 .ia-greet{font-size:15px;font-weight:700;margin-bottom:2px;}
 .ia-sub{font-size:13px;color:var(--text2);margin:0;}
-.ia-insight{background:color-mix(in srgb,var(--kc) 8%,#fff);border:1px solid color-mix(in srgb,var(--kc) 16%,#fff);border-left:3px solid var(--kc);border-radius:10px;padding:12px 14px;margin-bottom:10px;}
-.ia-insight-h{font-size:12.5px;font-weight:700;color:color-mix(in srgb,var(--kc) 72%,#000);margin-bottom:4px;}
+.ia-insight{background:color-mix(in srgb,var(--kc) 8%,#fff);border:1px solid color-mix(in srgb,var(--kc) 18%,#fff);border-left:3px solid var(--kc);border-radius:10px;padding:12px 14px;margin-bottom:10px;}
+.ia-insight-h{font-size:12.5px;font-weight:700;color:color-mix(in srgb,var(--kc) 70%,#000);margin-bottom:4px;}
 .ia-insight-t{font-size:13px;color:var(--text);line-height:1.5;}
-.ia-btn,.btn-modal-primary,.chat-send{background:linear-gradient(90deg,#3a9a66,#5db98a);color:#fff;border:none;border-radius:12px;font-family:var(--sans);font-weight:700;}
-.ia-btn{height:48px;font-size:14px;margin-top:4px;box-shadow:0 6px 16px rgba(58,154,102,.22);}
-.ia-btn:hover,.btn-modal-primary:hover{filter:brightness(1.05);}
-.chat-msg.user{background:linear-gradient(90deg,#3a9a66,#5db98a);color:#fff;}
+.ia-btn,.btn-modal-primary,.chat-send{background:var(--gold-grad);color:var(--navy);border:none;border-radius:12px;font-family:var(--body);font-weight:700;box-shadow:0 8px 18px -10px rgba(224,156,18,.85),inset 0 1px 0 rgba(255,255,255,.55);}
+.ia-btn svg,.chat-send svg{fill:var(--navy);}
+.ia-btn{height:48px;font-size:14px;margin-top:4px;}
+.ia-btn:hover,.btn-modal-primary:hover,.chat-send:hover{filter:brightness(1.04);}
+.btn-modal-primary:disabled{opacity:.6;cursor:wait;}
+.chat-msg.user{background:var(--navy);color:#fff;}
 .chat-msg.bot{background:var(--s3);}
-.delivery-mini-num{background:var(--vv);color:#fff;border:none;}
+.delivery-mini-num{background:var(--navy);color:#fff;border:none;}
 .btn-nav-d{color:#fff;}
 .btn-toolbar:hover{border-color:var(--vv);color:var(--ac);}
 #mapa-dist{height:318px;border-radius:12px;border:none;}
 .alert-row{gap:12px;padding:15px 2px;font-size:14px;color:var(--text);border-bottom:1px solid var(--border);}
 .alert-dot{width:9px;height:9px;}
-.alert-count{font-family:var(--sans);font-size:14px;font-weight:700;}
+.alert-count{font-family:var(--body);font-size:14px;font-weight:700;}
 .alert-count::after{content:'›';margin-left:12px;color:var(--text3);font-weight:500;}
-.leaflet-container{background:#e8f0ea!important;font-family:var(--body);}
-.nav-scrim{display:none;position:fixed;inset:0;background:rgba(24,33,29,.4);z-index:250;}
+.leaflet-container{background:#eef2f7!important;font-family:var(--body);}
+.nav-scrim{display:none;position:fixed;inset:0;background:rgba(13,27,46,.4);z-index:250;}
 :focus-visible{outline:2px solid var(--vv);outline-offset:2px;}
+
+/* ── entrada: carregando, login e acesso pendente ─────────────────── */
+body:not(.autorizado)>.sidebar,body:not(.autorizado)>.main,body:not(.autorizado)>.nav-scrim{display:none!important;}
+.boot{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;background:var(--bg);z-index:2000;}
+.boot img{width:170px;height:auto;}
+.boot-ring{width:34px;height:34px;border:3px solid var(--border2);border-top-color:var(--vv);border-radius:50%;animation:spin .9s linear infinite;}
+.auth-screen{position:fixed;inset:0;z-index:2000;overflow-y:auto;display:flex;align-items:center;justify-content:center;padding:24px;
+  background:radial-gradient(900px 600px at 15% 0%,rgba(37,78,140,.55),transparent 60%),radial-gradient(700px 500px at 100% 100%,rgba(243,182,43,.12),transparent 60%),linear-gradient(160deg,#0b1a30,#050b16);}
+.boot[hidden],.auth-screen[hidden]{display:none;}
+.auth-card{display:grid;grid-template-columns:1fr 1fr;width:100%;max-width:920px;background:#fff;border-radius:22px;overflow:hidden;box-shadow:0 40px 90px -30px rgba(0,0,0,.7);}
+.auth-side{position:relative;padding:44px 40px;color:#e9eef5;background:radial-gradient(500px 300px at 0% 0%,rgba(37,78,140,.6),transparent 70%),#0b1a30;display:flex;flex-direction:column;}
+.auth-logo{width:170px;height:auto;}
+.auth-side h1{margin-top:auto;padding-top:60px;font-family:var(--sans);font-size:28px;line-height:1.15;letter-spacing:-.6px;color:#fff;}
+.auth-side h1 span{color:#f3d27a;}
+.auth-side p{margin-top:14px;font-size:14.5px;line-height:1.6;color:#a9b6c7;}
+.auth-form{padding:44px 40px;display:flex;flex-direction:column;}
+.auth-form h2,.auth-card--single h2{font-family:var(--sans);font-size:24px;letter-spacing:-.4px;color:var(--navy);}
+.auth-sub{margin-top:6px;font-size:14px;color:var(--text2);line-height:1.5;}
+.auth-form label{display:block;margin-top:18px;font-size:13px;font-weight:600;color:var(--text);}
+.auth-form input{display:block;width:100%;margin-top:7px;height:48px;padding:0 14px;border:1px solid var(--border2);border-radius:12px;font:500 15px var(--body);color:var(--text);background:#fff;outline:none;}
+.auth-form input:focus{border-color:var(--vv);box-shadow:0 0 0 3px var(--vv-glow);}
+.auth-msg{margin-top:14px;font-size:13.5px;line-height:1.5;min-height:0;}
+.auth-msg:empty{display:none;}
+.auth-msg.err{padding:10px 12px;border-radius:10px;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;}
+.auth-msg.ok{padding:10px 12px;border-radius:10px;background:#ecfdf5;border:1px solid #a7f3d0;color:#047857;}
+.auth-btn{margin-top:20px;height:50px;border:none;border-radius:12px;background:var(--gold-grad);color:var(--navy);font:700 15px var(--body);cursor:pointer;box-shadow:0 10px 22px -12px rgba(224,156,18,.9),inset 0 1px 0 rgba(255,255,255,.55);}
+.auth-btn:disabled{opacity:.65;cursor:wait;}
+.auth-link{margin-top:12px;align-self:center;background:none;border:none;font:600 13.5px var(--body);color:var(--text2);cursor:pointer;text-decoration:underline;text-underline-offset:3px;}
+.auth-link:hover{color:var(--navy);}
+.auth-foot{margin-top:auto;padding-top:26px;font-size:12px;color:var(--text3);text-align:center;}
+.auth-card--single{display:block;max-width:520px;padding:40px;}
+.auth-card--single .auth-logo-sm{width:150px;height:auto;margin-bottom:26px;}
+.auth-card--single p{margin-top:12px;font-size:14.5px;line-height:1.6;color:var(--text2);}
+.auth-code{display:flex;align-items:center;gap:10px;margin-top:12px;padding:10px 10px 10px 14px;border:1px dashed var(--border2);border-radius:12px;background:var(--s3);}
+.auth-code code{flex:1;min-width:0;overflow-wrap:anywhere;font:600 13.5px var(--mono);color:var(--navy);}
+.auth-code button{flex:none;height:34px;padding:0 14px;border-radius:9px;border:1px solid var(--border2);background:#fff;font:600 13px var(--body);cursor:pointer;}
+.auth-card--single .auth-btn{width:100%;}
+.auth-card--single .auth-link{display:block;margin:12px auto 0;}
+@media(max-width:760px){
+  .auth-card{grid-template-columns:1fr;}
+  .auth-side{padding:28px 26px 24px;}
+  .auth-side h1{padding-top:22px;font-size:22px;}
+  .auth-side p{display:none;}
+  .auth-form{padding:28px 26px 30px;}
+  .auth-card--single{padding:28px 24px;}
+}
 @media(max-width:1180px){.grid-main{grid-template-columns:minmax(0,1fr) minmax(0,1fr);}}
 @media(max-width:920px){
-  .menu-btn{display:flex;}.hdr-logo{display:flex;}.hdr-logo .logo-icon,.hdr-logo .logo-icon svg{width:36px;height:23px;}.hdr-logo .logo-name{font-size:22px;}.hdr-logo .logo-sub{font-size:13px;}
+  .menu-btn{display:flex;}.hdr-logo{display:flex;}
   .sidebar{transition:transform .22s ease;}
-  body.nav-open .sidebar{transform:none;box-shadow:8px 0 30px rgba(24,33,29,.18);}
+  body.nav-open .sidebar{transform:none;box-shadow:8px 0 30px rgba(13,27,46,.18);}
   body.nav-open .nav-scrim{display:block;}
   .header{padding:0 16px;}.header-inner{gap:10px;}.search{display:none;}.bell{margin-left:auto;}
   .page{padding:20px 16px 32px;}.kpis{grid-template-columns:repeat(2,1fr);gap:12px;}.kpi:last-child{grid-column:1/-1;}
   .grid-main{grid-template-columns:1fr;}.page-title{font-size:26px;}.rota-results-grid{grid-template-columns:1fr;}
 }
-@media(max-width:520px){.user-t{display:none;}.user{padding:3px;border-radius:50%;}.avatar{width:34px;height:34px;}.kpi{padding:16px;}.kpi-val{font-size:28px;}.chat-box{height:70vh;}}
+@media(max-width:520px){.user-t{display:none;}.user{padding:3px;border:none;}.avatar{width:34px;height:34px;}.user-sair{margin-left:2px;}.kpi{padding:16px;}.kpi-val{font-size:28px;}.chat-box{height:70vh;}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
 </style>
 </head>
 <body>
 
-<aside class="sidebar">
-  <div class="sb-logo">
-    <div class="sb-logo-icon"><svg viewBox="0 0 50 32" aria-hidden="true"><polygon points="2,30 8,2 18,2 12,30"/><polygon points="15,30 21,2 31,2 25,30"/><polygon points="28,30 34,2 49,2 43,30"/></svg></div>
-    <div>
-      <div class="sb-logo-name">VIA VERDE</div>
-      <div class="sb-logo-sub">transportes</div>
+<!-- ═══════════ ENTRADA ═══════════ -->
+<div class="boot" id="boot"><img src="assets/logo-rotav3-escuro.png" alt="ROTAV3 Systems" width="170" height="41"><div class="boot-ring" aria-label="Carregando"></div></div>
+
+<div class="auth-screen" id="auth-screen" hidden>
+  <div class="auth-card">
+    <div class="auth-side">
+      <img class="auth-logo" src="assets/logo-rotav3.png" alt="ROTAV3 Systems" width="170" height="41">
+      <h1>Entregas e coletas <span>roteirizadas</span> num só painel.</h1>
+      <p>Pedidos no mapa, rotas pelo peso e pela capacidade de cada veículo e o histórico das rotas da sua operação.</p>
     </div>
+    <form class="auth-form" id="login-form" novalidate>
+      <h2>Entrar</h2>
+      <p class="auth-sub">Use o e-mail e a senha cadastrados para a sua empresa.</p>
+      <label for="login-email">E-mail</label>
+      <input type="email" id="login-email" autocomplete="username" inputmode="email" required>
+      <label for="login-senha">Senha</label>
+      <input type="password" id="login-senha" autocomplete="current-password" required>
+      <div class="auth-msg" id="login-msg" role="alert" aria-live="polite"></div>
+      <button type="submit" class="auth-btn" id="login-btn">Entrar</button>
+      <button type="button" class="auth-link" id="login-reset">Esqueci minha senha</button>
+      <div class="auth-foot">ROTAV3 Systems · Suporte pelo WhatsApp (11) 95591-4618</div>
+    </form>
   </div>
+</div>
+
+<div class="auth-screen" id="pending-screen" hidden>
+  <div class="auth-card auth-card--single">
+    <img class="auth-logo-sm" src="assets/logo-rotav3-escuro.png" alt="ROTAV3 Systems" width="150" height="36">
+    <h2>Acesso aguardando liberação</h2>
+    <p>Você entrou como <b id="pend-email"></b>, mas este usuário ainda não foi liberado para ver os dados da operação.</p>
+    <p>Envie este código para o administrador da conta:</p>
+    <div class="auth-code"><code id="pend-uid"></code><button type="button" id="pend-copy">Copiar</button></div>
+    <button type="button" class="auth-btn" id="pend-retry">Já foi liberado? Tentar de novo</button>
+    <button type="button" class="auth-link" id="pend-sair">Sair</button>
+  </div>
+</div>
+
+<aside class="sidebar">
+  <div class="sb-logo"><img src="assets/logo-rotav3-escuro.png" alt="ROTAV3 Systems" width="152" height="37"></div>
   <nav class="sb-nav" id="sb-nav">
     <div class="sb-item active" data-page="dashboard">
       <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
@@ -402,7 +490,8 @@ body::before{display:none;}
     </div>
   </nav>
   <div class="sb-footer">
-    <svg class="sb-art" viewBox="0 0 256 150" preserveAspectRatio="xMidYMax slice" aria-hidden="true"><path d="M0 84C60 54 120 96 182 72c32-12 56-8 74 2V150H0z" fill="#edf7f0"/><path d="M0 116C70 92 132 128 200 106c28-9 44-6 56 0V150H0z" fill="#e0f1e7"/><g transform="translate(44 88) scale(1.25)"><rect x="0" y="4" width="30" height="22" rx="4" fill="#79c398"/><path d="M30 10h12l8 9v7H30z" fill="#4fa877"/><rect x="35" y="13" width="9" height="6" rx="1.5" fill="#eaf7ef"/><circle cx="12" cy="29" r="5.5" fill="#2f7d52"/><circle cx="12" cy="29" r="2" fill="#eaf7ef"/><circle cx="42" cy="29" r="5.5" fill="#2f7d52"/><circle cx="42" cy="29" r="2" fill="#eaf7ef"/></g></svg>
+    <img class="sb-mark" src="assets/marca-rotav3.png" alt="" aria-hidden="true">
+    <div class="sb-slogan">Mais rotas.<br>Mais entregas.<br>Mais resultados.</div>
   </div>
 </aside>
 
@@ -412,8 +501,10 @@ body::before{display:none;}
   <div class="header">
     <div class="header-inner">
       <button class="menu-btn" id="menu-btn" aria-label="Abrir menu"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-      <div class="hdr-logo"><div class="logo-icon"><svg viewBox="0 0 50 32" aria-hidden="true"><polygon points="2,30 8,2 18,2 12,30"/><polygon points="15,30 21,2 31,2 25,30"/><polygon points="28,30 34,2 49,2 43,30"/></svg></div><div class="hdr-brand"><div class="logo-name">VIA VERDE</div><span class="logo-sub">transportes</span></div></div>
+      <div class="hdr-logo"><img src="assets/logo-rotav3-escuro.png" alt="ROTAV3 Systems" width="118" height="29"></div>
+      <label class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="top-search" type="search" placeholder="Pesquisar pedidos, rotas, regiões..." autocomplete="off"></label>
       <button class="bell" id="bell" aria-label="Ver alertas"><svg viewBox="0 0 24 24"><path d="M6 9a6 6 0 1 1 12 0c0 5 2 6.5 2 6.5H4S6 14 6 9z"/><path d="M10 19a2 2 0 0 0 4 0"/></svg><i class="bell-dot"></i></button>
+      <div class="user"><div class="avatar"><svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="3.6"/><path d="M5 20c1.2-4 4-5.5 7-5.5s5.8 1.5 7 5.5"/></svg></div><div class="user-t"><b id="user-nome">—</b><span>Conectado</span></div><button type="button" class="user-sair" id="user-sair">Sair</button></div>
     </div>
   </div>
 
@@ -423,23 +514,24 @@ body::before{display:none;}
       <div><div class="page-title">Dashboard</div><div class="page-sub" id="page-date">Visão geral das operações</div></div>
       <div class="hpills">
         <div class="hpill"><div class="hdot"></div><span id="hdr-total">0</span> pendentes</div>
-        <div class="hpill ia" data-page="ia"><svg viewBox="0 0 24 24"><path d="M12 2l2.2 6.3L21 10l-6.8 1.7L12 18l-2.2-6.3L3 10l6.8-1.7z"/></svg>Gemini IA</div>
+        <div class="hpill demo" id="hpill-demo" hidden>Dados de demonstração</div>
+        <div class="hpill ia" data-page="ia"><img src="assets/em/sparkles_3d.png" alt="">IA Assistente</div>
       </div>
     </div>
 
     <div class="kpis">
-      <div class="kpi" style="--kc:rgba(47,143,95,.20);--kbg:rgba(47,143,95,.12);--kfg:#2a7a4f">
-        <div class="kpi-top"><div class="kpi-icon"><svg viewBox="0 0 24 24"><path d="M4 7l8-4 8 4-8 4-8-4z"/><path d="M4 7v10l8 4 8-4V7"/></svg></div><div class="kpi-lbl">PEDIDOS</div></div>
+      <div class="kpi" style="--kbg:#fff3df">
+        <div class="kpi-top"><div class="kpi-icon"><img src="assets/em/package_3d.png" alt=""></div><div class="kpi-lbl">PEDIDOS</div></div>
         <div class="kpi-val" id="kpi-pedidos">—</div>
         <div class="kpi-delta" id="kpi-pedidos-d"></div>
       </div>
-      <div class="kpi" style="--kc:rgba(14,143,159,.22);--kbg:rgba(14,143,159,.12);--kfg:#0b7a8a">
-        <div class="kpi-top"><div class="kpi-icon"><svg viewBox="0 0 24 24"><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8.2 16.6 15.8 7.4"/></svg></div><div class="kpi-lbl">ROTAS</div></div>
+      <div class="kpi" style="--kbg:#ffe9e7">
+        <div class="kpi-top"><div class="kpi-icon"><img src="assets/em/round_pushpin_3d.png" alt=""></div><div class="kpi-lbl">ROTAS</div></div>
         <div class="kpi-val" id="kpi-rotas">—</div>
         <div class="kpi-delta" id="kpi-rotas-d">nenhuma gerada ainda</div>
       </div>
-      <div class="kpi" style="--kc:rgba(202,138,4,.22);--kbg:rgba(202,138,4,.13);--kfg:#a16207">
-        <div class="kpi-top"><div class="kpi-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg></div><div class="kpi-lbl">TEMPO ESTIMADO</div></div>
+      <div class="kpi" style="--kbg:#e6f7ef">
+        <div class="kpi-top"><div class="kpi-icon"><img src="assets/em/stopwatch_3d.png" alt=""></div><div class="kpi-lbl">TEMPO ESTIMADO</div></div>
         <div class="kpi-val" id="kpi-tempo">—</div>
         <div class="kpi-delta" id="kpi-tempo-d">estimativa</div>
       </div>
@@ -448,28 +540,28 @@ body::before{display:none;}
     <div class="grid-main">
       <div class="col-a">
         <div class="card">
-          <div class="card-head"><div class="card-title"><svg viewBox="0 0 24 24"><path d="M4 19V5M4 19h16M8 15v4M12 10v9M16 6v13"/></svg>Pedidos por Região</div><div class="card-link" data-page="pedidos">Ver detalhes →</div></div>
+          <div class="card-head"><div class="card-title"><img class="em" src="assets/em/bar_chart_3d.png" alt="">Pedidos por Região</div><div class="card-link" data-page="pedidos">Ver detalhes →</div></div>
           <div id="reg-list"></div>
           <div class="reg-total" id="reg-total">—</div>
         </div>
         <div class="card">
-          <div class="card-head"><div class="card-title"><svg viewBox="0 0 24 24"><path d="M8 2v4M16 2v4M3 10h18M5 6h14a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z"/></svg>Pedidos Agendados</div><div class="btn-add-ag" onclick="abrirModalAgendar()">+ Agendar</div></div>
+          <div class="card-head"><div class="card-title"><img class="em" src="assets/em/spiral_calendar_3d.png" alt="">Pedidos Agendados</div><div class="btn-add-ag" onclick="abrirModalAgendar()">+ Agendar</div></div>
           <div id="ag-list"></div>
         </div>
         <div class="card ia-panel">
-          <div class="card-head"><div class="card-title"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="14" rx="3"/><circle cx="9" cy="10.5" r="1.2"/><circle cx="15" cy="10.5" r="1.2"/></svg>IA Assistente</div></div>
-          <div class="ia-hello"><div class="ia-greet">Olá! 👋</div><div class="ia-sub">Aqui estão os insights de hoje com base nos pedidos pendentes.</div></div>
+          <div class="card-head"><div class="card-title"><img class="em" src="assets/em/robot_3d.png" alt="">IA Assistente</div></div>
+          <div class="ia-hello"><div class="ia-greet">Olá! <img src="assets/em/waving_hand_3d_default.png" alt="" style="width:20px;height:20px;vertical-align:-4px"></div><div class="ia-sub">Aqui estão os insights de hoje com base nos pedidos pendentes.</div></div>
           <div id="ia-insights"></div>
-          <button class="ia-btn" data-page="ia"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.2H22l-6 4.4 2.3 7.4-6.3-4.6L5.7 21l2.3-7.4-6-4.4h7.6z"/></svg>Analisar com Gemini</button>
+          <button class="ia-btn" data-page="ia"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.2H22l-6 4.4 2.3 7.4-6.3-4.6L5.7 21l2.3-7.4-6-4.4h7.6z"/></svg>Analisar com IA</button>
         </div>
       </div>
       <div class="col-b">
         <div class="card">
-          <div class="card-head"><div class="card-title"><svg viewBox="0 0 24 24"><path d="M9 4 3 6.5v13L9 17l6 2.5 6-2.5v-13L15 6.5 9 4z"/></svg>Mapa de Distribuição</div><div class="card-link" data-page="mapa">Ver mapa completo →</div></div>
+          <div class="card-head"><div class="card-title"><img class="em" src="assets/em/world_map_3d.png" alt="">Mapa de Distribuição</div><div class="card-link" data-page="mapa">Ver mapa completo →</div></div>
           <div id="mapa-dist"></div>
         </div>
         <div class="card">
-          <div class="card-head"><div class="card-title"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 3.9 2.8 17a2 2 0 0 0 1.7 3h15a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>Alertas</div><div class="card-link" data-page="pedidos">Ver todos →</div></div>
+          <div class="card-head"><div class="card-title"><img class="em" src="assets/em/warning_3d.png" alt="">Alertas</div><div class="card-link" data-page="pedidos">Ver todos →</div></div>
           <div id="alert-list"></div>
         </div>
       </div>
@@ -486,7 +578,7 @@ body::before{display:none;}
     <div class="placeholder">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-2.5 2-2.5 3.5M12 16.5h.01"/></svg>
       <h3 id="other-h3">Em construção</h3>
-      <p id="other-p">Esta seção ainda está sendo integrada com o backend (OR-Tools / Gemini / Firebase). O Dashboard já está funcionando com dados reais.</p>
+      <p id="other-p">Esta seção ainda está em construção. O Dashboard, os Pedidos, a Roteirização, as Rotas, os Motoristas e o Mapa já funcionam.</p>
     </div>
   </div>
 
@@ -513,7 +605,7 @@ body::before{display:none;}
     <button class="btn-voltar-topo" onclick="irParaPagina('dashboard')"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Voltar ao Dashboard</button>
     <div class="page-head">
       <div class="page-title">Roteirização</div>
-      <div class="page-sub">Geração de rotas com OR-Tools (backend Railway)</div>
+      <div class="page-sub">Escolha o veículo e a capacidade e gere a melhor sequência de entregas e coletas</div>
     </div>
     <div id="rot-step-veiculo">
       <div class="veh-grid" id="veh-grid"></div>
@@ -551,7 +643,7 @@ body::before{display:none;}
     <button class="btn-voltar-topo" onclick="irParaPagina('dashboard')"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Voltar ao Dashboard</button>
     <div class="page-head">
       <div class="page-title">IA Assistente</div>
-      <div class="page-sub">Converse com o Gemini sobre a operação de hoje</div>
+      <div class="page-sub">Converse com a IA sobre a operação de hoje</div>
     </div>
     <div class="chat-box">
       <div class="chat-msgs" id="chat-msgs"></div>
@@ -572,7 +664,7 @@ body::before{display:none;}
     <button class="btn-voltar-topo" onclick="irParaPagina('dashboard')"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Voltar ao Dashboard</button>
     <div class="page-head">
       <div class="page-title">Rotas</div>
-      <div class="page-sub">Rotas confirmadas e despachadas — histórico salvo no Firebase</div>
+      <div class="page-sub">Rotas confirmadas e despachadas — histórico salvo</div>
     </div>
     <div id="rotas-confirmadas-lista"></div>
   </div>
@@ -637,10 +729,13 @@ body::before{display:none;}
 <script>if(window.pdfjsLib){pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';}</script>
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getDatabase, ref, onValue, set, update } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { getDatabase, ref, onValue, set, update, get, push } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, setPersistence, browserLocalPersistence } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 // ══════════════════════════════════════════════════════════════════════════
-// CONFIG — mesmos valores do app original (index.html)
+// CONFIG — projeto Firebase e servidor de rotas.
+// A chave abaixo identifica o projeto (é pública por natureza); quem protege os
+// dados são o login e as regras do banco (firebase/database.rules.json).
 // ══════════════════════════════════════════════════════════════════════════
 const FB_CFG = {
   apiKey:            'AIzaSyB5r3CJSf0N_bepvFDkyYVPZ9oC3tPt2w8',
@@ -653,10 +748,94 @@ const FB_CFG = {
 };
 const BACKEND_URL = 'https://rotainteligente2sl-production.up.railway.app';
 
-const app = initializeApp(FB_CFG);
-const db  = getDatabase(app);
+const app  = initializeApp(FB_CFG);
+const db   = getDatabase(app);
+const auth = getAuth(app);
+setPersistence(auth, browserLocalPersistence).catch(()=>{});
 
-const DEPOT = { lat: -23.424492, lng: -46.387695, name: 'Via Verde — Av. Júlia Gaiolli, 740 — Guarulhos' };
+// ── Entrada: carregando → login → acesso liberado? → sistema ─────────────
+const $id = (id)=>document.getElementById(id);
+function mostrarTela(qual){ // 'boot' | 'login' | 'pendente' | 'app'
+  $id('boot').hidden = qual!=='boot';
+  $id('auth-screen').hidden = qual!=='login';
+  $id('pending-screen').hidden = qual!=='pendente';
+  document.body.classList.toggle('autorizado', qual==='app');
+}
+const MSG_AUTH = {
+  'auth/invalid-credential':'E-mail ou senha incorretos.',
+  'auth/invalid-login-credentials':'E-mail ou senha incorretos.',
+  'auth/user-not-found':'E-mail ou senha incorretos.',
+  'auth/wrong-password':'E-mail ou senha incorretos.',
+  'auth/invalid-email':'Digite um e-mail válido.',
+  'auth/missing-password':'Digite a senha.',
+  'auth/user-disabled':'Este usuário foi desativado. Fale com o administrador.',
+  'auth/too-many-requests':'Muitas tentativas seguidas. Aguarde alguns minutos e tente de novo.',
+  'auth/network-request-failed':'Sem conexão com a internet. Verifique e tente de novo.',
+  'auth/operation-not-allowed':'O login por e-mail ainda não foi ativado nesta conta.',
+};
+function msgLogin(txt, tipo){ const m=$id('login-msg'); m.textContent=txt; m.className='auth-msg'+(tipo?' '+tipo:''); }
+$id('login-form').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const email=$id('login-email').value.trim(), senha=$id('login-senha').value;
+  if(!email||!senha){ msgLogin('Preencha o e-mail e a senha.','err'); return; }
+  const btn=$id('login-btn'); btn.disabled=true; btn.textContent='Entrando…'; msgLogin('');
+  try{ await signInWithEmailAndPassword(auth,email,senha); $id('login-senha').value=''; }
+  catch(err){ msgLogin(MSG_AUTH[err.code]||'Não foi possível entrar agora. Tente de novo.','err'); }
+  finally{ btn.disabled=false; btn.textContent='Entrar'; }
+});
+$id('login-reset').addEventListener('click', async ()=>{
+  const email=$id('login-email').value.trim();
+  if(!email){ msgLogin('Digite o seu e-mail acima e toque de novo em "Esqueci minha senha".','err'); $id('login-email').focus(); return; }
+  try{ await sendPasswordResetEmail(auth,email); msgLogin(`Se ${email} estiver cadastrado, você vai receber um link para criar uma senha nova.`,'ok'); }
+  catch(err){ msgLogin(MSG_AUTH[err.code]||'Não foi possível enviar o e-mail agora. Tente de novo.','err'); }
+});
+async function sair(){ try{ await signOut(auth); }catch(e){} location.reload(); }
+$id('user-sair').addEventListener('click', sair);
+$id('pend-sair').addEventListener('click', sair);
+$id('pend-copy').addEventListener('click', async ()=>{
+  const code=$id('pend-uid').textContent;
+  try{ await navigator.clipboard.writeText(code); $id('pend-copy').textContent='Copiado'; }
+  catch(e){ const r=document.createRange(); r.selectNodeContents($id('pend-uid')); const sel=getSelection(); sel.removeAllRanges(); sel.addRange(r); }
+});
+$id('pend-retry').addEventListener('click', ()=>{ $id('pend-retry').textContent='Verificando…'; verificarEEntrar(auth.currentUser).finally(()=>{ $id('pend-retry').textContent='Já foi liberado? Tentar de novo'; }); });
+
+async function temAcesso(user){
+  try{ const s=await get(ref(db,'acesso/'+user.uid)); return s.val()===true; }
+  catch(e){ return false; }
+}
+let appIniciado=false;
+async function verificarEEntrar(user){
+  if(!user){ mostrarTela('login'); setTimeout(()=>$id('login-email').focus(),60); return; }
+  $id('user-nome').textContent = user.displayName || user.email || 'Usuário';
+  if(!(await temAcesso(user))){
+    $id('pend-email').textContent=user.email||''; $id('pend-uid').textContent=user.uid;
+    mostrarTela('pendente'); return;
+  }
+  mostrarTela('app');
+  if(!appIniciado){ appIniciado=true; iniciarApp(); }
+}
+onAuthStateChanged(auth, verificarEEntrar);
+
+// Chamada ao servidor de rotas com o login do usuário
+async function apiPost(path, body){
+  const u=auth.currentUser;
+  const tok=u ? await u.getIdToken() : '';
+  const resp=await fetch(`${BACKEND_URL}${path}`,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},
+    body:JSON.stringify(body),
+  });
+  if(!resp.ok){
+    const err=await resp.json().catch(()=>({}));
+    if(resp.status===401) throw new Error('sua sessão expirou — saia e entre de novo');
+    if(resp.status===403) throw new Error('este usuário não tem acesso liberado');
+    throw new Error(err.detail || 'erro '+resp.status);
+  }
+  return resp.json();
+}
+
+// Centro de distribuição. Pode ser trocado no banco em config/deposito {nome, lat, lng}.
+const DEPOT = { lat: -23.424492, lng: -46.387695, name: 'Centro de distribuição' };
 const CITY_COORDS = {
   'Guarulhos':{lat:-23.424492,lng:-46.387695},'Santos':{lat:-23.9617,lng:-46.3322},
   'Guarujá':{lat:-23.9928,lng:-46.2569},'São Paulo':{lat:-23.5614,lng:-46.6559},
@@ -664,16 +843,28 @@ const CITY_COORDS = {
   'Itu':{lat:-23.2644,lng:-47.2996},'Mogi das Cruzes':{lat:-23.5234,lng:-46.1845},
   'Santo André':{lat:-23.6738,lng:-46.5438},
 };
-const REGIOES_DEF = [
-  { nome:'Guarulhos',      cor:'#3a9a66', isolado:false },
-  { nome:'Santos',         cor:'#0e8f9f', isolado:false },
-  { nome:'Guarujá',        cor:'#6f9a1f', isolado:false },
-  { nome:'São Paulo',      cor:'#7c5cc4', isolado:false },
-  { nome:'Praia Grande',   cor:'#3b7fd0', isolado:false },
-  { nome:'Sorocaba',       cor:'#c98a0b', isolado:true  },
-  { nome:'Itu',            cor:'#d9651f', isolado:true  },
-  { nome:'Outras Cidades', cor:'#7d8f89', isolado:false },
-];
+// Regiões montadas a partir dos próprios pedidos: as 7 cidades com mais pedidos
+// ganham cor própria; o resto vira "Outras cidades". Pedido a mais de
+// RAIO_ISOLADO_KM do centro de distribuição conta como região isolada.
+const CORES_REGIAO = ['#f3b62b','#2f6fe4','#e08a00','#16a36a','#7c5cc4','#0e8f9f','#d1425e'];
+const COR_OUTRAS = '#94a3b8';
+const RAIO_ISOLADO_KM = 70;
+function calcularRegioes(pedidos){
+  const porCidade=new Map();
+  pedidos.forEach(o=>{ const c=String(o.cidade||'').trim()||'Sem cidade'; if(!porCidade.has(c)) porCidade.set(c,[]); porCidade.get(c).push(o); });
+  const ord=[...porCidade.entries()].sort((a,b)=>b[1].length-a[1].length);
+  const mk=(nome,lista,cor)=>{
+    const pts=lista.filter(o=>Number.isFinite(o.lat)&&Number.isFinite(o.lng));
+    const lat=pts.length?pts.reduce((s,o)=>s+o.lat,0)/pts.length:DEPOT.lat;
+    const lng=pts.length?pts.reduce((s,o)=>s+o.lng,0)/pts.length:DEPOT.lng;
+    return {nome,cor,lista,lat,lng,isolado:_haversineKm({lat,lng},DEPOT)>RAIO_ISOLADO_KM};
+  };
+  const regs=ord.slice(0,7).map(([n,l],i)=>mk(n,l,CORES_REGIAO[i]));
+  const resto=ord.slice(7).flatMap(([,l])=>l);
+  if(resto.length){ const r=mk('Outras cidades',resto,COR_OUTRAS); r.isolado=false; regs.push(r); }
+  return regs;
+}
+function _pedidoIsolado(o){ return Number.isFinite(o.lat)&&Number.isFinite(o.lng)&&_haversineKm(o,DEPOT)>RAIO_ISOLADO_KM; }
 
 let allOrders = [];
 let modoDemo  = false;
@@ -684,7 +875,7 @@ function gerarDemoOrders(){
   const base=[
     {cidade:'Guarulhos',qtd:25},{cidade:'Santos',qtd:14},{cidade:'Guarujá',qtd:10},
     {cidade:'São Paulo',qtd:9},{cidade:'Praia Grande',qtd:7},{cidade:'Sorocaba',qtd:6},
-    {cidade:'Itu',qtd:4},{cidade:'Outras Cidades',qtd:11},
+    {cidade:'Itu',qtd:4},{cidade:'Mogi das Cruzes',qtd:6},{cidade:'Santo André',qtd:5},
   ];
   const orders=[]; let nfBase=300000;
   for(const g of base){
@@ -716,7 +907,7 @@ function carregarPedidos(){
     if(data && Object.keys(data).length>0){
       modoDemo=false;
       allOrders=Object.entries(data).map(([nf,p])=>({
-        nf, cidade:p.cidade||'Outras Cidades', peso:p.peso||100, itens:p.itens||1,
+        nf, cidade:p.cidade||'Sem cidade', peso:p.peso||100, itens:p.itens||1,
         urgente:p.urgente||false, agendado:p.agendado||false, dataAgendada:p.dataAgendada||'',
         horaEntrega:p.horaEntrega||'', status:p.status||'pendente',
         cep:p.cep||'', geoStatus:p.geoStatus||(p.cep?'pendente':'sem_cep'), bairro:p.bairro||'',
@@ -764,17 +955,15 @@ function render(){
   // KPI Pedidos
   document.getElementById('kpi-pedidos').textContent=total;
   document.getElementById('hdr-total').textContent=total;
-  document.getElementById('kpi-pedidos-d').textContent=modoDemo?'dados de demonstração':'dados em tempo real (Firebase)';
+  document.getElementById('kpi-pedidos-d').textContent=modoDemo?'dados de demonstração':'atualizado em tempo real';
+  document.getElementById('hpill-demo').hidden=!modoDemo;
   document.getElementById('kpi-pedidos-d').classList.toggle('up',!modoDemo);
 
-  // Grupos por região
-  const grupos={}; REGIOES_DEF.forEach(r=>grupos[r.nome]=[]);
-  pendentes.forEach(o=>{ const k=grupos[o.cidade]?o.cidade:'Outras Cidades'; grupos[k].push(o); });
-
+  // Grupos por região (a partir dos próprios pedidos)
+  const ativos=calcularRegioes(pendentes);
   const regList=document.getElementById('reg-list');
-  const ativos=REGIOES_DEF.filter(r=>grupos[r.nome].length>0).sort((a,b)=>grupos[b.nome].length-grupos[a.nome].length);
   regList.innerHTML = ativos.length ? ativos.map(r=>{
-    const n=grupos[r.nome].length, pct=total?(n/total*100):0;
+    const n=r.lista.length, pct=total?(n/total*100):0;
     return `<div class="reg-row"><div class="reg-name">${r.nome}</div><div class="reg-bar-wrap"><div class="reg-bar-fill" style="width:${pct}%;background:${r.cor}"></div></div><div class="reg-val">${n} (${pct.toFixed(0)}%)</div></div>`;
   }).join('') : `<div class="empty-mini">Nenhum pedido pendente</div>`;
   document.getElementById('reg-total').textContent = total?`Total de ${total} pedidos`:'—';
@@ -784,7 +973,7 @@ function render(){
     const rotas=ultimaRota.rotas;
     const mins=rotas.reduce((s,r)=>s+(r.mins||0),0);
     document.getElementById('kpi-rotas').textContent=rotas.length;
-    document.getElementById('kpi-rotas-d').textContent='última roteirização (OR-Tools)';
+    document.getElementById('kpi-rotas-d').textContent='última roteirização';
     document.getElementById('kpi-rotas-d').classList.add('up');
     document.getElementById('kpi-tempo').textContent=`${Math.round(mins/60)}h${String(Math.round(mins%60)).padStart(2,'0')}`;
     document.getElementById('kpi-tempo-d').textContent='tempo total das rotas';
@@ -813,50 +1002,49 @@ function render(){
   // Alertas reais (atrasados, urgentes, isolados)
   const atrasados = agendados.filter(o=>o._diff<0).length;
   const urgentes  = pendentes.filter(o=>o.urgente).length;
-  const isolados  = pendentes.filter(o=>REGIOES_DEF.find(r=>r.nome===o.cidade)?.isolado).length;
+  const isolados  = pendentes.filter(_pedidoIsolado).length;
   const alerts=[
     {cor:'var(--red)',    txt:'Pedidos com entrega atrasada', n:atrasados},
     {cor:'var(--yellow)', txt:'Pedidos marcados como urgentes', n:urgentes},
-    {cor:'var(--mid)',  txt:'Pedidos em regiões isoladas',   n:isolados},
+    {cor:'var(--vv)',   txt:`Pedidos a mais de ${RAIO_ISOLADO_KM} km do centro de distribuição`, n:isolados},
     {cor:'var(--text3)',  txt:'Modo demonstração ativo',       n: modoDemo?1:0},
   ].filter(a=>a.n>0);
   document.getElementById('alert-list').innerHTML = alerts.length
     ? alerts.map(a=>`<div class="alert-row"><div class="alert-dot" style="background:${a.cor}"></div>${a.txt}<div class="alert-count">${a.n}</div></div>`).join('')
     : `<div class="empty-mini">Nenhum alerta no momento ✅</div>`;
 
-  // Insights IA (heurística local; "Analisar com Gemini" chama o backend real)
+  // Insights (heurística local; "Analisar com IA" abre o chat)
   const insights=[];
-  if(isolados>0) insights.push({cor:'var(--yellow)',h:'⚠ Atenção',t:`${isolados} pedido(s) em regiões isoladas — considere agendar separadamente.`});
+  if(isolados>0) insights.push({cor:'var(--yellow)',h:'⚠ Atenção',t:`${isolados} pedido(s) a mais de ${RAIO_ISOLADO_KM} km do centro de distribuição — considere agendar separadamente.`});
   const maiorRegiao=ativos[0];
-  if(maiorRegiao) insights.push({cor:'var(--cyan)',h:'📊 Maior volume',t:`${maiorRegiao.nome} concentra ${grupos[maiorRegiao.nome].length} pedido(s) hoje.`});
+  if(maiorRegiao && maiorRegiao.nome!=='Outras cidades') insights.push({cor:'var(--blue)',h:'📊 Maior volume',t:`${maiorRegiao.nome} concentra ${maiorRegiao.lista.length} pedido(s) hoje.`});
   if(urgentes>0) insights.push({cor:'var(--red)',h:'🔺 Urgente',t:`${urgentes} pedido(s) marcados como urgentes precisam de rota prioritária.`});
   if(!insights.length) insights.push({cor:'var(--green)',h:'✅ Tudo certo',t:'Nenhum ponto de atenção identificado nos pedidos pendentes.'});
   document.getElementById('ia-insights').innerHTML=insights.map(i=>
     `<div class="ia-insight" style="--kc:${i.cor}"><div class="ia-insight-h">${i.h}</div><div class="ia-insight-t">${i.t}</div></div>`).join('');
 
-  atualizarMapa(grupos);
+  atualizarMapa(ativos);
 }
 
 // ── Mapa Leaflet ─────────────────────────────────────────────────────────
 let mapInst=null, mapLayer=null;
-function atualizarMapa(grupos){
+function atualizarMapa(regioes){
   if(!mapInst){
     mapInst=L.map('mapa-dist',{zoomControl:false,attributionControl:false}).setView([DEPOT.lat,DEPOT.lng],8.4);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(mapInst);
   }
   if(mapLayer) mapInst.removeLayer(mapLayer);
   mapLayer=L.layerGroup().addTo(mapInst);
-  L.circleMarker([DEPOT.lat,DEPOT.lng],{radius:22,stroke:false,fillColor:'#3a9a66',fillOpacity:.22}).addTo(mapLayer);
-  L.circleMarker([DEPOT.lat,DEPOT.lng],{radius:8,color:'#fff',weight:3,fillColor:'#3a9a66',fillOpacity:1}).addTo(mapLayer).bindTooltip('Base — Via Verde');
-  REGIOES_DEF.forEach(r=>{
-    const n=grupos[r.nome]?.length||0;
+  L.circleMarker([DEPOT.lat,DEPOT.lng],{radius:22,stroke:false,fillColor:'#f3b62b',fillOpacity:.25}).addTo(mapLayer);
+  L.circleMarker([DEPOT.lat,DEPOT.lng],{radius:8,color:'#fff',weight:3,fillColor:'#e09c12',fillOpacity:1}).addTo(mapLayer).bindTooltip(DEPOT.name);
+  regioes.forEach(r=>{
+    const n=r.lista.length;
     if(!n) return;
-    const coord=CITY_COORDS[r.nome];
-    if(!coord) return;
+    const coord={lat:r.lat,lng:r.lng};
     const radius=6+Math.min(18,n*0.7);
     L.circleMarker([coord.lat,coord.lng],{radius,color:r.cor,weight:2,fillColor:r.cor,fillOpacity:.35}).addTo(mapLayer)
       .bindTooltip(`${r.nome}: ${n} pedido(s)`);
-    L.polyline([[DEPOT.lat,DEPOT.lng],[coord.lat,coord.lng]],{color:'#3a9a66',weight:1.6,opacity:.7,dashArray:'4,6'}).addTo(mapLayer);
+    L.polyline([[DEPOT.lat,DEPOT.lng],[coord.lat,coord.lng]],{color:'#0d1b2e',weight:1.4,opacity:.45,dashArray:'4,6'}).addTo(mapLayer);
   });
 }
 
@@ -871,8 +1059,7 @@ function atualizarMapaCompleto(){
   // separa: geocodificados (pino individual exato) vs sem geo (bolha de cidade)
   const comGeo  = pendentes.filter(o=>o.geoStatus==='ok');
   const semGeo  = pendentes.filter(o=>o.geoStatus!=='ok');
-  const grupos={}; REGIOES_DEF.forEach(r=>grupos[r.nome]=[]);
-  semGeo.forEach(o=>{ const k=grupos[o.cidade]?o.cidade:'Outras Cidades'; grupos[k].push(o); });
+  const regioesSemGeo=calcularRegioes(semGeo);
 
   if(!mapInstFull){
     mapInstFull=L.map('mapa-completo',{attributionControl:false}).setView([DEPOT.lat,DEPOT.lng],9.2);
@@ -882,21 +1069,20 @@ function atualizarMapaCompleto(){
   }
   if(mapLayerFull) mapInstFull.removeLayer(mapLayerFull);
   mapLayerFull=L.layerGroup().addTo(mapInstFull);
-  L.circleMarker([DEPOT.lat,DEPOT.lng],{radius:9,color:'#fff',weight:2,fillColor:'#3a9a66',fillOpacity:1}).addTo(mapLayerFull).bindTooltip('Base — '+DEPOT.name,{permanent:false});
+  L.circleMarker([DEPOT.lat,DEPOT.lng],{radius:9,color:'#fff',weight:2,fillColor:'#e09c12',fillOpacity:1}).addTo(mapLayerFull).bindTooltip(DEPOT.name,{permanent:false});
 
   // ── Pinos individuais: pedidos com coordenada real via CEP ────────────
   comGeo.forEach(o=>{
-    L.circleMarker([o.lat,o.lng],{radius:6,color:'#fff',weight:1.5,fillColor:'#3a9a66',fillOpacity:.92}).addTo(mapLayerFull)
+    L.circleMarker([o.lat,o.lng],{radius:6,color:'#fff',weight:1.5,fillColor:'#16a36a',fillOpacity:.92}).addTo(mapLayerFull)
       .bindTooltip(`<b>NF ${o.nf}</b><br>${o.bairro?o.bairro+' — ':''}${o.cidade}<br>${(o.peso||0).toLocaleString('pt-BR')} kg · ${o.itens||1} item(ns)<br><span style="color:#1f7a4a">📍 Localização via CEP</span>`);
   });
 
   // ── Bolhas de cidade: só pros que ainda não têm CEP geocodificado ─────
-  REGIOES_DEF.forEach(r=>{
-    const lista=grupos[r.nome]||[];
+  regioesSemGeo.forEach(r=>{
+    const lista=r.lista;
     const n=lista.length;
     if(!n) return;
-    const coord=CITY_COORDS[r.nome];
-    if(!coord) return;
+    const coord={lat:r.lat,lng:r.lng};
     const radius=9+Math.min(28,n*1.1);
     L.circleMarker([coord.lat,coord.lng],{radius,color:r.cor,weight:2,fillColor:r.cor,fillOpacity:.4}).addTo(mapLayerFull)
       .bindTooltip(`<b>${r.nome}</b><br>${n} pedido(s) sem CEP exato<br>${lista.reduce((s,o)=>s+(o.peso||0),0).toLocaleString('pt-BR')} kg total`);
@@ -913,13 +1099,13 @@ window.atualizarMapaCompleto=atualizarMapaCompleto;
 // ── Navegação sidebar ────────────────────────────────────────────────────
 const PAGE_META = {
   pedidos:{title:'Pedidos',sub:'Lista completa e importação de notas fiscais'},
-  roteirizacao:{title:'Roteirização',sub:'Geração de rotas com OR-Tools (Clarke-Wright + 2-opt)'},
+  roteirizacao:{title:'Roteirização',sub:'Escolha o veículo e a capacidade e gere a melhor sequência'},
   rotas:{title:'Rotas',sub:'Histórico e detalhamento das rotas geradas'},
   motoristas:{title:'Motoristas',sub:'Cadastro e acompanhamento de motoristas e veículos'},
   mapa:{title:'Mapa',sub:'Visualização completa da distribuição e trajetos'},
   relatorios:{title:'Relatórios',sub:'KPIs, exportações e histórico de desempenho'},
-  ia:{title:'IA Assistente',sub:'Converse com o Gemini sobre suas operações'},
-  config:{title:'Configurações',sub:'Integrações TOTVS, Firebase e backend Railway'},
+  ia:{title:'IA Assistente',sub:'Converse com a IA sobre a operação de hoje'},
+  config:{title:'Configurações',sub:'Integrações e preferências da conta'},
 };
 
 // páginas que têm implementação real (não placeholder)
@@ -1056,16 +1242,14 @@ window.salvarAgendamentoD=salvarAgendamentoD;
 // ══════════════════════════════════════════════════════════════════════════
 function renderPedidosPage(){
   const pend=allOrders.filter(o=>o.status==='pendente');
-  const grupos={}; REGIOES_DEF.forEach(r=>grupos[r.nome]=[]);
-  pend.forEach(o=>{ (grupos[o.cidade]||grupos['Outras Cidades']).push(o); });
-  const ativos=REGIOES_DEF.filter(r=>grupos[r.nome].length>0);
+  const ativos=calcularRegioes(pend);
   const grid=document.getElementById('reg-cards-grid');
   grid.innerHTML = ativos.length ? ativos.map((r,i)=>{
-    const os=grupos[r.nome];
+    const os=r.lista;
     return `<div class="rc-card" id="rcd-${i}" style="--rc:${r.cor}">
       <div class="rc-card-head" onclick="toggleRcCard(${i})">
         <div class="rc-card-icon">${r.isolado?'⚠️':'📍'}</div>
-        <div class="rc-card-info"><div class="rc-card-name">${r.nome}</div><div class="rc-card-sub">${os.length} pedido(s)${r.isolado?' · região isolada':''}</div></div>
+        <div class="rc-card-info"><div class="rc-card-name">${r.nome}</div><div class="rc-card-sub">${os.length} pedido(s)${r.isolado?` · a mais de ${RAIO_ISOLADO_KM} km do CD`:''}</div></div>
         <div class="rc-card-n">${os.length}</div><div class="rc-card-chev">›</div>
       </div>
       <div class="rc-card-body"><div class="nf-mini-grid">${os.slice(0,10).map(o=>
@@ -1095,11 +1279,17 @@ function _findCol(headers,keys){
   return -1;
 }
 function _cidadeNorm(raw){
-  if(!raw) return 'Outras Cidades';
-  const l=String(raw).toLowerCase();
-  const map={'guarulhos':'Guarulhos','santos':'Santos','guaruja':'Guarujá','guarujá':'Guarujá','sao paulo':'São Paulo','são paulo':'São Paulo','praia grande':'Praia Grande','sorocaba':'Sorocaba','itu':'Itu','mogi':'Mogi das Cruzes','santo andre':'Santo André','santo andré':'Santo André'};
-  for(const [k,v] of Object.entries(map)) if(l.includes(k)) return v;
-  return String(raw).trim();
+  // Nome da cidade como veio da nota, padronizado (sem "- SP", com maiúsculas
+  // certas). A comparação é pelo nome inteiro: "Itupeva" continua "Itupeva".
+  const t=String(raw||'').trim().replace(/\s+/g,' ');
+  if(!t) return 'Sem cidade';
+  const base=t.replace(/\s*[-\/]\s*[A-Za-z]{2}$/,'');
+  const k=base.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+  const conhecidas={'guaruja':'Guarujá','sao paulo':'São Paulo','santo andre':'Santo André','sao bernardo do campo':'São Bernardo do Campo',
+    'sao caetano do sul':'São Caetano do Sul','taboao da serra':'Taboão da Serra','aruja':'Arujá','poa':'Poá','jundiai':'Jundiaí',
+    'santana de parnaiba':'Santana de Parnaíba','maua':'Mauá','itaquaquecetuba':'Itaquaquecetuba','mogi das cruzes':'Mogi das Cruzes'};
+  if(conhecidas[k]) return conhecidas[k];
+  return base.toLowerCase().replace(/(^|\s)(\S)/g,(m,a,b)=>a+b.toUpperCase()).replace(/ (Da|De|Do|Das|Dos|E)(?= )/g,w=>w.toLowerCase());
 }
 function _pesoNum(v){ if(!v) return 100; const n=parseFloat(String(v).replace(',','.').replace(/[^\d.]/g,'')); return isNaN(n)?100:Math.max(n,1); }
 
@@ -1283,7 +1473,7 @@ async function _parsePDF(file){
   const vistas=new Set(); const orders=[]; const coord=CITY_COORDS['Guarulhos'];
   nfs.forEach((nf,idx)=>{
     if(vistas.has(nf)) return; vistas.add(nf);
-    orders.push({ nf, cidade:'Outras Cidades', peso:pesos[idx]||100, itens:1, dest:'Importado de PDF — conferir',
+    orders.push({ nf, cidade:'Sem cidade', peso:pesos[idx]||100, itens:1, dest:'Importado de PDF — conferir',
       urgente:false, agendado:false, dataAgendada:'', status:'pendente', origem:'pdf',
       lat:coord.lat+(Math.random()-.5)*.02, lng:coord.lng+(Math.random()-.5)*.02 });
   });
@@ -1340,7 +1530,7 @@ window.importarArquivo=importarArquivo;
 // ══════════════════════════════════════════════════════════════════════════
 const VEICULOS=[
   {id:'fiorino',nome:'Fiorino',tag:'até 1.5t',desc:'Furgão leve — entregas urbanas',presets:[500,800,1200],cor:'#6f9a1f',emoji:'🚐'},
-  {id:'vuc',nome:'VUC',tag:'até 3t',desc:'Veículo Urbano de Carga',presets:[1500,2000,3000],cor:'#3a9a66',emoji:'🚚'},
+  {id:'vuc',nome:'VUC',tag:'até 3t',desc:'Veículo Urbano de Carga',presets:[1500,2000,3000],cor:'#2f6fe4',emoji:'🚚'},
   {id:'toco',nome:'Truck Toco',tag:'até 8t',desc:'Truck 2 eixos — cargas médias',presets:[4000,6000,8000],cor:'#0e8f9f',emoji:'🚛'},
   {id:'bitruck',nome:'Bitruck',tag:'até 16t',desc:'Truck 3 eixos — cargas pesadas',presets:[10000,12000,16000],cor:'#3b7fd0',emoji:'🚛'},
   {id:'carreta',nome:'Carreta',tag:'até 33t',desc:'Articulada — grandes volumes',presets:[20000,27000,32000],cor:'#7c5cc4',emoji:'🚛'},
@@ -1365,7 +1555,7 @@ function renderVeiculosD(){
     <div class="sec-title" style="font-family:var(--sans);font-weight:700;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text2);margin-bottom:12px">Motoristas fixos — clique pra usar direto</div>
     <div class="veh-grid" style="margin-bottom:26px">${mots.map(m=>{
       const v=veicMap[m.veiculo_id];
-      return `<div class="veh-card" style="--vc:${v?.cor||'#3a9a66'}" onclick="usarMotoristaD('${m.id}')">
+      return `<div class="veh-card" style="--vc:${v?.cor||'#f3b62b'}" onclick="usarMotoristaD('${m.id}')">
         <div class="veh-card-icon" style="font-size:24px">${v?.emoji||'🚚'}</div>
         <div class="veh-card-name">${m.nome}</div>
         <div class="veh-card-tag">${m.veiculo_nome} · ${(m.cap_kg||0).toLocaleString('pt-BR')}kg</div>
@@ -1427,7 +1617,7 @@ function irConfirmD(){
   capKgD=kg; maxPedD=Math.min(20,Math.max(1,parseInt(document.getElementById('cap-maxped-d').value)||8));
   const pend=allOrders.filter(o=>o.status==='pendente').length;
   document.getElementById('confirm-veh-name').textContent=vehSel.nome;
-  document.getElementById('confirm-details-d').innerHTML=`Capacidade: <b style="color:var(--ac)">${kg.toLocaleString('pt-BR')} kg</b><br>Máx. pedidos nesta rota: <b>${maxPedD}</b><br>Pedidos pendentes: <b>${pend}</b><br>Motor: OR-Tools VRP (backend)`;
+  document.getElementById('confirm-details-d').innerHTML=`Capacidade: <b style="color:var(--ac)">${kg.toLocaleString('pt-BR')} kg</b><br>Máx. pedidos nesta rota: <b>${maxPedD}</b><br>Pedidos pendentes: <b>${pend}</b><br>Saída: <b>${DEPOT.name}</b>`;
   document.getElementById('rot-step-cap').style.display='none';
   document.getElementById('rot-step-confirm').style.display='block';
 }
@@ -1440,26 +1630,29 @@ async function executarVRPD(){
   document.getElementById('rot-step-loading').style.display='block';
   const pend=allOrders.filter(o=>o.status==='pendente');
   try{
-    const resp=await fetch(`${BACKEND_URL}/solve`,{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        veiculos: [{ id:vehSel.id, nome:vehSel.nome, capKg:capKgD, maxPed:maxPedD }],
-        time_limit_s: 30,
-        pedidos: pend,
-      })
+    const data=await apiPost('/solve',{
+      veiculos: [{ id:vehSel.id, nome:vehSel.nome, capKg:capKgD, maxPed:maxPedD }],
+      time_limit_s: 30,
+      pedidos: pend,
+      deposito: { lat:DEPOT.lat, lng:DEPOT.lng, nome:DEPOT.name },
     });
-    if(!resp.ok){
-      const err=await resp.json().catch(()=>({}));
-      throw new Error(err.detail || 'HTTP '+resp.status);
-    }
-    const data=await resp.json();
     rotaGeradaD=data.routes||data.rotas||[];
     fonteDistanciaD=data.fonte_distancia||'—';
+    if(!data.salvo && rotaGeradaD.length){
+      // prévia da rota (alimenta o indicador "Rotas" do Dashboard); se falhar, a rota continua na tela
+      try{
+        Promise.resolve(push(ref(db,'rotas'),{
+          criadoEm: new Date().toISOString(), veiculo: vehSel.nome, status:'ativa',
+          total_rotas: rotaGeradaD.length, fonte_dist: fonteDistanciaD,
+          rotas: rotaGeradaD.map(r=>({veiculo:r.veiculo||vehSel.nome, km:r.km||0, mins:r.mins||0, pedidos:(r.pedidos||[]).map(p=>String(p.nf))})),
+        })).catch(()=>{});
+      }catch(e){}
+    }
     renderRotasResultD(rotaGeradaD);
   }catch(e){
     document.getElementById('rot-step-loading').style.display='none';
     document.getElementById('rot-step-results').style.display='block';
-    document.getElementById('rot-step-results').innerHTML=`<div class="import-msg show err">❌ Erro ao gerar rota no backend: ${e.message}.<br>Verifique se o servidor Railway está ativo.</div><button class="btn-modal-sec" onclick="renderVeiculosD()" style="max-width:300px">← Tentar novamente</button>`;
+    document.getElementById('rot-step-results').innerHTML=`<div class="import-msg show err">❌ Não foi possível gerar a rota: ${e.message}.<br>Tente de novo em instantes. Se continuar, fale com o suporte.</div><button class="btn-modal-sec" onclick="renderVeiculosD()" style="max-width:300px">← Tentar novamente</button>`;
   }
 }
 window.executarVRPD=executarVRPD;
@@ -1550,7 +1743,7 @@ let rotasFirebase={};  // preenchido pelo listener do Firebase
 
 // paleta de cores por rota (usada tanto no mini-map da Rotas quanto no
 // overlay do Mapa completo — mesma cor pra mesma rota nos dois lugares)
-const CORES_ROTA = ['#3a9a66','#0e8f9f','#d9651f','#7c5cc4','#c98a0b','#d1425e','#3b7fd0','#6f9a1f'];
+const CORES_ROTA = ['#2f6fe4','#e08a00','#16a36a','#7c5cc4','#0e8f9f','#d1425e','#c98a0b','#3b7fd0'];
 const _miniMaps = {};   // id → L.Map (pra invalidar/limpar antes de redesenhar)
 
 function _corDaRota(idxOuId){
@@ -1575,7 +1768,7 @@ function desenharMiniMapaRota(rota, elId, cor){
   L.polyline(coords, {color:cor, weight:3, opacity:.85}).addTo(map);
 
   // depot
-  L.circleMarker([DEPOT.lat,DEPOT.lng], {radius:6, color:'#fff', weight:2, fillColor:'#3a9a66', fillOpacity:1})
+  L.circleMarker([DEPOT.lat,DEPOT.lng], {radius:6, color:'#fff', weight:2, fillColor:'#e09c12', fillOpacity:1})
     .addTo(map).bindTooltip('Depósito');
   // paradas numeradas
   paradas.forEach((p,i)=>{
@@ -1620,7 +1813,7 @@ function renderRotasConfirmadas(){
           </div>
         </div>
         <div style="display:flex;gap:8px;align-items:center">
-          <span style="background:rgba(47,143,95,.15);border:1px solid rgba(47,143,95,.3);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;color:var(--ac)">${r.status==='entregue'?'✓ Entregue':'🚚 Em rota'}</span>
+          <span style="background:rgba(243,182,43,.15);border:1px solid rgba(243,182,43,.3);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;color:var(--ac)">${r.status==='entregue'?'✓ Entregue':'🚚 Em rota'}</span>
         </div>
       </div>
       <div style="display:flex;gap:18px;font-size:12.5px;color:var(--text2);flex-wrap:wrap;margin-bottom:12px">
@@ -1762,7 +1955,7 @@ function renderMotoristasPage(){
   const veicMap=Object.fromEntries(VEICULOS.map(v=>[v.id,v]));
   cont.innerHTML = lista.map(m=>{
     const v=veicMap[m.veiculo_id];
-    return `<div class="rc-card" style="--rc:${v?.cor||'#3a9a66'}">
+    return `<div class="rc-card" style="--rc:${v?.cor||'#f3b62b'}">
       <div class="rc-card-head" style="cursor:default">
         <div class="rc-card-icon" style="font-size:20px">${v?.emoji||'🚚'}</div>
         <div class="rc-card-info">
@@ -1800,20 +1993,20 @@ function desenharMapaRota(paradas){
   if(rotaMapInst){ rotaMapInst.remove(); rotaMapInst=null; }
   rotaMapInst=L.map('rota-map',{attributionControl:false}).setView([DEPOT.lat,DEPOT.lng],10);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(rotaMapInst);
-  L.circleMarker([DEPOT.lat,DEPOT.lng],{radius:7,color:'#fff',weight:2,fillColor:'#3a9a66',fillOpacity:1}).addTo(rotaMapInst).bindTooltip('Saída');
+  L.circleMarker([DEPOT.lat,DEPOT.lng],{radius:7,color:'#fff',weight:2,fillColor:'#e09c12',fillOpacity:1}).addTo(rotaMapInst).bindTooltip('Saída — '+DEPOT.name);
   const pts=[[DEPOT.lat,DEPOT.lng]];
   paradas.forEach((p,i)=>{
-    const mk=L.divIcon({className:'',html:`<div style="background:#3a9a66;color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;border:2px solid #fff;font-family:sans-serif">${i+1}</div>`,iconSize:[28,28],iconAnchor:[14,14]});
+    const mk=L.divIcon({className:'',html:`<div style="background:#0d1b2e;color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;border:2px solid #fff;font-family:sans-serif">${i+1}</div>`,iconSize:[28,28],iconAnchor:[14,14]});
     L.marker([p.lat,p.lng],{icon:mk}).addTo(rotaMapInst).bindTooltip(`NF ${p.nf}`);
     pts.push([p.lat,p.lng]);
   });
   pts.push([DEPOT.lat,DEPOT.lng]);
-  L.polyline(pts,{color:'#3a9a66',weight:3,opacity:.6,dashArray:'6,5'}).addTo(rotaMapInst);
+  L.polyline(pts,{color:'#2f6fe4',weight:3,opacity:.7,dashArray:'6,5'}).addTo(rotaMapInst);
   rotaMapInst.fitBounds(pts,{padding:[40,40]});
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// IA CHAT — chama /chat do backend (Gemini real)
+// IA CHAT — chama /chat do servidor (com login)
 // ══════════════════════════════════════════════════════════════════════════
 function usarSugD(el){ document.getElementById('chat-inp').value=el.textContent; enviarChatD(); }
 window.usarSugD=usarSugD;
@@ -1832,40 +2025,48 @@ async function enviarChatD(){
   const box=document.getElementById('chat-msgs');
   const ld=document.createElement('div'); ld.className='chat-msg bot'; ld.id=loadingId; ld.textContent='...'; box.appendChild(ld); box.scrollTop=box.scrollHeight;
   try{
-    const resp=await fetch(`${BACKEND_URL}/chat`,{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        mensagem: msg,
-        session_id: chatSessionId,
-        rotas:    rotaGeradaD.length ? rotaGeradaD : null,
-        veiculo:  vehSel?.nome || null,
-        cap_kg:   capKgD || null,
-      })
+    const data=await apiPost('/chat',{
+      mensagem: msg,
+      session_id: chatSessionId,
+      rotas:    rotaGeradaD.length ? rotaGeradaD : null,
+      veiculo:  vehSel?.nome || null,
+      cap_kg:   capKgD || null,
+      pedidos:  pend,
     });
-    if(!resp.ok){
-      const err=await resp.json().catch(()=>({}));
-      throw new Error(err.detail || 'HTTP '+resp.status);
-    }
-    const data=await resp.json();
     chatSessionId=data.session_id||chatSessionId;
     document.getElementById(loadingId).textContent=data.resposta||'(sem resposta)';
   }catch(e){
-    document.getElementById(loadingId).textContent='Erro ao conectar ao Gemini: '+e.message+'. Verifique o backend Railway e a cota da API.';
+    document.getElementById(loadingId).textContent='A IA não respondeu agora ('+e.message+'). Tente de novo em instantes.';
   }
   box.scrollTop=box.scrollHeight;
 }
 window.enviarChatD=enviarChatD;
 
-carregarPedidos();
-_geoCarregarCache();
-// retoma geocodificação de pedidos que ficaram pendentes (ex: aba fechada no meio)
-setTimeout(()=>{ agendarGeocodificacao(allOrders.filter(o=>o.status==='pendente')); }, 4000);
+// ── Início (só depois do login com acesso liberado) ─────────────────────
+async function carregarConfig(){
+  try{
+    const d=(await get(ref(db,'config/deposito'))).val();
+    if(d && Number.isFinite(+d.lat) && Number.isFinite(+d.lng)){ DEPOT.lat=+d.lat; DEPOT.lng=+d.lng; if(d.nome) DEPOT.name=String(d.nome); }
+  }catch(e){}
+}
+async function iniciarApp(){
+  await carregarConfig();
+  carregarPedidos();
+  _geoCarregarCache();
+  // retoma geocodificação de pedidos que ficaram pendentes (ex: aba fechada no meio)
+  setTimeout(()=>{ agendarGeocodificacao(allOrders.filter(o=>o.status==='pendente')); }, 4000);
+}
 </script>
 <script>
 (function(){var b=document.body,c=function(){b.classList.remove('nav-open')};
 document.getElementById('menu-btn').addEventListener('click',function(){b.classList.toggle('nav-open')});
 document.getElementById('nav-scrim').addEventListener('click',c);
 document.getElementById('sb-nav').addEventListener('click',c);
+var s=document.getElementById('top-search');
+s.addEventListener('input',function(){var q=s.value.trim().toLowerCase(),pg=document.getElementById('page-pedidos');
+  if(q&&pg.style.display==='none'&&window.irParaPagina)window.irParaPagina('pedidos');
+  pg.querySelectorAll('.rc-card').forEach(function(card){var ok=!q||card.textContent.toLowerCase().indexOf(q)>-1;card.style.display=ok?'':'none';
+    if(q&&ok&&[].some.call(card.querySelectorAll('.nf-mini-code'),function(x){return x.textContent.toLowerCase().indexOf(q)>-1}))card.classList.add('exp');});});
 var al=document.getElementById('alert-list'),bell=document.getElementById('bell');
 new MutationObserver(function(){bell.classList.toggle('has',!!al.querySelector('.alert-row'))}).observe(al,{childList:true,subtree:true});
 bell.addEventListener('click',function(){if(window.irParaPagina)window.irParaPagina('dashboard');setTimeout(function(){al.scrollIntoView({behavior:'smooth',block:'center'})},120);c();});})();
