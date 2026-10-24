@@ -114,6 +114,33 @@ const MOTIVOS = ['Cliente ausente', 'Endereço não encontrado', 'Recusado pelo 
 
 let info = null, paradas = [], baixas = {}, aberto = null, renderPendente = false, rolou = false;
 const enviando = {};
+// Demonstração dentro da página de vendas (iframe): manda o estado das baixas para o painel ao lado.
+// Só no modo DEMO, com dados fictícios. Nunca rola a página de fora.
+const EMBUTIDO = DEMO && window.parent !== window;
+const ORIGENS_SITE = /^(https:\/\/(www\.)?rotav3\.com\.br|http:\/\/(localhost|127\.0\.0\.1)(:\d+)?)$/;
+function avisarSite(msg) {
+  if (!EMBUTIDO) return;
+  try { window.parent.postMessage({ origem: 'rotav3-motorista', ...msg }, '*'); } catch (e) {}
+}
+function estadoParaSite() {
+  avisarSite({ tipo: 'estado', info: { veiculo: info?.veiculo || '', motorista: info?.motorista || '' },
+    paradas: paradas.map((p, i) => { const b = baixas[i] || null; return { nf: p.nf, tipo: p.tipo, dest: p.dest || '', bairro: p.bairro || '',
+      baixa: b ? { status: b.status, hora: b.hora, recebedor: b.recebedor || '', motivo: b.motivo || '', obs: b.obs || '', temFoto: !!b.temFoto } : null }; }) });
+}
+function rolarAte(el, bloco, suave) {
+  if (!el) return;
+  if (!EMBUTIDO) return el.scrollIntoView({ block: bloco, behavior: suave ? 'smooth' : 'auto' });
+  const r = el.getBoundingClientRect();
+  const alvo = window.scrollY + r.top - (bloco === 'center' ? (window.innerHeight - r.height) / 2 : 8);
+  window.scrollTo({ top: Math.max(0, alvo), behavior: suave ? 'smooth' : 'auto' });
+}
+if (EMBUTIDO) {
+  window.addEventListener('message', (e) => {
+    if (!ORIGENS_SITE.test(e.origin) || !e.data || e.data.origem !== 'rotav3-site') return;
+    if (e.data.tipo === 'recomecar') { baixas = {}; aberto = null; rolou = true; gravarLocal(chaveDemo, baixas); render(); window.scrollTo(0, 0); }
+    if (e.data.tipo === 'pedir-estado') estadoParaSite();
+  });
+}
 
 // ── Demonstração ─────────────────────────────────────────────────────────────
 const hojeISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
@@ -124,7 +151,7 @@ const ROTA_EXEMPLO = {
     { nf: '31024', tipo: 'entrega', dest: 'Mercado Bela Vista', endereco: 'Rua das Flores, 220', bairro: 'Vila Augusta', cidade: 'Guarulhos', uf: 'SP', cep: '07023010', lat: -23.4637, lng: -46.5398, peso: 180, itens: 6, chegada_min: 472 },
     { nf: '31031', tipo: 'entrega', dest: 'Farmácia Central', endereco: 'Avenida Brasil, 1045', bairro: 'Centro', cidade: 'Guarulhos', uf: 'SP', cep: '07010020', lat: -23.4673, lng: -46.528, peso: 95, itens: 3, chegada_min: 501 },
     { nf: '31047', tipo: 'entrega', dest: 'Padaria Primavera', endereco: 'Rua São José, 87', bairro: 'Macedo', cidade: 'Guarulhos', uf: 'SP', cep: '07112030', lat: -23.4891, lng: -46.5466, peso: 120, itens: 4, chegada_min: 544, janela_ini: 540, janela_fim: 600 },
-    { nf: '31052', tipo: 'entrega', dest: 'Loja do Construtor', endereco: 'Avenida Industrial, 1500', bairro: 'Cumbica', cidade: 'Guarulhos', uf: 'SP', cep: '07180040', lat: -23.438, lng: -46.465, peso: 310, itens: 9, chegada_min: 588 },
+    { nf: '31052', tipo: 'entrega', dest: 'Loja do Construtor', endereco: 'Avenida Industrial, 1500', bairro: 'Cumbica', cidade: 'Guarulhos', uf: 'SP', cep: '07180040', lat: -23.4562, lng: -46.4618, peso: 310, itens: 9, chegada_min: 588 },
     { nf: '31060', tipo: 'entrega', dest: 'Auto Peças Avenida', endereco: 'Rua do Comércio, 402', bairro: 'Pimentas', cidade: 'Guarulhos', uf: 'SP', cep: '07272050', lat: -23.443, lng: -46.408, peso: 64, itens: 2, chegada_min: 631 },
     { nf: '88013', tipo: 'coleta', dest: 'Fábrica de Embalagens Sul', endereco: 'Avenida Getúlio Vargas, 3100', bairro: 'Bonsucesso', cidade: 'Guarulhos', uf: 'SP', cep: '07175060', lat: -23.4312, lng: -46.4053, peso: 260, itens: 12, chegada_min: 665 },
   ],
@@ -266,11 +293,12 @@ function render() {
       <div class="r-sub">${esc(quando)}</div>
       <div class="r-prog"><div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${feitas}"><i style="width:${n ? (feitas / n) * 100 : 0}%"></i></div><b>${feitas} de ${n}</b></div>
     </section>
-    ${DEMO ? '<div class="demo-aviso">Rota de exemplo para demonstração: as baixas ficam só neste aparelho e não vão para nenhum escritório.</div>' : cardLocalizacao()}
+    ${DEMO ? `<div class="demo-aviso">${EMBUTIDO ? 'Rota de exemplo: marque uma parada e veja o painel do escritório mudar. Nada sai deste navegador.' : 'Rota de exemplo para demonstração: as baixas ficam só neste aparelho e não vão para nenhum escritório.'}</div>` : cardLocalizacao()}
     ${n && feitas === n ? '<div class="fim">✅ Todas as paradas têm baixa. Pode voltar ao centro de distribuição.</div>' : ''}
     <ol class="lista">${paradas.map((p, i) => card(p, i, i === prox)).join('')}</ol>
     <p class="rodape">Ao dar baixa, o celular pode pedir sua localização: ela fica guardada junto com a baixa.<br>Dúvidas sobre a rota: fale com o escritório.</p>`;
-  if (!rolou && prox > 0) { rolou = true; setTimeout(() => $('p-' + prox)?.scrollIntoView({ block: 'center' }), 60); }
+  if (!rolou && prox > 0) { rolou = true; setTimeout(() => rolarAte($('p-' + prox), 'center'), 60); }
+  if (DEMO) estadoParaSite();
 }
 
 function card(p, i, prox) {
@@ -316,7 +344,7 @@ function form(p, i) {
 function abrir(i, modo) {
   aberto = { i, modo };
   render();
-  setTimeout(() => $('p-' + i)?.scrollIntoView({ block: 'start', behavior: 'smooth' }), 30);
+  setTimeout(() => rolarAte($('p-' + i), 'start', true), 30);
 }
 
 document.addEventListener('click', (e) => {
@@ -361,6 +389,7 @@ document.addEventListener('submit', async (e) => {
     aberto = null;
     baixas = { ...baixas, [i]: { ...baixa, hora: Date.now() } };
     gravarLocal(chaveDemo, baixas);
+    if (foto) avisarSite({ tipo: 'foto', i, foto });
     render();
     return;
   }
