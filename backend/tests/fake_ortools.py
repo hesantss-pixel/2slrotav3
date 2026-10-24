@@ -4,10 +4,11 @@ OR-Tools de mentira, só para os testes (o pacote real não instala neste ambien
 Implementa o pedaço da API de roteirização que o vrp_solver usa, com a mesma
 regra das dimensões do OR-Tools:
 
-    cumul(próximo) = cumul(atual) + trânsito(atual[, próximo])
+    cumul(próximo) = cumul(atual) + trânsito(atual[, próximo]) + folga
 
-(trânsito "unário" é avaliado no nó de onde sai), cumul <= capacidade em todos os
-nós e dentro do SetRange de cada nó. Resolve por força bruta (1 veículo, poucos
+(trânsito "unário" é avaliado no nó de onde sai; folga de 0 até slack_max, usada
+para esperar a janela abrir), cumul <= capacidade em todos os nós e dentro do
+SetRange de cada nó. Resolve por força bruta (1 veículo, poucos
 pedidos): testa todas as sequências e devolve a de menor custo (km + multa dos
 pedidos que ficaram de fora). Serve para conferir se o MODELO montado pelo
 vrp_solver diz o que deveria dizer — não testa o desempenho do OR-Tools de verdade.
@@ -33,8 +34,8 @@ class _Var:
 
 
 class _Dim:
-    def __init__(self, cb, caps, fix_start, name):
-        self.cb, self.caps, self.fix_start, self.name = cb, caps, fix_start, name
+    def __init__(self, cb, caps, fix_start, name, slack=0):
+        self.cb, self.caps, self.fix_start, self.name, self.slack = cb, caps, fix_start, name, slack
         self.vars = {}
 
     def CumulVar(self, index):
@@ -88,13 +89,13 @@ class RoutingModel:
 
     def AddDimension(self, cb, slack_max, capacity, fix_start, name):
         self.chamadas.append(("AddDimension", name))
-        self.dims[name] = _Dim(cb, [capacity] * self.m.v, fix_start, name)
+        self.dims[name] = _Dim(cb, [capacity] * self.m.v, fix_start, name, slack_max)
         return True
 
     def AddDimensionWithVehicleCapacity(self, cb, slack_max, caps, fix_start, name):
         self.chamadas.append(("AddDimensionWithVehicleCapacity", name))
         assert len(caps) == self.m.v
-        self.dims[name] = _Dim(cb, list(caps), fix_start, name)
+        self.dims[name] = _Dim(cb, list(caps), fix_start, name, slack_max)
         return True
 
     def GetDimensionOrDie(self, name):
@@ -124,11 +125,13 @@ class RoutingModel:
             assert d.fix_start, "teste só cobre fix_start_cumul_to_zero=True"
             cumul = 0
             for k, idx in enumerate(path):
+                var = d.vars.get(idx)
                 if k:
                     cumul += self._transito(d.cb, path[k - 1], idx)
+                    if var and cumul < var.lo and var.lo - cumul <= d.slack:
+                        cumul = var.lo  # espera (folga) até a janela abrir
                 if cumul < 0 or cumul > d.caps[0]:
                     return False
-                var = d.vars.get(idx)
                 if var and not (var.lo <= cumul <= var.hi):
                     return False
         return True

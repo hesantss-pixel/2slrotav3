@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="ROTAV3 — Servidor de rotas",
     description="Roteirização (OR-Tools VRP), assistente de IA e leitura de notas fiscais",
-    version="3.1.0",
+    version="3.2.0",
     docs_url="/docs" if os.getenv("DOCS_PUBLICAS", "0") == "1" else None,
     redoc_url=None,
 )
@@ -159,6 +159,9 @@ class SolveRequest(BaseModel):
     time_limit_s: int = 30
     pedidos:      Optional[list[dict]] = None
     deposito:     Optional[Deposito] = None
+    # Hora de saída do CD em minutos desde a meia-noite (ex.: 420 = 07:00).
+    # Com ela, os pedidos com janela_ini/janela_fim respeitam o horário.
+    hora_saida:   Optional[int] = None
 
     # Campos legado (frontend antigo)
     capacidade_kg: Optional[float] = None
@@ -200,7 +203,7 @@ def status():
     """Verificação de funcionamento (pública, sem dados da operação)."""
     return {
         "status": "online",
-        "versao": "3.1.0",
+        "versao": "3.2.0",
         "login": "obrigatório" if auth_firebase.AUTH_REQUIRED else "desligado (teste local)",
     }
 
@@ -248,7 +251,7 @@ def solve(body: SolveRequest, uid: str = Depends(exigir_login)):
         # 3. Solver
         veiculos_dict = [v.model_dump() for v in frota]
         deposito = body.deposito.model_dump() if body.deposito else None
-        resultado = solve_vrp(pendentes, veiculos_dict, body.time_limit_s, deposito)
+        resultado = solve_vrp(pendentes, veiculos_dict, body.time_limit_s, deposito, body.hora_saida)
 
         routes    = resultado["routes"]
         n_aloc    = resultado["nao_alocados"]
@@ -309,6 +312,7 @@ def solve(body: SolveRequest, uid: str = Depends(exigir_login)):
             "routes":            routes,
             "rotas":             routes,
             "nao_alocados":      n_aloc,
+            "fora_da_janela":    resultado.get("fora_da_janela", []),
             "fonte_distancia":   fonte,
             "solver_status":     status_vp,
             "regra_carga":       resultado.get("regra_carga", "—"),

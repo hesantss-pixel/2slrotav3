@@ -4,7 +4,8 @@ vrp_solver.py — Motor de roteirização (OR-Tools VRP) do ROTAV3
 Resolve Vehicle Routing Problem com:
   - Capacidade por peso (kg)
   - Limite de paradas por veículo
-  - Limite de 8 horas por viagem (estrada + 15 min por parada)
+  - Limite de 8 horas por viagem (estrada + 15 min por parada + espera)
+  - Janela de horário por pedido (agendados): chegar entre janela_ini e janela_fim
   - Penalidade por pedido não atendido (solução parcial)
   - Suporte a múltiplos veículos
   - Coletas e entregas na mesma viagem (entregas primeiro, coletas depois)
@@ -69,6 +70,10 @@ SPEED_KMH = 40
 
 # Tempo de serviço por parada: 15 min (900 s)
 SERVICE_TIME_S = 900
+
+# Jornada máxima da viagem e espera máxima numa parada (para cumprir janela)
+JORNADA_S = 8 * 3600
+ESPERA_MAX_S = 3 * 3600
 
 # Penalidade por pedido não atendido — valor alto para forçar atendimento
 # quando há capacidade; OR-Tools vai dropar só se realmente impossível
@@ -175,6 +180,37 @@ def _entrega_depois_de_coleta(pedidos_em_ordem: list[dict]) -> bool:
     return False
 
 
+def _janela_s(p: dict, saida_min: int | None):
+    """Janela do pedido em segundos a partir da saída do CD, ou None.
+    janela_ini / janela_fim chegam em minutos desde a meia-noite do dia da rota."""
+    if saida_min is None or p.get("janela_ini") is None or p.get("janela_fim") is None:
+        return None
+    try:
+        ini, fim = int(p["janela_ini"]), int(p["janela_fim"])
+    except (TypeError, ValueError):
+        return None
+    if fim < ini:
+        return None
+    return ((ini - saida_min) * 60, (fim - saida_min) * 60)
+
+
+def _horarios(seq: list[int], dur_mx: list[list[int]], janelas: list) -> tuple[list[int], int]:
+    """Chegada em cada parada (segundos desde a saída, esperando a janela abrir
+    quando preciso) e a hora de volta ao CD."""
+    t, prev, chegadas = 0, 0, []
+    for n in seq:
+        t += dur_mx[prev][n]
+        j = janelas[n - 1]
+        if j and t < j[0]:
+            t = j[0]
+        chegadas.append(t)
+        t += SERVICE_TIME_S
+        prev = n
+    if seq:
+        t += dur_mx[prev][0]
+    return chegadas, t
+
+
 def _rotas_dentro_da_regra(routes: list[dict], veiculos: list[dict]) -> bool:
     caps = {v["id"]: int(v["capKg"]) for v in veiculos}
     maxp = {v["id"]: int(v["maxPed"]) for v in veiculos}
@@ -203,6 +239,7 @@ def solve_vrp(
     veiculos: list[Veiculo],
     time_limit_s: int = 30,
     deposito: dict | None = None,
+    saida_min: int | None = None,
 ) -> dict:
     """
     Resolve VRP com OR-Tools.
@@ -213,12 +250,15 @@ def solve_vrp(
     veiculos     : lista de veículos disponíveis
     time_limit_s : tempo máximo do solver em segundos
     deposito     : {lat, lng, nome} de onde as rotas saem (padrão: DEPOT)
+    saida_min    : hora de saída do CD em minutos desde a meia-noite (ex.: 420 = 07:00).
+                   Com ela, os pedidos com janela_ini/janela_fim respeitam o horário.
 
     Retorna
     -------
     {
         "routes": [RotaResultado, ...],
         "nao_alocados": [nf, ...],
+        "fora_da_janela": [nf, ...],   # janela impossível para esta saída (não entraram)
         "fonte_distancia": "OSRM" | "Haversine",
         "solver_status": str,
         "regra_carga": "so_entregas" | "so_coletas" | "entregas_antes_das_coletas"
@@ -234,9 +274,22 @@ def solve_vrp(
             "OR-Tools não instalado. Execute: pip install ortools"
         ) from e
 
+    # Janela que não dá para cumprir com esta saída (já passou, ou abre depois
+    # do fim da jornada) fica de fora antes de montar o modelo.
+    fora_janela: list[str] = []
+    if saida_min is not None:
+        cabem = []
+        for p in pedidos:
+            j = _janela_s(p, saida_min)
+            if j and (j[1] < 0 or j[0] > JORNADA_S - SERVICE_TIME_S):
+                fora_janela.append(p["nf"])
+            else:
+                cabem.append(p)
+        pedidos = cabem
+
     if not pedidos:
-        return {"routes": [], "nao_alocados": [], "fonte_distancia": "—",
-                "solver_status": "vazio", "regra_carga": "—"}
+        return {"routes": [], "nao_alocados": list(fora_janela), "fora_da_janela": fora_janela,
+                "fonte_distancia": "—", "solver_status": "vazio", "regra_carga": "—"}
 
     dep = deposito if deposito and deposito.get("lat") is not None and deposito.get("lng") is not None else DEPOT
 
@@ -245,11 +298,12 @@ def solve_vrp(
     dist_mx, dur_mx, fonte = build_distance_matrix(points)
 
     tipos = [_tipo(p) for p in pedidos]
+    janelas = [_janela_s(p, saida_min) for p in pedidos]
     misto = "coleta" in tipos and "entrega" in tipos
 
     def rodar(modo: str, limite: int) -> dict:
-        return _resolver(pywrapcp, routing_enums_pb2, pedidos, tipos, veiculos,
-                         dep, dist_mx, dur_mx, limite, modo)
+        return _resolver(pywrapcp, routing_enums_pb2, pedidos, tipos, janelas, saida_min,
+                         veiculos, dep, dist_mx, dur_mx, limite, modo)
 
     if not misto:
         res = rodar("simples", time_limit_s)
@@ -269,11 +323,13 @@ def solve_vrp(
 
     res["fonte_distancia"] = fonte
     res["regra_carga"] = regra
+    res["nao_alocados"] = res["nao_alocados"] + fora_janela
+    res["fora_da_janela"] = fora_janela
     return res
 
 
-def _resolver(pywrapcp, routing_enums_pb2, pedidos, tipos, veiculos, dep,
-              dist_mx, dur_mx, time_limit_s, modo) -> dict:
+def _resolver(pywrapcp, routing_enums_pb2, pedidos, tipos, janelas, saida_min, veiculos,
+              dep, dist_mx, dur_mx, time_limit_s, modo) -> dict:
     """Monta e resolve o modelo. modo: "simples" (uma soma de peso) ou
     "ordem" (entregas e coletas separadas, entregas antes das coletas)."""
     n_nodes = len(pedidos) + 1
@@ -292,22 +348,28 @@ def _resolver(pywrapcp, routing_enums_pb2, pedidos, tipos, veiculos, dep,
     transit_cb_idx = routing.RegisterTransitCallback(dist_cb)
     routing.SetArcCostEvaluatorOfAllVehicles(transit_cb_idx)
 
-    # ── Callback de duração (para janelas de tempo) ───────────────────────────
+    # ── Callback de duração: estrada + atendimento na parada de onde sai ──────
+    # (assim o tempo acumulado num nó é a hora de CHEGADA nele)
     def dur_cb(from_idx, to_idx):
         i = manager.IndexToNode(from_idx)
         j = manager.IndexToNode(to_idx)
-        return dur_mx[i][j] + (SERVICE_TIME_S if j != 0 else 0)
+        return dur_mx[i][j] + (SERVICE_TIME_S if i != 0 else 0)
 
     dur_cb_idx = routing.RegisterTransitCallback(dur_cb)
 
     # ── Dimensão tempo ────────────────────────────────────────────────────────
     routing.AddDimension(
         dur_cb_idx,
-        3600,          # espera máxima em um nó (1 hora)
-        8 * 3600,      # janela do dia: 8 horas
+        ESPERA_MAX_S,  # espera máxima numa parada (janela ainda não abriu)
+        JORNADA_S,     # jornada da viagem
         True,
         "Tempo",
     )
+    tempo = routing.GetDimensionOrDie("Tempo")
+    for node in range(1, n_nodes):
+        j = janelas[node - 1]
+        if j:
+            tempo.CumulVar(manager.NodeToIndex(node)).SetRange(max(0, j[0]), min(j[1], JORNADA_S))
 
     # ── Capacidade (peso) ─────────────────────────────────────────────────────
     caps = [int(v["capKg"]) for v in veiculos]
@@ -392,7 +454,13 @@ def _resolver(pywrapcp, routing_enums_pb2, pedidos, tipos, veiculos, dep,
         if not seq:
             continue
 
-        peds_rota = [pedidos[n - 1] for n in seq]
+        chegadas, volta_s = _horarios(seq, dur_mx, janelas)
+        peds_rota = []
+        for n, t in zip(seq, chegadas):
+            p = dict(pedidos[n - 1])
+            if saida_min is not None:
+                p["chegada_min"] = saida_min + int(round(t / 60))
+            peds_rota.append(p)
         carga = perfil_carga(peds_rota)
 
         # Coordenadas para polilinha no mapa
@@ -405,7 +473,7 @@ def _resolver(pywrapcp, routing_enums_pb2, pedidos, tipos, veiculos, dep,
             "veiculo_id": veiculo["id"],
             "pedidos": peds_rota,
             "km": _calc_km(seq, dist_mx),
-            "mins": _calc_mins(seq, dur_mx),
+            "mins": max(_calc_mins(seq, dur_mx), math.ceil(volta_s / 60)),
             "peso_total": sum(p["peso"] for p in peds_rota),
             "itens_total": sum(p["itens"] for p in peds_rota),
             "entregas": sum(1 for p in peds_rota if _tipo(p) == "entrega"),

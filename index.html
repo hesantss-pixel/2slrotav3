@@ -443,6 +443,29 @@ body:not(.autorizado)>.sidebar,body:not(.autorizado)>.main,body:not(.autorizado)
 .delivery-mini-num.c{background:#fff;border:2px solid var(--navy);color:var(--navy);}
 .kpi-split{font-size:11.5px;font-weight:600;color:var(--text2);margin-top:6px;}
 @media(max-width:520px){#rot-tipo{display:grid;grid-template-columns:1fr 1fr;}#rot-tipo button[data-v="todos"]{grid-column:1/-1;}.seg button{padding:8px 12px;}}
+.dup{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.hora-par{display:flex;align-items:center;gap:8px;}
+.hora-par .field-inp{flex:1;min-width:0;}
+.hora-par span{font-size:12px;color:var(--text3);}
+.cheg{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--navy);background:#fff3df;border:1px solid #f6dca6;border-radius:6px;padding:1px 6px;margin-left:7px;white-space:nowrap;}
+.mot-box{border-top:1px solid var(--border);padding-top:12px;margin-bottom:12px;}
+.mot-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px;}
+.mot-tit{font-family:var(--sans);font-weight:700;font-size:13.5px;color:var(--text);}
+.mot-sub{font-size:12px;color:var(--text3);}
+.mot-acts{display:flex;gap:8px;flex-wrap:wrap;}
+.btn-wa{display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 14px;border-radius:10px;border:none;background:#1fa855;color:#fff;font:700 12.5px var(--body);cursor:pointer;}
+.btn-wa:hover{background:#178c46;}
+.btn-sm{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 12px;border-radius:10px;border:1px solid var(--border2);background:#fff;color:var(--text2);font:700 12.5px var(--body);cursor:pointer;}
+.btn-sm:hover{border-color:var(--vv);color:var(--text);}
+.prog{height:7px;border-radius:7px;background:var(--s3);overflow:hidden;margin:7px 0 2px;}
+.prog i{display:block;height:100%;background:var(--gold-grad);}
+.parada-chip{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:11px;font-family:var(--mono);color:var(--text2);}
+.parada-chip.ok{background:#e8f7ef;border-color:#c9ecd9;color:#0f7a4c;}
+.parada-chip.nok{background:#fdecec;border-color:#f6caca;color:#b91c1c;}
+.parada-chip button{border:none;background:none;padding:0;font:inherit;color:inherit;text-decoration:underline;cursor:pointer;}
+.foto-modal img{display:block;max-width:100%;max-height:68vh;margin:0 auto;border-radius:10px;}
+.foto-info{font-size:12.5px;color:var(--text2);margin-top:10px;line-height:1.5;}
+@media(max-width:520px){.dup{grid-template-columns:1fr;}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
 </style>
 </head>
@@ -656,6 +679,11 @@ body:not(.autorizado)>.sidebar,body:not(.autorizado)>.main,body:not(.autorizado)
         <span class="field-lbl" style="margin-top:0">O que entra nesta viagem</span>
         <div class="seg" id="rot-tipo" role="group" aria-label="O que entra nesta viagem"></div>
         <div class="rot-nota" id="rot-tipo-nota"></div>
+        <div class="dup">
+          <div><span class="field-lbl">Data da viagem</span><input type="date" class="field-inp" id="rot-data-d"></div>
+          <div><span class="field-lbl">Saída do CD</span><input type="time" class="field-inp" id="rot-saida-d" value="07:00"></div>
+        </div>
+        <div class="rot-nota">Agendados de outro dia ficam de fora. Os do dia entram com o horário marcado.</div>
         <span class="field-lbl">Capacidade máxima (kg)</span>
         <div><input type="number" class="field-inp" id="cap-kg-d" placeholder="0"></div>
         <div class="presets-row" id="presets-row-d"></div>
@@ -758,12 +786,20 @@ body:not(.autorizado)>.sidebar,body:not(.autorizado)>.main,body:not(.autorizado)
       <div class="veh-card-name" id="ag-form-nf-d" style="font-size:15px;"></div>
       <span class="field-lbl">Data</span>
       <input type="date" class="field-inp" id="ag-data-d" oninput="atualizarSugestaoD()">
-      <span class="field-lbl">Horário</span>
-      <input type="time" class="field-inp" id="ag-hora-d" oninput="atualizarSugestaoD()">
+      <span class="field-lbl">Chegar entre</span>
+      <div class="hora-par"><input type="time" class="field-inp" id="ag-hora-d" oninput="atualizarSugestaoD()" aria-label="Das"><span>e</span><input type="time" class="field-inp" id="ag-hora-fim-d" aria-label="Até"></div>
       <div class="sugestao-box" id="ag-sugestao-d"></div>
       <button class="btn-modal-primary" onclick="salvarAgendamentoD()">Salvar Agendamento</button>
       <button class="btn-modal-sec" onclick="voltarBuscaD()">← Voltar à busca</button>
     </div>
+  </div>
+</div>
+
+<!-- ── MODAL: foto do canhoto ── -->
+<div class="modal-overlay" id="modal-foto" onclick="if(event.target===this)fecharFoto()">
+  <div class="modal-box foto-modal">
+    <div class="modal-head"><div class="modal-title" id="foto-tit">Foto da baixa</div><button class="modal-close" onclick="fecharFoto()" aria-label="Fechar">✕</button></div>
+    <div id="foto-corpo"></div>
   </div>
 </div>
 
@@ -951,7 +987,21 @@ function gerarDemoOrders(){
 // 'coleta' (do remetente para o centro de distribuição). Pedido antigo, sem
 // tipo, é entrega. A chave no banco (id) separa os dois: entrega = número ou
 // chave da nota; coleta = "C_" + número ou chave.
-const FINAIS=['despachado','entregue','confirmado'];
+const FINAIS=['despachado','entregue','coletado','confirmado'];
+let _regPorId={};            // id -> {status, rota_atual} (para aplicar as baixas do motorista)
+// ── Horários (minutos desde a meia-noite) ──
+function _min(h){ const m=/^(\d{1,2}):(\d{2})/.exec(h||''); return m?(+m[1])*60+(+m[2]):null; }
+function _hhmm(m){ m=((Math.round(m)%1440)+1440)%1440; return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'); }
+function _hojeISO(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function _dataBR(iso){ const p=String(iso||'').split('-'); return p[2]?`${p[2]}/${p[1]}`:''; }
+function _horaTs(ts){ return ts?new Date(ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):''; }
+// Janela do agendamento: "chegar entre" início e fim (sem fim: 30 min antes e depois)
+function _janelaDe(o){
+  if(!o||!o.agendado) return null;
+  const ini=_min(o.horaEntrega); if(ini==null) return null;
+  const fim=_min(o.horaFim);
+  return fim!=null&&fim>ini ? [ini,fim] : [Math.max(0,ini-30),Math.min(1439,ini+30)];
+}
 let filtroTipo='todos';      // filtro de Pedidos e Mapa: 'todos' | 'entrega' | 'coleta'
 let tipoImport='entrega';    // o que as notas importadas são
 let _statusPorId={};         // status de todas as notas do banco (para não reimportar as que já saíram)
@@ -1006,15 +1056,16 @@ function carregarPedidos(){
     if(data && Object.keys(data).length>0){
       modoDemo=false;
       _statusPorId=Object.fromEntries(Object.entries(data).map(([k,p])=>[k,(p&&p.status)||'pendente']));
+      _regPorId=Object.fromEntries(Object.entries(data).map(([k,p])=>[k,{status:(p&&p.status)||'pendente',rota_atual:(p&&p.rota_atual)||''}]));
       allOrders=Object.entries(data).map(([key,p])=>({
         id:key, nf:String(p.nf||key), tipo:p.tipo==='coleta'?'coleta':'entrega',
         dest:p.dest||'', endereco:p.endereco||'', uf:p.uf||'',
         cidade:p.cidade||'Sem cidade', peso:p.peso||100, itens:p.itens||1,
         urgente:p.urgente||false, agendado:p.agendado||false, dataAgendada:p.dataAgendada||'',
-        horaEntrega:p.horaEntrega||'', status:p.status||'pendente',
+        horaEntrega:p.horaEntrega||'', horaFim:p.horaFim||'', rota_atual:p.rota_atual||'', status:p.status||'pendente',
         cep:p.cep||'', geoStatus:p.geoStatus||(p.cep?'pendente':'sem_cep'), bairro:p.bairro||'',
         lat:p.lat||(CITY_COORDS[p.cidade]?.lat??DEPOT.lat), lng:p.lng||(CITY_COORDS[p.cidade]?.lng??DEPOT.lng),
-      })).filter(o=>o.status!=='entregue');
+      })).filter(o=>o.status!=='entregue'&&o.status!=='coletado');
     } else {
       modoDemo=true;
       _statusPorId={};
@@ -1023,6 +1074,8 @@ function carregarPedidos(){
     render();
     if(document.getElementById('page-pedidos')?.style.display==='block'){ renderPedidosPage(); }
     if(document.getElementById('page-mapa')?.style.display==='block'){ atualizarMapaCompleto(); }
+    // baixas que chegaram antes dos pedidos carregarem
+    Object.entries(baixasPorRota).forEach(([rid,b])=>_aplicarBaixas(rotasFirebase[rid],b));
   }, ()=>{ modoDemo=true; allOrders=gerarDemoOrders(); render(); });
 
   onValue(ref(db,'rotas'), snap=>{
@@ -1036,6 +1089,7 @@ function carregarPedidos(){
   // rotas confirmadas (histórico permanente) — alimenta a página Rotas + overlay do Mapa
   onValue(ref(db,'rotas_confirmadas'), snap=>{
     rotasFirebase = snap.val() || {};
+    _sincronizarBaixas();
     if(document.getElementById('page-rotas')?.style.display==='block'){ renderRotasConfirmadas(); }
     if(document.getElementById('page-mapa')?.style.display==='block'){ atualizarMapaCompleto(); }
   }, ()=>{});
@@ -1101,7 +1155,7 @@ function render(){
     const d=new Date(o.dataAgendada+'T00:00:00');
     const dd=String(d.getDate()).padStart(2,'0'), mm=String(d.getMonth()+1).padStart(2,'0');
     let txt = o._diff<0?'Atrasado':o._diff===0?'Precisa sair <b>hoje</b>':o._diff===1?'Precisa sair <b>amanhã</b>':(_tipoDe(o)==='coleta'?'Coleta programada':'Entrega programada');
-    return `<div class="li-item"><div class="li-icn">${dd}/${mm}</div><div class="li-body"><div class="li-title">NF ${esc(o.nf)}${_tag(o)}</div><div class="li-sub">${txt} · ${esc(o.cidade)}</div></div><div class="li-chev">›</div></div>`;
+    return `<div class="li-item"><div class="li-icn">${dd}/${mm}</div><div class="li-body"><div class="li-title">NF ${esc(o.nf)}${_tag(o)}</div><div class="li-sub">${txt}${o.horaEntrega?' · '+esc(o.horaEntrega)+(o.horaFim?'–'+esc(o.horaFim):''):''} · ${esc(o.cidade)}</div></div><div class="li-chev">›</div></div>`;
   }).join('') : `<div class="empty-mini">Nenhuma entrega agendada</div>`;
 
   // Alertas reais (atrasados, urgentes, isolados)
@@ -1294,6 +1348,7 @@ function selecionarNFAgendarD(id){
   document.getElementById('ag-form-step-d').style.display='block';
   document.getElementById('ag-data-d').value='';
   document.getElementById('ag-hora-d').value='';
+  document.getElementById('ag-hora-fim-d').value='';
   document.getElementById('ag-sugestao-d').classList.remove('show');
 }
 window.selecionarNFAgendarD=selecionarNFAgendarD;
@@ -1336,7 +1391,10 @@ async function salvarAgendamentoD(){
   const hora=document.getElementById('ag-hora-d').value;
   if(!data||!hora){ alert('Preencha data e horário de entrega'); return; }
   const o=allOrders.find(x=>x.id===_nfSelDash);
-  const payload={ agendado:true, dataAgendada:data, horaEntrega:hora, horaSaidaSugerida:calcularHoraSaida(o.cidade,hora) };
+  let fim=document.getElementById('ag-hora-fim-d').value;
+  if(!fim) fim=_hhmm(Math.min(1439,_min(hora)+60));
+  if(_min(fim)<=_min(hora)){ alert('O fim da faixa de horário precisa ser depois do início.'); return; }
+  const payload={ agendado:true, dataAgendada:data, horaEntrega:hora, horaFim:fim, horaSaidaSugerida:calcularHoraSaida(o.cidade,hora) };
   if(!modoDemo){ await update(ref(db,'pedidos_rota/'+_nfSelDash), payload); }
   else { Object.assign(o,payload); }
   fecharModalAgendar();
@@ -1730,10 +1788,24 @@ const VEICULOS=[
 let vehSel=null, capKgD=0, maxPedD=6, rotaGeradaD=[], fonteDistanciaD='—';
 let rotasConfirmadasDemo=[];
 let rotTipoD='todos', regraCargaD='';
+let rotaCtxD={data:'',saida:420}, naoAlocD=[], foraJanelaD=[];
+// Pedidos que entram nesta viagem: tipo escolhido, sem agendados de outro dia;
+// os agendados do dia levam a janela de horário para o motor de rotas.
+function _pedidosDaViagem(){
+  const d=rotaCtxD.data||_hojeISO();
+  return _filtrar(allOrders.filter(o=>o.status==='pendente'),rotTipoD)
+    .filter(o=>!(o.agendado&&o.dataAgendada&&o.dataAgendada>d))
+    .map(o=>{ const j=o.agendado&&o.dataAgendada===d?_janelaDe(o):null; return j?{...o,janela_ini:j[0],janela_fim:j[1]}:o; });
+}
 function _pendPorTipo(){ return _contarTipos(allOrders.filter(o=>o.status==='pendente')); }
 function renderRotTipoD(inicial){
   const n=_pendPorTipo();
-  if(inicial) rotTipoD = filtroTipo!=='todos'&&n[filtroTipo] ? filtroTipo : (n.entrega&&n.coleta ? 'todos' : (n.coleta?'coleta':'entrega'));
+  if(inicial){
+    rotTipoD = filtroTipo!=='todos'&&n[filtroTipo] ? filtroTipo : (n.entrega&&n.coleta ? 'todos' : (n.coleta?'coleta':'entrega'));
+    const dt=document.getElementById('rot-data-d'); if(!dt.value) dt.value=_hojeISO();
+    let sv=''; try{ sv=localStorage.getItem('rotav3_saida')||''; }catch(e){}
+    if(_min(sv)!=null) document.getElementById('rot-saida-d').value=sv;
+  }
   const ops=[['entrega','Entregas'],['coleta','Coletas'],['todos','Entregas e coletas']];
   document.getElementById('rot-tipo').innerHTML=ops.map(([v,t])=>`<button type="button" data-v="${v}" aria-pressed="${rotTipoD===v}">${t}<span class="n">${n[v]}</span></button>`).join('');
   document.getElementById('rot-tipo-nota').textContent =
@@ -1822,14 +1894,22 @@ function irConfirmD(){
   const kg=parseInt(document.getElementById('cap-kg-d').value);
   if(!kg||kg<=0){ alert('Informe a capacidade em kg'); return; }
   capKgD=kg; maxPedD=Math.min(20,Math.max(1,parseInt(document.getElementById('cap-maxped-d').value)||8));
+  const saidaTxt=document.getElementById('rot-saida-d').value||'07:00';
+  rotaCtxD={ data:document.getElementById('rot-data-d').value||_hojeISO(), saida:_min(saidaTxt)??420 };
+  try{ localStorage.setItem('rotav3_saida',_hhmm(rotaCtxD.saida)); }catch(e){}
   const n=_pendPorTipo();
   if(!n[rotTipoD]){ alert(rotTipoD==='coleta'?'Não há coletas pendentes.':rotTipoD==='entrega'?'Não há entregas pendentes.':'Não há pedidos pendentes.'); return; }
-  const oque = rotTipoD==='coleta' ? _plural(n.coleta,'coleta pendente','coletas pendentes')
-    : rotTipoD==='entrega' ? _plural(n.entrega,'entrega pendente','entregas pendentes')
-    : `${_plural(n.entrega,'entrega','entregas')} e ${_plural(n.coleta,'coleta','coletas')} pendentes`;
-  const semLocal=_filtrar(allOrders.filter(o=>o.status==='pendente'),rotTipoD).filter(o=>o.geoStatus!=='ok').length;
+  const viagem=_pedidosDaViagem();
+  const outroDia=_filtrar(allOrders.filter(o=>o.status==='pendente'),rotTipoD).length-viagem.length;
+  if(!viagem.length){ alert('Todos os pedidos pendentes estão agendados para outro dia.'); return; }
+  const nV=_contarTipos(viagem);
+  const oque = rotTipoD==='coleta' ? _plural(nV.coleta,'coleta','coletas')
+    : rotTipoD==='entrega' ? _plural(nV.entrega,'entrega','entregas')
+    : `${_plural(nV.entrega,'entrega','entregas')} e ${_plural(nV.coleta,'coleta','coletas')}`;
+  const comHora=viagem.filter(o=>o.janela_ini!=null).length;
+  const semLocal=viagem.filter(o=>o.geoStatus!=='ok').length;
   document.getElementById('confirm-veh-name').textContent=vehSel.nome;
-  document.getElementById('confirm-details-d').innerHTML=`Capacidade: <b style="color:var(--ac)">${kg.toLocaleString('pt-BR')} kg</b><br>Máx. de paradas: <b>${maxPedD}</b><br>Nesta viagem: <b>${oque}</b>${rotTipoD==='todos'?' <span style="color:var(--text3)">(entregas primeiro, coletas depois)</span>':''}<br>Saída: <b>${esc(DEPOT.name)}</b>${semLocal?`<br><span style="color:#8a5a06">⚠️ ${_plural(semLocal,'pedido ainda está','pedidos ainda estão')} sem localização exata (só a cidade). A ordem e os km desses pedidos são aproximados.</span>`:''}`;
+  document.getElementById('confirm-details-d').innerHTML=`Capacidade: <b style="color:var(--ac)">${kg.toLocaleString('pt-BR')} kg</b><br>Máx. de paradas: <b>${maxPedD}</b><br>Nesta viagem: <b>${oque} pendentes</b>${rotTipoD==='todos'?' <span style="color:var(--text3)">(entregas primeiro, coletas depois)</span>':''}<br>Saída: <b>${esc(DEPOT.name)}</b> às <b>${_hhmm(rotaCtxD.saida)}</b> de <b>${_dataBR(rotaCtxD.data)}</b>${comHora?`<br>Com horário marcado: <b>${comHora}</b>`:''}${outroDia?`<br><span style="color:var(--text3)">${_plural(outroDia,'agendado para outro dia fica','agendados para outro dia ficam')} de fora.</span>`:''}${semLocal?`<br><span style="color:#8a5a06">⚠️ ${_plural(semLocal,'pedido ainda está','pedidos ainda estão')} sem localização exata (só a cidade). A ordem e os km desses pedidos são aproximados.</span>`:''}`;
   document.getElementById('rot-step-cap').style.display='none';
   document.getElementById('rot-step-confirm').style.display='block';
 }
@@ -1840,9 +1920,10 @@ window.voltarCapD=voltarCapD;
 async function executarVRPD(){
   document.getElementById('rot-step-confirm').style.display='none';
   document.getElementById('rot-step-loading').style.display='block';
-  const pend=_filtrar(allOrders.filter(o=>o.status==='pendente'),rotTipoD);
+  const pend=_pedidosDaViagem();
   try{
     const data=await apiPost('/solve',{
+      hora_saida: rotaCtxD.saida,
       veiculos: [{ id:vehSel.id, nome:vehSel.nome, capKg:capKgD, maxPed:maxPedD }],
       time_limit_s: 30,
       pedidos: pend,
@@ -1851,6 +1932,7 @@ async function executarVRPD(){
     rotaGeradaD=data.routes||data.rotas||[];
     fonteDistanciaD=data.fonte_distancia||'—';
     regraCargaD=data.regra_carga||'';
+    naoAlocD=(data.nao_alocados||[]).map(String); foraJanelaD=(data.fora_da_janela||[]).map(String);
     if(!data.salvo && rotaGeradaD.length){
       // prévia da rota (alimenta o indicador "Rotas" do Dashboard); se falhar, a rota continua na tela
       try{
@@ -1885,6 +1967,7 @@ function renderRotasResultD(rotas){
       <div class="kpi"><div class="kpi-lbl">KM TOTAL</div><div class="kpi-val">${totalKm.toFixed(0)}</div></div>
     </div>
     ${regraCargaD==='soma_entregas_e_coletas'?'<div class="import-msg show warn" style="max-width:640px;margin:0 0 16px">Nesta rota o peso das entregas e das coletas foi somado para caber no veículo (regra mais conservadora).</div>':''}
+    ${naoAlocD.length?`<div class="import-msg show warn" style="max-width:640px;margin:0 0 16px">${_plural(naoAlocD.length,'pedido ficou','pedidos ficaram')} de fora desta viagem${foraJanelaD.length?` (${foraJanelaD.length} com horário que não dá para cumprir saindo às ${_hhmm(rotaCtxD.saida)})`:''}: NF ${naoAlocD.slice(0,12).map(esc).join(', ')}${naoAlocD.length>12?'…':''}. Continuam pendentes para outra viagem.</div>`:''}
     <div class="rota-tabs-d" id="rota-tabs-d">${rotas.map((r,i)=>`<div class="rota-tab-d ${i===0?'active':''}" onclick="selRotaTabD(${i})">Rota ${i+1} · ${(r.pedidos?.length||r.paradas?.length||0)} paradas</div>`).join('')}</div>
     <div id="rota-detail-d"></div>
     <div id="confirmar-rota-wrap" style="margin-top:18px;max-width:640px">
@@ -1896,49 +1979,59 @@ function renderRotasResultD(rotas){
 window.renderRotasResultD=renderRotasResultD;
 
 // Confirma TODAS as rotas geradas nesta sessão: muda status dos pedidos e salva no Firebase
+// ── Link do motorista ───────────────────────────────────────────────────
+const LINK_DIAS=7;
+let baixasPorRota={}, _baixasUnsub={};
+function _novoToken(){ const b=new Uint8Array(18); crypto.getRandomValues(b); return btoa(String.fromCharCode(...b)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function _linkMotorista(token){ return location.origin+location.pathname.replace(/[^/]*$/,'')+'motorista.html#'+token; }
+// O que o motorista vê pelo link (sem as chaves internas dos pedidos)
+function _dadosEntregador(r){
+  return {
+    info:{ rota_id:r.id, veiculo:r.veiculo||'', motorista:r.motorista||'', data:r.data||'', saida:r.saida??null, criada_em:r.criada_em||'',
+      deposito:{ nome:DEPOT.name, lat:DEPOT.lat, lng:DEPOT.lng } },
+    paradas:(r.paradas||[]).map(p=>({ nf:String(p.nf), tipo:_tipoDe(p), dest:p.dest||'', endereco:p.endereco||'', bairro:p.bairro||'', cidade:p.cidade||'', uf:p.uf||'', cep:p.cep||'',
+      lat:Number.isFinite(p.lat)?p.lat:null, lng:Number.isFinite(p.lng)?p.lng:null, peso:p.peso||0, itens:p.itens||1,
+      chegada_min:p.chegada_min??null, janela_ini:p.janela_ini??null, janela_fim:p.janela_fim??null })),
+    expira: Date.now()+LINK_DIAS*864e5,
+  };
+}
+
 async function confirmarRotaD(){
   if(!rotaGeradaD.length){ return; }
   const btn=document.getElementById('btn-confirmar-rota');
   btn.disabled=true; btn.textContent='Confirmando...';
   try{
-    const agora=new Date().toISOString();
-    const nfsConfirmadas=[];
-    // coleta todas as NFs de todas as rotas geradas
-    rotaGeradaD.forEach(r=>{
-      (r.pedidos||r.paradas||[]).forEach(p=>{ if(p.id||p.nf) nfsConfirmadas.push(_idDe(p)); });
-    });
-    if(!nfsConfirmadas.length){ throw new Error('Nenhuma NF nas rotas.'); }
+    const agora=new Date().toISOString(), rotaId='rota_'+Date.now();
+    const rotas=rotaGeradaD.map((r,i)=>{
+      const paradas=(r.pedidos||r.paradas||[]).map(p=>({ id:_idDe(p), nf:String(p.nf), tipo:_tipoDe(p), dest:p.dest||'', endereco:p.endereco||'', bairro:p.bairro||'', cidade:p.cidade||'', uf:p.uf||'', cep:p.cep||'',
+        peso:p.peso||0, itens:p.itens||1, lat:Number.isFinite(p.lat)?p.lat:null, lng:Number.isFinite(p.lng)?p.lng:null,
+        chegada_min:p.chegada_min??null, janela_ini:p.janela_ini??null, janela_fim:p.janela_fim??null }));
+      const nP=_contarTipos(paradas);
+      return { id:`${rotaId}_${i+1}`, criada_em:agora, data:rotaCtxD.data||_hojeISO(), saida:rotaCtxD.saida??null,
+        veiculo:vehSel?.nome||'', motorista:motoristaSelecionadoD?.nome||'', cap_kg:capKgD,
+        km:r.km||r.distancia_km||0, tempo_min:r.mins||r.tempo_min||0,
+        peso_total:r.peso_total||paradas.reduce((s,p)=>s+(p.peso||0),0),
+        num_paradas:paradas.length, entregas:nP.entrega, coletas:nP.coleta, status:'em_rota', paradas };
+    }).filter(r=>r.paradas.length);
+    if(!rotas.length){ throw new Error('Nenhuma nota nas rotas.'); }
 
     if(!modoDemo){
-      // 1) muda status de cada NF para despachado (não some, só sai de pendente)
-      const updStatus={};
-      nfsConfirmadas.forEach(nf=>{ updStatus['pedidos_rota/'+nf+'/status']='despachado'; });
-      await update(ref(db), updStatus);
-      // 2) salva a(s) rota(s) numa seção própria do Firebase (histórico permanente)
-      const rotaId='rota_'+Date.now();
-      const payloadRota={};
-      rotaGeradaD.forEach((r,i)=>{
-        const paradas=(r.pedidos||r.paradas||[]).map(p=>({id:_idDe(p),nf:String(p.nf),tipo:_tipoDe(p),dest:p.dest||'',endereco:p.endereco||'',cidade:p.cidade||'',peso:p.peso||0,lat:p.lat,lng:p.lng}));
-        const nP=_contarTipos(paradas);
-        payloadRota[rotaId+'_'+(i+1)]={
-          id:rotaId+'_'+(i+1), criada_em:agora, veiculo:vehSel?.nome||'', motorista:motoristaSelecionadoD?.nome||'', cap_kg:capKgD,
-          km:r.km||r.distancia_km||0, tempo_min:r.mins||r.tempo_min||0,
-          peso_total:r.peso_total||paradas.reduce((s,p)=>s+(p.peso||0),0),
-          num_paradas:paradas.length, entregas:nP.entrega, coletas:nP.coleta, status:'em_rota', paradas,
-        };
+      // tudo numa gravação só: pedidos despachados, rota no histórico e link do motorista
+      const upd={};
+      rotas.forEach(r=>{
+        const token=_novoToken(), ent=_dadosEntregador(r);
+        r.token=token; r.link_expira=ent.expira;
+        upd['entregador/'+token]=ent;
+        upd['rotas_confirmadas/'+r.id]=r;
+        r.paradas.forEach(p=>{ upd['pedidos_rota/'+p.id+'/status']='despachado'; upd['pedidos_rota/'+p.id+'/rota_atual']=r.id; });
       });
-      await update(ref(db,'rotas_confirmadas'),payloadRota);
+      await update(ref(db), upd);
     } else {
-      // modo demo: só marca localmente
-      nfsConfirmadas.forEach(id=>{ const o=allOrders.find(x=>x.id===id); if(o) o.status='despachado'; });
-      rotasConfirmadasDemo.push({
-        id:'rota_'+Date.now(), criada_em:agora, veiculo:vehSel?.nome||'', motorista:motoristaSelecionadoD?.nome||'',
-        km:rotaGeradaD.reduce((s,r)=>s+(r.km||0),0),
-        num_paradas:nfsConfirmadas.length,
-        paradas:nfsConfirmadas.map(id=>{const o=allOrders.find(x=>x.id===id);return{id,nf:o?.nf||id,tipo:_tipoDe(o),dest:o?.dest||'',cidade:o?.cidade||'',peso:o?.peso||0,lat:o?.lat,lng:o?.lng};}),
+      rotas.forEach(r=>{
+        r.paradas.forEach(p=>{ const o=allOrders.find(x=>x.id===p.id); if(o) o.status='despachado'; });
+        rotasConfirmadasDemo.push(r);
       });
     }
-    // feedback e volta pro dashboard
     btn.textContent='✔ Rota confirmada!';
     setTimeout(()=>{
       rotaGeradaD=[];
@@ -1951,6 +2044,102 @@ async function confirmarRotaD(){
   }
 }
 window.confirmarRotaD=confirmarRotaD;
+
+// Acompanha as baixas das rotas recentes (só a lista de baixas; fotos só ao abrir)
+function _sincronizarBaixas(){
+  if(modoDemo) return;
+  const limite=Date.now()-15*864e5, vivos=new Set();
+  Object.values(rotasFirebase).forEach(r=>{
+    if(!r||!r.token||r.status==='devolvida'||r.status==='apagada') return;
+    if(Date.parse(r.criada_em||0)<limite) return;
+    vivos.add(r.id);
+    if(_baixasUnsub[r.id]) return;
+    _baixasUnsub[r.id]=onValue(ref(db,'entregador/'+r.token+'/baixas'), snap=>{
+      baixasPorRota[r.id]=snap.val()||{};
+      _aplicarBaixas(rotasFirebase[r.id]||r, baixasPorRota[r.id]);
+      if(document.getElementById('page-rotas')?.style.display==='block'){ renderRotasConfirmadas(); }
+    }, ()=>{});
+  });
+  Object.keys(_baixasUnsub).forEach(id=>{ if(!vivos.has(id)){ try{ _baixasUnsub[id](); }catch(e){} delete _baixasUnsub[id]; delete baixasPorRota[id]; } });
+}
+// Feito → entregue/coletado. Não realizado → volta para pendente com a ocorrência.
+// Só mexe no pedido se ele ainda estiver nesta rota (rota_atual).
+function _aplicarBaixas(rota, baixas){
+  if(modoDemo||!rota||!baixas) return;
+  const upd={};
+  (rota.paradas||[]).forEach((p,i)=>{
+    const b=baixas[i]; if(!b) return;
+    const id=_idDe(p), reg=_regPorId[id];
+    if(!reg||reg.rota_atual!==rota.id) return;
+    if(b.status==='feito'){
+      const novo=_tipoDe(p)==='coleta'?'coletado':'entregue';
+      if(reg.status!==novo){ upd['pedidos_rota/'+id+'/status']=novo; upd['pedidos_rota/'+id+'/baixa']={hora:b.hora||Date.now(),rota:rota.id,recebedor:b.recebedor||''}; }
+    } else if(b.status==='nao_feito' && reg.status!=='pendente'){
+      upd['pedidos_rota/'+id+'/status']='pendente';
+      upd['pedidos_rota/'+id+'/ocorrencia']={motivo:b.motivo||'',obs:b.obs||'',hora:b.hora||Date.now(),rota:rota.id};
+    }
+  });
+  if(Object.keys(upd).length){
+    Object.keys(upd).forEach(k=>{ const m=/^pedidos_rota\/(.+)\/status$/.exec(k); if(m&&_regPorId[m[1]]) _regPorId[m[1]].status=upd[k]; });
+    update(ref(db),upd).catch(()=>{});
+  }
+}
+function _rotaPorId(rid){ return modoDemo ? rotasConfirmadasDemo.find(r=>r.id===rid) : rotasFirebase[rid]; }
+function _toast(txt){ _geoStatusUI(txt); setTimeout(()=>_geoStatusUI(''),3500); }
+function enviarLinkWhatsApp(rid){
+  const r=_rotaPorId(rid); if(!r||!r.token) return;
+  const quando=[r.data?_dataBR(r.data):'', r.saida!=null?'saída '+_hhmm(r.saida):''].filter(Boolean).join(', ');
+  const msg=`Rota ${r.veiculo||''}${r.motorista?' — '+r.motorista:''}: ${(r.paradas||[]).length} paradas${quando?' ('+quando+')':''}.\nAbra no celular para ver a sequência e dar baixa:\n${_linkMotorista(r.token)}`;
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank','noopener');
+}
+window.enviarLinkWhatsApp=enviarLinkWhatsApp;
+async function copiarLinkMotorista(rid){
+  const r=_rotaPorId(rid); if(!r||!r.token) return;
+  const url=_linkMotorista(r.token);
+  try{ await navigator.clipboard.writeText(url); _toast('Link do motorista copiado.'); }
+  catch(e){ prompt('Copie o link do motorista:',url); }
+}
+window.copiarLinkMotorista=copiarLinkMotorista;
+async function encerrarLinkMotorista(rid){
+  const r=_rotaPorId(rid); if(!r||!r.token) return;
+  if(!confirm('Encerrar o link? O motorista não consegue mais abrir a rota nem dar baixa.')) return;
+  try{
+    const agora=Date.now();
+    await update(ref(db),{['entregador/'+r.token+'/expira']:agora,['rotas_confirmadas/'+rid+'/link_expira']:agora});
+  }catch(e){ alert('Não foi possível encerrar o link: '+e.message); }
+}
+window.encerrarLinkMotorista=encerrarLinkMotorista;
+async function criarLinkMotorista(rid){
+  const r=_rotaPorId(rid); if(!r||modoDemo) return;
+  try{
+    const token=_novoToken(), ent=_dadosEntregador(r), upd={};
+    if(r.token) upd['entregador/'+r.token+'/expira']=Date.now();
+    upd['entregador/'+token]=ent;
+    upd['rotas_confirmadas/'+rid+'/token']=token;
+    upd['rotas_confirmadas/'+rid+'/link_expira']=ent.expira;
+    (r.paradas||[]).forEach(p=>{ const id=_idDe(p), reg=_regPorId[id]; if(reg&&reg.status==='despachado'&&!reg.rota_atual) upd['pedidos_rota/'+id+'/rota_atual']=rid; });
+    await update(ref(db),upd);
+    _toast('Link do motorista criado.');
+  }catch(e){ alert('Não foi possível criar o link: '+e.message); }
+}
+window.criarLinkMotorista=criarLinkMotorista;
+async function verFotoCanhoto(rid,i){
+  const r=_rotaPorId(rid); if(!r||!r.token) return;
+  const p=(r.paradas||[])[i]||{}, b=(baixasPorRota[rid]||{})[i]||{};
+  document.getElementById('foto-tit').textContent=`${_tipoDe(p)==='coleta'?'Coleta':'Entrega'} · NF ${p.nf||''}`;
+  const corpo=document.getElementById('foto-corpo');
+  corpo.innerHTML='<div class="empty-mini">Carregando a foto…</div>';
+  document.getElementById('modal-foto').classList.add('open');
+  try{
+    const d=(await get(ref(db,'entregador/'+r.token+'/fotos/'+i))).val();
+    const info=`<div class="foto-info">${b.status==='feito'?'Feito':'Não realizado'} às ${_horaTs(b.hora)}${b.recebedor?' · recebido por '+esc(b.recebedor):''}${b.motivo?' · '+esc(b.motivo):''}${Number.isFinite(b.lat)?` · <a href="https://www.google.com/maps?q=${b.lat},${b.lng}" target="_blank" rel="noopener">onde foi dada a baixa</a>`:''}</div>`;
+    corpo.innerHTML = typeof d==='string'&&d.startsWith('data:image/jpeg;base64,')
+      ? `<img src="${d}" alt="Foto enviada pelo motorista">${info}` : `<div class="empty-mini">Foto não encontrada.</div>${info}`;
+  }catch(e){ corpo.innerHTML='<div class="empty-mini">Não foi possível carregar a foto.</div>'; }
+}
+window.verFotoCanhoto=verFotoCanhoto;
+function fecharFoto(){ document.getElementById('modal-foto').classList.remove('open'); document.getElementById('foto-corpo').innerHTML=''; }
+window.fecharFoto=fecharFoto;
 
 // ══════════════════════════════════════════════════════════════════════════
 // PÁGINA ROTAS — lista rotas confirmadas (Firebase ou demo)
@@ -2010,7 +2199,7 @@ function renderRotasConfirmadas(){
   const lista = todas.filter(r=>r.status!=='devolvida' && r.status!=='apagada');
 
   if(!lista.length){
-    cont.innerHTML=`<div class="placeholder"><svg viewBox="0 0 24 24"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg><h3>Nenhuma rota confirmada ainda</h3><p>Gere uma rota em Roteirização e clique em "Confirmar Saída para Entrega". Ela aparecerá aqui e ficará salva.</p></div>`;
+    cont.innerHTML=`<div class="placeholder"><svg viewBox="0 0 24 24"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg><h3>Nenhuma rota confirmada ainda</h3><p>Gere uma rota em Roteirização e clique em "Confirmar saída do veículo". Ela aparece aqui, com o link para o motorista.</p></div>`;
     return;
   }
   cont.innerHTML = lista.map((r,idx)=>{
@@ -2019,7 +2208,23 @@ function renderRotasConfirmadas(){
     const paradas=r.paradas||[];
     const cor = _corDaRota(r.id || idx);
     const mapId = `mini-map-rota-${r.id || 'r'+idx}`;
-    const ridSafe = (r.id||'').replace(/'/g,"\\'");
+    const ridSafe = esc((r.id||'').replace(/'/g,"\\'"));
+    const bx = (modoDemo?{}:baixasPorRota[r.id])||{};
+    let feitas=0, nok=0; paradas.forEach((p,i)=>{ const b=bx[i]; if(b){ feitas++; if(b.status==='nao_feito') nok++; } });
+    const concluida = paradas.length && feitas===paradas.length;
+    const linkAtivo = r.token && (r.link_expira||0) > Date.now();
+    const mot = modoDemo
+      ? `<div class="mot-box"><div class="mot-sub">No modo demonstração o link do motorista não é criado. Importe as suas notas para usar.</div></div>`
+      : `<div class="mot-box">
+        <div class="mot-head">
+          <div><div class="mot-tit">Motorista</div><div class="mot-sub">${r.token?(linkAtivo?`Link válido até ${new Date(r.link_expira).toLocaleDateString('pt-BR')}`:'Link encerrado'):'Sem link ainda'}</div></div>
+          <div class="mot-acts">${linkAtivo
+            ? `<button class="btn-wa" onclick="enviarLinkWhatsApp('${ridSafe}')">Enviar pelo WhatsApp</button><button class="btn-sm" onclick="copiarLinkMotorista('${ridSafe}')">Copiar link</button><button class="btn-sm" onclick="encerrarLinkMotorista('${ridSafe}')">Encerrar link</button>`
+            : `<button class="btn-sm" onclick="criarLinkMotorista('${ridSafe}')">${r.token?'Gerar novo link':'Criar link do motorista'}</button>`}</div>
+        </div>
+        <div class="mot-sub">${feitas} de ${paradas.length} paradas com baixa${feitas-nok?` · ${_plural(feitas-nok,'feita','feitas')}`:''}${nok?` · ${_plural(nok,'não realizada','não realizadas')} (${nok===1?'voltou':'voltaram'} para pendentes)`:''}</div>
+        <div class="prog"><i style="width:${paradas.length?Math.round(feitas/paradas.length*100):0}%"></i></div>
+      </div>`;
     return `<div class="card" style="margin-bottom:14px">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px">
         <div style="display:flex;align-items:center;gap:10px">
@@ -2030,7 +2235,7 @@ function renderRotasConfirmadas(){
           </div>
         </div>
         <div style="display:flex;gap:8px;align-items:center">
-          <span style="background:rgba(243,182,43,.15);border:1px solid rgba(243,182,43,.3);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;color:var(--ac)">${r.status==='entregue'?'✓ Entregue':'🚚 Em rota'}</span>
+          <span style="background:rgba(243,182,43,.15);border:1px solid rgba(243,182,43,.3);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;color:var(--ac)">${concluida?'✓ Concluída':'🚚 Em rota'}</span>
         </div>
       </div>
       <div style="display:flex;gap:18px;font-size:12.5px;color:var(--text2);flex-wrap:wrap;margin-bottom:12px">
@@ -2038,9 +2243,12 @@ function renderRotasConfirmadas(){
         <span>🛣️ <b style="color:var(--text)">${(r.km||0).toFixed?(r.km).toFixed(1):r.km}</b> km</span>
         ${r.tempo_min?`<span>⏱️ <b style="color:var(--text)">${r.tempo_min}</b> min</span>`:''}
       </div>
+      ${mot}
       <div id="${mapId}" style="height:220px;border-radius:11px;border:1px solid var(--border);margin-bottom:12px;overflow:hidden;background:var(--s3)"></div>
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
-        ${paradas.map((p,i)=>`<span style="background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:11px;font-family:var(--mono);color:var(--text2)"><b style="color:${cor}">${i+1}.</b> ${_tipoDe(p)==='coleta'?'Coleta':'Entrega'} NF ${esc(p.nf)}${p.cidade?' · '+esc(p.cidade):''}</span>`).join('')}
+        ${paradas.map((p,i)=>{ const b=bx[i], col=_tipoDe(p)==='coleta';
+          const st=b?(b.status==='feito'?` ✓ ${col?'coletada':'entregue'} ${_horaTs(b.hora)}`:` ✗ ${esc(b.motivo||'não realizada')}`):'';
+          return `<span class="parada-chip${b?(b.status==='feito'?' ok':' nok'):''}"><b style="color:${b?'inherit':cor}">${i+1}.</b> ${col?'Coleta':'Entrega'} NF ${esc(p.nf)}${p.cidade?' · '+esc(p.cidade):''}${st}${b&&b.temFoto?` <button onclick="verFotoCanhoto('${ridSafe}',${i})">ver foto</button>`:''}</span>`; }).join('')}
       </div>
       <div style="display:flex;gap:8px;border-top:1px solid var(--border);padding-top:12px">
         <button class="btn-toolbar" style="flex:1;justify-content:center;color:#a16207;border-color:rgba(161,98,7,.4)" onclick="devolverRotaD('${ridSafe}')">↩ Devolver ao sistema</button>
@@ -2066,15 +2274,17 @@ window.renderRotasConfirmadas=renderRotasConfirmadas;
 // DEVOLVER: as NFs voltam a 'pendente' e entram na roteirização de novo.
 // A rota some da lista ativa (fica marcada 'devolvida'), mas continua salva.
 async function devolverRotaD(rotaId){
-  const ok = confirm('Devolver essa rota? As NFs voltam a ficar disponíveis pra roteirização — a rota atual sai da lista, mas fica salva no histórico.');
+  const ok = confirm('Devolver essa rota? As notas que ainda não tiveram baixa voltam para a roteirização e o link do motorista é encerrado. A rota sai da lista, mas fica salva no histórico.');
   if(!ok) return;
   try{
     if(!modoDemo){
       const rota = rotasFirebase[rotaId];
       if(!rota) throw new Error('Rota não encontrada');
       const upd={};
-      (rota.paradas||[]).forEach(p=>{ upd['pedidos_rota/'+_idDe(p)+'/status']='pendente'; });
+      // só volta o que ainda está despachado (o que já foi entregue/coletado fica como está)
+      (rota.paradas||[]).forEach(p=>{ const id=_idDe(p), reg=_regPorId[id]; if(reg&&reg.status==='despachado') upd['pedidos_rota/'+id+'/status']='pendente'; });
       upd['rotas_confirmadas/'+rotaId+'/status']='devolvida';
+      if(rota.token){ upd['entregador/'+rota.token+'/expira']=Date.now(); upd['rotas_confirmadas/'+rotaId+'/link_expira']=Date.now(); }
       await update(ref(db), upd);
     } else {
       const rota = rotasConfirmadasDemo.find(r=>r.id===rotaId);
@@ -2095,11 +2305,13 @@ window.devolverRotaD=devolverRotaD;
 // permanecem exatamente como estão — não voltam a ser roteirizadas
 // automaticamente. Dado nunca é removido do Firebase, só arquivado.
 async function apagarRotaD(rotaId){
-  const ok = confirm('Apagar essa rota da lista? As NFs continuam salvas e NÃO voltam a ser roteirizadas automaticamente. Use "Devolver" em vez disso se quiser que elas voltem a ficar disponíveis.');
+  const ok = confirm('Apagar essa rota da lista? As notas continuam salvas e NÃO voltam para a roteirização, e o link do motorista é encerrado. Use "Devolver" se quiser que elas voltem a ficar disponíveis.');
   if(!ok) return;
   try{
     if(!modoDemo){
-      await update(ref(db,'rotas_confirmadas/'+rotaId), { status:'apagada' });
+      const rota=rotasFirebase[rotaId]||{}, upd={['rotas_confirmadas/'+rotaId+'/status']:'apagada'};
+      if(rota.token){ upd['entregador/'+rota.token+'/expira']=Date.now(); upd['rotas_confirmadas/'+rotaId+'/link_expira']=Date.now(); }
+      await update(ref(db), upd);
     } else {
       const rota = rotasConfirmadasDemo.find(r=>r.id===rotaId);
       if(rota) rota.status='apagada';
@@ -2200,7 +2412,7 @@ function selRotaTabD(idx){
       ${fonteDistanciaD==='Haversine'?`<div style="margin-top:10px;font-size:11.5px;color:#8a5a06;background:rgba(250,204,21,.16);border:1px solid rgba(202,138,4,.35);border-radius:8px;padding:8px 12px">⚠️ Distância calculada em linha reta (OSRM indisponível) — km real de estrada costuma ser maior.</div>`
       :fonteDistanciaD==='OSRM'?`<div style="margin-top:10px;font-size:11px;color:var(--text3)">✓ Distância real via OSRM (rota de estrada)</div>`:''}
     </div>
-    <div>${paradas.map((p,i)=>`<div class="delivery-mini"><div class="delivery-mini-num${_tipoDe(p)==='coleta'?' c':''}">${i+1}</div><div style="flex:1;min-width:0"><div style="font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text)">NF ${esc(p.nf)}${_tag(p)}</div><div style="font-size:11px;color:var(--text3)">${p.dest&&p.dest!==p.cidade?esc(p.dest)+' · ':''}${p.endereco?esc(p.endereco)+' · ':''}${esc(p.cidade||'')} · ${(+p.peso||0).toLocaleString('pt-BR')} kg</div></div></div>`).join('')}</div>`;
+    <div>${paradas.map((p,i)=>`<div class="delivery-mini"><div class="delivery-mini-num${_tipoDe(p)==='coleta'?' c':''}">${i+1}</div><div style="flex:1;min-width:0"><div style="font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text)">NF ${esc(p.nf)}${_tag(p)}${p.chegada_min!=null?`<span class="cheg">~${_hhmm(p.chegada_min)}</span>`:''}</div><div style="font-size:11px;color:var(--text3)">${p.janela_ini!=null?`Horário ${_hhmm(p.janela_ini)}–${_hhmm(p.janela_fim)} · `:''}${p.dest&&p.dest!==p.cidade?esc(p.dest)+' · ':''}${p.endereco?esc(p.endereco)+' · ':''}${esc(p.cidade||'')} · ${(+p.peso||0).toLocaleString('pt-BR')} kg</div></div></div>`).join('')}</div>`;
   setTimeout(()=>desenharMapaRota(paradas),100);
 }
 window.selRotaTabD=selRotaTabD;

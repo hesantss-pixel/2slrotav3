@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#0d1b2e">
+<title>ROTAV3 — Rota do motorista</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@700;800&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#0d1b2e;--gold:#f3b62b;--gold2:#e09c12;--gold-grad:linear-gradient(180deg,#f8d77a 0%,#f3b62b 55%,#e09c12 100%);
+  --bg:#f3f6fa;--card:#fff;--line:#e3e8ef;--line2:#d3dae4;--text:#0d1b2e;--text2:#475569;--text3:#64748b;
+  --ok:#0f7a4c;--okbg:#e8f7ef;--nok:#b91c1c;--nokbg:#fdecec;}
+*{box-sizing:border-box;}
+html{-webkit-text-size-adjust:100%;}
+body{margin:0;background:var(--bg);color:var(--text);font:400 16px/1.45 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;}
+[hidden]{display:none!important;}
+.top{position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;padding-top:max(12px,env(safe-area-inset-top));background:var(--navy);}
+.top img{display:block;width:124px;height:auto;}
+.top-tag{font-size:12px;font-weight:700;letter-spacing:.4px;color:#cbd5e1;}
+main{max-width:640px;margin:0 auto;padding:16px 16px 40px;}
+.estado{margin:40px auto;max-width:420px;text-align:center;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:28px 20px;color:var(--text2);}
+.estado b{display:block;font-family:Sora,Inter,sans-serif;font-size:18px;color:var(--text);margin-bottom:6px;}
+.resumo{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px;}
+.r-tit{font-family:Sora,Inter,sans-serif;font-weight:800;font-size:19px;line-height:1.25;}
+.r-sub{font-size:13.5px;color:var(--text3);margin-top:3px;}
+.r-prog{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:14px;}
+.bar{flex:1;height:9px;border-radius:9px;background:#eef2f7;overflow:hidden;}
+.bar i{display:block;height:100%;background:var(--gold-grad);transition:width .3s;}
+.fim{background:var(--okbg);border:1px solid #c9ecd9;color:var(--ok);border-radius:14px;padding:12px 14px;font-weight:700;margin-bottom:14px;}
+.lista{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px;}
+.parada{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;}
+.parada.prox{border:2px solid var(--gold);box-shadow:0 10px 24px -16px rgba(224,156,18,.9);}
+.parada.ok{background:#fbfefc;border-color:#c9ecd9;}
+.parada.nok{background:#fffafa;border-color:#f6caca;}
+.p-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.num{width:30px;height:30px;border-radius:50%;background:var(--navy);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0;}
+.tag{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;font-size:11px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;}
+.tag.e{background:var(--okbg);color:var(--ok);border:1px solid #c9ecd9;}
+.tag.c{background:#e9eef6;color:var(--navy);border:1px solid #c8d3e3;}
+.nf{font-weight:700;font-size:14px;color:var(--text2);}
+.prox-lbl{margin-left:auto;font-size:12px;font-weight:800;color:var(--gold2);}
+.dest{font-weight:800;font-size:17px;margin-top:8px;line-height:1.3;}
+.end{font-size:14.5px;color:var(--text2);margin-top:2px;}
+.meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;color:var(--text3);margin-top:8px;}
+.chip{display:inline-flex;align-items:center;height:24px;padding:0 8px;border-radius:7px;background:#f1f5f9;border:1px solid var(--line);font-size:12.5px;font-weight:600;color:var(--text2);}
+.chip.hora{background:#fff3df;border-color:#f6dca6;color:#8a5a06;}
+.acoes{display:flex;gap:8px;margin-top:12px;}
+.acoes>*{flex:1;}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 12px;border-radius:12px;border:1px solid var(--line2);background:#fff;color:var(--text);font:700 15px Inter,sans-serif;text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.btn:focus-visible{outline:3px solid var(--gold);outline-offset:2px;}
+.btn.nav{color:var(--navy);font-size:14px;min-height:44px;}
+.btn.ok{background:var(--gold-grad);border-color:var(--gold2);color:var(--navy);}
+.btn.nok{color:var(--nok);border-color:#f2b8b8;}
+.btn.sec{color:var(--text2);}
+.btn:disabled{opacity:.6;}
+.feito-linha{margin-top:10px;font-weight:700;font-size:14.5px;}
+.parada.ok .feito-linha{color:var(--ok);}
+.parada.nok .feito-linha{color:var(--nok);}
+.btn-link{margin-top:6px;border:none;background:none;padding:6px 0;font:600 14px Inter,sans-serif;color:var(--text3);text-decoration:underline;cursor:pointer;}
+.enviando{margin-top:6px;font-size:13px;color:var(--text3);}
+form.baixa{margin-top:12px;display:flex;flex-direction:column;gap:10px;}
+form.baixa label{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:700;color:var(--text2);}
+form.baixa input:not([type=file]),form.baixa select{height:48px;border:1px solid var(--line2);border-radius:12px;padding:0 12px;font:500 16px Inter,sans-serif;color:var(--text);background:#fff;}
+form.baixa input:focus,form.baixa select:focus{outline:2px solid var(--gold);border-color:var(--gold);}
+label.foto{border:1px dashed var(--line2);border-radius:12px;padding:12px;background:#f8fafc;}
+label.foto input{font-size:14px;}
+.foto-prev img{display:block;max-width:100%;max-height:220px;border-radius:10px;}
+.rodape{font-size:12.5px;color:var(--text3);text-align:center;margin-top:22px;line-height:1.5;}
+.offline{position:fixed;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));z-index:9;background:#8a5a06;color:#fff;border-radius:12px;padding:12px 14px;font-size:14px;font-weight:600;box-shadow:0 10px 30px -10px rgba(0,0,0,.4);}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;}}
+</style>
+</head>
+<body>
+<header class="top"><img src="assets/logo-rotav3.png" alt="ROTAV3 Systems" width="124" height="30"><span class="top-tag">ROTA DO MOTORISTA</span></header>
+<main id="app"><div class="estado" role="status">Carregando a rota…</div></main>
+<div class="offline" id="offline" role="status" hidden>Sem internet. As baixas ficam guardadas e são enviadas quando a conexão voltar. Não feche esta página.</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getDatabase, ref, get, set, onValue, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+// Mesmo projeto do sistema. Sem login: quem tem o link vê só esta rota, e
+// as regras do banco só deixam gravar a baixa enquanto o link está válido.
+const FB_CFG = {
+  apiKey:            'AIzaSyB5r3CJSf0N_bepvFDkyYVPZ9oC3tPt2w8',
+  authDomain:        'slog-pedidos.firebaseapp.com',
+  databaseURL:       'https://slog-pedidos-default-rtdb.firebaseio.com',
+  projectId:         'slog-pedidos',
+  storageBucket:     'slog-pedidos.firebasestorage.app',
+  messagingSenderId: '551825837735',
+  appId:             '1:551825837735:web:35b90c1fbdff468f8dd582'
+};
+const db = getDatabase(initializeApp(FB_CFG));
+const token = decodeURIComponent((location.hash || '').replace(/^#/, '')).trim();
+const $ = (id) => document.getElementById(id);
+const app = $('app');
+const MOTIVOS = ['Cliente ausente', 'Endereço não encontrado', 'Recusado pelo cliente', 'Estabelecimento fechado', 'Mercadoria com avaria', 'Não deu tempo na rota', 'Outro'];
+
+let info = null, paradas = [], baixas = {}, aberto = null, renderPendente = false, rolou = false;
+const enviando = {};
+
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const hhmm = (m) => { m = ((Math.round(m) % 1440) + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
+const horaTs = (ts) => (ts ? new Date(ts).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '');
+const dataBR = (iso) => { const [, m, d] = String(iso || '').split('-'); return d ? `${d}/${m}` : ''; };
+const cepFmt = (c) => String(c || '').replace(/^(\d{5})(\d{3})$/, '$1-$2');
+const endereco = (p) => [p.endereco, p.bairro, [p.cidade, p.uf].filter(Boolean).join(' - '), p.cep ? 'CEP ' + cepFmt(p.cep) : ''].filter(Boolean).join(', ');
+const temCoord = (p) => Number.isFinite(p.lat) && Number.isFinite(p.lng);
+function linkMapa(p) {
+  const q = [p.endereco, p.bairro, p.cidade, p.uf, p.cep].filter(Boolean).join(', ');
+  if (p.endereco) return 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(q);
+  if (temCoord(p)) return `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}`;
+  return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q);
+}
+function linkWaze(p) {
+  if (p.endereco) return 'https://waze.com/ul?q=' + encodeURIComponent([p.endereco, p.cidade, p.uf].filter(Boolean).join(', ')) + '&navigate=yes';
+  if (temCoord(p)) return `https://waze.com/ul?ll=${p.lat},${p.lng}&navigate=yes`;
+  return 'https://waze.com/ul?q=' + encodeURIComponent([p.cidade, p.uf].filter(Boolean).join(', ')) + '&navigate=yes';
+}
+
+function erro(titulo, txt) {
+  app.innerHTML = `<div class="estado" role="alert"><b>${esc(titulo)}</b>${esc(txt || '')}</div>`;
+}
+
+async function iniciar() {
+  if (token.length < 20) return erro('Link incompleto', 'Peça o link da rota de novo ao escritório.');
+  try {
+    const [i, p] = await Promise.all([get(ref(db, `entregador/${token}/info`)), get(ref(db, `entregador/${token}/paradas`))]);
+    info = i.val();
+    const pv = p.val();
+    if (!info || !pv) return erro('Rota não encontrada', 'Confira se o link está completo ou peça de novo ao escritório.');
+    paradas = Array.isArray(pv) ? pv : Object.keys(pv).sort((a, b) => a - b).map((k) => pv[k]);
+  } catch (e) {
+    return erro('Link encerrado', 'Este link expirou ou foi encerrado pelo escritório.');
+  }
+  onValue(ref(db, `entregador/${token}/baixas`), (s) => {
+    baixas = s.val() || {};
+    if (aberto) renderPendente = true; else render();
+  }, () => erro('Link encerrado', 'Este link expirou ou foi encerrado pelo escritório.'));
+  let t = null;
+  onValue(ref(db, '.info/connected'), (s) => {
+    clearTimeout(t);
+    if (s.val() === false) t = setTimeout(() => { $('offline').hidden = false; }, 3000);
+    else $('offline').hidden = true;
+  }, () => {});
+  render();
+}
+
+function render() {
+  renderPendente = false;
+  const n = paradas.length;
+  const feitas = paradas.filter((_, i) => baixas[i]).length;
+  const prox = paradas.findIndex((_, i) => !baixas[i]);
+  const quando = [info.data ? dataBR(info.data) : '', info.saida != null ? 'saída ' + hhmm(info.saida) : '', info.deposito?.nome ? 'de ' + info.deposito.nome : ''].filter(Boolean).join(' · ');
+  app.innerHTML = `
+    <section class="resumo" aria-label="Resumo da rota">
+      <div class="r-tit">${esc(info.veiculo || 'Rota')}${info.motorista ? ' — ' + esc(info.motorista) : ''}</div>
+      <div class="r-sub">${esc(quando)}</div>
+      <div class="r-prog"><div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${feitas}"><i style="width:${n ? (feitas / n) * 100 : 0}%"></i></div><b>${feitas} de ${n}</b></div>
+    </section>
+    ${n && feitas === n ? '<div class="fim">✅ Todas as paradas têm baixa. Pode voltar ao centro de distribuição.</div>' : ''}
+    <ol class="lista">${paradas.map((p, i) => card(p, i, i === prox)).join('')}</ol>
+    <p class="rodape">Ao dar baixa, o celular pode pedir sua localização: ela fica guardada junto com a baixa.<br>Dúvidas sobre a rota: fale com o escritório.</p>`;
+  if (!rolou && prox > 0) { rolou = true; setTimeout(() => $('p-' + prox)?.scrollIntoView({ block: 'center' }), 60); }
+}
+
+function card(p, i, prox) {
+  const b = baixas[i], col = p.tipo === 'coleta', verbo = col ? 'Coletado' : 'Entregue';
+  const cls = ['parada', b ? (b.status === 'feito' ? 'ok' : 'nok') : '', prox ? 'prox' : ''].filter(Boolean).join(' ');
+  const cheg = p.chegada_min != null ? `<span class="chip">Previsto ~${hhmm(p.chegada_min)}</span>` : '';
+  const jan = p.janela_ini != null && p.janela_fim != null ? `<span class="chip hora">Horário ${hhmm(p.janela_ini)}–${hhmm(p.janela_fim)}</span>` : '';
+  let corpo;
+  if (aberto && aberto.i === i) corpo = form(p, i);
+  else if (b) {
+    corpo = `<div class="feito-linha">${b.status === 'feito'
+      ? `✓ ${verbo} às ${horaTs(b.hora)}${b.recebedor ? ' · ' + esc(b.recebedor) : ''}${b.temFoto ? ' · 📷 foto enviada' : ''}`
+      : `✗ Não realizado: ${esc(b.motivo || '')}${b.obs ? ' — ' + esc(b.obs) : ''}`}</div>
+      <button type="button" class="btn-link" data-acao="corrigir" data-i="${i}">Corrigir</button>`;
+  } else {
+    corpo = `<div class="acoes"><a class="btn nav" href="${esc(linkMapa(p))}" target="_blank" rel="noopener">Google Maps</a><a class="btn nav" href="${esc(linkWaze(p))}" target="_blank" rel="noopener">Waze</a></div>
+      <div class="acoes"><button type="button" class="btn ok" data-acao="feito" data-i="${i}">${verbo}</button><button type="button" class="btn nok" data-acao="nao" data-i="${i}">Não realizado</button></div>`;
+  }
+  if (enviando[i]) corpo += '<div class="enviando">Enviando…</div>';
+  return `<li class="${cls}" id="p-${i}">
+    <div class="p-top"><span class="num">${i + 1}</span><span class="tag ${col ? 'c' : 'e'}">${col ? 'Coleta' : 'Entrega'}</span><span class="nf">NF ${esc(p.nf)}</span>${prox ? '<span class="prox-lbl">PRÓXIMA</span>' : ''}</div>
+    <div class="dest">${esc(p.dest || p.cidade || '')}</div>
+    <div class="end">${esc(endereco(p))}</div>
+    <div class="meta">${p.peso ? esc(Number(p.peso).toLocaleString('pt-BR')) + ' kg' : ''}${p.itens ? ' · ' + esc(p.itens) + ' vol.' : ''}${cheg}${jan}</div>
+    ${corpo}</li>`;
+}
+
+function form(p, i) {
+  const col = p.tipo === 'coleta', b = baixas[i] || {};
+  const motivos = MOTIVOS.map((m) => `<option${b.motivo === m ? ' selected' : ''}>${esc(m)}</option>`).join('');
+  const campos = aberto.modo === 'nao'
+    ? `<label>Motivo<select name="motivo" required>${motivos}</select></label>
+       <label>Observação (opcional)<input name="obs" maxlength="300" autocomplete="off" value="${esc(b.status === 'nao_feito' ? b.obs || '' : '')}"></label>`
+    : `<label>${col ? 'Quem entregou a carga' : 'Quem recebeu'} (opcional)<input name="recebedor" maxlength="80" autocomplete="off" value="${esc(b.status === 'feito' ? b.recebedor || '' : '')}"></label>`;
+  return `<form class="baixa" data-i="${i}">
+    ${campos}
+    <label class="foto">📷 ${aberto.modo === 'nao' ? 'Foto (opcional)' : 'Foto do canhoto (opcional)'}<input type="file" name="foto" accept="image/*" capture="environment"></label>
+    <div class="foto-prev" id="prev-${i}"></div>
+    <div class="acoes"><button type="submit" class="btn ok">Confirmar ${aberto.modo === 'nao' ? '' : col ? 'coleta' : 'entrega'}</button><button type="button" class="btn sec" data-acao="cancelar">Cancelar</button></div>
+  </form>`;
+}
+
+function abrir(i, modo) {
+  aberto = { i, modo };
+  render();
+  setTimeout(() => $('p-' + i)?.scrollIntoView({ block: 'start', behavior: 'smooth' }), 30);
+}
+
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-acao]');
+  if (!b) return;
+  const i = +b.dataset.i, acao = b.dataset.acao;
+  if (acao === 'feito') abrir(i, 'feito');
+  else if (acao === 'nao') abrir(i, 'nao');
+  else if (acao === 'corrigir') abrir(i, baixas[i]?.status === 'nao_feito' ? 'nao' : 'feito');
+  else if (acao === 'cancelar') { aberto = null; render(); }
+});
+
+document.addEventListener('change', (e) => {
+  const inp = e.target;
+  if (inp.name !== 'foto') return;
+  const f = inp.closest('form.baixa'), prev = $('prev-' + f.dataset.i), arq = inp.files[0];
+  prev.innerHTML = '';
+  if (arq) { const img = new Image(); img.alt = 'Foto escolhida'; img.src = URL.createObjectURL(arq); prev.appendChild(img); }
+});
+
+document.addEventListener('submit', async (e) => {
+  const f = e.target.closest('form.baixa');
+  if (!f) return;
+  e.preventDefault();
+  const i = +f.dataset.i, modo = aberto?.modo || 'feito', fd = new FormData(f), arq = f.foto.files[0];
+  const btn = f.querySelector('button[type=submit]');
+  btn.disabled = true; btn.textContent = 'Enviando…';
+  const baixa = { status: modo === 'nao' ? 'nao_feito' : 'feito', hora: serverTimestamp() };
+  if (modo === 'nao') {
+    baixa.motivo = String(fd.get('motivo') || 'Outro').slice(0, 120);
+    const o = String(fd.get('obs') || '').trim(); if (o) baixa.obs = o.slice(0, 300);
+  } else {
+    const r = String(fd.get('recebedor') || '').trim(); if (r) baixa.recebedor = r.slice(0, 80);
+  }
+  let foto = null;
+  if (arq) {
+    try { foto = await comprimir(arq); baixa.temFoto = true; }
+    catch (err) { alert('Não consegui usar essa foto. A baixa vai sem foto.'); }
+  }
+  const pos = await posicao();
+  if (pos) { baixa.lat = pos.lat; baixa.lng = pos.lng; }
+  aberto = null;
+  enviando[i] = true;
+  baixas = { ...baixas, [i]: { ...baixa, hora: Date.now() } };
+  render();
+  try {
+    if (foto) await set(ref(db, `entregador/${token}/fotos/${i}`), foto);
+    await set(ref(db, `entregador/${token}/baixas/${i}`), baixa);
+  } catch (err) {
+    alert('A baixa não foi aceita. Se o link expirou, fale com o escritório.');
+  }
+  delete enviando[i];
+  if (!aberto) render();
+});
+
+// Foto em JPEG, no máximo ~280 KB (cabe no banco sem plano pago)
+async function comprimir(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((ok, ko) => { const im = new Image(); im.onload = () => ok(im); im.onerror = ko; im.src = url; });
+    let lado = 1280, q = 0.62;
+    for (let t = 0; t < 7; t++) {
+      const k = Math.min(1, lado / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(img.naturalWidth * k)); c.height = Math.max(1, Math.round(img.naturalHeight * k));
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      const data = c.toDataURL('image/jpeg', q);
+      if (data.startsWith('data:image/jpeg;base64,') && data.length < 380000) return data;
+      lado *= 0.8; q = Math.max(0.4, q - 0.06);
+    }
+    throw new Error('foto grande demais');
+  } finally { URL.revokeObjectURL(url); }
+}
+
+function posicao() {
+  return new Promise((ok) => {
+    if (!navigator.geolocation) return ok(null);
+    const t = setTimeout(() => ok(null), 6000);
+    navigator.geolocation.getCurrentPosition(
+      (p) => { clearTimeout(t); ok({ lat: +p.coords.latitude.toFixed(6), lng: +p.coords.longitude.toFixed(6) }); },
+      () => { clearTimeout(t); ok(null); },
+      { enableHighAccuracy: true, timeout: 5500, maximumAge: 120000 });
+  });
+}
+
+iniciar();
+</script>
+</body>
+</html>

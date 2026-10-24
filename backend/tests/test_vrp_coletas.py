@@ -28,10 +28,10 @@ def veic(cap, maxped=10):
     return [{"id": "vuc", "nome": "VUC", "capKg": cap, "maxPed": maxped}]
 
 
-def resolver(pedidos, cap, maxped=10):
+def resolver(pedidos, cap, maxped=10, saida=None):
     # sem internet nos testes: força a distância em linha reta
     with mock.patch.object(vs.requests, "get", side_effect=OSError("sem rede")):
-        return vs.solve_vrp(pedidos, veic(cap, maxped), 5, CD)
+        return vs.solve_vrp(pedidos, veic(cap, maxped), 5, CD, saida)
 
 
 def tipos_em_ordem(res):
@@ -137,6 +137,57 @@ class TesteMotor(unittest.TestCase):
         res = resolver(peds, 1000)
         p = res["routes"][0]["pedidos"][0]
         self.assertEqual((p["id"], p["nf"], p["tipo"]), ("C_5", "5", "coleta"))
+
+
+
+def jan(p, ini, fim):
+    p["janela_ini"], p["janela_fim"] = ini, fim
+    return p
+
+
+class TesteJanela(unittest.TestCase):
+    def test_janela_decide_a_ordem(self):
+        # B é longe e precisa chegar até 07:45; A é perto, mas só abre às 09:00
+        a = jan(ped("A", "entrega", 50, .01, 0), 540, 600)
+        b = jan(ped("B", "entrega", 50, .2, 0), 420, 465)
+        res = resolver([a, b], 1000, saida=420)
+        r = res["routes"][0]
+        self.assertEqual([p["nf"] for p in r["pedidos"]], ["B", "A"])
+        cheg = {p["nf"]: p["chegada_min"] for p in r["pedidos"]}
+        self.assertLessEqual(cheg["B"], 465)
+        self.assertEqual(cheg["A"], 540)  # chegou antes e esperou abrir
+        self.assertGreaterEqual(r["mins"], 540 - 420 + 15)
+
+    def test_janela_que_ja_passou_fica_de_fora(self):
+        a = ped("A", "entrega", 50, .01, 0)
+        b = jan(ped("B", "entrega", 50, .02, 0), 360, 390)  # 06:00–06:30, saída 07:00
+        res = resolver([a, b], 1000, saida=420)
+        self.assertEqual(res["fora_da_janela"], ["B"])
+        self.assertIn("B", res["nao_alocados"])
+        self.assertEqual([p["nf"] for p in res["routes"][0]["pedidos"]], ["A"])
+
+    def test_janela_impossivel_pelo_caminho(self):
+        # abre 07:00 e fecha 07:10, mas a viagem até lá leva ~33 min: o motor deixa de fora
+        b = jan(ped("B", "entrega", 50, .2, 0), 420, 430)
+        a = ped("A", "entrega", 50, .01, 0)
+        res = resolver([a, b], 1000, saida=420)
+        self.assertEqual([p["nf"] for p in res["routes"][0]["pedidos"]], ["A"])
+        self.assertIn("B", res["nao_alocados"])
+
+    def test_sem_hora_de_saida_ignora_janela(self):
+        b = jan(ped("B", "entrega", 50, .02, 0), 360, 390)
+        res = resolver([b], 1000)
+        self.assertEqual(len(res["routes"][0]["pedidos"]), 1)
+        self.assertNotIn("chegada_min", res["routes"][0]["pedidos"][0])
+
+    def test_janela_com_coletas(self):
+        e = jan(ped("E", "entrega", 300, .02, .01), 480, 600)
+        c = ped("C", "coleta", 200, .005, .005)
+        res = resolver([e, c], 1000, saida=420)
+        self.assertEqual(res["regra_carga"], "entregas_antes_das_coletas")
+        r = res["routes"][0]
+        self.assertEqual([p["nf"] for p in r["pedidos"]], ["E", "C"])
+        self.assertEqual(r["pedidos"][0]["chegada_min"], 480)
 
 
 if __name__ == "__main__":

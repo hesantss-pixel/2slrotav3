@@ -9,6 +9,7 @@ motoristas e assistente de IA.
 | Pasta / arquivo | O que é | Onde roda |
 |---|---|---|
 | `index.html` | A tela do sistema (um arquivo só: HTML, CSS e JavaScript) | GitHub Pages |
+| `motorista.html` | A página do motorista (abre pelo link da rota, sem senha) | GitHub Pages |
 | `assets/` | Logo, ícone do site e ícones 3D (Fluent Emoji, licença MIT) | GitHub Pages |
 | `backend/` | Servidor de rotas em Python (FastAPI + OR-Tools + IA) | Railway |
 | `firebase/database.rules.json` | Regras de acesso do banco (Realtime Database) | Console do Firebase |
@@ -48,6 +49,39 @@ Banco e login: Firebase, projeto `slog-pedidos` (Realtime Database + Authenticat
   qualquer motivo, o servidor refaz somando entregas + coletas na capacidade (mais conservador) e
   avisa na tela (`regra_carga` na resposta do `/solve`).
 
+## Link do motorista (baixa pelo celular)
+
+1. Ao **confirmar a saída** de uma rota, o sistema cria um link só daquela rota
+   (`motorista.html#<código>`, código aleatório de 24 caracteres) que vale **7 dias**.
+2. Na página **Rotas**: **Enviar pelo WhatsApp** (abre o WhatsApp com a mensagem e o link),
+   **Copiar link** e **Encerrar link**. Rotas antigas têm **Criar link do motorista**.
+3. O motorista abre no celular, sem senha, e vê só aquela rota: sequência, endereço, previsão
+   de chegada, horário marcado, botões para Google Maps e Waze, e dá baixa:
+   - **Entregue / Coletado**: quem recebeu (opcional) e foto do canhoto (opcional).
+   - **Não realizado**: motivo (cliente ausente, endereço não encontrado, recusado, fechado,
+     avaria, sem tempo, outro) e observação.
+   - O celular pode pedir a localização; ela fica guardada junto com a baixa.
+   - Sem internet, a baixa fica guardada e é enviada quando a conexão volta (sem fechar a página).
+4. O escritório vê o andamento na página Rotas (feitas / não realizadas, ver foto) e o sistema
+   atualiza os pedidos: feito → `entregue` ou `coletado`; não realizado → volta para `pendente`
+   com a ocorrência. Só mexe no pedido se ele ainda estiver naquela rota (`rota_atual`).
+5. **Devolver** a rota volta só o que não teve baixa e encerra o link; **Apagar** também encerra.
+
+Onde fica no banco: `entregador/<código>` com `info`, `paradas` (sem as chaves internas),
+`expira`, `baixas/<n>` e `fotos/<n>`. As regras deixam ler esse nó só com o código e só até
+`expira`; o motorista só grava baixa (campos validados) e foto (JPEG até ~280 KB) enquanto o link
+vale. A foto fica no próprio banco (não precisa de plano pago); o plano gratuito do Firebase
+guarda 1 GB, o que dá alguns milhares de fotos.
+
+## Janela de horário (agendados)
+
+- Agendar pede **"Chegar entre"** início e fim (sem fim: 1 hora). Agendamentos antigos, só com
+  a hora, valem 30 min antes e depois.
+- Na roteirização, escolha **Data da viagem** e **Saída do CD**. Agendados de outro dia ficam de
+  fora; os do dia vão com a janela para o motor de rotas, que respeita o horário (pode esperar
+  até 3 h numa parada) dentro da jornada de 8 h. Quem não cabe aparece em "ficaram de fora".
+- O resultado mostra a chegada prevista em cada parada, que também vai para o motorista.
+
 ## Colocar no ar (primeira vez)
 
 ### 1. Firebase — ativar o login (console.firebase.google.com → projeto `slog-pedidos`)
@@ -59,7 +93,9 @@ Banco e login: Firebase, projeto `slog-pedidos` (Realtime Database + Authenticat
    `acesso` → dentro dele, nome = o código do usuário, valor = `true`.
 5. Na tela do sistema, toque em **"Já foi liberado? Tentar de novo"**.
 6. **Realtime Database → Regras**: apague o que estiver lá, cole o conteúdo de
-   `firebase/database.rules.json` e clique em **Publicar**.
+   `firebase/database.rules.json` e clique em **Publicar**. (Publicadas em 24/10/2026; as
+   pastas antigas `pedidos` e `pedidos_side`, de outro app que não é mais usado, ficaram
+   guardadas sem acesso.)
 
 Para liberar outra pessoa, repita os passos 2, 3 e 4. Para tirar o acesso, apague a linha
 dela em `acesso` (e, se quiser, desative o usuário em Authentication).
@@ -84,7 +120,7 @@ Variáveis de ambiente usadas:
 | `DOCS_PUBLICAS=1` | Mostra a documentação em `/docs` | Não |
 
 Verificação: `https://rotainteligente2sl-production.up.railway.app/status` deve responder
-`"versao": "3.1.0"` e `"login": "obrigatório"`.
+`"versao": "3.2.0"` e `"login": "obrigatório"`.
 
 ### 4. Tela (GitHub Pages)
 
@@ -112,7 +148,9 @@ troque `BACKEND_URL` no `index.html`.
   - Login: token ausente, malformado, de outro projeto, vencido, recusado pelo Firebase, usuário
     sem liberação, liberado com cache, Firebase fora do ar; toda rota, menos `/status`, exige login.
   - Motor de rotas (`tests/test_vrp_coletas.py`): só entregas, só coletas, pedidos antigos sem
-    tipo, viagem mista com entregas antes das coletas, capacidade, limite de paradas e o plano B.
+    tipo, viagem mista com entregas antes das coletas, capacidade, limite de paradas, plano B e
+    janela de horário (ordem decidida pela janela, espera até abrir, janela que já passou,
+    janela impossível pelo caminho, sem hora de saída).
     Roda com um OR-Tools simulado (`tests/fake_ortools.py`, força bruta com as mesmas regras de
     dimensão), porque o pacote não instala no ambiente de testes; as chamadas usadas são as dos
     exemplos oficiais do OR-Tools 9.9.
@@ -121,7 +159,11 @@ troque `BACKEND_URL` no `index.html`.
   roteirização com o token, confirmação de saída, motoristas, agendamento, chat, sair; e
   coletas/entregas: XML como coleta e como entrega, local de retirada/entrega, nota sem peso,
   CT-e e XML quebrado recusados, CSV com coluna tipo, nota já em rota preservada, nomes com HTML
-  exibidos como texto, filtros, mapa, rota mista, confirmação e devolução por chave),
+  exibidos como texto, filtros, mapa, rota mista, confirmação e devolução por chave; e link do
+  motorista: data/saída/janela enviadas ao motor, agendado de outro dia fora, link criado ao
+  confirmar, WhatsApp, página do motorista no celular, baixa com foto compactada e localização,
+  não realizado com motivo, correção, link encerrado/cortado, escritório aplicando as baixas,
+  foto no escritório, encerrar link, devolver sem desfazer o que foi entregue),
   em 1440 px e no celular (390 px).
 
 Não testado daqui: o Firebase e o Railway de verdade (bloqueados neste ambiente), o motor
@@ -129,6 +171,10 @@ OR-Tools rodando (não instalado aqui) e o mapa com as ruas.
 
 ## Histórico
 
+- Versão 3.2 (24/10/2026): banco fechado com as regras publicadas; link do motorista pelo
+  WhatsApp com baixa (entregue/coletado/não realizado, foto do canhoto, localização) e
+  acompanhamento no escritório; janela de horário no motor de rotas, data da viagem e hora de
+  saída, previsão de chegada por parada; agendados de outro dia ficam fora da viagem.
 - Versão 3.1 (24/10/2026): entregas e coletas — importação como entrega ou coleta (inclui XML da
   NF-e, vários arquivos de uma vez), filtro nas páginas Pedidos e Mapa, pinos diferentes,
   roteirização de entregas, coletas ou as duas na mesma viagem (entregas primeiro), chave única por
