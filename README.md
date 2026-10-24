@@ -49,6 +49,35 @@ Banco e login: Firebase, projeto `slog-pedidos` (Realtime Database + Authenticat
   qualquer motivo, o servidor refaz somando entregas + coletas na capacidade (mais conservador) e
   avisa na tela (`regra_carga` na resposta do `/solve`).
 
+## Conta de demonstração e página Acessos
+
+- **Acessos** (só o administrador, `ADMIN_UID` no `index.html` e nas regras): cria acesso de
+  demonstração (nome e e-mail opcionais, validade de 3 a 30 dias, senha gerada) e monta a mensagem
+  com link, e-mail e senha para mandar pelo WhatsApp; lista pedidos de acesso (quem entrou e não
+  foi liberado) com "Liberar demonstração", "Liberar completo" e "Ignorar"; encerra demonstrações e
+  tira acessos. O usuário novo é criado numa instância separada do login, então o administrador
+  continua conectado.
+- **Conta de demonstração** (`acesso/<uid>` = `"demo"`, validade em `demos/<uid>`): entra com
+  86 pedidos fictícios sempre iguais, faixa "dados fictícios", e **nada é lido nem gravado no
+  banco** (as regras também não deixam). Importar notas, gerar rota (servidor real), confirmar,
+  link do motorista (a rota vai no próprio link: `motorista.html#demo=…`), veículo e baixas
+  simulados, mapa e IA funcionam. Vencida, mostra "Seu acesso de demonstração terminou" com o
+  WhatsApp.
+- No servidor, a demonstração só usa `/solve` e `/chat`, com limite (30 rotas e 40 perguntas por
+  hora, motor com no máximo 10 s); `/pedidos`, `/upload-nf` e `/sync` exigem acesso completo.
+- `motorista.html#demo` abre uma rota de exemplo fixa em Guarulhos (usada na página de vendas).
+
+## Localização ao vivo do motorista
+
+- Na página do motorista, o cartão **Localização ao vivo** fica desligado até o motorista ligar
+  (consentimento). Ligado, manda a posição a cada 45 s (ou antes, se andou 150 m) para
+  `entregador/<código>/posicao`, enquanto a página estiver aberta. Desliga sozinho quando todas as
+  paradas têm baixa ou o link é encerrado. Reabrindo a página, volta a compartilhar se a permissão
+  já foi dada.
+- No escritório: veículo no mapa da rota (página Rotas) e no Mapa, com "visto há N min" (cinza
+  depois de 10 min sem atualizar).
+- Não é o rastreador do veículo: com a tela apagada ou em outro app, o celular pode pausar o envio.
+
 ## Link do motorista (baixa pelo celular)
 
 1. Ao **confirmar a saída** de uma rota, o sistema cria um link só daquela rota
@@ -128,7 +157,7 @@ Variáveis de ambiente usadas:
 | `DOCS_PUBLICAS=1` | Mostra a documentação em `/docs` | Não |
 
 Verificação: `https://rotainteligente2sl-production.up.railway.app/status` deve responder
-`"versao": "3.2.0"` e `"login": "obrigatório"`.
+`"versao": "3.3.0"` e `"login": "obrigatório"`.
 
 ### 4. Tela (GitHub Pages)
 
@@ -179,6 +208,9 @@ OR-Tools rodando (não instalado aqui) e o mapa com as ruas.
 
 ## Histórico
 
+- Versão 3.3 (24/10/2026): conta de demonstração (dados fictícios, nada gravado), página Acessos
+  para o administrador, localização ao vivo pelo celular do motorista, motorista de demonstração
+  (`#demo`), regras do banco com administrador, pedidos de acesso e posição.
 - Versão 3.2 (24/10/2026): banco fechado com as regras publicadas; link do motorista pelo
   WhatsApp com baixa (entregue/coletado/não realizado, foto do canhoto, localização) e
   acompanhamento no escritório; janela de horário no motor de rotas, data da viagem e hora de

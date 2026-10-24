@@ -71,12 +71,20 @@ label.foto{border:1px dashed var(--line2);border-radius:12px;padding:12px;backgr
 label.foto input{font-size:14px;}
 .foto-prev img{display:block;max-width:100%;max-height:220px;border-radius:10px;}
 .rodape{font-size:12.5px;color:var(--text3);text-align:center;margin-top:22px;line-height:1.5;}
+.loc{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:14px;}
+.loc.on{border-color:#c9ecd9;background:#f6fcf8;}
+.loc-txt{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.loc-txt b{font-size:15px;}
+.loc-txt span{font-size:13px;color:var(--text3);}
+.loc-sw{flex:none;min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--line2);background:#fff;font:700 14px Inter,sans-serif;color:var(--navy);cursor:pointer;}
+.loc.on .loc-sw{background:var(--navy);color:#fff;border-color:var(--navy);}
+.demo-aviso{background:#fff3df;border:1px solid #f6dca6;color:#7a4f05;border-radius:12px;padding:10px 12px;font-size:13.5px;font-weight:600;margin-bottom:14px;}
 .offline{position:fixed;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));z-index:9;background:#8a5a06;color:#fff;border-radius:12px;padding:12px 14px;font-size:14px;font-weight:600;box-shadow:0 10px 30px -10px rgba(0,0,0,.4);}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;}}
 </style>
 </head>
 <body>
-<header class="top"><img src="assets/logo-rotav3.png" alt="ROTAV3 Systems" width="124" height="30"><span class="top-tag">ROTA DO MOTORISTA</span></header>
+<header class="top"><img src="assets/logo-rotav3.png" alt="ROTAV3 Systems" width="124" height="30"><span class="top-tag" id="top-tag">ROTA DO MOTORISTA</span></header>
 <main id="app"><div class="estado" role="status">Carregando a rota…</div></main>
 <div class="offline" id="offline" role="status" hidden>Sem internet. As baixas ficam guardadas e são enviadas quando a conexão voltar. Não feche esta página.</div>
 
@@ -96,13 +104,98 @@ const FB_CFG = {
   appId:             '1:551825837735:web:35b90c1fbdff468f8dd582'
 };
 const db = getDatabase(initializeApp(FB_CFG));
-const token = decodeURIComponent((location.hash || '').replace(/^#/, '')).trim();
+const hashRaw = (location.hash || '').replace(/^#/, '');
+// #demo (rota de exemplo) ou #demo=<rota> (enviada pela conta de demonstração): nada vai para o banco
+const DEMO = hashRaw === 'demo' || hashRaw.startsWith('demo=');
+const token = DEMO ? '' : decodeURIComponent(hashRaw).trim();
 const $ = (id) => document.getElementById(id);
 const app = $('app');
 const MOTIVOS = ['Cliente ausente', 'Endereço não encontrado', 'Recusado pelo cliente', 'Estabelecimento fechado', 'Mercadoria com avaria', 'Não deu tempo na rota', 'Outro'];
 
 let info = null, paradas = [], baixas = {}, aberto = null, renderPendente = false, rolou = false;
 const enviando = {};
+
+// ── Demonstração ─────────────────────────────────────────────────────────────
+const hojeISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+// Rota de exemplo em Guarulhos (nomes e endereços fictícios)
+const ROTA_EXEMPLO = {
+  info: { veiculo: 'VUC', motorista: 'Carlos (exemplo)', data: hojeISO(), saida: 450, deposito: { nome: 'CD Guarulhos' } },
+  paradas: [
+    { nf: '31024', tipo: 'entrega', dest: 'Mercado Bela Vista', endereco: 'Rua das Flores, 220', bairro: 'Vila Augusta', cidade: 'Guarulhos', uf: 'SP', cep: '07023010', lat: -23.4637, lng: -46.5398, peso: 180, itens: 6, chegada_min: 472 },
+    { nf: '31031', tipo: 'entrega', dest: 'Farmácia Central', endereco: 'Avenida Brasil, 1045', bairro: 'Centro', cidade: 'Guarulhos', uf: 'SP', cep: '07010020', lat: -23.4673, lng: -46.528, peso: 95, itens: 3, chegada_min: 501 },
+    { nf: '31047', tipo: 'entrega', dest: 'Padaria Primavera', endereco: 'Rua São José, 87', bairro: 'Macedo', cidade: 'Guarulhos', uf: 'SP', cep: '07112030', lat: -23.4891, lng: -46.5466, peso: 120, itens: 4, chegada_min: 544, janela_ini: 540, janela_fim: 600 },
+    { nf: '31052', tipo: 'entrega', dest: 'Loja do Construtor', endereco: 'Avenida Industrial, 1500', bairro: 'Cumbica', cidade: 'Guarulhos', uf: 'SP', cep: '07180040', lat: -23.438, lng: -46.465, peso: 310, itens: 9, chegada_min: 588 },
+    { nf: '31060', tipo: 'entrega', dest: 'Auto Peças Avenida', endereco: 'Rua do Comércio, 402', bairro: 'Pimentas', cidade: 'Guarulhos', uf: 'SP', cep: '07272050', lat: -23.443, lng: -46.408, peso: 64, itens: 2, chegada_min: 631 },
+    { nf: '88013', tipo: 'coleta', dest: 'Fábrica de Embalagens Sul', endereco: 'Avenida Getúlio Vargas, 3100', bairro: 'Bonsucesso', cidade: 'Guarulhos', uf: 'SP', cep: '07175060', lat: -23.4312, lng: -46.4053, peso: 260, itens: 12, chegada_min: 665 },
+  ],
+};
+function lerRotaDemo() {
+  if (hashRaw === 'demo') return ROTA_EXEMPLO;
+  try {
+    const b64 = hashRaw.slice(5).replace(/-/g, '+').replace(/_/g, '/');
+    const d = JSON.parse(decodeURIComponent(escape(atob(b64))));
+    const i = d.i || {};
+    return {
+      info: { veiculo: i.v || 'Rota', motorista: i.m || '', data: i.d || hojeISO(), saida: i.s ?? null, deposito: { nome: i.c || 'Centro de distribuição' } },
+      paradas: (d.p || []).map((x) => ({ nf: x[0], tipo: x[1] ? 'coleta' : 'entrega', dest: x[2], endereco: x[3], bairro: x[4], cidade: x[5], uf: x[6], cep: x[7], lat: x[8], lng: x[9], peso: x[10], itens: x[11], chegada_min: x[12], janela_ini: x[13], janela_fim: x[14] })),
+    };
+  } catch (e) { return null; }
+}
+const memoria = {};
+const chaveDemo = 'rotav3_demo_' + [...hashRaw].reduce((h, c) => ((h << 5) - h + c.charCodeAt(0)) | 0, 0);
+function lerLocal(k) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch (e) { return memoria[k] ?? null; } }
+function gravarLocal(k, v) { memoria[k] = v; try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+
+// ── Localização ao vivo (só com o motorista ligando) ─────────────────────────
+let watchId = null, ultimoEnvio = 0, ultimaPos = null, locStatus = 'Desligada. Ligue para o escritório acompanhar onde você está.';
+const prefLoc = () => 'rotav3_loc_' + token.slice(0, 12);
+function distM(a, b) {
+  const R = 6371000, r = Math.PI / 180, dLat = (b.lat - a.lat) * r, dLng = (b.lng - a.lng) * r;
+  const x = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(x));
+}
+function setLoc(txt) { locStatus = txt; const el = $('loc-status'); if (el) el.textContent = txt; }
+function ligarLocalizacao() {
+  if (!navigator.geolocation) { setLoc('Este celular não informa a localização.'); return; }
+  if (watchId !== null) return;
+  setLoc('Procurando o GPS…');
+  watchId = navigator.geolocation.watchPosition(aoMudarPosicao, aoErroPosicao, { enableHighAccuracy: true, maximumAge: 15000, timeout: 30000 });
+  gravarLocal(prefLoc(), 1);
+  if (!aberto) render();
+}
+function desligarLocalizacao(txt) {
+  if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+  watchId = null;
+  gravarLocal(prefLoc(), 0);
+  locStatus = txt || 'Desligada. Ligue para o escritório acompanhar onde você está.';
+  if (!aberto) render();
+}
+function aoMudarPosicao(p) {
+  const lat = p.coords.latitude, lng = p.coords.longitude, agora = Date.now();
+  const moveu = ultimaPos ? distM(ultimaPos, { lat, lng }) : Infinity;
+  // manda no máximo a cada 45 s, ou antes se andou 150 m
+  if (agora - ultimoEnvio < 45000 && moveu < 150) return;
+  ultimoEnvio = agora; ultimaPos = { lat, lng };
+  set(ref(db, `entregador/${token}/posicao`), { lat: +lat.toFixed(6), lng: +lng.toFixed(6), precisao: Math.round(p.coords.accuracy || 0), hora: serverTimestamp() })
+    .then(() => setLoc(`Ligada · enviada às ${horaTs(Date.now())}. Funciona com esta página aberta.`))
+    .catch(() => desligarLocalizacao('O link foi encerrado: a localização foi desligada.'));
+}
+function aoErroPosicao(e) {
+  if (e && e.code === 1) desligarLocalizacao('Permissão negada. Para ligar, libere a localização para este site nas configurações do navegador.');
+  else setLoc('Sem sinal do GPS agora. Tentando de novo…');
+}
+async function retomarLocalizacao() {
+  if (DEMO || !lerLocal(prefLoc()) || !navigator.permissions) return;
+  try { const st = await navigator.permissions.query({ name: 'geolocation' }); if (st.state === 'granted') ligarLocalizacao(); } catch (e) {}
+}
+function cardLocalizacao() {
+  if (DEMO) return '';
+  const on = watchId !== null;
+  return `<section class="loc${on ? ' on' : ''}" aria-label="Localização ao vivo">
+    <div class="loc-txt"><b>📍 Localização ao vivo</b><span id="loc-status">${esc(locStatus)}</span></div>
+    <button type="button" class="loc-sw" role="switch" aria-checked="${on}" data-acao="loc">${on ? 'Desligar' : 'Ligar'}</button>
+  </section>`;
+}
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const hhmm = (m) => { m = ((Math.round(m) % 1440) + 1440) % 1440; return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
@@ -128,6 +221,14 @@ function erro(titulo, txt) {
 }
 
 async function iniciar() {
+  if (DEMO) {
+    const r = lerRotaDemo();
+    if (!r || !r.paradas.length) return erro('Link incompleto', 'Peça o link da rota de novo.');
+    info = r.info; paradas = r.paradas; baixas = lerLocal(chaveDemo) || {};
+    $('top-tag').textContent = 'DEMONSTRAÇÃO';
+    render();
+    return;
+  }
   if (token.length < 20) return erro('Link incompleto', 'Peça o link da rota de novo ao escritório.');
   try {
     const [i, p] = await Promise.all([get(ref(db, `entregador/${token}/info`)), get(ref(db, `entregador/${token}/paradas`))]);
@@ -149,12 +250,14 @@ async function iniciar() {
     else $('offline').hidden = true;
   }, () => {});
   render();
+  retomarLocalizacao();
 }
 
 function render() {
   renderPendente = false;
   const n = paradas.length;
   const feitas = paradas.filter((_, i) => baixas[i]).length;
+  if (!DEMO && n && feitas === n && watchId !== null) { if (watchId !== null) navigator.geolocation.clearWatch(watchId); watchId = null; gravarLocal(prefLoc(), 0); locStatus = 'Rota concluída: localização desligada.'; }
   const prox = paradas.findIndex((_, i) => !baixas[i]);
   const quando = [info.data ? dataBR(info.data) : '', info.saida != null ? 'saída ' + hhmm(info.saida) : '', info.deposito?.nome ? 'de ' + info.deposito.nome : ''].filter(Boolean).join(' · ');
   app.innerHTML = `
@@ -163,6 +266,7 @@ function render() {
       <div class="r-sub">${esc(quando)}</div>
       <div class="r-prog"><div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${feitas}"><i style="width:${n ? (feitas / n) * 100 : 0}%"></i></div><b>${feitas} de ${n}</b></div>
     </section>
+    ${DEMO ? '<div class="demo-aviso">Rota de exemplo para demonstração: as baixas ficam só neste aparelho e não vão para nenhum escritório.</div>' : cardLocalizacao()}
     ${n && feitas === n ? '<div class="fim">✅ Todas as paradas têm baixa. Pode voltar ao centro de distribuição.</div>' : ''}
     <ol class="lista">${paradas.map((p, i) => card(p, i, i === prox)).join('')}</ol>
     <p class="rodape">Ao dar baixa, o celular pode pedir sua localização: ela fica guardada junto com a baixa.<br>Dúvidas sobre a rota: fale com o escritório.</p>`;
@@ -223,6 +327,7 @@ document.addEventListener('click', (e) => {
   else if (acao === 'nao') abrir(i, 'nao');
   else if (acao === 'corrigir') abrir(i, baixas[i]?.status === 'nao_feito' ? 'nao' : 'feito');
   else if (acao === 'cancelar') { aberto = null; render(); }
+  else if (acao === 'loc') { if (watchId !== null) desligarLocalizacao(); else ligarLocalizacao(); }
 });
 
 document.addEventListener('change', (e) => {
@@ -251,6 +356,13 @@ document.addEventListener('submit', async (e) => {
   if (arq) {
     try { foto = await comprimir(arq); baixa.temFoto = true; }
     catch (err) { alert('Não consegui usar essa foto. A baixa vai sem foto.'); }
+  }
+  if (DEMO) {
+    aberto = null;
+    baixas = { ...baixas, [i]: { ...baixa, hora: Date.now() } };
+    gravarLocal(chaveDemo, baixas);
+    render();
+    return;
   }
   const pos = await posicao();
   if (pos) { baixa.lat = pos.lat; baixa.lng = pos.lng; }

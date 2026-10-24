@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="ROTAV3 — Servidor de rotas",
     description="Roteirização (OR-Tools VRP), assistente de IA e leitura de notas fiscais",
-    version="3.2.0",
+    version="3.3.0",
     docs_url="/docs" if os.getenv("DOCS_PUBLICAS", "0") == "1" else None,
     redoc_url=None,
 )
@@ -112,9 +112,28 @@ def _tem_segredo() -> bool:
 
 
 def exigir_login(authorization: Optional[str] = Header(None)) -> str:
-    """Dependência dos endpoints protegidos: devolve o uid do usuário liberado."""
+    """Dependência dos endpoints protegidos: devolve o uid do usuário com acesso completo."""
     try:
         return auth_firebase.verificar(authorization)
+    except auth_firebase.AuthError as e:
+        raise HTTPException(status_code=e.status, detail=e.mensagem)
+
+
+def exigir_login_ou_demo(authorization: Optional[str] = Header(None)) -> tuple[str, str]:
+    """Como exigir_login, mas aceita também a conta de demonstração (dados fictícios).
+    Só para /solve e /chat, que não leem nem gravam o banco quando a tela manda os pedidos."""
+    try:
+        return auth_firebase.verificar_papel(authorization)
+    except auth_firebase.AuthError as e:
+        raise HTTPException(status_code=e.status, detail=e.mensagem)
+
+
+def _limite_demo(quem: tuple[str, str], acao: str, maximo: int) -> None:
+    uid, papel = quem
+    if papel != "demo":
+        return
+    try:
+        auth_firebase.limitar_demo(uid, acao, maximo)
     except auth_firebase.AuthError as e:
         raise HTTPException(status_code=e.status, detail=e.mensagem)
 
@@ -203,7 +222,7 @@ def status():
     """Verificação de funcionamento (pública, sem dados da operação)."""
     return {
         "status": "online",
-        "versao": "3.2.0",
+        "versao": "3.3.0",
         "login": "obrigatório" if auth_firebase.AUTH_REQUIRED else "desligado (teste local)",
     }
 
@@ -220,7 +239,7 @@ def listar_pedidos(uid: str = Depends(exigir_login)):
 
 
 @app.post("/solve")
-def solve(body: SolveRequest, uid: str = Depends(exigir_login)):
+def solve(body: SolveRequest, quem: tuple = Depends(exigir_login_ou_demo)):
     """
     Executa OR-Tools VRP.
 
@@ -231,9 +250,15 @@ def solve(body: SolveRequest, uid: str = Depends(exigir_login)):
     4. Gera análise automática com Gemini
     5. Retorna rotas + análise
     """
+    _limite_demo(quem, "solve", 30)
+    demo = quem[1] == "demo"
+    if demo and not body.pedidos:
+        raise HTTPException(status_code=422, detail="Na conta de demonstração, envie os pedidos.")
     try:
         # 1. Frota (aceita formato novo e legado)
         frota = body.frota()
+        if demo:
+            body.time_limit_s = min(body.time_limit_s, 10)
 
         # 2. Pedidos — inclui tudo que NÃO foi despachado/entregue/confirmado.
         # /solve é apenas PREVIEW; a "consumação" da NF acontece só quando o
@@ -266,7 +291,7 @@ def solve(body: SolveRequest, uid: str = Depends(exigir_login)):
         cap_kg_val   = frota[0].capKg
 
         salvo = False
-        if _tem_segredo():
+        if _tem_segredo() and not demo:
             try:
                 salvo = _salvar_rota_firebase({
                     "criadoEm":    __import__("datetime").datetime.utcnow().isoformat(),
@@ -328,18 +353,19 @@ def solve(body: SolveRequest, uid: str = Depends(exigir_login)):
 
 
 @app.post("/chat")
-def chat(body: ChatRequest, uid: str = Depends(exigir_login)):
+def chat(body: ChatRequest, quem: tuple = Depends(exigir_login_ou_demo)):
     """
     Chat com Gemini.
     Mantém histórico por session_id.
     Se session_id vazio, cria nova sessão e retorna o ID.
     """
+    _limite_demo(quem, "chat", 40)
     try:
         sid = body.session_id or str(uuid.uuid4())
         session = _get_session(sid)
 
         # Atualiza contexto com os pedidos enviados pela tela (ou do Firebase)
-        pedidos = body.pedidos if body.pedidos is not None else (_carregar_pedidos_firebase() if _tem_segredo() else [])
+        pedidos = body.pedidos if body.pedidos is not None else (_carregar_pedidos_firebase() if _tem_segredo() and quem[1] != "demo" else [])
         session.atualizar_contexto(
             pedidos,
             rotas=body.rotas,

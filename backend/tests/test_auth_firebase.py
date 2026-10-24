@@ -90,24 +90,61 @@ class TesteLogin(unittest.TestCase):
         af.AUTH_REQUIRED = False
         self.assertEqual(af.verificar(None), "teste-local")
 
+    def test_conta_de_demonstracao(self):
+        t = token(uid="visitante")
+        with mock.patch.object(af.requests, "get", return_value=resposta(200, "demo")):
+            self.assertEqual(af.verificar_papel("Bearer " + t), ("visitante", "demo"))
+            # funções que leem ou gravam o banco exigem acesso completo
+            with self.assertRaises(af.AuthError) as c:
+                af.verificar("Bearer " + t)
+            self.assertEqual(c.exception.status, 403)
+
+    def test_acesso_completo_tem_papel_completo(self):
+        with mock.patch.object(af.requests, "get", return_value=resposta(200, True)):
+            self.assertEqual(af.verificar_papel("Bearer " + token(uid="ana")), ("ana", "completo"))
+
+    def test_valor_estranho_nao_libera(self):
+        for corpo in ["sim", 1, {"x": True}, "DEMO"]:
+            af._cache.clear()
+            with mock.patch.object(af.requests, "get", return_value=resposta(200, corpo)):
+                with self.assertRaises(af.AuthError):
+                    af.verificar_papel("Bearer " + token())
+
+    def test_limite_da_demonstracao(self):
+        af._uso.clear()
+        for _ in range(3):
+            af.limitar_demo("v1", "solve", 3)
+        with self.assertRaises(af.AuthError) as c:
+            af.limitar_demo("v1", "solve", 3)
+        self.assertEqual(c.exception.status, 429)
+        af.limitar_demo("v2", "solve", 3)  # outro visitante não é afetado
+
 
 class TesteRotasProtegidas(unittest.TestCase):
     def test_todas_menos_status_exigem_login(self):
         src = open(os.path.join(os.path.dirname(af.__file__), "main.py"), encoding="utf-8").read()
         arvore = ast.parse(src)
-        protegidas, abertas = [], []
+        protegidas, abertas, demo = [], [], []
         for no in arvore.body:
             if isinstance(no, (ast.FunctionDef, ast.AsyncFunctionDef)) and any(
                 isinstance(d, ast.Call) and getattr(d.func, "attr", "") in ("get", "post") for d in no.decorator_list
             ):
-                usa = any(
-                    isinstance(dflt, ast.Call) and getattr(dflt.func, "id", "") == "Depends"
-                    and dflt.args and getattr(dflt.args[0], "id", "") == "exigir_login"
-                    for dflt in no.args.defaults + no.args.kw_defaults if dflt is not None
-                )
-                (protegidas if usa else abertas).append(no.name)
+                deps = [
+                    getattr(dflt.args[0], "id", "")
+                    for dflt in no.args.defaults + no.args.kw_defaults
+                    if isinstance(dflt, ast.Call) and getattr(dflt.func, "id", "") == "Depends" and dflt.args
+                ]
+                if "exigir_login" in deps:
+                    protegidas.append(no.name)
+                elif "exigir_login_ou_demo" in deps:
+                    demo.append(no.name)
+                else:
+                    abertas.append(no.name)
         self.assertEqual(abertas, ["status"], f"rotas sem login: {abertas}")
-        self.assertEqual(sorted(protegidas), sorted(["listar_pedidos", "solve", "chat", "upload_nf", "sync_totvs"]))
+        # o que lê ou grava o banco exige acesso completo
+        self.assertEqual(sorted(protegidas), sorted(["listar_pedidos", "upload_nf", "sync_totvs"]))
+        # a conta de demonstração só calcula rota e conversa com a IA
+        self.assertEqual(sorted(demo), sorted(["solve", "chat"]))
 
 
 if __name__ == "__main__":

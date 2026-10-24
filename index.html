@@ -469,6 +469,38 @@ body:not(.autorizado)>.sidebar,body:not(.autorizado)>.main,body:not(.autorizado)
 .foto-modal img{display:block;max-width:100%;max-height:68vh;margin:0 auto;border-radius:10px;}
 .foto-info{font-size:12.5px;color:var(--text2);margin-top:10px;line-height:1.5;}
 @media(max-width:520px){.dup{grid-template-columns:1fr;}}
+.faixa-demo{display:flex;align-items:center;justify-content:center;gap:6px 12px;flex-wrap:wrap;padding:9px 16px;background:#fff3df;border-bottom:1px solid #f6dca6;color:#7a4f05;font-size:13px;font-weight:600;text-align:center;}
+.faixa-demo a{color:var(--navy);font-weight:800;}
+.auth-btn--wa{display:flex;align-items:center;justify-content:center;width:100%;text-decoration:none;background:#1fa855;color:#fff;box-shadow:none;}
+.ac-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start;}
+.ac-card{background:var(--s2);border:1px solid var(--border);border-radius:16px;padding:18px;}
+.ac-card h3{font-family:var(--sans);font-size:16px;color:var(--text);margin:0 0 4px;}
+.ac-card>.mot-sub{margin:0 0 12px;}
+.ac-campos{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.ac-campos label{display:flex;flex-direction:column;gap:5px;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);}
+.ac-campos input,.ac-campos select{height:42px;border:1px solid var(--border2);border-radius:10px;padding:0 12px;font:500 14px var(--body);color:var(--text);background:#fff;text-transform:none;letter-spacing:0;}
+.ac-res{margin-top:14px;padding:14px;border:1px solid #c9ecd9;background:#f3fbf6;border-radius:12px;}
+.ac-ok{font-weight:800;color:#0f7a4c;margin-bottom:6px;}
+.ac-linha{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:5px 0;border-bottom:1px dashed #d6eedf;}
+.ac-linha span{color:var(--text3);}
+.ac-linha b{font-family:var(--mono);color:var(--text);overflow-wrap:anywhere;text-align:right;}
+.ac-lista{display:flex;flex-direction:column;gap:8px;}
+.ac-row{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:#fff;}
+.ac-row-info{display:flex;flex-direction:column;min-width:0;}
+.ac-row-info b{font-size:13.5px;color:var(--text);overflow-wrap:anywhere;}
+.ac-row-info span{font-size:11.5px;color:var(--text3);}
+.ac-tag{display:inline-block;font-size:10.5px;font-weight:800;border-radius:6px;padding:2px 7px;margin-left:6px;}
+.ac-tag.on{background:#e8f7ef;color:#0f7a4c;}
+.ac-tag.off{background:#f1f5f9;color:var(--text3);}
+.ac-msg{margin-top:10px;font-size:12.5px;}
+.ac-msg.err{color:#b91c1c;}
+.ac-msg.ok{color:#0f7a4c;}
+.veic-mk{position:relative;width:30px;height:30px;border-radius:50%;background:var(--navy);border:2px solid #f3b62b;display:flex;align-items:center;justify-content:center;font-size:15px;line-height:1;box-shadow:0 2px 8px rgba(13,27,46,.35);box-sizing:border-box;}
+.veic-mk::after{content:'';position:absolute;inset:-7px;border-radius:50%;border:2px solid rgba(243,182,43,.55);animation:veicPulse 1.8s ease-out infinite;}
+.veic-mk.velho{background:#64748b;border-color:#cbd5e1;}
+.veic-mk.velho::after{display:none;}
+@keyframes veicPulse{from{transform:scale(.7);opacity:1}to{transform:scale(1.5);opacity:0}}
+@media(max-width:900px){.ac-grid{grid-template-columns:1fr;}.ac-campos{grid-template-columns:1fr;}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
 </style>
 </head>
@@ -502,10 +534,13 @@ body:not(.autorizado)>.sidebar,body:not(.autorizado)>.main,body:not(.autorizado)
 <div class="auth-screen" id="pending-screen" hidden>
   <div class="auth-card auth-card--single">
     <img class="auth-logo-sm" src="assets/logo-rotav3-escuro.png" alt="ROTAV3 Systems" width="150" height="36">
-    <h2>Acesso aguardando liberação</h2>
-    <p>Você entrou como <b id="pend-email"></b>, mas este usuário ainda não foi liberado para ver os dados da operação.</p>
-    <p>Envie este código para o administrador da conta:</p>
-    <div class="auth-code"><code id="pend-uid"></code><button type="button" id="pend-copy">Copiar</button></div>
+    <h2 id="pend-tit">Acesso aguardando liberação</h2>
+    <p id="pend-p1">Você entrou como <b id="pend-email"></b>, mas este usuário ainda não foi liberado para ver os dados da operação.</p>
+    <div id="pend-bloco">
+      <p>Envie este código para o administrador da conta:</p>
+      <div class="auth-code"><code id="pend-uid"></code><button type="button" id="pend-copy">Copiar</button></div>
+    </div>
+    <a class="auth-btn auth-btn--wa" id="pend-wa" hidden target="_blank" rel="noopener" href="https://wa.me/5511955914618?text=Ol%C3%A1!%20Testei%20o%20ROTAV3%20na%20conta%20de%20demonstra%C3%A7%C3%A3o%20e%20quero%20continuar.">Falar com a ROTAV3 no WhatsApp</a>
     <button type="button" class="auth-btn" id="pend-retry">Já foi liberado? Tentar de novo</button>
     <button type="button" class="auth-link" id="pend-sair">Sair</button>
   </div>
@@ -542,6 +577,10 @@ body:not(.autorizado)>.sidebar,body:not(.autorizado)>.main,body:not(.autorizado)
       <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="14" rx="3"/><circle cx="9" cy="10.5" r="1.2"/><circle cx="15" cy="10.5" r="1.2"/><path d="M9 14.5c1 1 4 1 6 0M12 4V2"/></svg>
       IA Assistente
     </div>
+    <div class="sb-item" data-page="acessos" id="sb-acessos" hidden>
+      <svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3M14 9l2 2"/></svg>
+      Acessos
+    </div>
   </nav>
   <div class="sb-footer">
     <img class="sb-mark" src="assets/marca-rotav3.png" alt="" aria-hidden="true">
@@ -561,6 +600,8 @@ body:not(.autorizado)>.sidebar,body:not(.autorizado)>.main,body:not(.autorizado)
       <div class="user"><div class="avatar"><svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="3.6"/><path d="M5 20c1.2-4 4-5.5 7-5.5s5.8 1.5 7 5.5"/></svg></div><div class="user-t"><b id="user-nome">—</b><span>Conectado</span></div><button type="button" class="user-sair" id="user-sair">Sair</button></div>
     </div>
   </div>
+
+  <div class="faixa-demo" id="faixa-demo" hidden>Conta de demonstração: dados fictícios. Nada do que você fizer aqui é salvo. <a href="https://wa.me/5511955914618?text=Ol%C3%A1!%20Estou%20testando%20o%20ROTAV3%20e%20quero%20conversar." target="_blank" rel="noopener">Falar com a ROTAV3</a></div>
 
   <!-- ── PÁGINA: DASHBOARD ── -->
   <div class="page" id="page-dashboard">
@@ -775,6 +816,44 @@ body:not(.autorizado)>.sidebar,body:not(.autorizado)>.main,body:not(.autorizado)
     </div>
     <div id="motoristas-lista" class="reg-cards-grid"></div>
   </div>
+
+  <!-- ── PÁGINA: ACESSOS (só o administrador) ── -->
+  <div class="page" id="page-acessos" style="display:none">
+    <button class="btn-voltar-topo" onclick="irParaPagina('dashboard')"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Voltar ao Dashboard</button>
+    <div class="page-head">
+      <div class="page-title">Acessos</div>
+      <div class="page-sub">Quem pode entrar no sistema. Só você vê esta página.</div>
+    </div>
+    <div class="ac-grid">
+      <div class="ac-card">
+        <h3>Novo acesso de demonstração</h3>
+        <p class="mot-sub">Para quem pediu "Ver o sistema". A pessoa entra com dados fictícios e não vê nem altera os seus pedidos.</p>
+        <div class="ac-campos">
+          <label>Nome (opcional)<input id="ac-nome" maxlength="60" autocomplete="off" placeholder="Ex.: Carlos, Transportadora X"></label>
+          <label>E-mail da pessoa (opcional)<input id="ac-email" type="email" maxlength="120" autocomplete="off" placeholder="Em branco: o sistema cria um"></label>
+          <label>Validade<select id="ac-dias"><option value="3">3 dias</option><option value="7" selected>7 dias</option><option value="15">15 dias</option><option value="30">30 dias</option></select></label>
+        </div>
+        <button class="btn-modal-primary" id="ac-criar" onclick="criarAcessoDemo()" style="margin-top:14px">Criar acesso de demonstração</button>
+        <div class="ac-msg" id="ac-msg" role="status"></div>
+        <div class="ac-res" id="ac-resultado" hidden></div>
+      </div>
+      <div class="ac-card">
+        <h3>Pedidos de acesso</h3>
+        <p class="mot-sub">Quem entrou no sistema e ainda não foi liberado.</p>
+        <div class="ac-lista" id="ac-sol"></div>
+      </div>
+      <div class="ac-card">
+        <h3>Acessos de demonstração</h3>
+        <p class="mot-sub">Dados fictícios. Ao vencer, a pessoa vê o aviso para falar com você.</p>
+        <div class="ac-lista" id="ac-demos"></div>
+      </div>
+      <div class="ac-card">
+        <h3>Acesso completo</h3>
+        <p class="mot-sub">Veem e alteram os dados reais da operação.</p>
+        <div class="ac-lista" id="ac-completos"></div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ── MODAL: Agendar Entrega ── -->
@@ -813,7 +892,7 @@ body:not(.autorizado)>.sidebar,body:not(.autorizado)>.main,body:not(.autorizado)
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getDatabase, ref, onValue, set, update, get, push } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, setPersistence, browserLocalPersistence } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, setPersistence, browserLocalPersistence, inMemoryPersistence, createUserWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 // ══════════════════════════════════════════════════════════════════════════
 // CONFIG — projeto Firebase e servidor de rotas.
@@ -882,20 +961,51 @@ $id('pend-copy').addEventListener('click', async ()=>{
 });
 $id('pend-retry').addEventListener('click', ()=>{ $id('pend-retry').textContent='Verificando…'; verificarEEntrar(auth.currentUser).finally(()=>{ $id('pend-retry').textContent='Já foi liberado? Tentar de novo'; }); });
 
-async function temAcesso(user){
-  try{ const s=await get(ref(db,'acesso/'+user.uid)); return s.val()===true; }
-  catch(e){ return false; }
+// Papel do usuário: 'completo' (acesso[uid] = true), 'demo' (acesso[uid] = "demo",
+// dados fictícios) ou 'expirado' (demonstração vencida). Sem liberação: null.
+const ADMIN_UID = 'PGblgW7V26SJ6W8UYPFj3dqlDGm2';   // administrador (Henrique): vê a página Acessos
+let contaDemo=false, ehAdmin=false;
+async function papelAcesso(user){
+  try{
+    const v=(await get(ref(db,'acesso/'+user.uid))).val();
+    if(v===true) return 'completo';
+    if(v==='demo'){
+      try{ const d=(await get(ref(db,'demos/'+user.uid))).val(); if(d&&d.expira&&d.expira<Date.now()) return 'expirado'; }catch(e){}
+      return 'demo';
+    }
+  }catch(e){}
+  return null;
+}
+// Guarda o e-mail de quem entrou (para a página Acessos) e, sem liberação, o pedido de acesso
+function registrarUsuario(user,papel){
+  const email=String(user.email||'').slice(0,200);
+  Promise.resolve(set(ref(db,'usuarios/'+user.uid),{email,visto:Date.now()})).catch(()=>{});
+  if(!papel) Promise.resolve(set(ref(db,'solicitacoes/'+user.uid),{email,em:Date.now()})).catch(()=>{});
+}
+function telaPendente(user,tipo){
+  const exp=tipo==='expirado';
+  $id('pend-tit').textContent = exp ? 'Seu acesso de demonstração terminou' : 'Acesso aguardando liberação';
+  $id('pend-p1').innerHTML = exp
+    ? `Obrigado por testar o ROTAV3, <b>${esc(user.email||'')}</b>. Para continuar, fale com a gente pelo WhatsApp.`
+    : `Você entrou como <b id="pend-email">${esc(user.email||'')}</b>, mas este usuário ainda não foi liberado para ver os dados da operação.`;
+  $id('pend-bloco').hidden=exp;
+  $id('pend-wa').hidden=!exp;
+  $id('pend-uid').textContent=user.uid;
+  mostrarTela('pendente');
 }
 let appIniciado=false;
 async function verificarEEntrar(user){
   if(!user){ mostrarTela('login'); setTimeout(()=>$id('login-email').focus(),60); return; }
   $id('user-nome').textContent = user.displayName || user.email || 'Usuário';
-  if(!(await temAcesso(user))){
-    $id('pend-email').textContent=user.email||''; $id('pend-uid').textContent=user.uid;
-    mostrarTela('pendente'); return;
-  }
+  const papel=await papelAcesso(user);
+  registrarUsuario(user, papel==='expirado'?'demo':papel);
+  if(papel==='expirado'){ telaPendente(user,'expirado'); return; }
+  if(!papel){ telaPendente(user,'pendente'); return; }
+  contaDemo = papel==='demo';
+  ehAdmin = !contaDemo && user.uid===ADMIN_UID;
+  $id('sb-acessos').hidden=!ehAdmin;
   mostrarTela('app');
-  if(!appIniciado){ appIniciado=true; iniciarApp(); }
+  if(!appIniciado){ appIniciado=true; if(contaDemo) iniciarAppDemo(); else iniciarApp(); }
 }
 onAuthStateChanged(auth, verificarEEntrar);
 
@@ -954,22 +1064,30 @@ let modoDemo  = false;
 let ultimaRota = null; // {routes, criadoEm, ...} lido do Firebase, se existir
 
 // ── Demo orders (mesmo gerador do app original, versão resumida) ──────────
+// Sorteio com semente fixa: a demonstração mostra sempre os mesmos pedidos
+function _rng(seed){ return ()=>{ seed=(seed+0x6D2B79F5)|0; let t=Math.imul(seed^(seed>>>15),1|seed); t=(t+Math.imul(t^(t>>>7),61|t))^t; return ((t^(t>>>14))>>>0)/4294967296; }; }
 function gerarDemoOrders(){
+  const r=_rng(20261024), pick=(l)=>l[Math.floor(r()*l.length)];
   const base=[
     {cidade:'Guarulhos',qtd:25},{cidade:'Santos',qtd:14},{cidade:'Guarujá',qtd:10},
     {cidade:'São Paulo',qtd:9},{cidade:'Praia Grande',qtd:7},{cidade:'Sorocaba',qtd:6},
     {cidade:'Itu',qtd:4},{cidade:'Mogi das Cruzes',qtd:6},{cidade:'Santo André',qtd:5},
   ];
+  // nomes fictícios (dados de demonstração)
+  const ENT=['Mercado Bela Vista','Farmácia Central','Padaria Primavera','Loja do Construtor','Auto Peças Avenida','Papelaria Estrela','Pet Shop Amigo Fiel','Restaurante Sabor Caseiro','Casa de Tintas Arco-Íris','Hortifrúti Boa Safra','Ótica Visão Clara','Material Elétrico Luz','Empório Bom Gosto','Drogaria Saúde','Bazar Popular','Açougue Boi Gordo'];
+  const COL=['Indústria Plástica Norte','Fábrica de Embalagens Sul','Têxtil Horizonte','Metalúrgica Progresso','Cosméticos Aurora','Alimentos Vale Verde','Distribuidora Aliança','Atacado União'];
+  const RUAS=['Rua das Flores','Avenida Brasil','Rua São José','Rua Sete de Setembro','Rua XV de Novembro','Rua Santa Rita','Avenida Industrial','Rua do Comércio','Rua Dom Pedro II','Avenida Getúlio Vargas','Rua Tiradentes','Rua Marechal Deodoro'];
   const orders=[]; let nfBase=300000;
   for(const g of base){
     const coord=CITY_COORDS[g.cidade]||DEPOT;
     for(let i=0;i<g.qtd;i++){
-      const tipo=Math.random()<0.28?'coleta':'entrega', nf=String(nfBase++);
+      const tipo=r()<0.28?'coleta':'entrega', nf=String(nfBase++);
       orders.push({
-        id:_chaveId(nf,tipo), nf, tipo, cidade:g.cidade,
-        peso:50+Math.floor(Math.random()*750), itens:1+Math.floor(Math.random()*12),
-        urgente:Math.random()<0.05, agendado:false, dataAgendada:'', horaEntrega:'',
-        status:'pendente', lat:coord.lat+(Math.random()-.5)*.02, lng:coord.lng+(Math.random()-.5)*.02,
+        id:_chaveId(nf,tipo), nf, tipo, cidade:g.cidade, uf:'SP',
+        dest:pick(tipo==='coleta'?COL:ENT), endereco:`${pick(RUAS)}, ${10+Math.floor(r()*1900)}`,
+        peso:tipo==='coleta'?80+Math.floor(r()*620):40+Math.floor(r()*420), itens:1+Math.floor(r()*12),
+        urgente:r()<0.05, agendado:false, dataAgendada:'', horaEntrega:'', horaFim:'',
+        status:'pendente', geoStatus:'ok', lat:coord.lat+(r()-.5)*.05, lng:coord.lng+(r()-.5)*.05,
       });
     }
   }
@@ -978,8 +1096,8 @@ function gerarDemoOrders(){
     if(orders[idx]){
       orders[idx].agendado=true;
       const d=new Date(hoje); d.setDate(d.getDate()+dias);
-      orders[idx].dataAgendada=d.toISOString().slice(0,10);
-      orders[idx].horaEntrega='14:00';
+      orders[idx].dataAgendada=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      orders[idx].horaEntrega='14:00'; orders[idx].horaFim='16:00';
     }
   });
   return orders;
@@ -1294,7 +1412,8 @@ function atualizarMapaCompleto(){
   // Mapa geral mostra só pedidos pendentes — rotas confirmadas têm seu próprio
   // mini-mapa individual na aba Rotas (fica mais limpo, sem misturar as duas coisas).
   const legEl = document.getElementById('mapa-completo-legenda');
-  if(legEl) legEl.innerHTML = `<span><i style="background:#16a36a;border:2px solid #fff;box-shadow:0 0 0 1px #9fd8bb"></i>Entrega</span><span><i style="background:#0d1b2e;border:2px solid #f3b62b"></i>Coleta</span><span><i style="background:#e09c12;border:2px solid #fff;box-shadow:0 0 0 1px #e09c12"></i>${esc(DEPOT.name)}</span><span><i style="background:rgba(148,163,184,.35);border:2px solid #94a3b8"></i>Cidade (pedidos ainda sem endereço exato)</span>`;
+  _desenharVeiculosMapa();
+  if(legEl) legEl.innerHTML = `<span>🚚 Veículo em rota (localização ao vivo)</span><span><i style="background:#16a36a;border:2px solid #fff;box-shadow:0 0 0 1px #9fd8bb"></i>Entrega</span><span><i style="background:#0d1b2e;border:2px solid #f3b62b"></i>Coleta</span><span><i style="background:#e09c12;border:2px solid #fff;box-shadow:0 0 0 1px #e09c12"></i>${esc(DEPOT.name)}</span><span><i style="background:rgba(148,163,184,.35);border:2px solid #94a3b8"></i>Cidade (pedidos ainda sem endereço exato)</span>`;
 }
 window.atualizarMapaCompleto=atualizarMapaCompleto;
 
@@ -1317,7 +1436,7 @@ const TODAS_PAGES = ['dashboard','page-other','pedidos','roteirizacao','ia'];
 function irParaPagina(p){
   document.querySelectorAll('.sb-item').forEach(i=>i.classList.toggle('active', i.dataset.page===p));
   // esconde todas
-  ['page-dashboard','page-other','page-pedidos','page-roteirizacao','page-ia','page-rotas','page-mapa','page-motoristas'].forEach(id=>{
+  ['page-dashboard','page-other','page-pedidos','page-roteirizacao','page-ia','page-rotas','page-mapa','page-motoristas','page-acessos'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.style.display='none';
   });
   if(p==='dashboard'){
@@ -1337,6 +1456,9 @@ function irParaPagina(p){
   } else if(p==='motoristas'){
     document.getElementById('page-motoristas').style.display='block';
     renderMotoristasPage();
+  } else if(p==='acessos' && ehAdmin){
+    document.getElementById('page-acessos').style.display='block';
+    renderAcessos();
   } else if(p==='ia'){
     document.getElementById('page-ia').style.display='block';
   } else {
@@ -1653,7 +1775,7 @@ async function _geocodificarCep(cep){
   };
   geoCache[cep] = resultado;
   // persiste no Firebase — próxima vez é instantâneo
-  update(ref(db,'geo_cache'), { [cep]: resultado }).catch(()=>{});
+  if(!contaDemo) Promise.resolve(update(ref(db,'geo_cache'), { [cep]: resultado })).catch(()=>{});
   return resultado;
 }
 
@@ -1801,8 +1923,14 @@ async function importarArquivo(input){
   const payload={}; let jaEmRota=0;
   lidos.forEach(o=>{ if(FINAIS.includes(_statusPorId[o.id])){ jaEmRota++; return; } payload[o.id]=o; });
   const novos=Object.values(payload);
-  try{ if(novos.length) await update(ref(db,'pedidos_rota'),payload); }
-  catch(e){ _impMsg('err','❌ Não foi possível salvar as notas: '+e.message); return; }
+  if(contaDemo){
+    // conta de demonstração: as notas ficam só nesta tela
+    novos.forEach(o=>{ const i=allOrders.findIndex(x=>x.id===o.id); if(i>=0) allOrders[i]=o; else allOrders.push(o); });
+    render(); renderPedidosPage();
+  } else {
+    try{ if(novos.length) await update(ref(db,'pedidos_rota'),payload); }
+    catch(e){ _impMsg('err','❌ Não foi possível salvar as notas: '+e.message); return; }
+  }
   const nT=_contarTipos(novos);
   let msg = !novos.length ? 'Nenhuma nota nova.'
     : nT.entrega&&nT.coleta ? `✅ ${_plural(novos.length,'nota importada','notas importadas')}: ${_resumoTipos(nT,' e ')}.`
@@ -1974,7 +2102,7 @@ async function executarVRPD(){
     fonteDistanciaD=data.fonte_distancia||'—';
     regraCargaD=data.regra_carga||'';
     naoAlocD=(data.nao_alocados||[]).map(String); foraJanelaD=(data.fora_da_janela||[]).map(String);
-    if(!data.salvo && rotaGeradaD.length){
+    if(!data.salvo && rotaGeradaD.length && !modoDemo){
       // prévia da rota (alimenta o indicador "Rotas" do Dashboard); se falhar, a rota continua na tela
       try{
         Promise.resolve(push(ref(db,'rotas'),{
@@ -2072,6 +2200,7 @@ async function confirmarRotaD(){
         r.paradas.forEach(p=>{ const o=allOrders.find(x=>x.id===p.id); if(o) o.status='despachado'; });
         rotasConfirmadasDemo.push(r);
       });
+      _simularVeiculosDemo();
     }
     btn.textContent='✔ Rota confirmada!';
     setTimeout(()=>{
@@ -2085,6 +2214,68 @@ async function confirmarRotaD(){
   }
 }
 window.confirmarRotaD=confirmarRotaD;
+
+// ── Localização ao vivo do motorista (pelo celular, com o link aberto) ──────
+let posicaoPorRota={}, _posUnsub={}, _veicMk={}, _camadaVeic=null, _simTimer=null;
+function _haVisto(ts){
+  const s=Math.max(0,(Date.now()-(ts||0))/1000);
+  if(s<60) return 'agora'; if(s<3600) return `há ${Math.round(s/60)} min`;
+  if(s<86400) return `há ${Math.round(s/3600)} h`; return `há ${Math.round(s/86400)} dia(s)`;
+}
+function _iconeVeiculo(pos){
+  const velho=!pos.simulado && Date.now()-(pos.hora||0)>10*60e3;
+  return L.divIcon({className:'',html:`<div class="veic-mk${velho?' velho':''}">🚚</div>`,iconSize:[30,30],iconAnchor:[15,15]});
+}
+function _textoVeiculo(r,pos){
+  return `<b>${esc(r.veiculo||'Veículo')}${r.motorista?' · '+esc(r.motorista):''}</b><br>${pos.simulado?'Simulação (conta de demonstração)':'Localização do celular do motorista'} · ${_haVisto(pos.hora)}`;
+}
+function _desenharVeiculosMapa(){
+  if(!mapInstFull||!window.L) return;
+  if(_camadaVeic) mapInstFull.removeLayer(_camadaVeic);
+  _camadaVeic=L.layerGroup().addTo(mapInstFull);
+  const rotas = modoDemo ? rotasConfirmadasDemo : Object.values(rotasFirebase);
+  rotas.forEach(r=>{
+    const pos=r&&posicaoPorRota[r.id];
+    if(!pos||r.status==='devolvida'||r.status==='apagada') return;
+    if(Date.now()-(pos.hora||0)>12*3600e3) return;
+    L.marker([pos.lat,pos.lng],{icon:_iconeVeiculo(pos),zIndexOffset:1000}).addTo(_camadaVeic).bindTooltip(_textoVeiculo(r,pos));
+  });
+}
+function _atualizarVeiculos(){
+  let falta=false;
+  Object.keys(posicaoPorRota).forEach(rid=>{
+    const pos=posicaoPorRota[rid], r=_rotaPorId(rid), mk=_veicMk[rid];
+    if(!pos||!r) return;
+    if(mk){ mk.setLatLng([pos.lat,pos.lng]); mk.setIcon(_iconeVeiculo(pos)); mk.setTooltipContent(_textoVeiculo(r,pos)); }
+    else falta=true;
+  });
+  document.querySelectorAll('[data-visto]').forEach(el=>{ const pos=posicaoPorRota[el.dataset.visto]; if(pos) el.textContent=_haVisto(pos.hora); });
+  const naRotas=document.getElementById('page-rotas')?.style.display==='block';
+  if(falta&&naRotas) renderRotasConfirmadas();
+  if(document.getElementById('page-mapa')?.style.display==='block') _desenharVeiculosMapa();
+}
+// Conta de demonstração: um veículo simulado percorre cada rota confirmada (20 s por trecho)
+function _simularVeiculosDemo(){
+  if(!contaDemo) return;
+  clearInterval(_simTimer);
+  const passo=()=>{
+    let mudou=false;
+    rotasConfirmadasDemo.forEach(r=>{
+      if(r.status==='devolvida'||r.status==='apagada') return;
+      const pts=[{lat:DEPOT.lat,lng:DEPOT.lng},...(r.paradas||[]).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng)),{lat:DEPOT.lat,lng:DEPOT.lng}];
+      if(pts.length<2) return;
+      const seg=(Date.now()-(Date.parse(r.criada_em)||Date.now()))/1000/20;
+      const i=Math.min(Math.floor(seg),pts.length-2), f=Math.min(1,seg-i), a=pts[i], b=pts[i+1];
+      posicaoPorRota[r.id]={lat:a.lat+(b.lat-a.lat)*f,lng:a.lng+(b.lng-a.lng)*f,hora:Date.now(),simulado:true};
+      // baixas simuladas: cada parada alcançada vira "feita"
+      const bx=baixasPorRota[r.id]=baixasPorRota[r.id]||{};
+      for(let k=0;k<Math.min(pts.length-2,Math.floor(seg));k++){ if(!bx[k]){ bx[k]={status:'feito',hora:Date.now(),recebedor:'(simulação)'}; mudou=true; } }
+    });
+    if(mudou && document.getElementById('page-rotas')?.style.display==='block') renderRotasConfirmadas();
+    _atualizarVeiculos();
+  };
+  passo(); _simTimer=setInterval(passo,2000);
+}
 
 // Acompanha as baixas das rotas recentes (só a lista de baixas; fotos só ao abrir)
 function _sincronizarBaixas(){
@@ -2100,8 +2291,14 @@ function _sincronizarBaixas(){
       _aplicarBaixas(rotasFirebase[r.id]||r, baixasPorRota[r.id]);
       if(document.getElementById('page-rotas')?.style.display==='block'){ renderRotasConfirmadas(); }
     }, ()=>{});
+    if(!_posUnsub[r.id]) _posUnsub[r.id]=onValue(ref(db,'entregador/'+r.token+'/posicao'), snap=>{
+      const v=snap.val();
+      if(v&&Number.isFinite(v.lat)&&Number.isFinite(v.lng)) posicaoPorRota[r.id]=v; else delete posicaoPorRota[r.id];
+      _atualizarVeiculos();
+    }, ()=>{});
   });
   Object.keys(_baixasUnsub).forEach(id=>{ if(!vivos.has(id)){ try{ _baixasUnsub[id](); }catch(e){} delete _baixasUnsub[id]; delete baixasPorRota[id]; } });
+  Object.keys(_posUnsub).forEach(id=>{ if(!vivos.has(id)){ try{ _posUnsub[id](); }catch(e){} delete _posUnsub[id]; delete posicaoPorRota[id]; } });
 }
 // Feito → entregue/coletado. Não realizado → volta para pendente com a ocorrência.
 // Só mexe no pedido se ele ainda estiver nesta rota (rota_atual).
@@ -2125,6 +2322,23 @@ function _aplicarBaixas(rota, baixas){
     update(ref(db),upd).catch(()=>{});
   }
 }
+function _b64url(txt){ return btoa(unescape(encodeURIComponent(txt))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+function _linkSistema(){ return location.origin+location.pathname.replace(/[^/]*$/,''); }
+function _linkMotoristaDemo(r){
+  const n=(v,c)=>Number.isFinite(v)?+v.toFixed(c):null;
+  const d={ i:{v:r.veiculo||'',m:r.motorista||'',d:r.data||'',s:r.saida??null,c:DEPOT.name},
+    p:(r.paradas||[]).map(p=>[String(p.nf),_tipoDe(p)==='coleta'?1:0,p.dest||'',p.endereco||'',p.bairro||'',p.cidade||'',p.uf||'',p.cep||'',
+      n(p.lat,5),n(p.lng,5),p.peso||0,p.itens||1,p.chegada_min??null,p.janela_ini??null,p.janela_fim??null]) };
+  return _linkSistema()+'motorista.html#demo='+_b64url(JSON.stringify(d));
+}
+function abrirMotoristaDemo(rid){ const r=_rotaPorId(rid); if(r) window.open(_linkMotoristaDemo(r),'_blank','noopener'); }
+window.abrirMotoristaDemo=abrirMotoristaDemo;
+function enviarLinkDemoWhatsApp(rid){
+  const r=_rotaPorId(rid); if(!r) return;
+  const msg=`Rota ${r.veiculo||''} (demonstração do ROTAV3): ${(r.paradas||[]).length} paradas.\nAbra no celular para ver o que o motorista vê:\n${_linkMotoristaDemo(r)}`;
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank','noopener');
+}
+window.enviarLinkDemoWhatsApp=enviarLinkDemoWhatsApp;
 function _rotaPorId(rid){ return modoDemo ? rotasConfirmadasDemo.find(r=>r.id===rid) : rotasFirebase[rid]; }
 function _toast(txt){ _geoStatusUI(txt); setTimeout(()=>_geoStatusUI(''),3500); }
 function enviarLinkWhatsApp(rid){
@@ -2183,6 +2397,107 @@ function fecharFoto(){ document.getElementById('modal-foto').classList.remove('o
 window.fecharFoto=fecharFoto;
 
 // ══════════════════════════════════════════════════════════════════════════
+// ACESSOS — só o administrador: cria acesso de demonstração e libera pedidos
+// ══════════════════════════════════════════════════════════════════════════
+let _appCriador=null, _acessoCriado=null;
+function _gerarSenha(){ const c='abcdefghjkmnpqrstuvwxyz23456789', b=new Uint8Array(8); crypto.getRandomValues(b); return 'rv3-'+[...b].map(x=>c[x%c.length]).join(''); }
+function _dataCurta(ts){ return ts?new Date(ts).toLocaleDateString('pt-BR'):''; }
+function _acMsg(txt,tipo){ const el=$id('ac-msg'); el.textContent=txt; el.className='ac-msg'+(tipo?' '+tipo:''); }
+// Cria o usuário numa instância separada do login, para o administrador continuar conectado
+async function _criarUsuario(email,senha){
+  if(!_appCriador) _appCriador=initializeApp(FB_CFG,'criador-de-acessos');
+  const a2=getAuth(_appCriador);
+  try{ await setPersistence(a2,inMemoryPersistence); }catch(e){}
+  const cred=await createUserWithEmailAndPassword(a2,email,senha);
+  const uid=cred.user.uid;
+  try{ await signOut(a2); }catch(e){}
+  return uid;
+}
+async function criarAcessoDemo(){
+  if(!ehAdmin) return;
+  const nome=$id('ac-nome').value.trim().slice(0,60);
+  let email=$id('ac-email').value.trim().toLowerCase();
+  const dias=parseInt($id('ac-dias').value)||7;
+  if(email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ _acMsg('Digite um e-mail válido ou deixe em branco.','err'); return; }
+  if(!email) email='demo.'+_gerarSenha().slice(4,10)+'@rotav3.com.br';
+  const senha=_gerarSenha(), btn=$id('ac-criar');
+  btn.disabled=true; btn.textContent='Criando…'; _acMsg('');
+  try{
+    const uid=await _criarUsuario(email,senha), expira=Date.now()+dias*864e5;
+    await update(ref(db),{['acesso/'+uid]:'demo',['demos/'+uid]:{nome,email,criado:Date.now(),expira}});
+    _acessoCriado={nome,email,senha,expira};
+    _mostrarAcessoCriado();
+    $id('ac-nome').value=''; $id('ac-email').value='';
+    renderAcessos();
+  }catch(e){
+    _acMsg(e.code==='auth/email-already-in-use' ? 'Esse e-mail já tem cadastro. Use outro, ou libere a pessoa em "Pedidos de acesso" depois que ela entrar.'
+      : e.code==='auth/operation-not-allowed' ? 'O login por e-mail não está ativado no Firebase.'
+      : 'Não foi possível criar o acesso: '+(e.message||e),'err');
+  }finally{ btn.disabled=false; btn.textContent='Criar acesso de demonstração'; }
+}
+window.criarAcessoDemo=criarAcessoDemo;
+function _mensagemAcesso(a){
+  return `Olá${a.nome?', '+a.nome:''}! Aqui está o seu acesso de demonstração ao ROTAV3:\n\nSistema: ${_linkSistema()}\nE-mail: ${a.email}\nSenha: ${a.senha}\n\nVale até ${_dataCurta(a.expira)}. Os dados são fictícios: pode importar suas notas (XML, Excel ou CSV), gerar rotas e testar à vontade. Nada do que você fizer é salvo.`;
+}
+function _mostrarAcessoCriado(){
+  const a=_acessoCriado, box=$id('ac-resultado');
+  box.hidden=false;
+  box.innerHTML=`<div class="ac-ok">Acesso criado</div>
+    <div class="ac-linha"><span>E-mail</span><b>${esc(a.email)}</b></div>
+    <div class="ac-linha"><span>Senha</span><b>${esc(a.senha)}</b></div>
+    <div class="ac-linha"><span>Vale até</span><b>${_dataCurta(a.expira)}</b></div>
+    <div class="mot-acts" style="margin-top:12px"><button class="btn-wa" onclick="enviarAcessoWhatsApp()">Enviar pelo WhatsApp</button><button class="btn-sm" onclick="copiarAcesso()">Copiar mensagem</button></div>
+    <div class="mot-sub" style="margin-top:8px">Mande agora: a senha não fica guardada no sistema.</div>`;
+}
+function enviarAcessoWhatsApp(){ if(_acessoCriado) window.open('https://wa.me/?text='+encodeURIComponent(_mensagemAcesso(_acessoCriado)),'_blank','noopener'); }
+window.enviarAcessoWhatsApp=enviarAcessoWhatsApp;
+async function copiarAcesso(){
+  if(!_acessoCriado) return;
+  const txt=_mensagemAcesso(_acessoCriado);
+  try{ await navigator.clipboard.writeText(txt); _toast('Mensagem copiada.'); }catch(e){ prompt('Copie a mensagem:',txt); }
+}
+window.copiarAcesso=copiarAcesso;
+async function renderAcessos(){
+  if(!ehAdmin) return;
+  const [ac,de,so,us]=await Promise.all(['acesso','demos','solicitacoes','usuarios'].map(p=>get(ref(db,p)).then(x=>x.val()||{}).catch(()=>({}))));
+  const emailDe=(uid)=>(us[uid]&&us[uid].email)||(de[uid]&&de[uid].email)||(so[uid]&&so[uid].email)||'';
+  const agora=Date.now();
+  const sol=Object.entries(so).filter(([uid])=>!ac[uid]).sort((a,b)=>(b[1].em||0)-(a[1].em||0));
+  $id('ac-sol').innerHTML = sol.length ? sol.map(([uid,x])=>{ const u=esc(uid); return `<div class="ac-row"><div class="ac-row-info"><b>${esc(x.email||'(sem e-mail)')}</b><span>entrou em ${_dataCurta(x.em)}</span></div>
+      <div class="mot-acts"><button class="btn-sm" onclick="liberarAcesso('${u}','demo')">Liberar demonstração</button><button class="btn-sm" onclick="liberarAcesso('${u}','completo')">Liberar completo</button><button class="btn-sm" onclick="ignorarSolicitacao('${u}')">Ignorar</button></div></div>`; }).join('')
+    : '<div class="empty-mini">Nenhum pedido de acesso.</div>';
+  const dem=Object.entries(de).sort((a,b)=>(b[1].criado||0)-(a[1].criado||0));
+  $id('ac-demos').innerHTML = dem.length ? dem.map(([uid,x])=>{ const u=esc(uid), ativo=ac[uid]==='demo'&&(x.expira||0)>agora; return `<div class="ac-row"><div class="ac-row-info"><b>${esc(x.nome?x.nome+' · ':'')}${esc(x.email||emailDe(uid))}<span class="ac-tag ${ativo?'on':'off'}">${ativo?'ativo':'encerrado'}</span></b><span>criado em ${_dataCurta(x.criado)} · ${ativo?'vale até':'venceu em'} ${_dataCurta(x.expira)}</span></div>
+      ${ativo?`<div class="mot-acts"><button class="btn-sm" onclick="encerrarDemo('${u}')">Encerrar</button></div>`:''}</div>`; }).join('')
+    : '<div class="empty-mini">Nenhum acesso de demonstração ainda.</div>';
+  const comp=Object.entries(ac).filter(([,v])=>v===true);
+  $id('ac-completos').innerHTML = comp.length ? comp.map(([uid])=>{ const u=esc(uid), eu=uid===ADMIN_UID; return `<div class="ac-row"><div class="ac-row-info"><b>${esc(emailDe(uid)||uid)}${eu?'<span class="ac-tag on">você</span>':''}</b><span>${us[uid]&&us[uid].visto?'último acesso em '+_dataCurta(us[uid].visto):'sem registro de acesso'}</span></div>
+      ${eu?'':`<div class="mot-acts"><button class="btn-sm" onclick="tirarAcesso('${u}')">Tirar acesso</button></div>`}</div>`; }).join('')
+    : '<div class="empty-mini">Ninguém com acesso completo.</div>';
+}
+async function _acaoAcesso(upd,ok){
+  try{ await update(ref(db),upd); if(ok) _toast(ok); }catch(e){ alert('Não foi possível concluir: '+e.message); }
+  renderAcessos();
+}
+async function liberarAcesso(uid,tipo){
+  if(!ehAdmin) return;
+  const so=(await get(ref(db,'solicitacoes/'+uid)).catch(()=>null))?.val?.()||{};
+  if(tipo==='completo'){
+    if(!confirm(`Liberar acesso COMPLETO para ${so.email||uid}? A pessoa vai ver e alterar os dados reais da operação.`)) return;
+    _acaoAcesso({['acesso/'+uid]:true,['solicitacoes/'+uid]:null},'Acesso completo liberado.');
+  } else {
+    _acaoAcesso({['acesso/'+uid]:'demo',['demos/'+uid]:{nome:'',email:so.email||'',criado:Date.now(),expira:Date.now()+7*864e5},['solicitacoes/'+uid]:null},'Demonstração liberada por 7 dias.');
+  }
+}
+window.liberarAcesso=liberarAcesso;
+function ignorarSolicitacao(uid){ if(ehAdmin) _acaoAcesso({['solicitacoes/'+uid]:null}); }
+window.ignorarSolicitacao=ignorarSolicitacao;
+function encerrarDemo(uid){ if(ehAdmin&&confirm('Encerrar este acesso de demonstração agora?')) _acaoAcesso({['acesso/'+uid]:null,['demos/'+uid+'/expira']:Date.now()},'Demonstração encerrada.'); }
+window.encerrarDemo=encerrarDemo;
+function tirarAcesso(uid){ if(ehAdmin&&confirm('Tirar o acesso desta pessoa? Ela deixa de ver os dados da operação.')) _acaoAcesso({['acesso/'+uid]:null},'Acesso retirado.'); }
+window.tirarAcesso=tirarAcesso;
+
+// ══════════════════════════════════════════════════════════════════════════
 // PÁGINA ROTAS — lista rotas confirmadas (Firebase ou demo)
 // ══════════════════════════════════════════════════════════════════════════
 let rotasFirebase={};  // preenchido pelo listener do Firebase
@@ -2218,6 +2533,9 @@ function desenharMiniMapaRota(rota, elId, cor){
   _agruparParadas(paradas).forEach(g=>{
     L.marker([g.lat,g.lng],{icon:_iconeGrupo(paradas,g,cor,22)}).addTo(map).bindTooltip(_textoGrupo(paradas,g));
   });
+  delete _veicMk[rota.id];
+  const pos=posicaoPorRota[rota.id];
+  if(pos){ _veicMk[rota.id]=L.marker([pos.lat,pos.lng],{icon:_iconeVeiculo(pos),zIndexOffset:1000}).addTo(map).bindTooltip(_textoVeiculo(rota,pos)); coords.push([pos.lat,pos.lng]); }
   map.fitBounds(L.latLngBounds(coords), {padding:[18,18]});
 }
 window.desenharMiniMapaRota = desenharMiniMapaRota;
@@ -2241,11 +2559,23 @@ function renderRotasConfirmadas(){
     const cor = _corDaRota(r.id || idx);
     const mapId = `mini-map-rota-${r.id || 'r'+idx}`;
     const ridSafe = esc((r.id||'').replace(/'/g,"\\'"));
-    const bx = (modoDemo?{}:baixasPorRota[r.id])||{};
+    const bx = ((modoDemo&&!contaDemo)?{}:baixasPorRota[r.id])||{};
     let feitas=0, nok=0; paradas.forEach((p,i)=>{ const b=bx[i]; if(b){ feitas++; if(b.status==='nao_feito') nok++; } });
     const concluida = paradas.length && feitas===paradas.length;
     const linkAtivo = r.token && (r.link_expira||0) > Date.now();
-    const mot = modoDemo
+    const pos = posicaoPorRota[r.id];
+    const linhaPos = `<div class="mot-sub" style="margin-top:6px">📍 ${pos?`Localização ao vivo: <b data-visto="${ridSafe}">${_haVisto(pos.hora)}</b>${pos.simulado?' (simulação da conta de demonstração)':''}`:'Localização ao vivo: o motorista ainda não ligou no celular.'}</div>`;
+    const mot = contaDemo
+      ? `<div class="mot-box">
+        <div class="mot-head">
+          <div><div class="mot-tit">Motorista</div><div class="mot-sub">Conta de demonstração: o link abre a tela do motorista com estas paradas.</div></div>
+          <div class="mot-acts"><button class="btn-wa" onclick="enviarLinkDemoWhatsApp('${ridSafe}')">Enviar pelo WhatsApp</button><button class="btn-sm" onclick="abrirMotoristaDemo('${ridSafe}')">Abrir a tela do motorista</button></div>
+        </div>
+        <div class="mot-sub">${feitas} de ${paradas.length} paradas com baixa (simulação)</div>
+        <div class="prog"><i style="width:${paradas.length?Math.round(feitas/paradas.length*100):0}%"></i></div>
+        ${linhaPos}
+      </div>`
+      : modoDemo
       ? `<div class="mot-box"><div class="mot-sub">No modo demonstração o link do motorista não é criado. Importe as suas notas para usar.</div></div>`
       : `<div class="mot-box">
         <div class="mot-head">
@@ -2256,6 +2586,7 @@ function renderRotasConfirmadas(){
         </div>
         <div class="mot-sub">${feitas} de ${paradas.length} paradas com baixa${feitas-nok?` · ${_plural(feitas-nok,'feita','feitas')}`:''}${nok?` · ${_plural(nok,'não realizada','não realizadas')} (${nok===1?'voltou':'voltaram'} para pendentes)`:''}</div>
         <div class="prog"><i style="width:${paradas.length?Math.round(feitas/paradas.length*100):0}%"></i></div>
+        ${linkAtivo?linhaPos:''}
       </div>`;
     return `<div class="card" style="margin-bottom:14px">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:12px">
@@ -2272,7 +2603,7 @@ function renderRotasConfirmadas(){
       </div>
       <div style="display:flex;gap:18px;font-size:12.5px;color:var(--text2);flex-wrap:wrap;margin-bottom:12px">
         <span>📦 <b style="color:var(--text)">${(r.peso_total||0).toLocaleString('pt-BR')} kg</b></span>
-        <span>🛣️ <b style="color:var(--text)">${(r.km||0).toFixed?(r.km).toFixed(1):r.km}</b> km</span>
+        <span>🛣️ <b style="color:var(--text)">${(+r.km||0).toFixed(1)}</b> km</span>
         ${r.tempo_min?`<span>⏱️ <b style="color:var(--text)">${r.tempo_min}</b> min</span>`:''}
       </div>
       ${mot}
@@ -2510,8 +2841,21 @@ async function carregarConfig(){
     if(d && Number.isFinite(+d.lat) && Number.isFinite(+d.lng)){ DEPOT.lat=+d.lat; DEPOT.lng=+d.lng; if(d.nome) DEPOT.name=String(d.nome); }
   }catch(e){}
 }
+// Conta de demonstração: dados fictícios só nesta tela; nada é lido nem gravado no banco
+function iniciarAppDemo(){
+  modoDemo=true;
+  allOrders=gerarDemoOrders();
+  motoristasDemo=[
+    {id:'mot_demo1',nome:'Carlos (exemplo)',veiculo_id:'vuc',veiculo_nome:'VUC',cap_kg:3000},
+    {id:'mot_demo2',nome:'Ana (exemplo)',veiculo_id:'fiorino',veiculo_nome:'Fiorino',cap_kg:650},
+  ];
+  $id('faixa-demo').hidden=false;
+  render();
+  _simularVeiculosDemo();
+}
 async function iniciarApp(){
   await carregarConfig();
+  setInterval(_atualizarVeiculos, 30000);
   carregarPedidos();
   _geoCarregarCache();
   // retoma geocodificação de pedidos que ficaram pendentes (ex: aba fechada no meio)

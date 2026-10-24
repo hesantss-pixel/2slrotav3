@@ -8,8 +8,9 @@ O servidor pergunta ao próprio Firebase se esse token pode ler `acesso/<uid>`
 (GET .../acesso/<uid>.json?auth=<token>):
 
   - token falso, vencido ou de outro projeto → o Firebase responde 401;
-  - usuário sem liberação → o valor não é `true` (ou as regras negam: 403);
-  - usuário liberado → `true`.
+  - usuário sem liberação → o valor não existe (ou as regras negam: 403);
+  - usuário liberado → `true` (acesso completo) ou `"demo"` (conta de demonstração:
+    dados fictícios; só pode usar /solve e /chat, com limite de uso).
 
 Assim uma única consulta confere a assinatura do token e a liberação do
 usuário, sem precisar de chave secreta nem de bibliotecas extras. O resultado
@@ -37,7 +38,7 @@ PROJECT_ID = os.getenv("FIREBASE_PROJECT_ID", "slog-pedidos")
 AUTH_REQUIRED = os.getenv("AUTH_REQUIRED", "1") != "0"
 CACHE_SEGUNDOS = 300
 
-_cache: dict[str, tuple[str, float]] = {}
+_cache: dict[str, tuple[str, str, float]] = {}   # token -> (uid, papel, validade)
 _lock = threading.Lock()
 
 
@@ -59,9 +60,17 @@ def _claims_sem_verificar(token: str) -> dict:
 
 
 def verificar(authorization: str | None) -> str:
-    """Retorna o uid do usuário liberado ou levanta AuthError."""
+    """Retorna o uid do usuário com acesso COMPLETO ou levanta AuthError."""
+    uid, papel = verificar_papel(authorization)
+    if papel != "completo":
+        raise AuthError("Esta função não está disponível na conta de demonstração.", 403)
+    return uid
+
+
+def verificar_papel(authorization: str | None) -> tuple[str, str]:
+    """Retorna (uid, papel) do usuário liberado; papel é "completo" ou "demo"."""
     if not AUTH_REQUIRED:
-        return "teste-local"
+        return "teste-local", "completo"
     if not authorization or not authorization.startswith("Bearer "):
         raise AuthError("Faça login para usar o sistema.")
     token = authorization[7:].strip()
@@ -71,8 +80,8 @@ def verificar(authorization: str | None) -> str:
     agora = time.time()
     with _lock:
         hit = _cache.get(token)
-        if hit and hit[1] > agora:
-            return hit[0]
+        if hit and hit[2] > agora:
+            return hit[0], hit[1]
 
     claims = _claims_sem_verificar(token)
     uid = claims.get("user_id") or claims.get("sub")
@@ -94,14 +103,37 @@ def verificar(authorization: str | None) -> str:
     if not r.ok:
         raise AuthError("Não foi possível conferir o login agora. Tente de novo.", 503)
     try:
-        liberado = r.json() is True
+        valor = r.json()
     except ValueError:
-        liberado = False
-    if not liberado:
+        valor = None
+    if valor is True:
+        papel = "completo"
+    elif valor == "demo":
+        papel = "demo"
+    else:
         raise AuthError("Este usuário ainda não foi liberado.", 403)
 
     with _lock:
         if len(_cache) > 2000:
             _cache.clear()
-        _cache[token] = (uid, min(exp, agora + CACHE_SEGUNDOS))
-    return uid
+        _cache[token] = (uid, papel, min(exp, agora + CACHE_SEGUNDOS))
+    return uid, papel
+
+
+# ── Limite de uso da conta de demonstração ───────────────────────────────────
+_uso: dict[str, list[float]] = {}
+
+
+def limitar_demo(uid: str, acao: str, maximo: int, janela_s: int = 3600) -> None:
+    """Levanta AuthError(429) se a conta de demonstração passou do limite."""
+    agora = time.time()
+    chave = f"{uid}:{acao}"
+    with _lock:
+        lista = [t for t in _uso.get(chave, []) if t > agora - janela_s]
+        if len(lista) >= maximo:
+            _uso[chave] = lista
+            raise AuthError("Limite de uso da demonstração atingido. Tente de novo mais tarde.", 429)
+        lista.append(agora)
+        _uso[chave] = lista
+        if len(_uso) > 5000:
+            _uso.clear()

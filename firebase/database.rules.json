@@ -3,9 +3,51 @@
     ".read": false,
     ".write": false,
     "acesso": {
+      ".read": "auth != null && auth.uid === 'PGblgW7V26SJ6W8UYPFj3dqlDGm2'",
+      ".write": "auth != null && auth.uid === 'PGblgW7V26SJ6W8UYPFj3dqlDGm2'",
       "$uid": {
         ".read": "auth != null && auth.uid === $uid",
-        ".write": false
+        ".validate": "newData.val() === true || newData.val() === 'demo'"
+      }
+    },
+    "demos": {
+      ".read": "auth != null && auth.uid === 'PGblgW7V26SJ6W8UYPFj3dqlDGm2'",
+      ".write": "auth != null && auth.uid === 'PGblgW7V26SJ6W8UYPFj3dqlDGm2'",
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid"
+      }
+    },
+    "usuarios": {
+      ".read": "auth != null && auth.uid === 'PGblgW7V26SJ6W8UYPFj3dqlDGm2'",
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid",
+        ".validate": "newData.hasChildren(['email', 'visto'])",
+        "email": {
+          ".validate": "newData.isString() && newData.val().length <= 200"
+        },
+        "visto": {
+          ".validate": "newData.isNumber() && newData.val() <= now + 60000"
+        },
+        "$outro": {
+          ".validate": false
+        }
+      }
+    },
+    "solicitacoes": {
+      ".read": "auth != null && auth.uid === 'PGblgW7V26SJ6W8UYPFj3dqlDGm2'",
+      ".write": "auth != null && auth.uid === 'PGblgW7V26SJ6W8UYPFj3dqlDGm2'",
+      "$uid": {
+        ".write": "auth != null && auth.uid === $uid && !root.child('acesso').child($uid).exists()",
+        ".validate": "newData.hasChildren(['email', 'em'])",
+        "email": {
+          ".validate": "newData.isString() && newData.val().length <= 200"
+        },
+        "em": {
+          ".validate": "newData.isNumber() && newData.val() <= now + 60000"
+        },
+        "$outro": {
+          ".validate": false
+        }
       }
     },
     "config": {
@@ -45,21 +87,58 @@
           "$i": {
             ".write": "root.child('entregador').child($token).child('expira').val() > now && root.child('entregador').child($token).child('paradas').child($i).exists()",
             ".validate": "newData.hasChildren(['status', 'hora'])",
-            "status": { ".validate": "newData.val() === 'feito' || newData.val() === 'nao_feito'" },
-            "hora": { ".validate": "newData.isNumber() && newData.val() <= now + 60000" },
-            "motivo": { ".validate": "newData.isString() && newData.val().length <= 120" },
-            "obs": { ".validate": "newData.isString() && newData.val().length <= 300" },
-            "recebedor": { ".validate": "newData.isString() && newData.val().length <= 80" },
-            "temFoto": { ".validate": "newData.isBoolean()" },
-            "lat": { ".validate": "newData.isNumber()" },
-            "lng": { ".validate": "newData.isNumber()" },
-            "$outro": { ".validate": false }
+            "status": {
+              ".validate": "newData.val() === 'feito' || newData.val() === 'nao_feito'"
+            },
+            "hora": {
+              ".validate": "newData.isNumber() && newData.val() <= now + 60000"
+            },
+            "motivo": {
+              ".validate": "newData.isString() && newData.val().length <= 120"
+            },
+            "obs": {
+              ".validate": "newData.isString() && newData.val().length <= 300"
+            },
+            "recebedor": {
+              ".validate": "newData.isString() && newData.val().length <= 80"
+            },
+            "temFoto": {
+              ".validate": "newData.isBoolean()"
+            },
+            "lat": {
+              ".validate": "newData.isNumber()"
+            },
+            "lng": {
+              ".validate": "newData.isNumber()"
+            },
+            "$outro": {
+              ".validate": false
+            }
           }
         },
         "fotos": {
           "$i": {
             ".write": "root.child('entregador').child($token).child('expira').val() > now && root.child('entregador').child($token).child('paradas').child($i).exists()",
             ".validate": "newData.isString() && newData.val().beginsWith('data:image/jpeg;base64,') && newData.val().length < 400000"
+          }
+        },
+        "posicao": {
+          ".write": "root.child('entregador').child($token).child('expira').val() > now",
+          ".validate": "newData.hasChildren(['lat', 'lng', 'hora'])",
+          "lat": {
+            ".validate": "newData.isNumber() && newData.val() >= -90 && newData.val() <= 90"
+          },
+          "lng": {
+            ".validate": "newData.isNumber() && newData.val() >= -180 && newData.val() <= 180"
+          },
+          "precisao": {
+            ".validate": "newData.isNumber()"
+          },
+          "hora": {
+            ".validate": "newData.isNumber() && newData.val() <= now + 60000"
+          },
+          "$outro": {
+            ".validate": false
           }
         }
       }
