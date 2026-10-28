@@ -476,9 +476,9 @@ body:not(.autorizado)>.sidebar,body:not(.autorizado)>.main,body:not(.autorizado)
 .ac-card{background:var(--s2);border:1px solid var(--border);border-radius:16px;padding:18px;}
 .ac-card h3{font-family:var(--sans);font-size:16px;color:var(--text);margin:0 0 4px;}
 .ac-card>.mot-sub{margin:0 0 12px;}
-.ac-campos{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.ac-campos label{display:flex;flex-direction:column;gap:5px;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);}
-.ac-campos input,.ac-campos select{height:42px;border:1px solid var(--border2);border-radius:10px;padding:0 12px;font:500 14px var(--body);color:var(--text);background:#fff;text-transform:none;letter-spacing:0;}
+.ac-campos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
+.ac-campos label{display:flex;flex-direction:column;gap:5px;min-width:0;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);}
+.ac-campos input,.ac-campos select{width:100%;min-width:0;box-sizing:border-box;height:42px;border:1px solid var(--border2);border-radius:10px;padding:0 12px;font:500 14px var(--body);color:var(--text);background:#fff;text-transform:none;letter-spacing:0;}
 .ac-res{margin-top:14px;padding:14px;border:1px solid #c9ecd9;background:#f3fbf6;border-radius:12px;}
 .ac-ok{font-weight:800;color:#0f7a4c;margin-bottom:6px;}
 .ac-linha{display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:5px 0;border-bottom:1px dashed #d6eedf;}
@@ -831,6 +831,7 @@ body:not(.autorizado)>.sidebar,body:not(.autorizado)>.main,body:not(.autorizado)
         <div class="ac-campos">
           <label>Nome (opcional)<input id="ac-nome" maxlength="60" autocomplete="off" placeholder="Ex.: Carlos, Transportadora X"></label>
           <label>E-mail da pessoa (opcional)<input id="ac-email" type="email" maxlength="120" autocomplete="off" placeholder="Em branco: o sistema cria um"></label>
+          <label>Senha (opcional)<input id="ac-senha" type="text" maxlength="40" autocomplete="off" spellcheck="false" placeholder="Em branco: o sistema cria uma"></label>
           <label>Validade<select id="ac-dias"><option value="3">3 dias</option><option value="7" selected>7 dias</option><option value="15">15 dias</option><option value="30">30 dias</option></select></label>
         </div>
         <button class="btn-modal-primary" id="ac-criar" onclick="criarAcessoDemo()" style="margin-top:14px">Criar acesso de demonstração</button>
@@ -2420,18 +2421,23 @@ async function criarAcessoDemo(){
   const dias=parseInt($id('ac-dias').value)||7;
   if(email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ _acMsg('Digite um e-mail válido ou deixe em branco.','err'); return; }
   if(!email) email='demo.'+_gerarSenha().slice(4,10)+'@rotav3.com.br';
-  const senha=_gerarSenha(), btn=$id('ac-criar');
+  // Senha escolhida pelo administrador (fica lembrada só neste navegador) ou gerada
+  const senhaDigitada=$id('ac-senha').value.trim();
+  if(senhaDigitada && senhaDigitada.length<6){ _acMsg('A senha precisa ter pelo menos 6 caracteres.','err'); return; }
+  const senha=senhaDigitada||_gerarSenha(), btn=$id('ac-criar');
   btn.disabled=true; btn.textContent='Criando…'; _acMsg('');
   try{
     const uid=await _criarUsuario(email,senha), expira=Date.now()+dias*864e5;
     await update(ref(db),{['acesso/'+uid]:'demo',['demos/'+uid]:{nome,email,criado:Date.now(),expira}});
     _acessoCriado={nome,email,senha,expira};
+    try{ localStorage.setItem('rv3_senha_demo',senhaDigitada); }catch(e){}
     _mostrarAcessoCriado();
     $id('ac-nome').value=''; $id('ac-email').value='';
     renderAcessos();
   }catch(e){
     _acMsg(e.code==='auth/email-already-in-use' ? 'Esse e-mail já tem cadastro. Use outro, ou libere a pessoa em "Pedidos de acesso" depois que ela entrar.'
       : e.code==='auth/operation-not-allowed' ? 'O login por e-mail não está ativado no Firebase.'
+      : (e.code==='auth/weak-password'||e.code==='auth/password-does-not-meet-requirements') ? 'O Firebase recusou essa senha. Use pelo menos 6 caracteres.'
       : 'Não foi possível criar o acesso: '+(e.message||e),'err');
   }finally{ btn.disabled=false; btn.textContent='Criar acesso de demonstração'; }
 }
@@ -2459,6 +2465,8 @@ async function copiarAcesso(){
 window.copiarAcesso=copiarAcesso;
 async function renderAcessos(){
   if(!ehAdmin) return;
+  const campoSenha=$id('ac-senha');
+  if(campoSenha && !campoSenha.value){ try{ campoSenha.value=localStorage.getItem('rv3_senha_demo')||''; }catch(e){} }
   const [ac,de,so,us]=await Promise.all(['acesso','demos','solicitacoes','usuarios'].map(p=>get(ref(db,p)).then(x=>x.val()||{}).catch(()=>({}))));
   const emailDe=(uid)=>(us[uid]&&us[uid].email)||(de[uid]&&de[uid].email)||(so[uid]&&so[uid].email)||'';
   const agora=Date.now();
