@@ -106,17 +106,31 @@ def verificar_papel(authorization: str | None) -> tuple[str, str]:
         valor = r.json()
     except ValueError:
         valor = None
+    validade = min(exp, agora + CACHE_SEGUNDOS)
     if valor is True:
         papel = "completo"
     elif valor == "demo":
         papel = "demo"
+        # A demonstração vence em demos/<uid>/expira (milissegundos). O servidor confere
+        # também, para que uma aba aberta ou uma chamada direta não continue depois do prazo.
+        try:
+            rd = requests.get(f"{FIREBASE_URL}/demos/{uid}/expira.json", params={"auth": token}, timeout=6)
+            fim_ms = rd.json() if rd.ok else None
+        except (requests.RequestException, ValueError) as e:
+            raise AuthError("Não foi possível conferir o login agora. Tente de novo.", 503) from e
+        if not rd.ok:
+            raise AuthError("Não foi possível conferir o login agora. Tente de novo.", 503)
+        if isinstance(fim_ms, (int, float)) and not isinstance(fim_ms, bool):
+            if fim_ms / 1000 <= agora:
+                raise AuthError("O seu acesso de demonstração terminou. Fale com a ROTAV3 para continuar.", 403)
+            validade = min(validade, fim_ms / 1000)
     else:
         raise AuthError("Este usuário ainda não foi liberado.", 403)
 
     with _lock:
         if len(_cache) > 2000:
             _cache.clear()
-        _cache[token] = (uid, papel, min(exp, agora + CACHE_SEGUNDOS))
+        _cache[token] = (uid, papel, validade)
     return uid, papel
 
 

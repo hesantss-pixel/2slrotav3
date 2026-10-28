@@ -99,6 +99,26 @@ class TesteLogin(unittest.TestCase):
                 af.verificar("Bearer " + t)
             self.assertEqual(c.exception.status, 403)
 
+    def test_demonstracao_vencida_e_recusada(self):
+        vencida = (time.time() - 60) * 1000
+        with mock.patch.object(af.requests, "get", side_effect=[resposta(200, "demo"), resposta(200, vencida)]) as g:
+            with self.assertRaises(af.AuthError) as c:
+                af.verificar_papel("Bearer " + token(uid="visitante"))
+        self.assertEqual(c.exception.status, 403)
+        self.assertIn("terminou", c.exception.mensagem)
+        self.assertIn("/demos/visitante/expira.json", g.call_args_list[1].args[0])
+
+    def test_demonstracao_no_prazo_e_aceita(self):
+        no_prazo = (time.time() + 86400) * 1000
+        with mock.patch.object(af.requests, "get", side_effect=[resposta(200, "demo"), resposta(200, no_prazo)]):
+            self.assertEqual(af.verificar_papel("Bearer " + token(uid="visitante")), ("visitante", "demo"))
+
+    def test_demonstracao_sem_conferir_prazo_nao_libera(self):
+        with mock.patch.object(af.requests, "get", side_effect=[resposta(200, "demo"), af.requests.RequestException("fora")]):
+            with self.assertRaises(af.AuthError) as c:
+                af.verificar_papel("Bearer " + token(uid="visitante"))
+        self.assertEqual(c.exception.status, 503)
+
     def test_acesso_completo_tem_papel_completo(self):
         with mock.patch.object(af.requests, "get", return_value=resposta(200, True)):
             self.assertEqual(af.verificar_papel("Bearer " + token(uid="ana")), ("ana", "completo"))

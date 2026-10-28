@@ -224,4 +224,4 @@ OR-Tools rodando (não instalado aqui) e o mapa com as ruas.
   centro de distribuição configurável, nomes de cidades padronizados na importação, cópias
   antigas removidas (a tela que vale é `index.html`; o servidor é `backend/`), correção de um
   erro de sintaxe que desligava a sincronização TOTVS.
-- Versões anteriores: demonstração com a identidade da Via Verde Transportes (histórico do Git).
+- Versões anteriores: no histórico do Git.
