@@ -220,6 +220,10 @@ OR-Tools rodando (não instalado aqui) e o mapa com as ruas.
 
 ## Histórico
 
+- Versão 3.4 (31/10/2026): separação por empresa (`empresas/<id>`, `membros/<uid>`), operação do
+  administrador em `empresas/principal` com cópia automática da raiz, demonstração com as notas do
+  cliente salvas na própria área e "Virar cliente", CD pelo CEP por empresa, servidor sem acesso
+  direto ao banco para clientes.
 - Versão 3.3 (24/10/2026): conta de demonstração (dados fictícios, nada gravado), página Acessos
   para o administrador, localização ao vivo pelo celular do motorista, motorista de demonstração
   (`#demo`), regras do banco com administrador, pedidos de acesso e posição.
