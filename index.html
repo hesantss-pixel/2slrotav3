@@ -470,7 +470,12 @@ body:not(.autorizado)>.sidebar,body:not(.autorizado)>.main,body:not(.autorizado)
 .foto-info{font-size:12.5px;color:var(--text2);margin-top:10px;line-height:1.5;}
 @media(max-width:520px){.dup{grid-template-columns:1fr;}}
 .faixa-demo{display:flex;align-items:center;justify-content:center;gap:6px 12px;flex-wrap:wrap;padding:9px 16px;background:#fff3df;border-bottom:1px solid #f6dca6;color:#7a4f05;font-size:13px;font-weight:600;text-align:center;}
-.faixa-demo a{color:var(--navy);font-weight:800;}
+.faixa-demo a,.faixa-demo button.lk{color:var(--navy);font-weight:800;}
+.faixa-demo button.lk{background:none;border:0;padding:0;font:inherit;text-decoration:underline;cursor:pointer;}
+.faixa-demo .cd{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;}
+.faixa-demo .cd input{width:110px;padding:5px 8px;border:1px solid #e3c47f;border-radius:8px;font:inherit;background:#fff;color:#0d1b2e;}
+.faixa-demo .cd button.bt{padding:5px 10px;border:0;border-radius:8px;background:#0d1b2e;color:#fff;font:inherit;font-weight:700;cursor:pointer;}
+.faixa-demo .cd button.bt:disabled{opacity:.6;cursor:wait;}
 .auth-btn--wa{display:flex;align-items:center;justify-content:center;width:100%;text-decoration:none;background:#1fa855;color:#fff;box-shadow:none;}
 .ac-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start;}
 .ac-card{background:var(--s2);border:1px solid var(--border);border-radius:16px;padding:18px;}
@@ -601,7 +606,7 @@ body:not(.autorizado)>.sidebar,body:not(.autorizado)>.main,body:not(.autorizado)
     </div>
   </div>
 
-  <div class="faixa-demo" id="faixa-demo" hidden>Conta de demonstração: dados fictícios. Nada do que você fizer aqui é salvo. <a href="https://wa.me/5511955914618?text=Ol%C3%A1!%20Estou%20testando%20o%20ROTAV3%20e%20quero%20conversar." target="_blank" rel="noopener">Falar com a ROTAV3</a></div>
+  <div class="faixa-demo" id="faixa-demo" hidden></div>
 
   <!-- ── PÁGINA: DASHBOARD ── -->
   <div class="page" id="page-dashboard">
@@ -1062,6 +1067,7 @@ function _pedidoIsolado(o){ return Number.isFinite(o.lat)&&Number.isFinite(o.lng
 
 let allOrders = [];
 let modoDemo  = false;
+let demoComNotasReais=false; // conta de demonstração com as notas do próprio cliente
 let ultimaRota = null; // {routes, criadoEm, ...} lido do Firebase, se existir
 
 // ── Demo orders (mesmo gerador do app original, versão resumida) ──────────
@@ -1236,8 +1242,9 @@ function render(){
   const nT=_contarTipos(pendentes);
   document.getElementById('kpi-split').textContent = _resumoTipos(nT);
   document.getElementById('hdr-total').textContent=total;
-  document.getElementById('kpi-pedidos-d').textContent=modoDemo?'dados de demonstração':'atualizado em tempo real';
+  document.getElementById('kpi-pedidos-d').textContent=modoDemo?(demoComNotasReais?'suas notas (não são salvas)':'dados de demonstração'):'atualizado em tempo real';
   document.getElementById('hpill-demo').hidden=!modoDemo;
+  document.getElementById('hpill-demo').textContent=demoComNotasReais?'Suas notas · demonstração':'Dados de demonstração';
   document.getElementById('kpi-pedidos-d').classList.toggle('up',!modoDemo);
 
   // Grupos por região (a partir dos próprios pedidos)
@@ -1925,7 +1932,9 @@ async function importarArquivo(input){
   lidos.forEach(o=>{ if(FINAIS.includes(_statusPorId[o.id])){ jaEmRota++; return; } payload[o.id]=o; });
   const novos=Object.values(payload);
   if(contaDemo){
-    // conta de demonstração: as notas ficam só nesta tela
+    // conta de demonstração: as notas ficam só nesta tela. Na primeira importação,
+    // os pedidos fictícios saem para a rota usar só as notas do cliente.
+    if(!demoComNotasReais && novos.length) _limparDadosExemplo(true);
     novos.forEach(o=>{ const i=allOrders.findIndex(x=>x.id===o.id); if(i>=0) allOrders[i]=o; else allOrders.push(o); });
     render(); renderPedidosPage();
   } else {
@@ -2850,6 +2859,49 @@ async function carregarConfig(){
   }catch(e){}
 }
 // Conta de demonstração: dados fictícios só nesta tela; nada é lido nem gravado no banco
+function _faixaDemo(){
+  const wa='<a href="https://wa.me/5511955914618?text=Ol%C3%A1!%20Estou%20testando%20o%20ROTAV3%20e%20quero%20conversar." target="_blank" rel="noopener">Falar com a ROTAV3</a>';
+  const txt=demoComNotasReais
+    ? 'Conta de demonstração: mostrando só as suas notas. Nada é salvo: ao recarregar ou sair, elas somem. <button type="button" class="lk" onclick="voltarDadosExemplo()">Voltar aos dados de exemplo</button>'
+    : 'Conta de demonstração: dados fictícios. Importe as suas notas em Pedidos para ver a sua operação. Nada é salvo.';
+  const cd=`<span class="cd">Saída das rotas: <b>${esc(DEPOT.name)}</b> · <label for="cd-cep-demo">CEP do seu CD</label><input id="cd-cep-demo" inputmode="numeric" maxlength="9" placeholder="00000-000"><button type="button" class="bt" id="cd-bt-demo" onclick="definirCdDemo()">Usar</button><span id="cd-msg-demo"></span></span>`;
+  $id('faixa-demo').innerHTML=`<span>${txt} ${wa}</span>${cd}`;
+}
+function _limparDadosExemplo(paraNotasReais){
+  demoComNotasReais=!!paraNotasReais;
+  allOrders=paraNotasReais?[]:gerarDemoOrders();
+  rotasConfirmadasDemo=[];
+  Object.keys(posicaoPorRota).forEach(k=>delete posicaoPorRota[k]);
+  _faixaDemo();
+}
+function voltarDadosExemplo(){
+  if(!contaDemo) return;
+  _limparDadosExemplo(false);
+  render();
+  if($id('page-pedidos')?.style.display==='block') renderPedidosPage();
+  if($id('page-mapa')?.style.display==='block') atualizarMapaCompleto();
+}
+window.voltarDadosExemplo=voltarDadosExemplo;
+async function definirCdDemo(){
+  if(!contaDemo) return;
+  const cep=($id('cd-cep-demo')?.value||'').replace(/\D/g,'');
+  const msg=$id('cd-msg-demo'), bt=$id('cd-bt-demo');
+  if(cep.length!==8){ msg.textContent='Digite os 8 números do CEP.'; return; }
+  bt.disabled=true; msg.textContent='Localizando...';
+  try{
+    const g=await _geocodificarCep(cep);
+    DEPOT.lat=g.lat; DEPOT.lng=g.lng; DEPOT.name=`Seu CD (${g.cidade||'CEP '+cep})`;
+    _faixaDemo();
+    if(mapInst) mapInst.setView([DEPOT.lat,DEPOT.lng],8.4);
+    if(mapInstFull) mapInstFull.setView([DEPOT.lat,DEPOT.lng],9.2);
+    render();
+    if($id('page-mapa')?.style.display==='block') atualizarMapaCompleto();
+    $id('cd-msg-demo').textContent='As rotas agora saem daqui.';
+  }catch(e){
+    msg.textContent='Não achamos esse CEP. Confira e tente de novo.'; bt.disabled=false;
+  }
+}
+window.definirCdDemo=definirCdDemo;
 function iniciarAppDemo(){
   modoDemo=true;
   allOrders=gerarDemoOrders();
@@ -2857,6 +2909,7 @@ function iniciarAppDemo(){
     {id:'mot_demo1',nome:'Carlos (exemplo)',veiculo_id:'vuc',veiculo_nome:'VUC',cap_kg:3000},
     {id:'mot_demo2',nome:'Ana (exemplo)',veiculo_id:'fiorino',veiculo_nome:'Fiorino',cap_kg:650},
   ];
+  _faixaDemo();
   $id('faixa-demo').hidden=false;
   render();
   _simularVeiculosDemo();
