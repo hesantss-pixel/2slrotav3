@@ -472,6 +472,10 @@ body:not(.autorizado)>.sidebar,body:not(.autorizado)>.main,body:not(.autorizado)
 .faixa-demo{display:flex;align-items:center;justify-content:center;gap:6px 12px;flex-wrap:wrap;padding:9px 16px;background:#fff3df;border-bottom:1px solid #f6dca6;color:#7a4f05;font-size:13px;font-weight:600;text-align:center;}
 .faixa-demo a,.faixa-demo button.lk{color:var(--navy);font-weight:800;}
 .faixa-demo button.lk{background:none;border:0;padding:0;font:inherit;text-decoration:underline;cursor:pointer;}
+.cd-linha{margin-top:10px;font-size:13px;color:var(--text2);}
+.cd-linha .cd input{width:110px;padding:6px 8px;border:1px solid var(--border);border-radius:8px;font:inherit;}
+.cd-linha .cd button.bt{padding:6px 12px;border:0;border-radius:8px;background:var(--navy);color:#fff;font:inherit;font-weight:700;cursor:pointer;}
+.cd-linha .cd{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;}
 .faixa-demo .cd{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;}
 .faixa-demo .cd input{width:110px;padding:5px 8px;border:1px solid #e3c47f;border-radius:8px;font:inherit;background:#fff;color:#0d1b2e;}
 .faixa-demo .cd button.bt{padding:5px 10px;border:0;border-radius:8px;background:#0d1b2e;color:#fff;font:inherit;font-weight:700;cursor:pointer;}
@@ -718,6 +722,7 @@ body:not(.autorizado)>.sidebar,body:not(.autorizado)>.main,body:not(.autorizado)
     <div class="page-head">
       <div class="page-title">Roteirização</div>
       <div class="page-sub">Escolha o veículo e a capacidade e gere a melhor sequência de entregas e coletas</div>
+      <div class="cd-linha" id="cd-linha"></div>
     </div>
     <div id="rot-step-veiculo">
       <div class="veh-grid" id="veh-grid"></div>
@@ -832,7 +837,7 @@ body:not(.autorizado)>.sidebar,body:not(.autorizado)>.main,body:not(.autorizado)
     <div class="ac-grid">
       <div class="ac-card">
         <h3>Novo acesso de demonstração</h3>
-        <p class="mot-sub">Para quem pediu "Ver o sistema". A pessoa entra com dados fictícios e não vê nem altera os seus pedidos.</p>
+        <p class="mot-sub">Para quem pediu "Ver o sistema". Começa com dados fictícios; se importar as próprias notas, elas ficam numa área só dela.</p>
         <div class="ac-campos">
           <label>Nome (opcional)<input id="ac-nome" maxlength="60" autocomplete="off" placeholder="Ex.: Carlos, Transportadora X"></label>
           <label>E-mail da pessoa (opcional)<input id="ac-email" type="email" maxlength="120" autocomplete="off" placeholder="Em branco: o sistema cria um"></label>
@@ -855,7 +860,7 @@ body:not(.autorizado)>.sidebar,body:not(.autorizado)>.main,body:not(.autorizado)
       </div>
       <div class="ac-card">
         <h3>Acesso completo</h3>
-        <p class="mot-sub">Veem e alteram os dados reais da operação.</p>
+        <p class="mot-sub">Cada cliente vê só os dados da própria empresa.</p>
         <div class="ac-lista" id="ac-completos"></div>
       </div>
     </div>
@@ -971,6 +976,18 @@ $id('pend-retry').addEventListener('click', ()=>{ $id('pend-retry').textContent=
 // dados fictícios) ou 'expirado' (demonstração vencida). Sem liberação: null.
 const ADMIN_UID = 'PGblgW7V26SJ6W8UYPFj3dqlDGm2';   // administrador (Henrique): vê a página Acessos
 let contaDemo=false, ehAdmin=false;
+// Empresa da conta: cada empresa grava em empresas/<id>/... e só vê o que é dela.
+// null = regras antigas do banco (dados na raiz, como antes da separação).
+let EID=null;
+const TP=(p)=>EID?('empresas/'+EID+'/'+p):p;
+async function resolverEmpresa(user,papel){
+  let v;
+  try{ v=(await get(ref(db,'membros/'+user.uid))).val(); }
+  catch(e){ return null; }                       // banco ainda com as regras antigas
+  if(papel==='demo') return 'demo_'+user.uid;    // cada demonstração tem a sua área
+  if(user.uid===ADMIN_UID) return 'principal';
+  return (typeof v==='string'&&v) ? v : false;   // completo sem empresa: aguarda vínculo
+}
 async function papelAcesso(user){
   try{
     const v=(await get(ref(db,'acesso/'+user.uid))).val();
@@ -990,10 +1007,12 @@ function registrarUsuario(user,papel){
 }
 function telaPendente(user,tipo){
   const exp=tipo==='expirado';
-  $id('pend-tit').textContent = exp ? 'Seu acesso de demonstração terminou' : 'Acesso aguardando liberação';
+  $id('pend-tit').textContent = exp ? 'Seu acesso de demonstração terminou' : tipo==='sem_empresa' ? 'Conta aguardando a sua empresa' : 'Acesso aguardando liberação';
   $id('pend-p1').innerHTML = exp
     ? `Obrigado por testar o ROTAV3, <b>${esc(user.email||'')}</b>. Para continuar, fale com a gente pelo WhatsApp.`
-    : `Você entrou como <b id="pend-email">${esc(user.email||'')}</b>, mas este usuário ainda não foi liberado para ver os dados da operação.`;
+    : tipo==='sem_empresa'
+      ? `Você entrou como <b id="pend-email">${esc(user.email||'')}</b>. O acesso está liberado, mas ainda falta ligar esta conta à sua empresa. Avise a ROTAV3.`
+      : `Você entrou como <b id="pend-email">${esc(user.email||'')}</b>, mas este usuário ainda não foi liberado para ver os dados da operação.`;
   $id('pend-bloco').hidden=exp;
   $id('pend-wa').hidden=!exp;
   $id('pend-uid').textContent=user.uid;
@@ -1009,6 +1028,9 @@ async function verificarEEntrar(user){
   if(!papel){ telaPendente(user,'pendente'); return; }
   contaDemo = papel==='demo';
   ehAdmin = !contaDemo && user.uid===ADMIN_UID;
+  EID = await resolverEmpresa(user,papel);
+  if(EID===false){ EID=null; telaPendente(user,'sem_empresa'); return; }
+  if(ehAdmin && EID) await _migrarPrincipal();
   $id('sb-acessos').hidden=!ehAdmin;
   mostrarTela('app');
   if(!appIniciado){ appIniciado=true; if(contaDemo) iniciarAppDemo(); else iniciarApp(); }
@@ -1179,10 +1201,11 @@ document.addEventListener('click',e=>{
 });
 
 function carregarPedidos(){
-  onValue(ref(db,'pedidos_rota'), snap=>{
+  onValue(ref(db,TP('pedidos_rota')), snap=>{
     const data=snap.val();
     if(data && Object.keys(data).length>0){
       modoDemo=false;
+      if(contaDemo&&!demoComNotasReais){ demoComNotasReais=true; _faixaDemo(); }
       _statusPorId=Object.fromEntries(Object.entries(data).map(([k,p])=>[k,(p&&p.status)||'pendente']));
       _regPorId=Object.fromEntries(Object.entries(data).map(([k,p])=>[k,{status:(p&&p.status)||'pendente',rota_atual:(p&&p.rota_atual)||''}]));
       allOrders=Object.entries(data).map(([key,p])=>({
@@ -1198,6 +1221,7 @@ function carregarPedidos(){
       modoDemo=true;
       _statusPorId={};
       allOrders=gerarDemoOrders();
+      if(contaDemo&&demoComNotasReais){ demoComNotasReais=false; _faixaDemo(); }
     }
     render();
     if(document.getElementById('page-pedidos')?.style.display==='block'){ renderPedidosPage(); }
@@ -1206,7 +1230,7 @@ function carregarPedidos(){
     Object.entries(baixasPorRota).forEach(([rid,b])=>_aplicarBaixas(rotasFirebase[rid],b));
   }, ()=>{ modoDemo=true; allOrders=gerarDemoOrders(); render(); });
 
-  onValue(ref(db,'rotas'), snap=>{
+  onValue(ref(db,TP('rotas')), snap=>{
     const data=snap.val();
     if(!data) return;
     const entries=Object.values(data);
@@ -1215,7 +1239,7 @@ function carregarPedidos(){
   }, ()=>{});
 
   // rotas confirmadas (histórico permanente) — alimenta a página Rotas + overlay do Mapa
-  onValue(ref(db,'rotas_confirmadas'), snap=>{
+  onValue(ref(db,TP('rotas_confirmadas')), snap=>{
     rotasFirebase = snap.val() || {};
     _sincronizarBaixas();
     if(document.getElementById('page-rotas')?.style.display==='block'){ renderRotasConfirmadas(); }
@@ -1223,7 +1247,7 @@ function carregarPedidos(){
   }, ()=>{});
 
   // motoristas cadastrados (fixos)
-  onValue(ref(db,'motoristas'), snap=>{
+  onValue(ref(db,TP('motoristas')), snap=>{
     motoristasFirebase = snap.val() || {};
     if(document.getElementById('page-motoristas')?.style.display==='block'){ renderMotoristasPage(); }
   }, ()=>{});
@@ -1566,7 +1590,7 @@ async function salvarAgendamentoD(){
   if(!fim) fim=_hhmm(Math.min(1439,_min(hora)+60));
   if(_min(fim)<=_min(hora)){ alert('O fim da faixa de horário precisa ser depois do início.'); return; }
   const payload={ agendado:true, dataAgendada:data, horaEntrega:hora, horaFim:fim, horaSaidaSugerida:calcularHoraSaida(o.cidade,hora) };
-  if(!modoDemo){ await update(ref(db,'pedidos_rota/'+_nfSelDash), payload); }
+  if(!modoDemo){ await update(ref(db,TP('pedidos_rota/'+_nfSelDash)), payload); }
   else { Object.assign(o,payload); }
   fecharModalAgendar();
   render();
@@ -1808,7 +1832,7 @@ async function _processarFilaGeo(){
         cidade: g.cidade || o.cidade,
       };
       if(!modoDemo){
-        await update(ref(db,'pedidos_rota/'+o.id), payload);
+        await update(ref(db,TP('pedidos_rota/'+o.id)), payload);
       } else {
         const local = allOrders.find(x=>x.id===o.id);
         if(local) Object.assign(local, payload);
@@ -1817,7 +1841,7 @@ async function _processarFilaGeo(){
     }catch(e){
       falhou++;
       if(!modoDemo){
-        update(ref(db,'pedidos_rota/'+o.id), { geoStatus:'falhou' }).catch(()=>{});
+        update(ref(db,TP('pedidos_rota/'+o.id)), { geoStatus:'falhou' }).catch(()=>{});
       } else {
         const local = allOrders.find(x=>x.id===o.id);
         if(local) local.geoStatus='falhou';
@@ -1931,14 +1955,14 @@ async function importarArquivo(input){
   const payload={}; let jaEmRota=0;
   lidos.forEach(o=>{ if(FINAIS.includes(_statusPorId[o.id])){ jaEmRota++; return; } payload[o.id]=o; });
   const novos=Object.values(payload);
-  if(contaDemo){
-    // conta de demonstração: as notas ficam só nesta tela. Na primeira importação,
+  if(contaDemo && !EID){
+    // conta de demonstração com as regras antigas do banco: as notas ficam só nesta tela. Na primeira importação,
     // os pedidos fictícios saem para a rota usar só as notas do cliente.
-    if(!demoComNotasReais && novos.length) _limparDadosExemplo(true);
+    if(!EID && !demoComNotasReais && novos.length) _limparDadosExemplo(true);
     novos.forEach(o=>{ const i=allOrders.findIndex(x=>x.id===o.id); if(i>=0) allOrders[i]=o; else allOrders.push(o); });
     render(); renderPedidosPage();
   } else {
-    try{ if(novos.length) await update(ref(db,'pedidos_rota'),payload); }
+    try{ if(novos.length) await update(ref(db,TP('pedidos_rota')),payload); }
     catch(e){ _impMsg('err','❌ Não foi possível salvar as notas: '+e.message); return; }
   }
   const nT=_contarTipos(novos);
@@ -2115,7 +2139,7 @@ async function executarVRPD(){
     if(!data.salvo && rotaGeradaD.length && !modoDemo){
       // prévia da rota (alimenta o indicador "Rotas" do Dashboard); se falhar, a rota continua na tela
       try{
-        Promise.resolve(push(ref(db,'rotas'),{
+        Promise.resolve(push(ref(db,TP('rotas')),{
           criadoEm: new Date().toISOString(), veiculo: vehSel.nome, status:'ativa',
           total_rotas: rotaGeradaD.length, fonte_dist: fonteDistanciaD,
           rotas: rotaGeradaD.map(r=>({veiculo:r.veiculo||vehSel.nome, km:r.km||0, mins:r.mins||0, pedidos:(r.pedidos||[]).map(p=>_idDe(p))})),
@@ -2172,6 +2196,7 @@ function _dadosEntregador(r){
       lat:Number.isFinite(p.lat)?p.lat:null, lng:Number.isFinite(p.lng)?p.lng:null, peso:p.peso||0, itens:p.itens||1,
       chegada_min:p.chegada_min??null, janela_ini:p.janela_ini??null, janela_fim:p.janela_fim??null })),
     expira: Date.now()+LINK_DIAS*864e5,
+    ...(EID?{eid:EID}:{}),
   };
 }
 
@@ -2198,13 +2223,17 @@ async function confirmarRotaD(){
       // tudo numa gravação só: pedidos despachados, rota no histórico e link do motorista
       const upd={};
       rotas.forEach(r=>{
-        const token=_novoToken(), ent=_dadosEntregador(r);
-        r.token=token; r.link_expira=ent.expira;
-        upd['entregador/'+token]=ent;
-        upd['rotas_confirmadas/'+r.id]=r;
-        r.paradas.forEach(p=>{ upd['pedidos_rota/'+p.id+'/status']='despachado'; upd['pedidos_rota/'+p.id+'/rota_atual']=r.id; });
+        if(!contaDemo){
+          // demonstração não cria link real de motorista (usa o link de exemplo)
+          const token=_novoToken(), ent=_dadosEntregador(r);
+          r.token=token; r.link_expira=ent.expira;
+          upd['entregador/'+token]=ent;
+        }
+        upd[TP('rotas_confirmadas/'+r.id)]=r;
+        r.paradas.forEach(p=>{ upd[TP('pedidos_rota/'+p.id+'/status')]='despachado'; upd[TP('pedidos_rota/'+p.id+'/rota_atual')]=r.id; });
       });
       await update(ref(db), upd);
+      if(contaDemo) setTimeout(_simularVeiculosDemo,1500);
     } else {
       rotas.forEach(r=>{
         r.paradas.forEach(p=>{ const o=allOrders.find(x=>x.id===p.id); if(o) o.status='despachado'; });
@@ -2270,8 +2299,8 @@ function _simularVeiculosDemo(){
   clearInterval(_simTimer);
   const passo=()=>{
     let mudou=false;
-    rotasConfirmadasDemo.forEach(r=>{
-      if(r.status==='devolvida'||r.status==='apagada') return;
+    (modoDemo?rotasConfirmadasDemo:Object.values(rotasFirebase)).forEach(r=>{
+      if(!r||r.status==='devolvida'||r.status==='apagada') return;
       const pts=[{lat:DEPOT.lat,lng:DEPOT.lng},...(r.paradas||[]).filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng)),{lat:DEPOT.lat,lng:DEPOT.lng}];
       if(pts.length<2) return;
       const seg=(Date.now()-(Date.parse(r.criada_em)||Date.now()))/1000/20;
@@ -2313,7 +2342,7 @@ function _sincronizarBaixas(){
 // Feito → entregue/coletado. Não realizado → volta para pendente com a ocorrência.
 // Só mexe no pedido se ele ainda estiver nesta rota (rota_atual).
 function _aplicarBaixas(rota, baixas){
-  if(modoDemo||!rota||!baixas) return;
+  if(modoDemo||contaDemo||!rota||!baixas) return;   // baixas da demonstração são simuladas, não mudam o banco
   const upd={};
   (rota.paradas||[]).forEach((p,i)=>{
     const b=baixas[i]; if(!b) return;
@@ -2321,14 +2350,14 @@ function _aplicarBaixas(rota, baixas){
     if(!reg||reg.rota_atual!==rota.id) return;
     if(b.status==='feito'){
       const novo=_tipoDe(p)==='coleta'?'coletado':'entregue';
-      if(reg.status!==novo){ upd['pedidos_rota/'+id+'/status']=novo; upd['pedidos_rota/'+id+'/baixa']={hora:b.hora||Date.now(),rota:rota.id,recebedor:b.recebedor||''}; }
+      if(reg.status!==novo){ upd[TP('pedidos_rota/'+id+'/status')]=novo; upd[TP('pedidos_rota/'+id+'/baixa')]={hora:b.hora||Date.now(),rota:rota.id,recebedor:b.recebedor||''}; }
     } else if(b.status==='nao_feito' && reg.status!=='pendente'){
-      upd['pedidos_rota/'+id+'/status']='pendente';
-      upd['pedidos_rota/'+id+'/ocorrencia']={motivo:b.motivo||'',obs:b.obs||'',hora:b.hora||Date.now(),rota:rota.id};
+      upd[TP('pedidos_rota/'+id+'/status')]='pendente';
+      upd[TP('pedidos_rota/'+id+'/ocorrencia')]={motivo:b.motivo||'',obs:b.obs||'',hora:b.hora||Date.now(),rota:rota.id};
     }
   });
   if(Object.keys(upd).length){
-    Object.keys(upd).forEach(k=>{ const m=/^pedidos_rota\/(.+)\/status$/.exec(k); if(m&&_regPorId[m[1]]) _regPorId[m[1]].status=upd[k]; });
+    Object.keys(upd).forEach(k=>{ const m=/pedidos_rota\/([^/]+)\/status$/.exec(k); if(m&&_regPorId[m[1]]) _regPorId[m[1]].status=upd[k]; });
     update(ref(db),upd).catch(()=>{});
   }
 }
@@ -2370,7 +2399,7 @@ async function encerrarLinkMotorista(rid){
   if(!confirm('Encerrar o link? O motorista não consegue mais abrir a rota nem dar baixa.')) return;
   try{
     const agora=Date.now();
-    await update(ref(db),{['entregador/'+r.token+'/expira']:agora,['rotas_confirmadas/'+rid+'/link_expira']:agora});
+    await update(ref(db),{['entregador/'+r.token+'/expira']:agora,[TP('rotas_confirmadas/'+rid+'/link_expira')]:agora});
   }catch(e){ alert('Não foi possível encerrar o link: '+e.message); }
 }
 window.encerrarLinkMotorista=encerrarLinkMotorista;
@@ -2380,9 +2409,9 @@ async function criarLinkMotorista(rid){
     const token=_novoToken(), ent=_dadosEntregador(r), upd={};
     if(r.token) upd['entregador/'+r.token+'/expira']=Date.now();
     upd['entregador/'+token]=ent;
-    upd['rotas_confirmadas/'+rid+'/token']=token;
-    upd['rotas_confirmadas/'+rid+'/link_expira']=ent.expira;
-    (r.paradas||[]).forEach(p=>{ const id=_idDe(p), reg=_regPorId[id]; if(reg&&reg.status==='despachado'&&!reg.rota_atual) upd['pedidos_rota/'+id+'/rota_atual']=rid; });
+    upd[TP('rotas_confirmadas/'+rid+'/token')]=token;
+    upd[TP('rotas_confirmadas/'+rid+'/link_expira')]=ent.expira;
+    (r.paradas||[]).forEach(p=>{ const id=_idDe(p), reg=_regPorId[id]; if(reg&&reg.status==='despachado'&&!reg.rota_atual) upd[TP('pedidos_rota/'+id+'/rota_atual')]=rid; });
     await update(ref(db),upd);
     _toast('Link do motorista criado.');
   }catch(e){ alert('Não foi possível criar o link: '+e.message); }
@@ -2452,7 +2481,7 @@ async function criarAcessoDemo(){
 }
 window.criarAcessoDemo=criarAcessoDemo;
 function _mensagemAcesso(a){
-  return `Olá${a.nome?', '+a.nome:''}! Aqui está o seu acesso de demonstração ao ROTAV3:\n\nSistema: ${_linkSistema()}\nE-mail: ${a.email}\nSenha: ${a.senha}\n\nVale até ${_dataCurta(a.expira)}. Os dados são fictícios: pode importar suas notas (XML, Excel ou CSV), gerar rotas e testar à vontade. Nada do que você fizer é salvo.`;
+  return `Olá${a.nome?', '+a.nome:''}! Aqui está o seu acesso de demonstração ao ROTAV3:\n\nSistema: ${_linkSistema()}\nE-mail: ${a.email}\nSenha: ${a.senha}\n\nVale até ${_dataCurta(a.expira)}. Começa com dados de exemplo. Se importar as suas notas (XML, Excel ou CSV), elas substituem o exemplo e ficam salvas só para você até o fim do teste. Em Roteirização, informe o CEP do seu centro de distribuição.`;
 }
 function _mostrarAcessoCriado(){
   const a=_acessoCriado, box=$id('ac-resultado');
@@ -2476,7 +2505,8 @@ async function renderAcessos(){
   if(!ehAdmin) return;
   const campoSenha=$id('ac-senha');
   if(campoSenha && !campoSenha.value){ try{ campoSenha.value=localStorage.getItem('rv3_senha_demo')||''; }catch(e){} }
-  const [ac,de,so,us]=await Promise.all(['acesso','demos','solicitacoes','usuarios'].map(p=>get(ref(db,p)).then(x=>x.val()||{}).catch(()=>({}))));
+  const [ac,de,so,us,mem,emp]=await Promise.all(['acesso','demos','solicitacoes','usuarios','membros','empresas'].map(p=>get(ref(db,p)).then(x=>x.val()||{}).catch(()=>({}))));
+  const nomeEmp=(id)=>id?((emp[id]&&emp[id].info&&emp[id].info.nome)||id):'';
   const emailDe=(uid)=>(us[uid]&&us[uid].email)||(de[uid]&&de[uid].email)||(so[uid]&&so[uid].email)||'';
   const agora=Date.now();
   const sol=Object.entries(so).filter(([uid])=>!ac[uid]).sort((a,b)=>(b[1].em||0)-(a[1].em||0));
@@ -2485,23 +2515,42 @@ async function renderAcessos(){
     : '<div class="empty-mini">Nenhum pedido de acesso.</div>';
   const dem=Object.entries(de).sort((a,b)=>(b[1].criado||0)-(a[1].criado||0));
   $id('ac-demos').innerHTML = dem.length ? dem.map(([uid,x])=>{ const u=esc(uid), ativo=ac[uid]==='demo'&&(x.expira||0)>agora; return `<div class="ac-row"><div class="ac-row-info"><b>${esc(x.nome?x.nome+' · ':'')}${esc(x.email||emailDe(uid))}<span class="ac-tag ${ativo?'on':'off'}">${ativo?'ativo':'encerrado'}</span></b><span>criado em ${_dataCurta(x.criado)} · ${ativo?'vale até':'venceu em'} ${_dataCurta(x.expira)}</span></div>
-      ${ativo?`<div class="mot-acts"><button class="btn-sm" onclick="encerrarDemo('${u}')">Encerrar</button></div>`:''}</div>`; }).join('')
+      ${ativo?`<div class="mot-acts"><button class="btn-sm" onclick="virarCliente('${u}')">Virar cliente</button><button class="btn-sm" onclick="encerrarDemo('${u}')">Encerrar</button></div>`:''}</div>`; }).join('')
     : '<div class="empty-mini">Nenhum acesso de demonstração ainda.</div>';
   const comp=Object.entries(ac).filter(([,v])=>v===true);
-  $id('ac-completos').innerHTML = comp.length ? comp.map(([uid])=>{ const u=esc(uid), eu=uid===ADMIN_UID; return `<div class="ac-row"><div class="ac-row-info"><b>${esc(emailDe(uid)||uid)}${eu?'<span class="ac-tag on">você</span>':''}</b><span>${us[uid]&&us[uid].visto?'último acesso em '+_dataCurta(us[uid].visto):'sem registro de acesso'}</span></div>
-      ${eu?'':`<div class="mot-acts"><button class="btn-sm" onclick="tirarAcesso('${u}')">Tirar acesso</button></div>`}</div>`; }).join('')
+  $id('ac-completos').innerHTML = comp.length ? comp.map(([uid])=>{ const u=esc(uid), eu=uid===ADMIN_UID; return `<div class="ac-row"><div class="ac-row-info"><b>${esc(emailDe(uid)||uid)}${eu?'<span class="ac-tag on">você</span>':''}</b><span>${esc(nomeEmp(eu?'principal':mem[uid])||'sem empresa')} · ${us[uid]&&us[uid].visto?'último acesso em '+_dataCurta(us[uid].visto):'sem registro de acesso'}</span></div>
+      ${eu?'':`<div class="mot-acts"><button class="btn-sm" onclick="trocarEmpresa('${u}')">${mem[uid]?'Trocar empresa':'Ligar à empresa'}</button><button class="btn-sm" onclick="tirarAcesso('${u}')">Tirar acesso</button></div>`}</div>`; }).join('')
     : '<div class="empty-mini">Ninguém com acesso completo.</div>';
 }
 async function _acaoAcesso(upd,ok){
   try{ await update(ref(db),upd); if(ok) _toast(ok); }catch(e){ alert('Não foi possível concluir: '+e.message); }
   renderAcessos();
 }
+// Empresa do cliente: id curto a partir do nome (ex.: "transportes-silva-x7k2")
+function _idEmpresa(nome){
+  const base=String(nome||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,30)||'empresa';
+  const b=new Uint8Array(3); crypto.getRandomValues(b);
+  return base+'-'+[...b].map(x=>'abcdefghjkmnpqrstuvwxyz23456789'[x%31]).join('');
+}
+// Pergunta a empresa: nome novo cria uma área separada; o id de uma existente junta a pessoa a ela
+async function _perguntarEmpresa(sugestao){
+  if(!EID){ alert('Publique primeiro as regras novas do banco (separação por empresa).'); return null; }
+  const emp=(await get(ref(db,'empresas')).catch(()=>null))?.val?.()||{};
+  const lista=Object.entries(emp).map(([id,e])=>`${id} (${(e&&e.info&&e.info.nome)||'sem nome'})`).join('\n');
+  const r=prompt(`Empresa desta pessoa.\n\nDigite o NOME de uma empresa nova (cria uma área separada) ou o código de uma existente:\n${lista}`, sugestao||'');
+  if(r==null) return null;
+  const t=r.trim(); if(!t) return null;
+  if(emp[t]) return {id:t, nova:false};
+  return {id:_idEmpresa(t), nome:t.slice(0,80), nova:true};
+}
 async function liberarAcesso(uid,tipo){
   if(!ehAdmin) return;
   const so=(await get(ref(db,'solicitacoes/'+uid)).catch(()=>null))?.val?.()||{};
   if(tipo==='completo'){
-    if(!confirm(`Liberar acesso COMPLETO para ${so.email||uid}? A pessoa vai ver e alterar os dados reais da operação.`)) return;
-    _acaoAcesso({['acesso/'+uid]:true,['solicitacoes/'+uid]:null},'Acesso completo liberado.');
+    const e=await _perguntarEmpresa(''); if(!e) return;
+    const upd={['acesso/'+uid]:true,['membros/'+uid]:e.id,['solicitacoes/'+uid]:null};
+    if(e.nova) upd['empresas/'+e.id+'/info']={nome:e.nome,criado:Date.now()};
+    _acaoAcesso(upd,'Acesso completo liberado.');
   } else {
     _acaoAcesso({['acesso/'+uid]:'demo',['demos/'+uid]:{nome:'',email:so.email||'',criado:Date.now(),expira:Date.now()+7*864e5},['solicitacoes/'+uid]:null},'Demonstração liberada por 7 dias.');
   }
@@ -2511,8 +2560,29 @@ function ignorarSolicitacao(uid){ if(ehAdmin) _acaoAcesso({['solicitacoes/'+uid]
 window.ignorarSolicitacao=ignorarSolicitacao;
 function encerrarDemo(uid){ if(ehAdmin&&confirm('Encerrar este acesso de demonstração agora?')) _acaoAcesso({['acesso/'+uid]:null,['demos/'+uid+'/expira']:Date.now()},'Demonstração encerrada.'); }
 window.encerrarDemo=encerrarDemo;
-function tirarAcesso(uid){ if(ehAdmin&&confirm('Tirar o acesso desta pessoa? Ela deixa de ver os dados da operação.')) _acaoAcesso({['acesso/'+uid]:null},'Acesso retirado.'); }
+function tirarAcesso(uid){ if(ehAdmin&&confirm('Tirar o acesso desta pessoa? Ela deixa de ver os dados da operação.')) _acaoAcesso({['acesso/'+uid]:null,['membros/'+uid]:null},'Acesso retirado.'); }
 window.tirarAcesso=tirarAcesso;
+// Demonstração que fechou: vira cliente com área própria e leva as notas e rotas que importou
+async function virarCliente(uid){
+  if(!ehAdmin) return;
+  const d=(await get(ref(db,'demos/'+uid)).catch(()=>null))?.val?.()||{};
+  const e=await _perguntarEmpresa(d.nome||''); if(!e) return;
+  const dados=(await get(ref(db,'empresas/demo_'+uid)).catch(()=>null))?.val?.()||{};
+  const upd={['acesso/'+uid]:true,['membros/'+uid]:e.id,['demos/'+uid+'/cliente']:e.id};
+  if(e.nova) upd['empresas/'+e.id+'/info']={nome:e.nome,criado:Date.now(),veio_da_demo:uid};
+  ['pedidos_rota','rotas','rotas_confirmadas','motoristas','config'].forEach(n=>{ if(dados[n]) upd['empresas/'+e.id+'/'+n]=dados[n]; });
+  if(!confirm(`Transformar em cliente na empresa "${e.nome||e.id}"? A pessoa passa a ter acesso completo${Object.keys(dados).length?', com as notas e rotas que importou na demonstração':''}.`)) return;
+  _acaoAcesso(upd,'Cliente criado.');
+}
+window.virarCliente=virarCliente;
+async function trocarEmpresa(uid){
+  if(!ehAdmin) return;
+  const e=await _perguntarEmpresa(''); if(!e) return;
+  const upd={['membros/'+uid]:e.id};
+  if(e.nova) upd['empresas/'+e.id+'/info']={nome:e.nome,criado:Date.now()};
+  _acaoAcesso(upd,'Empresa atualizada.');
+}
+window.trocarEmpresa=trocarEmpresa;
 
 // ══════════════════════════════════════════════════════════════════════════
 // PÁGINA ROTAS — lista rotas confirmadas (Firebase ou demo)
@@ -2662,9 +2732,9 @@ async function devolverRotaD(rotaId){
       if(!rota) throw new Error('Rota não encontrada');
       const upd={};
       // só volta o que ainda está despachado (o que já foi entregue/coletado fica como está)
-      (rota.paradas||[]).forEach(p=>{ const id=_idDe(p), reg=_regPorId[id]; if(reg&&reg.status==='despachado') upd['pedidos_rota/'+id+'/status']='pendente'; });
-      upd['rotas_confirmadas/'+rotaId+'/status']='devolvida';
-      if(rota.token){ upd['entregador/'+rota.token+'/expira']=Date.now(); upd['rotas_confirmadas/'+rotaId+'/link_expira']=Date.now(); }
+      (rota.paradas||[]).forEach(p=>{ const id=_idDe(p), reg=_regPorId[id]; if(reg&&reg.status==='despachado') upd[TP('pedidos_rota/'+id+'/status')]='pendente'; });
+      upd[TP('rotas_confirmadas/'+rotaId+'/status')]='devolvida';
+      if(rota.token){ upd['entregador/'+rota.token+'/expira']=Date.now(); upd[TP('rotas_confirmadas/'+rotaId+'/link_expira')]=Date.now(); }
       await update(ref(db), upd);
     } else {
       const rota = rotasConfirmadasDemo.find(r=>r.id===rotaId);
@@ -2689,8 +2759,8 @@ async function apagarRotaD(rotaId){
   if(!ok) return;
   try{
     if(!modoDemo){
-      const rota=rotasFirebase[rotaId]||{}, upd={['rotas_confirmadas/'+rotaId+'/status']:'apagada'};
-      if(rota.token){ upd['entregador/'+rota.token+'/expira']=Date.now(); upd['rotas_confirmadas/'+rotaId+'/link_expira']=Date.now(); }
+      const rota=rotasFirebase[rotaId]||{}, upd={[TP('rotas_confirmadas/'+rotaId+'/status')]:'apagada'};
+      if(rota.token){ upd['entregador/'+rota.token+'/expira']=Date.now(); upd[TP('rotas_confirmadas/'+rotaId+'/link_expira')]=Date.now(); }
       await update(ref(db), upd);
     } else {
       const rota = rotasConfirmadasDemo.find(r=>r.id===rotaId);
@@ -2745,7 +2815,7 @@ async function salvarMotorista(){
   const motorista={ id, nome, veiculo_id:_vehMotoristaSel.id, veiculo_nome:_vehMotoristaSel.nome, cap_kg:cap };
 
   if(!modoDemo){
-    await update(ref(db,'motoristas'),{[id]:motorista});
+    await update(ref(db,TP('motoristas')),{[id]:motorista});
   } else {
     motoristasDemo.push(motorista);
   }
@@ -2854,18 +2924,24 @@ window.enviarChatD=enviarChatD;
 // ── Início (só depois do login com acesso liberado) ─────────────────────
 async function carregarConfig(){
   try{
-    const d=(await get(ref(db,'config/deposito'))).val();
+    const d=(await get(ref(db,TP('config/deposito')))).val();
     if(d && Number.isFinite(+d.lat) && Number.isFinite(+d.lng)){ DEPOT.lat=+d.lat; DEPOT.lng=+d.lng; if(d.nome) DEPOT.name=String(d.nome); }
+    else if(EID && EID!=='principal') DEPOT.name='CD padrão (Guarulhos)';
   }catch(e){}
+  _renderCdLinha(); _faixaDemo();
 }
-// Conta de demonstração: dados fictícios só nesta tela; nada é lido nem gravado no banco
+// ── Conta de demonstração ──────────────────────────────────────────────
+// Começa com pedidos fictícios. Quando o cliente importa as notas dele, elas
+// substituem o exemplo e ficam salvas na área da própria demonstração
+// (empresas/demo_<uid>), sem misturar com nenhuma outra conta.
 function _faixaDemo(){
+  if(!contaDemo) return;
   const wa='<a href="https://wa.me/5511955914618?text=Ol%C3%A1!%20Estou%20testando%20o%20ROTAV3%20e%20quero%20conversar." target="_blank" rel="noopener">Falar com a ROTAV3</a>';
+  const salvo=EID?'Ficam salvas até o fim da demonstração e só você vê.':'Nada é salvo: ao recarregar ou sair, elas somem.';
   const txt=demoComNotasReais
-    ? 'Conta de demonstração: mostrando só as suas notas. Nada é salvo: ao recarregar ou sair, elas somem. <button type="button" class="lk" onclick="voltarDadosExemplo()">Voltar aos dados de exemplo</button>'
-    : 'Conta de demonstração: dados fictícios. Importe as suas notas em Pedidos para ver a sua operação. Nada é salvo.';
-  const cd=`<span class="cd">Saída das rotas: <b>${esc(DEPOT.name)}</b> · <label for="cd-cep-demo">CEP do seu CD</label><input id="cd-cep-demo" inputmode="numeric" maxlength="9" placeholder="00000-000"><button type="button" class="bt" id="cd-bt-demo" onclick="definirCdDemo()">Usar</button><span id="cd-msg-demo"></span></span>`;
-  $id('faixa-demo').innerHTML=`<span>${txt} ${wa}</span>${cd}`;
+    ? `Conta de demonstração: mostrando só as suas notas. ${salvo} <button type="button" class="lk" onclick="voltarDadosExemplo()">Voltar aos dados de exemplo</button>`
+    : 'Conta de demonstração: dados fictícios. Importe as suas notas em Pedidos para ver a sua operação.';
+  $id('faixa-demo').innerHTML=`<span>${txt} ${wa}</span>${_htmlCd('faixa')}`;
 }
 function _limparDadosExemplo(paraNotasReais){
   demoComNotasReais=!!paraNotasReais;
@@ -2874,44 +2950,88 @@ function _limparDadosExemplo(paraNotasReais){
   Object.keys(posicaoPorRota).forEach(k=>delete posicaoPorRota[k]);
   _faixaDemo();
 }
-function voltarDadosExemplo(){
+async function voltarDadosExemplo(){
   if(!contaDemo) return;
+  if(EID){
+    if(!confirm('Apagar as suas notas e rotas desta demonstração e voltar aos dados de exemplo?')) return;
+    try{ await update(ref(db),{[TP('pedidos_rota')]:null,[TP('rotas_confirmadas')]:null,[TP('rotas')]:null}); }
+    catch(e){ alert('Não foi possível apagar: '+e.message); return; }
+    Object.keys(posicaoPorRota).forEach(k=>delete posicaoPorRota[k]);
+    return;   // o listener do banco volta para o exemplo
+  }
   _limparDadosExemplo(false);
   render();
   if($id('page-pedidos')?.style.display==='block') renderPedidosPage();
   if($id('page-mapa')?.style.display==='block') atualizarMapaCompleto();
 }
 window.voltarDadosExemplo=voltarDadosExemplo;
-async function definirCdDemo(){
-  if(!contaDemo) return;
-  const cep=($id('cd-cep-demo')?.value||'').replace(/\D/g,'');
-  const msg=$id('cd-msg-demo'), bt=$id('cd-bt-demo');
+
+// ── Centro de distribuição (de onde as rotas saem), definido pelo CEP ──────
+function _htmlCd(onde){
+  return `<span class="cd">Saída das rotas: <b>${esc(DEPOT.name)}</b> · <label for="cd-cep-${onde}">CEP do seu CD</label><input id="cd-cep-${onde}" inputmode="numeric" maxlength="9" placeholder="00000-000"><button type="button" class="bt" id="cd-bt-${onde}" onclick="definirCd('${onde}')">Usar</button><span id="cd-msg-${onde}"></span></span>`;
+}
+function _renderCdLinha(){ const el=$id('cd-linha'); if(el) el.innerHTML=_htmlCd('rot'); }
+async function definirCd(onde){
+  const cep=($id('cd-cep-'+onde)?.value||'').replace(/\D/g,'');
+  const msg=$id('cd-msg-'+onde), bt=$id('cd-bt-'+onde);
   if(cep.length!==8){ msg.textContent='Digite os 8 números do CEP.'; return; }
   bt.disabled=true; msg.textContent='Localizando...';
-  try{
-    const g=await _geocodificarCep(cep);
-    DEPOT.lat=g.lat; DEPOT.lng=g.lng; DEPOT.name=`Seu CD (${g.cidade||'CEP '+cep})`;
-    _faixaDemo();
-    if(mapInst) mapInst.setView([DEPOT.lat,DEPOT.lng],8.4);
-    if(mapInstFull) mapInstFull.setView([DEPOT.lat,DEPOT.lng],9.2);
-    render();
-    if($id('page-mapa')?.style.display==='block') atualizarMapaCompleto();
-    $id('cd-msg-demo').textContent='As rotas agora saem daqui.';
-  }catch(e){
-    msg.textContent='Não achamos esse CEP. Confira e tente de novo.'; bt.disabled=false;
-  }
+  let g;
+  try{ g=await _geocodificarCep(cep); }
+  catch(e){ msg.textContent='Não achamos esse CEP. Confira e tente de novo.'; bt.disabled=false; return; }
+  DEPOT.lat=g.lat; DEPOT.lng=g.lng; DEPOT.name=`CD ${g.cidade||'CEP '+cep}`;
+  let aviso='As rotas agora saem daqui.';
+  if(EID){
+    try{ await set(ref(db,TP('config/deposito')),{nome:DEPOT.name,lat:DEPOT.lat,lng:DEPOT.lng,cep}); }
+    catch(e){ aviso='Vale só nesta tela: não foi possível salvar.'; }
+  } else aviso='Vale só nesta tela.';
+  _faixaDemo(); _renderCdLinha();
+  if(mapInst) mapInst.setView([DEPOT.lat,DEPOT.lng],8.4);
+  if(mapInstFull) mapInstFull.setView([DEPOT.lat,DEPOT.lng],9.2);
+  render();
+  if($id('page-mapa')?.style.display==='block') atualizarMapaCompleto();
+  const m2=$id('cd-msg-'+onde); if(m2) m2.textContent=aviso;
 }
-window.definirCdDemo=definirCdDemo;
+window.definirCd=definirCd;
+
+// ── Separação por empresa: a primeira entrada do administrador com as regras
+// novas copia os dados que estavam na raiz para empresas/principal ──────────
+async function _migrarPrincipal(){
+  try{
+    if((await get(ref(db,'empresas/principal/info'))).exists()) return;
+    const nos=['pedidos_rota','rotas','rotas_confirmadas','motoristas','config'];
+    const vals=await Promise.all(nos.map(n=>get(ref(db,n)).then(x=>x.val()).catch(()=>null)));
+    const [ac,mem,ent]=await Promise.all(['acesso','membros','entregador'].map(n=>get(ref(db,n)).then(x=>x.val()||{}).catch(()=>({}))));
+    const upd={};
+    nos.forEach((n,i)=>{ if(vals[i]) upd['empresas/principal/'+n]=vals[i]; });
+    upd['empresas/principal/info']={nome:'ROTAV3 (sua operação)',criado:Date.now(),migrado:Date.now()};
+    upd['membros/'+ADMIN_UID]='principal';
+    // quem já tinha acesso completo continua vendo a mesma operação
+    Object.entries(ac).forEach(([uid,v])=>{ if(v===true&&!mem[uid]) upd['membros/'+uid]='principal'; });
+    // links de motorista já criados passam a ser desta empresa
+    Object.entries(ent).forEach(([tok,e])=>{ if(e&&typeof e==='object'&&!e.eid) upd['entregador/'+tok+'/eid']='principal'; });
+    await update(ref(db),upd);
+    console.info('Dados copiados para empresas/principal.');
+  }catch(e){ console.warn('Não foi possível copiar os dados para empresas/principal:',e); }
+}
+
 function iniciarAppDemo(){
-  modoDemo=true;
-  allOrders=gerarDemoOrders();
   motoristasDemo=[
     {id:'mot_demo1',nome:'Carlos (exemplo)',veiculo_id:'vuc',veiculo_nome:'VUC',cap_kg:3000},
     {id:'mot_demo2',nome:'Ana (exemplo)',veiculo_id:'fiorino',veiculo_nome:'Fiorino',cap_kg:650},
   ];
-  _faixaDemo();
   $id('faixa-demo').hidden=false;
-  render();
+  if(EID){
+    // área própria da demonstração: começa no exemplo até o cliente importar as notas dele
+    modoDemo=true; allOrders=gerarDemoOrders();
+    _faixaDemo(); render();
+    iniciarApp();
+  } else {
+    modoDemo=true;
+    allOrders=gerarDemoOrders();
+    _faixaDemo(); _renderCdLinha();
+    render();
+  }
   _simularVeiculosDemo();
 }
 async function iniciarApp(){

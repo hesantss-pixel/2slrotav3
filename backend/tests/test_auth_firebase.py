@@ -154,14 +154,16 @@ class TesteRotasProtegidas(unittest.TestCase):
                     for dflt in no.args.defaults + no.args.kw_defaults
                     if isinstance(dflt, ast.Call) and getattr(dflt.func, "id", "") == "Depends" and dflt.args
                 ]
-                if "exigir_login" in deps:
+                if "exigir_admin" in deps:
                     protegidas.append(no.name)
+                elif "exigir_login" in deps:
+                    abertas.append(no.name + " (login sem empresa)")
                 elif "exigir_login_ou_demo" in deps:
                     demo.append(no.name)
                 else:
                     abertas.append(no.name)
         self.assertEqual(abertas, ["status"], f"rotas sem login: {abertas}")
-        # o que lê ou grava o banco exige acesso completo
+        # o que lê ou grava o banco direto é só do administrador (empresa principal)
         self.assertEqual(sorted(protegidas), sorted(["listar_pedidos", "upload_nf", "sync_totvs"]))
         # a conta de demonstração só calcula rota e conversa com a IA
         self.assertEqual(sorted(demo), sorted(["solve", "chat"]))

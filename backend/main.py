@@ -65,9 +65,13 @@ app.add_middleware(
 
 FIREBASE_URL    = os.getenv("FIREBASE_URL", "https://slog-pedidos-default-rtdb.firebaseio.com")
 FIREBASE_SECRET = os.getenv("FIREBASE_SECRET", "")
+# Cada empresa tem os seus dados em empresas/<id>/. As rotas antigas do servidor
+# (/pedidos, /upload-nf, /sync) atendem só a operação do administrador.
+ADMIN_UID        = os.getenv("ADMIN_UID", "PGblgW7V26SJ6W8UYPFj3dqlDGm2")
+EMPRESA_PRINCIPAL = os.getenv("EMPRESA_PRINCIPAL", "principal")
 
 def _fb(path: str) -> str:
-    return f"{FIREBASE_URL}/{path}.json?auth={FIREBASE_SECRET}"
+    return f"{FIREBASE_URL}/empresas/{EMPRESA_PRINCIPAL}/{path}.json?auth={FIREBASE_SECRET}"
 
 def _carregar_pedidos_firebase() -> list[dict]:
     resp = req_lib.get(_fb("pedidos_rota"), timeout=10)
@@ -117,6 +121,14 @@ def exigir_login(authorization: Optional[str] = Header(None)) -> str:
         return auth_firebase.verificar(authorization)
     except auth_firebase.AuthError as e:
         raise HTTPException(status_code=e.status, detail=e.mensagem)
+
+
+def exigir_admin(authorization: Optional[str] = Header(None)) -> str:
+    """Rotas que leem ou gravam o banco direto: só o administrador (dados da empresa principal)."""
+    uid = exigir_login(authorization)
+    if auth_firebase.AUTH_REQUIRED and uid != ADMIN_UID:
+        raise HTTPException(status_code=403, detail="Disponível só para o administrador.")
+    return uid
 
 
 def exigir_login_ou_demo(authorization: Optional[str] = Header(None)) -> tuple[str, str]:
@@ -228,7 +240,7 @@ def status():
 
 
 @app.get("/pedidos")
-def listar_pedidos(uid: str = Depends(exigir_login)):
+def listar_pedidos(uid: str = Depends(exigir_admin)):
     """Retorna pedidos pendentes do Firebase."""
     try:
         pedidos = _carregar_pedidos_firebase()
@@ -263,7 +275,14 @@ def solve(body: SolveRequest, quem: tuple = Depends(exigir_login_ou_demo)):
         # 2. Pedidos — inclui tudo que NÃO foi despachado/entregue/confirmado.
         # /solve é apenas PREVIEW; a "consumação" da NF acontece só quando o
         # frontend chama confirmarRotaD() e grava status=despachado.
-        pedidos = body.pedidos or _carregar_pedidos_firebase()
+        # A tela sempre manda os pedidos da empresa de quem está logado. Buscar no
+        # banco só vale para o administrador (empresa principal).
+        if body.pedidos:
+            pedidos = body.pedidos
+        elif quem[0] == ADMIN_UID or not auth_firebase.AUTH_REQUIRED:
+            pedidos = _carregar_pedidos_firebase()
+        else:
+            raise HTTPException(status_code=422, detail="Envie os pedidos da roteirização.")
         pendentes = [p for p in pedidos if p.get("status", "pendente") not in _STATUS_FINAIS]
 
         if not pendentes:
@@ -291,7 +310,7 @@ def solve(body: SolveRequest, quem: tuple = Depends(exigir_login_ou_demo)):
         cap_kg_val   = frota[0].capKg
 
         salvo = False
-        if _tem_segredo() and not demo:
+        if _tem_segredo() and not demo and quem[0] == ADMIN_UID and not body.pedidos:
             try:
                 salvo = _salvar_rota_firebase({
                     "criadoEm":    __import__("datetime").datetime.utcnow().isoformat(),
@@ -365,7 +384,7 @@ def chat(body: ChatRequest, quem: tuple = Depends(exigir_login_ou_demo)):
         session = _get_session(sid)
 
         # Atualiza contexto com os pedidos enviados pela tela (ou do Firebase)
-        pedidos = body.pedidos if body.pedidos is not None else (_carregar_pedidos_firebase() if _tem_segredo() and quem[1] != "demo" else [])
+        pedidos = body.pedidos if body.pedidos is not None else (_carregar_pedidos_firebase() if _tem_segredo() and quem[0] == ADMIN_UID else [])
         session.atualizar_contexto(
             pedidos,
             rotas=body.rotas,
@@ -389,7 +408,7 @@ MAX_UPLOAD_FILES  = int(os.getenv("MAX_UPLOAD_FILES",  "40"))
 async def upload_nf(
     arquivos: list[UploadFile] = File(..., description="PDF, XML NF-e, XLSX ou CSV"),
     persistir: bool = Form(True, description="Se true, grava no Firebase"),
-    uid: str = Depends(exigir_login),
+    uid: str = Depends(exigir_admin),
 ):
     """
     Recebe uma ou várias notas fiscais em PDF, XML NF-e, XLSX ou CSV,
@@ -449,7 +468,7 @@ async def upload_nf(
 
 
 @app.post("/sync")
-def sync_totvs(uid: str = Depends(exigir_login)):
+def sync_totvs(uid: str = Depends(exigir_admin)):
     """Dispara sincronização manual TOTVS → Firebase."""
     try:
         sincronizar()

@@ -57,14 +57,26 @@ Banco e login: Firebase, projeto `slog-pedidos` (Realtime Database + Authenticat
   foi liberado) com "Liberar demonstração", "Liberar completo" e "Ignorar"; encerra demonstrações e
   tira acessos. O usuário novo é criado numa instância separada do login, então o administrador
   continua conectado.
-- **Conta de demonstração** (`acesso/<uid>` = `"demo"`, validade em `demos/<uid>`): entra com
-  86 pedidos fictícios sempre iguais, faixa "dados fictícios", e **nada é lido nem gravado no
-  banco** (as regras também não deixam). Importar notas, gerar rota (servidor real), confirmar,
-  link do motorista (a rota vai no próprio link: `motorista.html#demo=…`), veículo e baixas
-  simulados, mapa e IA funcionam. Vencida, mostra "Seu acesso de demonstração terminou" com o
-  WhatsApp.
+- **Separação por empresa** (regras em `firebase/database.rules.json`): cada cliente grava em
+  `empresas/<id>/` (`pedidos_rota`, `rotas`, `rotas_confirmadas`, `motoristas`, `config`) e só lê
+  a própria área. Quem é de qual empresa fica em `membros/<uid>`, definido só pelo administrador
+  na página Acessos ("Liberar completo", "Ligar à empresa", "Trocar empresa", "Virar cliente").
+  A operação do administrador é `empresas/principal`: na primeira entrada dele com as regras novas,
+  a tela copia o que estava na raiz para lá (a raiz fica como cópia de segurança, só para ele). Os
+  links de motorista (`entregador/<token>`) guardam `eid`, e só a empresa dona lê as baixas.
+  Com as regras antigas publicadas, a tela continua funcionando como antes (dados na raiz).
+- **Conta de demonstração** (`acesso/<uid>` = `"demo"`, validade em `demos/<uid>`): começa com
+  86 pedidos fictícios. Ao importar as próprias notas, elas substituem o exemplo e ficam salvas em
+  `empresas/demo_<uid>`, só para essa pessoa, até a demonstração vencer ("Voltar aos dados de
+  exemplo" apaga). Gerar rota (servidor real), confirmar, link do motorista de exemplo
+  (`motorista.html#demo=…`, sem link real), veículo e baixas simulados, mapa e IA funcionam.
+  "Virar cliente" leva as notas e rotas da demonstração para a empresa nova. Vencida, mostra
+  "Seu acesso de demonstração terminou" com o WhatsApp.
+- **Centro de distribuição**: em Roteirização (e na faixa da demonstração), o cliente informa o
+  CEP do CD; fica em `empresas/<id>/config/deposito` e as rotas saem de lá.
 - No servidor, a demonstração só usa `/solve` e `/chat`, com limite (30 rotas e 40 perguntas por
-  hora, motor com no máximo 10 s); `/pedidos`, `/upload-nf` e `/sync` exigem acesso completo.
+  hora, motor com no máximo 10 s). `/pedidos`, `/upload-nf` e `/sync` leem e gravam direto em
+  `empresas/principal` e são só do administrador (`ADMIN_UID`, `EMPRESA_PRINCIPAL` no Railway).
 - `motorista.html#demo` abre uma rota de exemplo fixa em Guarulhos (usada na página de vendas).
 
 ## Localização ao vivo do motorista
@@ -137,11 +149,11 @@ grátis (uso comercial até 1 milhão de blocos por mês); com ela, preencha `CA
 Para liberar outra pessoa, repita os passos 2, 3 e 4. Para tirar o acesso, apague a linha
 dela em `acesso` (e, se quiser, desative o usuário em Authentication).
 
-### 2. Centro de distribuição da conta (opcional)
+### 2. Regras do banco (separação por empresa)
 
-O ponto de saída padrão é Guarulhos. Para trocar, crie no banco:
-`config` → `deposito` → `nome` (texto), `lat` (número), `lng` (número).
-Exemplo: `nome` = `CD Barueri`, `lat` = `-23.511`, `lng` = `-46.876`.
+Realtime Database → Regras: cole o conteúdo de `firebase/database.rules.json` e clique em
+Publicar. Depois, entre uma vez com a conta do administrador: a tela copia os dados antigos para
+`empresas/principal`. O centro de distribuição de cada empresa é definido pelo CEP em Roteirização.
 
 ### 3. Servidor (Railway)
 
