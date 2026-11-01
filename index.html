@@ -510,6 +510,65 @@ body:not(.autorizado)>.sidebar,body:not(.autorizado)>.main,body:not(.autorizado)
 .veic-mk.velho::after{display:none;}
 @keyframes veicPulse{from{transform:scale(.7);opacity:1}to{transform:scale(1.5);opacity:0}}
 @media(max-width:900px){.ac-grid{grid-template-columns:1fr;}.ac-campos{grid-template-columns:1fr;}}
+/* ── Pedido: cadastro, edição e local no mapa ── */
+.imp-acoes{display:flex;gap:10px;flex-wrap:wrap;}
+.btn-toolbar.prim{background:var(--navy);border-color:var(--navy);color:#fff;}
+.btn-toolbar.prim:hover{background:#16294a;border-color:#16294a;color:#fff;}
+button.nf-mini{display:block;width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;transition:border-color .15s,box-shadow .15s;}
+button.nf-mini:hover{border-color:var(--vv);}
+button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
+.nf-mini .aprox{margin-left:0;margin-top:4px;display:inline-block;}
+.nf-mini-grid .nf-mini.extra{display:none;}
+.rc-card.todos .nf-mini-grid .nf-mini.extra{display:block;}
+.rc-mais{margin-top:9px;border:1px solid var(--border2);background:#fff;border-radius:9px;padding:7px 12px;font:700 12px var(--body);color:var(--text2);cursor:pointer;}
+.rc-mais:hover{border-color:var(--vv);color:var(--text);}
+.ped-aprox{max-width:760px;margin:10px 0 0;}
+.ped-modal{max-width:600px;}
+.ped-form label.field-lbl{cursor:default;}
+.ped-form .field-inp{font-family:var(--body);}
+.ped-form .field-inp[aria-invalid="true"]{border-color:#d64545;box-shadow:0 0 0 3px rgba(214,69,69,.12);}
+.trio{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.3fr) 76px;gap:10px;}
+.chk{display:inline-flex;align-items:center;gap:8px;margin-top:14px;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;}
+.chk input{width:18px;height:18px;accent-color:var(--navy);}
+.ped-geo-linha{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px;}
+.ped-geo-st{font-size:12px;line-height:1.45;color:var(--text2);flex:1;min-width:180px;}
+.ped-geo-st.ok{color:#0f7a4c;}
+.ped-geo-st.warn{color:#8a5a06;}
+.ped-mapa{height:240px;border-radius:12px;border:1px solid var(--border2);background:var(--s3);}
+.ped-pino{width:26px;height:26px;border-radius:50% 50% 50% 0;background:var(--navy);border:3px solid #f3b62b;transform:rotate(-45deg);box-shadow:0 3px 8px rgba(13,27,46,.35);box-sizing:border-box;}
+.ped-aviso{font-size:12.5px;line-height:1.5;color:#8a5a06;background:#fff8ea;border:1px solid #f6dca6;border-radius:10px;padding:9px 12px;margin-bottom:6px;}
+.ped-excluir{color:#b91c1c;font-weight:700;}
+.ped-excluir:hover{text-decoration:underline;}
+.aprox-bt{border:1px solid #f6dca6;background:#fff3df;color:#8a5a06;border-radius:6px;padding:1px 6px;margin-left:7px;font:700 10px var(--body);cursor:pointer;white-space:nowrap;text-decoration:underline;}
+@media(max-width:520px){.trio{grid-template-columns:minmax(0,1fr) 70px;}.trio>:nth-child(2){grid-column:1/-1;order:-1;}.ped-mapa{height:220px;}.modal-overlay{padding:16px 10px;}.modal-box{padding:20px 16px;}}
+/* ── Ajuste manual da rota ── */
+.ajuste-barra{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 12px;}
+.ajuste-barra .info{font-size:12px;color:var(--text3);}
+.ajuste-acoes{display:flex;gap:8px;flex-wrap:wrap;}
+.btn-sm.on{background:var(--navy);border-color:var(--navy);color:#fff;}
+.btn-sm:disabled{opacity:.55;cursor:default;}
+.ajuste-tag{display:inline-flex;align-items:center;font:700 10.5px var(--body);color:var(--navy);background:#fff3df;border:1px solid #f6dca6;border-radius:6px;padding:2px 7px;margin-left:8px;vertical-align:2px;}
+.dm-txt{flex:1;min-width:0;}
+.dm-acoes{display:flex;gap:5px;flex-shrink:0;}
+.dm-acoes button,.dm-acoes select{height:34px;min-width:34px;border:1px solid var(--border2);background:#fff;border-radius:9px;color:var(--text2);font:700 14px var(--body);cursor:pointer;padding:0 8px;}
+.dm-acoes select{font-size:12px;max-width:118px;}
+.dm-acoes button:hover:not(:disabled){border-color:var(--vv);color:var(--text);}
+.dm-acoes button:disabled{opacity:.35;cursor:default;}
+.dm-acoes button.tirar{color:#b91c1c;}
+.dm-acoes button:focus-visible,.dm-acoes select:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
+.atraso{font-family:var(--body);font-size:10px;font-weight:700;color:#b91c1c;background:#fdecec;border:1px solid #f6caca;border-radius:6px;padding:1px 6px;margin-left:7px;white-space:nowrap;}
+.rota-alertas{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
+.rota-alertas .import-msg{margin:0;}
+.add-parada{margin:10px 0 4px;padding:12px;border:1px dashed var(--border2);border-radius:12px;background:var(--s3);}
+.add-parada .field-inp{font-family:var(--body);margin-bottom:8px;}
+.add-lista{display:flex;flex-direction:column;gap:6px;max-height:320px;overflow:auto;}
+.add-item{display:flex;align-items:center;gap:10px;justify-content:space-between;background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px 10px;}
+.add-item .t{min-width:0;font-size:12px;color:var(--text2);}
+.add-item .t b{font-family:var(--mono);color:var(--text);}
+.add-item .tipo-tag{margin-left:7px;}
+.calc-st{font-size:11.5px;color:var(--text3);margin-top:8px;}
+@media(max-width:360px){.header{padding:0 10px;}.header-inner{gap:6px;}.hdr-logo img{width:96px;height:auto;}}
+@media(max-width:430px){.delivery-mini.ajuste{flex-wrap:wrap;}.delivery-mini.ajuste .dm-txt{flex-basis:calc(100% - 40px);}.delivery-mini.ajuste .dm-acoes{width:100%;justify-content:flex-end;}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
 </style>
 </head>
@@ -703,15 +762,22 @@ body:not(.autorizado)>.sidebar,body:not(.autorizado)>.main,body:not(.autorizado)
             <button type="button" data-tipo="coleta" aria-pressed="false">Coletas</button>
           </div>
         </div>
-        <button type="button" class="btn-toolbar" id="btn-importar" onclick="document.getElementById('file-input').click()">
-          <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
-          Importar notas
-        </button>
+        <div class="imp-acoes">
+          <button type="button" class="btn-toolbar" id="btn-importar" onclick="document.getElementById('file-input').click()">
+            <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg>
+            Importar notas
+          </button>
+          <button type="button" class="btn-toolbar prim" id="btn-novo-pedido" onclick="novoPedido()">
+            <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+            Novo pedido
+          </button>
+        </div>
       </div>
       <div class="imp-help" id="imp-help">XML da NF-e, Excel, CSV ou PDF. Pode escolher vários arquivos de uma vez. <b>Entrega:</b> o sistema usa o endereço do <b>destinatário</b> (ou o local de entrega, se a nota tiver). Na planilha, uma coluna <b>tipo</b> com "coleta" ou "entrega" vale linha a linha.</div>
     </div>
     <input type="file" id="file-input" accept=".xml,.csv,.xlsx,.xls,.pdf" multiple hidden onchange="importarArquivo(this)">
     <div id="import-msg-pedidos" class="import-msg" role="status" style="max-width:760px;"></div>
+    <div id="ped-aprox" class="ped-aprox"></div>
     <div class="filtro-row"><span class="field-lbl">Mostrar</span><div class="seg" data-filtro role="group" aria-label="Mostrar pedidos"></div></div>
     <div class="reg-cards-grid" id="reg-cards-grid"></div>
   </div>
@@ -893,6 +959,50 @@ body:not(.autorizado)>.sidebar,body:not(.autorizado)>.main,body:not(.autorizado)
   <div class="modal-box foto-modal">
     <div class="modal-head"><div class="modal-title" id="foto-tit">Foto da baixa</div><button class="modal-close" onclick="fecharFoto()" aria-label="Fechar">✕</button></div>
     <div id="foto-corpo"></div>
+  </div>
+</div>
+
+<!-- ── MODAL: novo pedido / editar pedido / corrigir local ── -->
+<div class="modal-overlay" id="modal-pedido" onclick="if(event.target===this)fecharPedido()">
+  <div class="modal-box ped-modal" role="dialog" aria-modal="true" aria-labelledby="ped-tit">
+    <div class="modal-head"><div class="modal-title" id="ped-tit">Novo pedido</div><button type="button" class="modal-close" onclick="fecharPedido()" aria-label="Fechar">✕</button></div>
+    <div class="ped-aviso" id="ped-aviso" hidden></div>
+    <form id="ped-form" class="ped-form" novalidate onsubmit="event.preventDefault();salvarPedido()">
+      <span class="field-lbl" id="ped-tipo-lbl" style="margin-top:0">Tipo</span>
+      <div class="seg" id="ped-tipo" role="group" aria-labelledby="ped-tipo-lbl">
+        <button type="button" data-t="entrega" aria-pressed="true">Entrega</button>
+        <button type="button" data-t="coleta" aria-pressed="false">Coleta</button>
+      </div>
+      <div class="rot-nota" id="ped-tipo-nota"></div>
+      <div class="dup">
+        <div><label class="field-lbl" for="ped-nf">Nota fiscal ou nº do pedido *</label><input class="field-inp" id="ped-nf" maxlength="44" autocomplete="off" required></div>
+        <div><label class="field-lbl" for="ped-dest" id="ped-dest-lbl">Cliente</label><input class="field-inp" id="ped-dest" maxlength="80" autocomplete="off"></div>
+      </div>
+      <div class="dup">
+        <div><label class="field-lbl" for="ped-cep">CEP</label><input class="field-inp" id="ped-cep" inputmode="numeric" maxlength="9" autocomplete="off" placeholder="00000-000"></div>
+        <div><label class="field-lbl" for="ped-end">Rua e número</label><input class="field-inp" id="ped-end" maxlength="140" autocomplete="off" placeholder="Ex.: Rua das Flores, 120"></div>
+      </div>
+      <div class="trio">
+        <div><label class="field-lbl" for="ped-bairro">Bairro</label><input class="field-inp" id="ped-bairro" maxlength="60" autocomplete="off"></div>
+        <div><label class="field-lbl" for="ped-cidade">Cidade *</label><input class="field-inp" id="ped-cidade" maxlength="60" autocomplete="off" required></div>
+        <div><label class="field-lbl" for="ped-uf">UF</label><input class="field-inp" id="ped-uf" maxlength="2" autocomplete="off" style="text-transform:uppercase"></div>
+      </div>
+      <div class="dup">
+        <div><label class="field-lbl" for="ped-peso">Peso (kg) *</label><input class="field-inp" id="ped-peso" inputmode="decimal" autocomplete="off" required></div>
+        <div><label class="field-lbl" for="ped-itens">Volumes</label><input class="field-inp" id="ped-itens" type="number" min="1" step="1" inputmode="numeric" value="1"></div>
+      </div>
+      <label class="chk"><input type="checkbox" id="ped-urg"> Urgente</label>
+      <span class="field-lbl">Local no mapa</span>
+      <div class="ped-geo-linha">
+        <div class="ped-geo-st" id="ped-geo-st" role="status"></div>
+        <button type="button" class="btn-sm" id="ped-buscar" onclick="buscarLocalPedido()">Buscar pelo endereço</button>
+      </div>
+      <div id="ped-mapa" class="ped-mapa" aria-label="Mapa: arraste o pino ou toque no ponto certo"></div>
+      <div class="rot-nota">Arraste o pino ou toque no mapa para marcar o ponto certo da entrega ou coleta.</div>
+      <div class="import-msg" id="ped-msg" role="alert"></div>
+      <button type="submit" class="btn-modal-primary" id="ped-salvar">Salvar pedido</button>
+      <button type="button" class="btn-modal-sec ped-excluir" id="ped-excluir" onclick="excluirPedido()" hidden>Excluir pedido</button>
+    </form>
   </div>
 </div>
 
@@ -1426,7 +1536,8 @@ function atualizarMapaCompleto(){
   comGeo.forEach(o=>{
     const col=_tipoDe(o)==='coleta';
     L.circleMarker([o.lat,o.lng],{radius:col?6.5:6,color:col?'#f3b62b':'#fff',weight:col?2:1.5,fillColor:col?'#0d1b2e':'#16a36a',fillOpacity:.92}).addTo(mapLayerFull)
-      .bindTooltip(`<b>${col?'Coleta':'Entrega'} · NF ${esc(o.nf)}</b>${o.dest&&o.dest!==o.cidade?'<br>'+esc(o.dest):''}<br>${o.bairro?esc(o.bairro)+' — ':''}${esc(o.cidade)}<br>${(o.peso||0).toLocaleString('pt-BR')} kg · ${o.itens||1} volume(s)<br><span style="color:#1f7a4a">📍 Localização via CEP</span>`);
+      .bindTooltip(`<b>${col?'Coleta':'Entrega'} · NF ${esc(o.nf)}</b>${o.dest&&o.dest!==o.cidade?'<br>'+esc(o.dest):''}<br>${o.bairro?esc(o.bairro)+' — ':''}${esc(o.cidade)}<br>${(o.peso||0).toLocaleString('pt-BR')} kg · ${o.itens||1} volume(s)<br><span style="color:#1f7a4a">📍 ${o.geoManual?'Ponto marcado à mão':'Localização via CEP ou endereço'}</span><br><span style="color:#64748b">Toque para editar ou corrigir o ponto</span>`)
+      .on('click',()=>abrirPedido(o.id));
   });
 
   // ── Bolhas de cidade: só pros que ainda não têm CEP geocodificado ─────
@@ -1605,24 +1716,268 @@ function renderPedidosPage(){
   const pend=_filtrar(allOrders.filter(o=>o.status==='pendente'),filtroTipo);
   const ativos=calcularRegioes(pend);
   const grid=document.getElementById('reg-cards-grid');
-  const vazio = filtroTipo==='coleta'?'Nenhuma coleta pendente.':filtroTipo==='entrega'?'Nenhuma entrega pendente.':'Nenhum pedido pendente. Importe as notas acima.';
+  const vazio = filtroTipo==='coleta'?'Nenhuma coleta pendente.':filtroTipo==='entrega'?'Nenhuma entrega pendente.':'Nenhum pedido pendente. Importe as notas ou cadastre um pedido acima.';
+  // estado aberto/fechado dos cartões sobrevive à atualização ao vivo
+  const abertos=new Set([...grid.querySelectorAll('.rc-card.exp')].map(c=>c.dataset.reg));
+  const todos=new Set([...grid.querySelectorAll('.rc-card.todos')].map(c=>c.dataset.reg));
   grid.innerHTML = ativos.length ? ativos.map((r,i)=>{
     const os=r.lista, nt=_contarTipos(os);
     const partes=_resumoTipos(nt);
-    return `<div class="rc-card" id="rcd-${i}" style="--rc:${r.cor}">
+    const k=esc(r.nome);
+    return `<div class="rc-card${abertos.has(r.nome)?' exp':''}${todos.has(r.nome)?' todos':''}" id="rcd-${i}" data-reg="${k}" style="--rc:${r.cor}">
       <div class="rc-card-head" onclick="toggleRcCard(${i})">
         <div class="rc-card-icon">${r.isolado?'⚠️':'📍'}</div>
-        <div class="rc-card-info"><div class="rc-card-name">${esc(r.nome)}</div><div class="rc-card-sub">${partes}${r.isolado?` · a mais de ${RAIO_ISOLADO_KM} km do CD`:''}</div></div>
+        <div class="rc-card-info"><div class="rc-card-name">${k}</div><div class="rc-card-sub">${partes}${r.isolado?` · a mais de ${RAIO_ISOLADO_KM} km do CD`:''}</div></div>
         <div class="rc-card-n">${os.length}</div><div class="rc-card-chev">›</div>
       </div>
-      <div class="rc-card-body"><div class="nf-mini-grid">${os.slice(0,10).map(o=>
-        `<div class="nf-mini"><div class="nf-mini-code">NF ${esc(o.nf)}${_tag(o)}</div>${o.dest&&o.dest!==o.cidade?`<div class="nf-mini-end">${esc(o.dest)}</div>`:''}<div class="nf-mini-meta">${(+o.peso||0).toLocaleString('pt-BR')} kg · ${o.itens} vol.</div></div>`
-      ).join('')}</div>${os.length>10?`<div class="rc-card-sub" style="margin-top:8px">+ ${os.length-10} pedidos</div>`:''}</div>
+      <div class="rc-card-body"><div class="nf-mini-grid">${os.map((o,j)=>
+        `<button type="button" class="nf-mini${j>=10?' extra':''}" onclick="abrirPedido(${esc(JSON.stringify(o.id))})" aria-label="Editar pedido NF ${esc(o.nf)}"><div class="nf-mini-code">NF ${esc(o.nf)}${_tag(o)}</div>${o.dest&&o.dest!==o.cidade?`<div class="nf-mini-end">${esc(o.dest)}</div>`:''}<div class="nf-mini-meta">${(+o.peso||0).toLocaleString('pt-BR')} kg · ${o.itens} vol.${o.urgente?' · urgente':''}</div>${o.geoStatus!=='ok'?'<span class="aprox">local aproximado</span>':''}</button>`
+      ).join('')}</div>${os.length>10?`<button type="button" class="rc-mais" onclick="verTodosRc(${i})">${todos.has(r.nome)?'Mostrar menos':`Mostrar todos (${os.length})`}</button>`:''}</div>
     </div>`;
   }).join('') : `<div class="empty-mini">${vazio}</div>`;
+  // aviso dos pedidos que ainda estão só com a cidade ou o bairro
+  const aprox=pend.filter(o=>o.geoStatus!=='ok').length;
+  $id('ped-aprox').innerHTML = aprox
+    ? `<div class="mapa-nota" style="margin:0">⚠️ ${aprox===1?'1 pedido está sem local exato (no mapa, aparece no centro da cidade)':`${aprox} pedidos estão sem local exato (no mapa, aparecem no centro da cidade)`}. Toque no pedido para buscar o endereço ou marcar o ponto no mapa. Isso deixa a ordem e os km da rota mais certos.</div>` : '';
 }
 function toggleRcCard(i){ document.getElementById('rcd-'+i).classList.toggle('exp'); }
 window.toggleRcCard=toggleRcCard;
+function verTodosRc(i){
+  const c=document.getElementById('rcd-'+i); if(!c) return;
+  const on=c.classList.toggle('todos');
+  const b=c.querySelector('.rc-mais'); if(b) b.textContent=on?'Mostrar menos':`Mostrar todos (${c.querySelectorAll('.nf-mini').length})`;
+}
+window.verTodosRc=verTodosRc;
+
+// ══════════════════════════════════════════════════════════════════════════
+// PEDIDO À MÃO — cadastrar, editar, excluir e corrigir o local no mapa
+// ══════════════════════════════════════════════════════════════════════════
+let _pedEdit=null;      // pedido em edição (null = novo)
+let _pedTipo='entrega';
+let _pedGeo=null;       // {lat,lng,fonte:'salvo'|'endereco'|'cep'|'cidade'|'manual',exato}
+let _pedMap=null, _pedMk=null, _pedFoco=null;
+const PED_CAMPOS=['nf','dest','cep','end','bairro','cidade','uf','peso','itens'];
+function _fmtCep(c){ c=String(c||'').replace(/\D/g,''); return c.length===8?c.slice(0,5)+'-'+c.slice(5):c; }
+// Conta de demonstração com as regras antigas do banco e os pedidos fictícios de
+// exemplo nunca vão para o banco: a mudança fica só nesta tela.
+function _pedSoNaTela(o){ return (contaDemo&&!EID) || (modoDemo&&!!o); }
+function _pedBloq(){ return !!_pedEdit && _pedEdit.status!=='pendente'; }
+// "1.250" (milhar) = 1250; "12,5" ou "12.5" = 12,5
+function _numBR(t){
+  t=String(t||'').trim().replace(/\s|kg/gi,'');
+  if(!t) return NaN;
+  if(t.includes(',')) t=t.replace(/\./g,'').replace(',','.');
+  else if(/^\d{1,3}(\.\d{3})+$/.test(t)) t=t.replace(/\./g,'');
+  return Number(t);
+}
+function _pedSetTipo(t){
+  _pedTipo=t==='coleta'?'coleta':'entrega';
+  document.querySelectorAll('#ped-tipo button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.t===_pedTipo)));
+  $id('ped-dest-lbl').textContent=_pedTipo==='coleta'?'Remetente (onde coletar)':'Cliente (quem recebe)';
+  $id('ped-tipo-nota').textContent=_pedTipo==='coleta'
+    ? 'Coleta: o veículo busca neste endereço e traz para o centro de distribuição.'
+    : 'Entrega: o veículo leva do centro de distribuição até este endereço.';
+}
+function abrirPedido(id){
+  const o = id==null ? null : allOrders.find(x=>x.id===id);
+  if(id!=null && !o){ _toast('Esse pedido não está mais na lista.'); return; }
+  _pedEdit=o; _pedFoco=document.activeElement;
+  const v=(k,val)=>{ const el=$id('ped-'+k); el.value=val??''; el.removeAttribute('aria-invalid'); };
+  v('nf', o&&o.nf!=='S/N'?o.nf:''); v('dest', o&&o.dest&&o.dest!==o.cidade?o.dest:''); v('cep', o?_fmtCep(o.cep):'');
+  v('end', o?.endereco); v('bairro', o?.bairro); v('cidade', o&&o.cidade!=='Sem cidade'?o.cidade:''); v('uf', o?.uf);
+  v('peso', o?String(o.peso).replace('.',','):''); v('itens', o?.itens||1);
+  $id('ped-urg').checked=!!o?.urgente;
+  _pedSetTipo(o?_tipoDe(o):tipoImport);
+  $id('ped-tit').textContent=o?`Pedido NF ${o.nf}`:'Novo pedido';
+  const bloq=_pedBloq(), avisos=[];
+  if(bloq) avisos.push('Este pedido já saiu em rota. Para mudar alguma coisa, devolva a rota na página Rotas.');
+  else if(o&&_pedSoNaTela(o)) avisos.push(modoDemo&&!demoComNotasReais?'Dados de exemplo: as mudanças ficam só nesta tela e não são salvas.':'Conta de demonstração: as mudanças ficam só nesta tela.');
+  else if(!o&&contaDemo&&!EID) avisos.push('Conta de demonstração: o pedido fica só nesta tela.');
+  else if(!o&&modoDemo) avisos.push('Ao salvar, os pedidos de exemplo saem da tela e passam a aparecer só os seus.');
+  const av=$id('ped-aviso'); av.hidden=!avisos.length; av.textContent=avisos.join(' ');
+  $id('ped-form').querySelectorAll('input,#ped-tipo button,#ped-buscar').forEach(el=>{ el.disabled=bloq; });
+  $id('ped-salvar').hidden=bloq; $id('ped-salvar').disabled=false; $id('ped-salvar').textContent=o?'Salvar alterações':'Cadastrar pedido';
+  $id('ped-excluir').hidden=!o||bloq;
+  $id('ped-msg').className='import-msg'; $id('ped-msg').textContent='';
+  _pedGeo = o&&Number.isFinite(o.lat)&&Number.isFinite(o.lng) ? {lat:o.lat,lng:o.lng,fonte:'salvo',exato:o.geoStatus==='ok'} : null;
+  $id('modal-pedido').classList.add('open');
+  setTimeout(()=>{ _pedDesenharMapa(); (bloq?document.querySelector('#modal-pedido .modal-close'):$id('ped-nf')).focus(); },40);
+}
+window.abrirPedido=abrirPedido;
+function novoPedido(){ abrirPedido(null); }
+window.novoPedido=novoPedido;
+function fecharPedido(){
+  $id('modal-pedido').classList.remove('open');
+  _pedEdit=null;
+  if(_pedFoco&&document.contains(_pedFoco)&&_pedFoco.focus) _pedFoco.focus();
+  _pedFoco=null;
+}
+window.fecharPedido=fecharPedido;
+function _pedGeoStatus(){
+  const el=$id('ped-geo-st'); let t, c='';
+  const g=_pedGeo;
+  if(!g){ t='Ainda sem local. Preencha a rua e a cidade (ou o CEP) e toque em "Buscar pelo endereço", ou toque no mapa.'; c='warn'; }
+  else if(g.fonte==='manual'){ t='Ponto marcado por você.'; c='ok'; }
+  else if(g.fonte==='endereco'){ t='Achamos pelo endereço. Confira o pino e arraste se precisar.'; c='ok'; }
+  else if(g.fonte==='cep'){ t='Achamos pelo CEP (a rua ou o bairro, sem o número). Arraste o pino até o ponto certo.'; c='warn'; }
+  else if(g.fonte==='cidade'){ t='Só achamos a cidade. Arraste o pino até o endereço.'; c='warn'; }
+  else if(g.exato){ t=_pedEdit&&_pedEdit.geoManual?'Ponto marcado à mão. Arraste o pino para corrigir.':'Local salvo. Arraste o pino se não estiver no ponto certo.'; }
+  else { t='Ainda sem local exato: o pino está no centro da cidade. Busque pelo endereço ou arraste o pino.'; c='warn'; }
+  el.textContent=t; el.className='ped-geo-st'+(c?' '+c:'');
+}
+function _pedMarcador(){
+  if(!_pedMap) return;
+  if(_pedMk){ _pedMap.removeLayer(_pedMk); _pedMk=null; }
+  if(_pedGeo){
+    _pedMk=L.marker([_pedGeo.lat,_pedGeo.lng],{draggable:!_pedBloq(),title:'Local do pedido',alt:'Local do pedido',
+      icon:L.divIcon({className:'',html:'<div class="ped-pino"></div>',iconSize:[26,26],iconAnchor:[13,31]})}).addTo(_pedMap);
+    _pedMk.on('dragend',()=>{ const p=_pedMk.getLatLng(); _pedGeo={lat:p.lat,lng:p.lng,fonte:'manual',exato:true}; _pedGeoStatus(); });
+  }
+  _pedGeoStatus();
+}
+function _pedPino(lat,lng,fonte,zoom){
+  _pedGeo={lat,lng,fonte,exato:fonte!=='cidade'};
+  _pedMarcador();
+  if(zoom&&_pedMap) _pedMap.setView([lat,lng],zoom);
+}
+function _pedDesenharMapa(){
+  if(!window.L) return;
+  if(!_pedMap){
+    _pedMap=L.map('ped-mapa',{attributionControl:false});
+    _fundoMapa(_pedMap);
+    _pedMap.on('click',e=>{ if(!_pedBloq()) _pedPino(e.latlng.lat,e.latlng.lng,'manual'); });
+  }
+  _pedMap.invalidateSize();
+  const cid=_cidadeNorm($id('ped-cidade').value);
+  const c=_pedGeo||CITY_COORDS[cid]||DEPOT;
+  _pedMap.setView([c.lat,c.lng], _pedGeo?(_pedGeo.exato?16:12):10);
+  _pedMarcador();
+}
+function _pedCompletar(d){
+  // completa o que estiver vazio com o que o CEP diz (não apaga o que a pessoa digitou)
+  if(!d) return;
+  const e=$id('ped-end'), b=$id('ped-bairro'), c=$id('ped-cidade'), u=$id('ped-uf');
+  if(!e.value.trim()&&d.logradouro) e.value=d.logradouro+', ';
+  if(!b.value.trim()&&d.bairro) b.value=d.bairro;
+  if(!c.value.trim()&&(d.localidade||d.cidade)) c.value=_cidadeNorm(d.localidade||d.cidade);
+  if(!u.value.trim()&&d.uf) u.value=d.uf;
+}
+$id('ped-cep').addEventListener('change',async()=>{
+  const el=$id('ped-cep'), cep=el.value.replace(/\D/g,'');
+  if(cep.length!==8) return;
+  el.value=_fmtCep(cep);
+  try{ _pedCompletar(await _viaCep(cep)); }catch(e){}
+});
+async function buscarLocalPedido(){
+  if(_pedBloq()) return;
+  const end=$id('ped-end').value.trim().replace(/,\s*$/,''), bairro=$id('ped-bairro').value.trim();
+  const cidTxt=$id('ped-cidade').value.trim(), cidade=_cidadeNorm(cidTxt), uf=$id('ped-uf').value.trim().toUpperCase();
+  const cep=$id('ped-cep').value.replace(/\D/g,'');
+  const st=$id('ped-geo-st');
+  if(!(end&&cidTxt) && cep.length!==8 && !cidTxt){ st.textContent='Preencha a rua e a cidade, ou o CEP.'; st.className='ped-geo-st warn'; return; }
+  const bt=$id('ped-buscar'); bt.disabled=true; st.textContent='Procurando...'; st.className='ped-geo-st';
+  let g=null, fonte='';
+  try{
+    if(end&&cidTxt){ g=await _nominatim(`${end}${bairro?', '+bairro:''}, ${cidade}${uf?', '+uf:''}, Brasil`); if(g) fonte='endereco'; }
+    if(!g&&cep.length===8){ try{ const r=await _geocodificarCep(cep); g={lat:r.lat,lng:r.lng}; fonte='cep'; _pedCompletar(r); }catch(e){} }
+    if(!g&&cidTxt){ g=await _nominatim(`${cidade}${uf?', '+uf:''}, Brasil`); if(g) fonte='cidade'; }
+  }catch(e){}
+  bt.disabled=false;
+  if(!g){ st.textContent='Não achamos esse endereço. Toque no mapa para marcar o ponto.'; st.className='ped-geo-st warn'; return; }
+  _pedPino(g.lat,g.lng,fonte,fonte==='cidade'?13:17);
+}
+window.buscarLocalPedido=buscarLocalPedido;
+function _pedErro(campo,txt){
+  const m=$id('ped-msg'); m.className='import-msg show err'; m.textContent=txt;
+  if(campo){ const el=$id('ped-'+campo); el.setAttribute('aria-invalid','true'); el.focus(); }
+  return false;
+}
+async function salvarPedido(){
+  if(_pedBloq()) return;
+  PED_CAMPOS.forEach(k=>$id('ped-'+k).removeAttribute('aria-invalid'));
+  $id('ped-msg').className='import-msg';
+  const nf=$id('ped-nf').value.trim(), cidTxt=$id('ped-cidade').value.trim();
+  const cep=$id('ped-cep').value.replace(/\D/g,''), uf=$id('ped-uf').value.trim().toUpperCase();
+  const peso=_numBR($id('ped-peso').value), itens=Number($id('ped-itens').value);
+  if(!nf) return _pedErro('nf','Informe o número da nota fiscal ou do pedido.');
+  if(!cidTxt) return _pedErro('cidade','Informe a cidade.');
+  if(cep&&cep.length!==8) return _pedErro('cep','O CEP precisa ter 8 números.');
+  if(uf&&!/^[A-Z]{2}$/.test(uf)) return _pedErro('uf','A UF tem 2 letras, como SP.');
+  if(!Number.isFinite(peso)||peso<=0) return _pedErro('peso','Informe o peso em kg (maior que zero).');
+  if(peso>100000) return _pedErro('peso','Peso acima de 100.000 kg. Confira o número.');
+  if(!Number.isInteger(itens)||itens<1) return _pedErro('itens','Volumes: um número inteiro, a partir de 1.');
+  const o=_pedEdit, tipo=_pedTipo, cidade=_cidadeNorm(cidTxt);
+  const dados={ nf, tipo, dest:$id('ped-dest').value.trim()||cidade, endereco:$id('ped-end').value.trim().replace(/,\s*$/,''),
+    bairro:$id('ped-bairro').value.trim(), cidade, uf, cep, peso:Math.round(peso*100)/100, itens, urgente:$id('ped-urg').checked };
+  // Local: o que a pessoa achou ou marcou vale; sem isso, endereço igual mantém o
+  // local salvo; endereço novo volta para o centro da cidade e é localizado pelo CEP.
+  const endMudou=!o || (o.cep||'')!==cep || (o.endereco||'')!==dados.endereco || o.cidade!==cidade;
+  if(_pedGeo&&['manual','endereco','cep'].includes(_pedGeo.fonte)){
+    Object.assign(dados,{lat:_pedGeo.lat,lng:_pedGeo.lng,geoStatus:'ok',geoManual:_pedGeo.fonte==='manual'});
+  } else if(!(o&&!endMudou)){
+    const c=_pedGeo&&_pedGeo.fonte==='cidade'?_pedGeo:(CITY_COORDS[cidade]||DEPOT);
+    Object.assign(dados,{lat:c.lat,lng:c.lng,geoStatus:cep?'pendente':'sem_cep',geoManual:false});
+  }
+  // chave no banco: entrega = número; coleta = "C_" + número (trocar o tipo troca a chave)
+  let id, idAntigo=null;
+  if(o){ id=o.id; if(_tipoDe(o)!==tipo){ id=(tipo==='coleta'?'C_':'')+o.id.replace(/^C_/,''); idAntigo=o.id; } }
+  else id=_chaveId(nf,tipo);
+  const soTela=_pedSoNaTela(o);
+  if(!o||idAntigo){
+    const st=soTela?allOrders.find(x=>x.id===id)?.status:_statusPorId[id];
+    const qual=tipo==='coleta'?'uma coleta':'uma entrega';
+    if(st&&FINAIS.includes(st)) return _pedErro('nf',`Já existe ${qual} com o número ${nf} e ela já saiu em rota.`);
+    if(st&&!confirm(`Já existe ${qual} pendente com o número ${nf}. Trocar pelos dados deste formulário?`)) return;
+  }
+  const bt=$id('ped-salvar'); bt.disabled=true; bt.textContent='Salvando...';
+  try{
+    if(soTela){
+      if(!o&&contaDemo&&!EID&&!demoComNotasReais) _limparDadosExemplo(true);
+      const novo={ agendado:false, dataAgendada:'', horaEntrega:'', horaFim:'', rota_atual:'', origem:'manual', ...(o||{}), ...dados, id, status:'pendente' };
+      allOrders=allOrders.filter(x=>x.id!==id&&x.id!==(idAntigo||id));
+      allOrders.push(novo);
+      render(); renderPedidosPage();
+      if($id('page-mapa')?.style.display==='block') atualizarMapaCompleto();
+    } else {
+      const upd={}, agora=Date.now();
+      if(!o||idAntigo){
+        let antigo={};
+        if(idAntigo){ antigo=(await get(ref(db,TP('pedidos_rota/'+idAntigo)))).val()||{}; delete antigo.id; upd[TP('pedidos_rota/'+idAntigo)]=null; }
+        upd[TP('pedidos_rota/'+id)]={ agendado:false, dataAgendada:'', horaEntrega:'', horaFim:'', origem:'manual', ...antigo, ...dados,
+          status:'pendente', rota_atual:'', editadoEm:agora, ...(o?{}:{criadoEm:agora}) };
+      } else {
+        Object.entries({...dados,editadoEm:agora}).forEach(([k,val])=>{ upd[TP('pedidos_rota/'+id+'/'+k)]=val; });
+      }
+      await update(ref(db),upd);
+    }
+  }catch(e){
+    bt.disabled=false; bt.textContent=o?'Salvar alterações':'Cadastrar pedido';
+    return _pedErro(null,'Não foi possível salvar: '+e.message);
+  }
+  if(dados.geoStatus==='pendente') agendarGeocodificacao([{id,cep,cidade,geoStatus:'pendente'}]);
+  _pedNaRota(idAntigo||id, {...dados,id});
+  fecharPedido();
+  _toast(o?`Pedido NF ${nf} atualizado.`:`Pedido NF ${nf} cadastrado.`);
+}
+window.salvarPedido=salvarPedido;
+async function excluirPedido(){
+  const o=_pedEdit; if(!o||_pedBloq()) return;
+  const soTela=_pedSoNaTela(o);
+  if(!confirm(`Excluir o pedido NF ${o.nf}? Ele sai da lista de pendentes.${soTela?'':' Não dá para desfazer.'}`)) return;
+  try{
+    if(soTela){
+      allOrders=allOrders.filter(x=>x.id!==o.id);
+      render(); renderPedidosPage();
+      if($id('page-mapa')?.style.display==='block') atualizarMapaCompleto();
+    } else await update(ref(db),{[TP('pedidos_rota/'+o.id)]:null});
+  }catch(e){ return _pedErro(null,'Não foi possível excluir: '+e.message); }
+  _pedNaRota(o.id,null);
+  fecharPedido();
+  _toast(`Pedido NF ${o.nf} excluído.`);
+}
+window.excluirPedido=excluirPedido;
+document.addEventListener('click',e=>{ const b=e.target.closest('#ped-tipo button'); if(b&&!b.disabled) _pedSetTipo(b.dataset.t); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&$id('modal-pedido').classList.contains('open')) fecharPedido(); });
 
 // ══════════════════════════════════════════════════════════════════════════
 // IMPORTAÇÃO — CSV / Excel / PDF (com aviso p/ peso ausente e PDF experimental)
@@ -1769,8 +2124,12 @@ async function _viaCep(cep){
   return d; // {logradouro, bairro, localidade, uf, ...}
 }
 
+let _nomUlt=0;   // última consulta ao Nominatim (a política pede no máximo 1 por segundo)
 async function _nominatim(query){
-  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&q=${encodeURIComponent(query)}`;
+  const espera=_nomUlt+1100-Date.now();
+  if(espera>0) await _sleep(espera);
+  _nomUlt=Date.now();
+  const url =`https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&q=${encodeURIComponent(query)}`;
   const r = await fetch(url, { headers: { 'Accept-Language':'pt-BR' } });
   if(!r.ok) throw new Error('Nominatim HTTP '+r.status);
   const arr = await r.json();
@@ -2027,6 +2386,10 @@ function renderVeiculosD(){
   document.getElementById('rot-step-loading').style.display='none';
   document.getElementById('rot-step-results').style.display='none';
   motoristaSelecionadoD=null;
+  // começar de novo descarta a rota que não foi confirmada (os pedidos continuam pendentes)
+  Object.keys(_avTimer).forEach(k=>{ clearTimeout(_avTimer[k]); _avSeq[k]=(_avSeq[k]||0)+1; });
+  Object.keys(_avPend).forEach(k=>delete _avPend[k]);
+  rotaGeradaD=[]; rotaOrigD=null; ajusteD=false;
 
   // Atalho: motoristas fixos cadastrados (clica → pula direto pra confirmação)
   const mots = modoDemo ? motoristasDemo : Object.values(motoristasFirebase);
@@ -2155,13 +2518,212 @@ async function executarVRPD(){
 }
 window.executarVRPD=executarVRPD;
 
+// ── Ajuste manual da rota gerada (antes de confirmar a saída) ───────────────
+// A pessoa muda a ordem, tira, adiciona ou troca paradas de viagem. A cada mudança
+// o servidor mede a rota na ordem nova (/avaliar: km, tempo, chegada em cada parada);
+// sem servidor, fica a estimativa em linha reta, com aviso.
+let ajusteD=false, rotaSelD=0, rotaOrigD=null, _focoD=null, _addBuscaD='';
+const _avTimer={}, _avSeq={}, _avPend={};
+const SERVICO_MIN=15, JORNADA_MIN=8*60, VEL_RETA_KMH=40;   // os mesmos números do motor de rotas
+function _paradasD(r){ if(!r.pedidos) r.pedidos=r.paradas||[]; return r.pedidos; }
+function _clone(x){ return JSON.parse(JSON.stringify(x)); }
+// Mesma conta do servidor quando ele não responde: distância em linha reta a 40 km/h,
+// 15 min por parada e espera pela janela de horário.
+function _estimarRotaLocal(ps){
+  const v=VEL_RETA_KMH/60;  // km por minuto
+  let t=0, km=0, prev=DEPOT; const cheg=[];
+  const saida=rotaCtxD.saida;
+  ps.forEach(p=>{
+    const d=_haversineKm(prev,p); km+=d; t+=d/v;
+    if(saida!=null&&p.janela_ini!=null&&t<p.janela_ini-saida) t=p.janela_ini-saida;
+    cheg.push(saida!=null?saida+Math.round(t):null);
+    t+=SERVICO_MIN; prev=p;
+  });
+  if(ps.length){ const d=_haversineKm(prev,DEPOT); km+=d; t+=d/v; }
+  return {km:Math.round(km*10)/10, mins:Math.ceil(t), chegadas:cheg};
+}
+function _poolViagemD(){
+  const usados=new Set(rotaGeradaD.flatMap(r=>_paradasD(r).map(_idDe)));
+  return _pedidosDaViagem().filter(o=>!usados.has(_idDe(o)));
+}
+// Pontos de atenção da rota (texto simples; quem mostra em HTML escapa)
+function _problemasRotaD(r){
+  const ps=_paradasD(r), out=[];
+  if(!ps.length) return out;
+  const carga=_perfilCarga(ps);
+  if(capKgD&&carga.max>capKgD) out.push(`Passa da capacidade: chega a ${carga.max.toLocaleString('pt-BR')} kg a bordo, e o veículo leva ${capKgD.toLocaleString('pt-BR')} kg.`);
+  if(maxPedD&&ps.length>maxPedD) out.push(`${ps.length} paradas: mais que o limite de ${maxPedD} que você escolheu.`);
+  const tarde=ps.filter(p=>p.janela_fim!=null&&p.chegada_min!=null&&p.chegada_min>p.janela_fim);
+  if(tarde.length) out.push(`${_plural(tarde.length,'parada chega','paradas chegam')} depois do horário marcado (NF ${tarde.map(p=>p.nf).join(', ')}).`);
+  if((r.mins||0)>JORNADA_MIN) out.push('A viagem passa de 8 horas.');
+  return out;
+}
+function _recalcLocalD(r){
+  const ps=_paradasD(r);
+  r.peso_total=Math.round(ps.reduce((s,p)=>s+(+p.peso||0),0)*100)/100;
+  r.itens_total=ps.reduce((s,p)=>s+(+p.itens||1),0);
+  const n=_contarTipos(ps); r.entregas=n.entrega; r.coletas=n.coleta;
+  const est=_estimarRotaLocal(ps);
+  r.km=est.km; r.mins=est.mins; ps.forEach((p,k)=>{ p.chegada_min=est.chegadas[k]; });
+  r._fonte='Haversine'; r._calc=ps.length?'calculando':'ok';
+}
+function _mudouRotaD(ri){
+  const r=rotaGeradaD[ri]; if(!r) return;
+  r._ajustada=true;
+  _recalcLocalD(r);
+  _renderResultadoD();
+  _agendarAvaliacaoD(ri);
+}
+function _agendarAvaliacaoD(ri){
+  clearTimeout(_avTimer[ri]);
+  _avSeq[ri]=(_avSeq[ri]||0)+1;
+  const seq=_avSeq[ri];
+  _avPend[ri]=new Promise(res=>{ _avTimer[ri]=setTimeout(()=>{ _avaliarRotaD(ri,seq).finally(res); },350); });
+}
+async function _avaliarRotaD(ri,seq){
+  const r=rotaGeradaD[ri]; if(!r) return;
+  const ps=_paradasD(r).slice();
+  if(!ps.length){ r._calc='ok'; _renderResultadoD(); return; }
+  try{
+    const d=await apiPost('/avaliar',{
+      pedidos:ps.map(p=>({lat:p.lat,lng:p.lng,janela_ini:p.janela_ini??null,janela_fim:p.janela_fim??null})),
+      deposito:{lat:DEPOT.lat,lng:DEPOT.lng,nome:DEPOT.name}, hora_saida:rotaCtxD.saida,
+    });
+    if(seq!==_avSeq[ri]||rotaGeradaD[ri]!==r) return;   // a rota mudou de novo: vale a próxima resposta
+    r.km=+d.km||0; r.mins=+d.mins||0;
+    (d.chegada_min||[]).forEach((c,k)=>{ if(ps[k]) ps[k].chegada_min=c; });
+    r._fonte=d.fonte_distancia||'—'; r._calc='ok';
+  }catch(e){
+    if(seq!==_avSeq[ri]||rotaGeradaD[ri]!==r) return;
+    r._calc='local';
+  }
+  _renderResultadoD();
+}
+function toggleAjusteD(){ ajusteD=!ajusteD; _focoD='ajustar'; _renderResultadoD(); }
+window.toggleAjusteD=toggleAjusteD;
+function moverParadaD(ri,i,d){
+  const ps=_paradasD(rotaGeradaD[ri]), j=i+d;
+  if(j<0||j>=ps.length) return;
+  [ps[i],ps[j]]=[ps[j],ps[i]];
+  _focoD=_idDe(ps[j])+'|'+(d<0?'up':'down');
+  _mudouRotaD(ri);
+}
+window.moverParadaD=moverParadaD;
+function tirarParadaD(ri,i){
+  const ps=_paradasD(rotaGeradaD[ri]);
+  const [p]=ps.splice(i,1); if(!p) return;
+  _focoD=ps[i]?_idDe(ps[i])+'|tirar':(ps[i-1]?_idDe(ps[i-1])+'|tirar':'ajustar');
+  _mudouRotaD(ri);
+  _toast(`NF ${p.nf} saiu da rota e continua pendente.`);
+}
+window.tirarParadaD=tirarParadaD;
+function moverParaRotaD(ri,i,dest){
+  dest=parseInt(dest,10);
+  if(!Number.isInteger(dest)||dest===ri||!rotaGeradaD[dest]) return;
+  const [p]=_paradasD(rotaGeradaD[ri]).splice(i,1); if(!p) return;
+  _paradasD(rotaGeradaD[dest]).push(p);
+  _focoD='ajustar';
+  rotaGeradaD[dest]._ajustada=true; _recalcLocalD(rotaGeradaD[dest]); _agendarAvaliacaoD(dest);
+  _mudouRotaD(ri);
+  _toast(`NF ${p.nf} foi para a Rota ${dest+1}.`);
+}
+window.moverParaRotaD=moverParaRotaD;
+function adicionarParadaD(ri,id){
+  const o=_poolViagemD().find(x=>_idDe(x)===id); if(!o) return;
+  _paradasD(rotaGeradaD[ri]).push({...o});
+  _focoD=_idDe(o)+'|up';   // entra no fim da rota: o foco vai para "subir" dela
+  _mudouRotaD(ri);
+  _toast(`NF ${o.nf} entrou no fim da rota.`);
+}
+window.adicionarParadaD=adicionarParadaD;
+function desfazerAjusteD(){
+  if(!rotaOrigD) return;
+  if(!confirm('Voltar todas as rotas para como o sistema montou?')) return;
+  rotaGeradaD=_clone(rotaOrigD);
+  rotaGeradaD.forEach((r,i)=>{ clearTimeout(_avTimer[i]); _avSeq[i]=(_avSeq[i]||0)+1; delete _avPend[i]; });
+  _focoD='ajustar';
+  _renderResultadoD();
+}
+window.desfazerAjusteD=desfazerAjusteD;
+async function otimizarRotaD(ri){
+  const r=rotaGeradaD[ri]; if(!r) return;
+  const ps=_paradasD(r); if(ps.length<2) return;
+  clearTimeout(_avTimer[ri]); _avSeq[ri]=(_avSeq[ri]||0)+1; const seq=_avSeq[ri];
+  r._calc='otimizando'; _renderResultadoD();
+  const pesoE=ps.filter(p=>_tipoDe(p)==='entrega').reduce((s,p)=>s+(+p.peso||0),0);
+  const pesoC=ps.filter(p=>_tipoDe(p)==='coleta').reduce((s,p)=>s+(+p.peso||0),0);
+  let res=()=>{};
+  _avPend[ri]=new Promise(ok=>{ res=ok; });
+  try{
+    // todas as paradas que estão na rota continuam nela: o motor só escolhe a ordem
+    const d=await apiPost('/solve',{
+      hora_saida:rotaCtxD.saida, time_limit_s:10, pedidos:ps,
+      veiculos:[{id:vehSel?.id||'v1', nome:vehSel?.nome||'Veículo', capKg:Math.max(capKgD||0,Math.ceil(Math.max(pesoE,pesoC))), maxPed:ps.length}],
+      deposito:{lat:DEPOT.lat,lng:DEPOT.lng,nome:DEPOT.name},
+    });
+    if(seq!==_avSeq[ri]||rotaGeradaD[ri]!==r) return;
+    const nova=(d.routes||d.rotas||[])[0];
+    if(!nova||!(nova.pedidos||[]).length) throw new Error('sem rota');
+    const ids=new Set(nova.pedidos.map(_idDe));
+    const fora=ps.filter(p=>!ids.has(_idDe(p)));
+    r.pedidos=[...nova.pedidos,...fora];
+    r._ajustada=true;
+    if(fora.length){
+      _recalcLocalD(r); _renderResultadoD(); _agendarAvaliacaoD(ri);
+      _toast(`O sistema não achou lugar para ${_plural(fora.length,'parada','paradas')} (horário); ${fora.length===1?'ela ficou':'elas ficaram'} no fim da rota.`);
+    } else {
+      _recalcLocalD(r);
+      r.km=+nova.km||r.km; r.mins=+nova.mins||r.mins; r._fonte=d.fonte_distancia||'—'; r._calc='ok';
+      _renderResultadoD();
+      _toast('Ordem otimizada.');
+    }
+  }catch(e){
+    if(seq===_avSeq[ri]&&rotaGeradaD[ri]===r){ r._calc='ok'; _renderResultadoD(); }
+    _toast('Não foi possível otimizar agora. Tente de novo em instantes.');
+  }finally{ res(); }
+}
+window.otimizarRotaD=otimizarRotaD;
+function _htmlAddLista(ri){
+  const q=_addBuscaD.trim().toLowerCase();
+  const pool=_poolViagemD().filter(o=>!q||[o.nf,o.dest,o.cidade,o.bairro].some(t=>String(t||'').toLowerCase().includes(q)));
+  if(!pool.length) return `<div class="empty-mini">${q?'Nenhum pedido pendente com essa busca.':'Nenhum outro pedido pendente para esta viagem.'}</div>`;
+  return pool.slice(0,40).map(o=>`<div class="add-item"><div class="t"><b>NF ${esc(o.nf)}</b>${_tag(o)}<br>${o.dest&&o.dest!==o.cidade?esc(o.dest)+' · ':''}${esc(o.cidade)} · ${(+o.peso||0).toLocaleString('pt-BR')} kg${o.janela_ini!=null?` · ${_hhmm(o.janela_ini)}–${_hhmm(o.janela_fim)}`:''}</div><button type="button" class="btn-sm" data-id="${esc(_idDe(o))}" onclick="adicionarParadaD(${ri},this.dataset.id)" aria-label="Adicionar NF ${esc(o.nf)} à rota">Adicionar</button></div>`).join('')
+    + (pool.length>40?`<div class="rot-nota">Mostrando 40 de ${pool.length}. Use a busca para achar os outros.</div>`:'');
+}
+function filtrarAddD(v){ _addBuscaD=v; const el=$id('add-lista'); if(el) el.innerHTML=_htmlAddLista(rotaSelD); }
+window.filtrarAddD=filtrarAddD;
+// Pedido editado ou excluído enquanto está numa rota ainda não confirmada
+function _pedNaRota(idAntigo,dados){
+  rotaGeradaD.forEach((r,ri)=>{
+    const ps=_paradasD(r), i=ps.findIndex(p=>_idDe(p)===idAntigo);
+    if(i<0) return;
+    if(dados) Object.assign(ps[i],dados); else ps.splice(i,1);
+    _mudouRotaD(ri);
+  });
+}
+
 function renderRotasResultD(rotas){
   document.getElementById('rot-step-loading').style.display='none';
+  rotaOrigD=_clone(rotas||[]); ajusteD=false; rotaSelD=0; _addBuscaD=''; _focoD=null;
+  _renderResultadoD();
+}
+window.renderRotasResultD=renderRotasResultD;
+function _renderResultadoD(){
   const res=document.getElementById('rot-step-results'); res.style.display='block';
+  const rotas=rotaGeradaD;
+  // guarda o foco (os botões são redesenhados a cada mudança)
+  const ae=document.activeElement;
+  if(!_focoD&&ae&&res.contains(ae)) _focoD=ae.dataset?.foco||ae.id||null;
   if(!rotas.length){ res.innerHTML=`<div class="empty-mini">Nenhuma rota gerada.</div><button class="btn-modal-sec" onclick="renderVeiculosD()">← Voltar</button>`; return; }
+  if(rotaSelD>=rotas.length) rotaSelD=0;
   const totalKm=rotas.reduce((s,r)=>s+(r.km||r.distancia_km||0),0);
-  const totalE=rotas.reduce((s,r)=>s+(r.pedidos?.length||r.paradas?.length||0),0);
-  const tT=_contarTipos(rotas.flatMap(r=>r.pedidos||r.paradas||[]));
+  const totalE=rotas.reduce((s,r)=>s+_paradasD(r).length,0);
+  const tT=_contarTipos(rotas.flatMap(r=>_paradasD(r)));
+  const ajustada=rotas.some(r=>r._ajustada);
+  const fora=ajustada?_poolViagemD().length:naoAlocD.length;
+  const msgFora = !fora ? ''
+    : ajustada ? `<div class="import-msg show info" style="max-width:640px;margin:0 0 16px">${_plural(fora,'pedido pendente ficou','pedidos pendentes ficaram')} fora desta viagem. ${fora===1?'Ele continua':'Eles continuam'} na lista para a próxima.</div>`
+    : `<div class="import-msg show info" style="max-width:640px;margin:0 0 16px">Esta viagem levou <b>${totalE} de ${totalE+naoAlocD.length}</b> pedidos: o limite foi de ${maxPedD} paradas e ${capKgD.toLocaleString('pt-BR')} kg. Os outros ${naoAlocD.length} continuam pendentes para a próxima viagem (gere outra com o próximo veículo).${foraJanelaD.length?` Atenção: ${_plural(foraJanelaD.length,'pedido tem','pedidos têm')} horário que não dá para cumprir saindo às ${_hhmm(rotaCtxD.saida)} (NF ${foraJanelaD.slice(0,8).map(esc).join(', ')}).`:''}</div>`;
   res.innerHTML=`
     <button class="btn-voltar-topo" onclick="renderVeiculosD()"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Gerar outra rota</button>
     <div class="kpis" style="max-width:640px;margin-bottom:18px">
@@ -2169,17 +2731,16 @@ function renderRotasResultD(rotas){
       <div class="kpi"><div class="kpi-lbl">PARADAS</div><div class="kpi-val">${totalE}</div><div class="kpi-split">${_resumoTipos(tT)}</div></div>
       <div class="kpi"><div class="kpi-lbl">KM TOTAL</div><div class="kpi-val">${totalKm.toFixed(0)}</div></div>
     </div>
-    ${regraCargaD==='soma_entregas_e_coletas'?'<div class="import-msg show warn" style="max-width:640px;margin:0 0 16px">Nesta rota o peso das entregas e das coletas foi somado para caber no veículo (regra mais conservadora).</div>':''}
-    ${naoAlocD.length?`<div class="import-msg show info" style="max-width:640px;margin:0 0 16px">Esta viagem levou <b>${totalE} de ${totalE+naoAlocD.length}</b> pedidos: o limite foi de ${maxPedD} paradas e ${capKgD.toLocaleString('pt-BR')} kg. Os outros ${naoAlocD.length} continuam pendentes para a próxima viagem (gere outra com o próximo veículo).${foraJanelaD.length?` Atenção: ${_plural(foraJanelaD.length,'pedido tem','pedidos têm')} horário que não dá para cumprir saindo às ${_hhmm(rotaCtxD.saida)} (NF ${foraJanelaD.slice(0,8).map(esc).join(', ')}).`:''}</div>`:''}
-    <div class="rota-tabs-d" id="rota-tabs-d">${rotas.map((r,i)=>`<div class="rota-tab-d ${i===0?'active':''}" onclick="selRotaTabD(${i})">Rota ${i+1} · ${(r.pedidos?.length||r.paradas?.length||0)} paradas</div>`).join('')}</div>
+    ${regraCargaD==='soma_entregas_e_coletas'&&!ajustada?'<div class="import-msg show warn" style="max-width:640px;margin:0 0 16px">Nesta rota o peso das entregas e das coletas foi somado para caber no veículo (regra mais conservadora).</div>':''}
+    ${msgFora}
+    <div class="rota-tabs-d" id="rota-tabs-d" role="tablist">${rotas.map((r,i)=>`<div class="rota-tab-d ${i===rotaSelD?'active':''}" role="tab" tabindex="0" aria-selected="${i===rotaSelD}" onclick="selRotaTabD(${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selRotaTabD(${i})}">Rota ${i+1} · ${_paradasD(r).length} paradas${r._ajustada?' · ajustada':''}</div>`).join('')}</div>
     <div id="rota-detail-d"></div>
     <div id="confirmar-rota-wrap" style="margin-top:18px;max-width:640px">
       <button class="btn-modal-primary" id="btn-confirmar-rota" onclick="confirmarRotaD()" style="margin-top:0">✔ Confirmar saída do veículo</button>
       <div style="font-size:11.5px;color:var(--text3);margin-top:8px;text-align:center">Ao confirmar, as entregas e coletas desta rota saem da lista de pendentes e a rota fica salva na aba Rotas.</div>
     </div>`;
-  selRotaTabD(0);
+  selRotaTabD(rotaSelD);
 }
-window.renderRotasResultD=renderRotasResultD;
 
 // Confirma TODAS as rotas geradas nesta sessão: muda status dos pedidos e salva no Firebase
 // ── Link do motorista ───────────────────────────────────────────────────
@@ -2204,6 +2765,20 @@ async function confirmarRotaD(){
   if(!rotaGeradaD.length){ return; }
   const btn=document.getElementById('btn-confirmar-rota');
   btn.disabled=true; btn.textContent='Confirmando...';
+  // espera o recálculo da rota ajustada (km e horários) terminar
+  const pend=Object.values(_avPend);
+  if(pend.length){ btn.textContent='Terminando o cálculo...'; await Promise.all(pend); Object.keys(_avPend).forEach(k=>delete _avPend[k]); }
+  const volta=()=>{ const b=document.getElementById('btn-confirmar-rota'); if(b){ b.disabled=false; b.textContent='✔ Confirmar saída do veículo'; } };
+  // pedidos que foram excluídos ou saíram em outra rota enquanto esta era ajustada
+  const sumiu=[];
+  rotaGeradaD.forEach(r=>_paradasD(r).forEach(p=>{ const o=allOrders.find(x=>x.id===_idDe(p)); if(!o||o.status!=='pendente') sumiu.push(p.nf); }));
+  if(sumiu.length){
+    volta();
+    alert(`Estes pedidos não estão mais pendentes (foram excluídos ou já saíram em outra rota): NF ${sumiu.join(', ')}.\n\nToque em "Ajustar a rota" e tire ${sumiu.length===1?'ele':'eles'} antes de confirmar.`);
+    return;
+  }
+  const probs=rotaGeradaD.flatMap((r,i)=>_problemasRotaD(r).map(t=>(rotaGeradaD.length>1?`Rota ${i+1}: `:'')+t));
+  if(probs.length&&!confirm(`Atenção:\n\n• ${probs.join('\n• ')}\n\nConfirmar a saída mesmo assim?`)){ volta(); return; }
   try{
     const agora=new Date().toISOString(), rotaId='rota_'+Date.now();
     const rotas=rotaGeradaD.map((r,i)=>{
@@ -2215,7 +2790,8 @@ async function confirmarRotaD(){
         veiculo:vehSel?.nome||'', motorista:motoristaSelecionadoD?.nome||'', cap_kg:capKgD,
         km:r.km||r.distancia_km||0, tempo_min:r.mins||r.tempo_min||0,
         peso_total:r.peso_total||paradas.reduce((s,p)=>s+(p.peso||0),0),
-        num_paradas:paradas.length, entregas:nP.entrega, coletas:nP.coleta, status:'em_rota', paradas };
+        num_paradas:paradas.length, entregas:nP.entrega, coletas:nP.coleta, status:'em_rota', paradas,
+        ...(r._ajustada?{ajustada:true}:{}) };
     }).filter(r=>r.paradas.length);
     if(!rotas.length){ throw new Error('Nenhuma nota nas rotas.'); }
 
@@ -2848,22 +3424,57 @@ function renderMotoristasPage(){
 window.renderMotoristasPage=renderMotoristasPage;
 
 function selRotaTabD(idx){
-  document.querySelectorAll('.rota-tab-d').forEach((t,i)=>t.classList.toggle('active',i===idx));
-  const r=rotaGeradaD[idx];
-  const paradas=r.pedidos||r.paradas||[];
+  rotaSelD=idx;
+  document.querySelectorAll('.rota-tab-d').forEach((t,i)=>{ t.classList.toggle('active',i===idx); t.setAttribute('aria-selected',String(i===idx)); });
+  const r=rotaGeradaD[idx]; if(!r) return;
+  const paradas=_paradasD(r);
   const last=paradas[paradas.length-1];
   const wp=paradas.slice(0,-1).map(p=>`${p.lat},${p.lng}`).join('|');
   const gmaps=last?`https://www.google.com/maps/dir/?api=1&origin=${DEPOT.lat},${DEPOT.lng}&destination=${last.lat},${last.lng}${wp?'&waypoints='+wp:''}&travelmode=driving`:'#';
   const km=r.km||r.distancia_km||0, mins=r.mins||r.tempo_min||0, peso=r.peso_total||paradas.reduce((s,p)=>s+(p.peso||0),0);
+  const fonte=r._fonte||fonteDistanciaD, calc=r._calc||'ok';
+  const nT=_contarTipos(paradas), carga=_perfilCarga(paradas);
+  const probs=_problemasRotaD(r);
+  const outras=rotaGeradaD.map((x,k)=>k).filter(k=>k!==idx);
+  const notaFonte = calc==='calculando' ? '<div class="calc-st" role="status">Recalculando km e horários na ordem nova…</div>'
+    : calc==='otimizando' ? '<div class="calc-st" role="status">Otimizando a ordem das paradas…</div>'
+    : (calc==='local'||fonte==='Haversine') ? `<div style="margin-top:10px;font-size:11.5px;color:#8a5a06;background:rgba(250,204,21,.16);border:1px solid rgba(202,138,4,.35);border-radius:8px;padding:8px 12px">⚠️ ${calc==='local'?'Servidor de rotas sem resposta: km e horários estimados em linha reta.':'Distância calculada em linha reta (OSRM indisponível).'} O km real de estrada costuma ser maior.</div>`
+    : fonte==='OSRM' ? `<div style="margin-top:10px;font-size:11px;color:var(--text3)">✓ Distância real via OSRM (rota de estrada)</div>` : '';
+  const linha=(p,i)=>{
+    const pid=_idDe(p), tarde=p.janela_fim!=null&&p.chegada_min!=null&&p.chegada_min>p.janela_fim;
+    const aprox=p.geoStatus&&p.geoStatus!=='ok';
+    const acoes=ajusteD?`<div class="dm-acoes">
+        <button type="button" data-foco="${esc(pid)}|up" onclick="moverParadaD(${idx},${i},-1)" ${i===0?'disabled':''} aria-label="Subir NF ${esc(p.nf)}" title="Subir">↑</button>
+        <button type="button" data-foco="${esc(pid)}|down" onclick="moverParadaD(${idx},${i},1)" ${i===paradas.length-1?'disabled':''} aria-label="Descer NF ${esc(p.nf)}" title="Descer">↓</button>
+        ${outras.length?`<select data-foco="${esc(pid)}|rota" aria-label="Mover NF ${esc(p.nf)} para outra viagem" onchange="moverParaRotaD(${idx},${i},this.value)"><option value="">Viagem…</option>${outras.map(k=>`<option value="${k}">Rota ${k+1}</option>`).join('')}</select>`:''}
+        <button type="button" class="tirar" data-foco="${esc(pid)}|tirar" onclick="tirarParadaD(${idx},${i})" aria-label="Tirar NF ${esc(p.nf)} desta rota" title="Tirar da rota">✕</button>
+      </div>`:'';
+    return `<div class="delivery-mini${ajusteD?' ajuste':''}"><div class="delivery-mini-num${_tipoDe(p)==='coleta'?' c':''}">${i+1}</div><div class="dm-txt"><div style="font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text)">NF ${esc(p.nf)}${_tag(p)}${p.chegada_min!=null?`<span class="cheg">~${_hhmm(p.chegada_min)}</span>`:''}${tarde?'<span class="atraso">depois do horário</span>':''}${aprox?`<button type="button" class="aprox-bt" data-foco="${esc(pid)}|local" onclick="abrirPedido(${esc(JSON.stringify(pid))})">local aproximado · corrigir</button>`:''}</div><div style="font-size:11px;color:var(--text3)">${p.janela_ini!=null?`Horário ${_hhmm(p.janela_ini)}–${_hhmm(p.janela_fim)} · `:''}${p.dest&&p.dest!==p.cidade?esc(p.dest)+' · ':''}${p.endereco?esc(p.endereco)+' · ':''}${esc(p.cidade||'')} · ${(+p.peso||0).toLocaleString('pt-BR')} kg</div></div>${acoes}</div>`;
+  };
   document.getElementById('rota-detail-d').innerHTML=`
     <div id="rota-map"></div>
-    ${paradas.some(p=>p.geoStatus&&p.geoStatus!=='ok')?`<div class="mapa-nota">⚠️ ${_plural(paradas.filter(p=>p.geoStatus&&p.geoStatus!=='ok').length,'parada está','paradas estão')} sem endereço exato (sem CEP ou CEP não localizado). Elas aparecem no centro da cidade, umas em cima das outras, e a ordem e os km delas são aproximados. Com o XML da nota, cada uma vai para a rua certa.</div>`:''}
-    <div class="nav-btns-d"><a href="${gmaps}" target="_blank" class="btn-nav-d gmaps">📍 Google Maps</a>${last?`<a href="https://waze.com/ul?ll=${last.lat},${last.lng}&navigate=yes" target="_blank" class="btn-nav-d waze">🚗 Waze</a>`:''}</div>
-    <div class="card" style="margin-bottom:14px"><div style="display:flex;gap:20px;font-size:13px;color:var(--text2);flex-wrap:wrap"><span>📦 <b style="color:var(--text)">${peso.toLocaleString('pt-BR')} kg</b></span><span>📍 <b style="color:var(--text)">${paradas.length}</b> paradas</span>${_contarTipos(paradas).coleta&&_contarTipos(paradas).entrega?`<span>🚚 sai com <b style="color:var(--text)">${_perfilCarga(paradas).saida.toLocaleString('pt-BR')} kg</b> · no máximo <b style="color:var(--text)">${_perfilCarga(paradas).max.toLocaleString('pt-BR')} kg</b> a bordo</span>`:''}<span>🛣️ <b style="color:var(--text)">${km.toFixed(1)}</b> km</span>${mins?`<span>⏱️ <b style="color:var(--text)">${mins}</b> min</span>`:''}</div>
-      ${fonteDistanciaD==='Haversine'?`<div style="margin-top:10px;font-size:11.5px;color:#8a5a06;background:rgba(250,204,21,.16);border:1px solid rgba(202,138,4,.35);border-radius:8px;padding:8px 12px">⚠️ Distância calculada em linha reta (OSRM indisponível) — km real de estrada costuma ser maior.</div>`
-      :fonteDistanciaD==='OSRM'?`<div style="margin-top:10px;font-size:11px;color:var(--text3)">✓ Distância real via OSRM (rota de estrada)</div>`:''}
+    ${paradas.some(p=>p.geoStatus&&p.geoStatus!=='ok')?`<div class="mapa-nota">⚠️ ${_plural(paradas.filter(p=>p.geoStatus&&p.geoStatus!=='ok').length,'parada está','paradas estão')} sem endereço exato. No mapa, ficam no centro da cidade, e a ordem e os km delas são aproximados. Toque em "corrigir" para buscar o endereço ou marcar o ponto.</div>`:''}
+    ${paradas.length?`<div class="nav-btns-d"><a href="${gmaps}" target="_blank" rel="noopener" class="btn-nav-d gmaps">📍 Google Maps</a>${last?`<a href="https://waze.com/ul?ll=${last.lat},${last.lng}&navigate=yes" target="_blank" rel="noopener" class="btn-nav-d waze">🚗 Waze</a>`:''}</div>`:''}
+    <div class="card" style="margin-bottom:14px"><div style="display:flex;gap:20px;font-size:13px;color:var(--text2);flex-wrap:wrap"><span>📦 <b style="color:var(--text)">${peso.toLocaleString('pt-BR')} kg</b></span><span>📍 <b style="color:var(--text)">${paradas.length}</b> paradas</span>${nT.coleta&&nT.entrega?`<span>🚚 sai com <b style="color:var(--text)">${carga.saida.toLocaleString('pt-BR')} kg</b> · no máximo <b style="color:var(--text)">${carga.max.toLocaleString('pt-BR')} kg</b> a bordo</span>`:''}<span>🛣️ <b style="color:var(--text)">${km.toFixed(1)}</b> km</span>${mins?`<span>⏱️ <b style="color:var(--text)">${mins}</b> min</span>`:''}</div>
+      ${notaFonte}
     </div>
-    <div>${paradas.map((p,i)=>`<div class="delivery-mini"><div class="delivery-mini-num${_tipoDe(p)==='coleta'?' c':''}">${i+1}</div><div style="flex:1;min-width:0"><div style="font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text)">NF ${esc(p.nf)}${_tag(p)}${p.chegada_min!=null?`<span class="cheg">~${_hhmm(p.chegada_min)}</span>`:''}${p.geoStatus&&p.geoStatus!=='ok'?'<span class="aprox">local aproximado</span>':''}</div><div style="font-size:11px;color:var(--text3)">${p.janela_ini!=null?`Horário ${_hhmm(p.janela_ini)}–${_hhmm(p.janela_fim)} · `:''}${p.dest&&p.dest!==p.cidade?esc(p.dest)+' · ':''}${p.endereco?esc(p.endereco)+' · ':''}${esc(p.cidade||'')} · ${(+p.peso||0).toLocaleString('pt-BR')} kg</div></div></div>`).join('')}</div>`;
+    ${probs.length?`<div class="rota-alertas">${probs.map(t=>`<div class="import-msg show warn">⚠️ ${esc(t)}</div>`).join('')}</div>`:''}
+    <div class="ajuste-barra">
+      <span class="info">${ajusteD?'Mude a ordem com as setas, tire paradas ou adicione pedidos pendentes. Os km e horários são recalculados a cada mudança.':(r._ajustada?'Rota ajustada à mão.':'Ordem montada pelo sistema.')}${r._ajustada?'<span class="ajuste-tag">ajustada</span>':''}</span>
+      <div class="ajuste-acoes">
+        <button type="button" class="btn-sm${ajusteD?' on':''}" data-foco="ajustar" aria-pressed="${ajusteD}" onclick="toggleAjusteD()">${ajusteD?'✔ Concluir ajuste':'✏️ Ajustar a rota'}</button>
+        ${r._ajustada&&paradas.length>1?`<button type="button" class="btn-sm" data-foco="otimizar" onclick="otimizarRotaD(${idx})" ${calc==='otimizando'?'disabled':''}>Otimizar a ordem</button>`:''}
+        ${rotaGeradaD.some(x=>x._ajustada)?`<button type="button" class="btn-sm" data-foco="desfazer" onclick="desfazerAjusteD()">Desfazer ajustes</button>`:''}
+      </div>
+    </div>
+    <div>${paradas.length?paradas.map(linha).join(''):'<div class="empty-mini">Esta viagem ficou sem paradas. Ela não será confirmada.</div>'}</div>
+    ${ajusteD?`<div class="add-parada"><label class="field-lbl" for="add-busca" style="margin-top:0">Adicionar parada (${_poolViagemD().length} ${_poolViagemD().length===1?'pedido pendente':'pedidos pendentes'} desta viagem)</label><input class="field-inp" id="add-busca" type="search" autocomplete="off" placeholder="Buscar por NF, cliente ou cidade" value="${esc(_addBuscaD)}" oninput="filtrarAddD(this.value)"><div class="add-lista" id="add-lista">${_htmlAddLista(idx)}</div></div>`:''}`;
+  // devolve o foco ao botão equivalente depois de redesenhar
+  if(_focoD){
+    const f=_focoD; _focoD=null;
+    const el=document.querySelector(`#rot-step-results [data-foco="${CSS.escape(f)}"]`)||document.getElementById(f);
+    if(el){ el.focus({preventScroll:false}); if(el.id==='add-busca'&&el.setSelectionRange){ const n=el.value.length; el.setSelectionRange(n,n); } }
+  }
   setTimeout(()=>desenharMapaRota(paradas),100);
 }
 window.selRotaTabD=selRotaTabD;
@@ -2877,11 +3488,13 @@ function desenharMapaRota(paradas){
   const pts=[[DEPOT.lat,DEPOT.lng]];
   paradas.forEach(p=>{ if(Number.isFinite(p.lat)&&Number.isFinite(p.lng)) pts.push([p.lat,p.lng]); });
   pts.push([DEPOT.lat,DEPOT.lng]);
+  if(pts.length<3) return;   // viagem sem paradas: só o CD
   L.polyline(pts,{color:'#2f6fe4',weight:3,opacity:.7,dashArray:'6,5'}).addTo(rotaMapInst);
   _agruparParadas(paradas).forEach(g=>{
     L.marker([g.lat,g.lng],{icon:_iconeGrupo(paradas,g,'#0d1b2e',28)}).addTo(rotaMapInst).bindTooltip(_textoGrupo(paradas,g));
   });
-  rotaMapInst.fitBounds(pts,{padding:[40,40]});
+  // sem animação: o mapa é redesenhado a cada ajuste, e apagar um mapa no meio do zoom animado dá erro no Leaflet
+  rotaMapInst.fitBounds(pts,{padding:[40,40],maxZoom:15,animate:false});
 }
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -3052,7 +3665,7 @@ var s=document.getElementById('top-search');
 s.addEventListener('input',function(){var q=s.value.trim().toLowerCase(),pg=document.getElementById('page-pedidos');
   if(q&&pg.style.display==='none'&&window.irParaPagina)window.irParaPagina('pedidos');
   pg.querySelectorAll('.rc-card').forEach(function(card){var ok=!q||card.textContent.toLowerCase().indexOf(q)>-1;card.style.display=ok?'':'none';
-    if(q&&ok&&[].some.call(card.querySelectorAll('.nf-mini-code'),function(x){return x.textContent.toLowerCase().indexOf(q)>-1}))card.classList.add('exp');});});
+    if(q&&ok&&[].some.call(card.querySelectorAll('.nf-mini-code'),function(x){return x.textContent.toLowerCase().indexOf(q)>-1})){card.classList.add('exp','todos');var mb=card.querySelector('.rc-mais');if(mb)mb.textContent='Mostrar menos';}});});
 var al=document.getElementById('alert-list'),bell=document.getElementById('bell');
 new MutationObserver(function(){bell.classList.toggle('has',!!al.querySelector('.alert-row'))}).observe(al,{childList:true,subtree:true});
 bell.addEventListener('click',function(){if(window.irParaPagina)window.irParaPagina('dashboard');setTimeout(function(){al.scrollIntoView({behavior:'smooth',block:'center'})},120);c();});})();

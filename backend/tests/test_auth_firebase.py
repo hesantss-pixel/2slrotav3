@@ -165,8 +165,8 @@ class TesteRotasProtegidas(unittest.TestCase):
         self.assertEqual(abertas, ["status"], f"rotas sem login: {abertas}")
         # o que lê ou grava o banco direto é só do administrador (empresa principal)
         self.assertEqual(sorted(protegidas), sorted(["listar_pedidos", "upload_nf", "sync_totvs"]))
-        # a conta de demonstração só calcula rota e conversa com a IA
-        self.assertEqual(sorted(demo), sorted(["solve", "chat"]))
+        # a conta de demonstração só calcula rota, mede a rota ajustada e conversa com a IA
+        self.assertEqual(sorted(demo), sorted(["solve", "avaliar", "chat"]))
 
 
 if __name__ == "__main__":

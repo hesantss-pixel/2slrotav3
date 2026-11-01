@@ -49,6 +49,48 @@ Banco e login: Firebase, projeto `slog-pedidos` (Realtime Database + Authenticat
   qualquer motivo, o servidor refaz somando entregas + coletas na capacidade (mais conservador) e
   avisa na tela (`regra_carga` na resposta do `/solve`).
 
+## Pedido à mão e local no mapa
+
+- **Novo pedido** (página Pedidos): entrega ou coleta, nota/nº do pedido, cliente, CEP, rua e
+  número, bairro, cidade, UF, peso, volumes e urgente. O CEP completa rua, bairro, cidade e UF
+  (ViaCEP) sem apagar o que já foi digitado. Grava em `pedidos_rota/<chave>` com
+  `origem: "manual"` e `criadoEm`.
+- **Editar**: toque no pedido (na lista da região ou no pino da página Mapa). Trocar entrega ↔
+  coleta muda a chave (`C_`), copiando os outros campos da nota (chave da NF-e, remetente…).
+  Pedido que já saiu em rota abre só para leitura ("devolva a rota para mudar").
+- **Excluir**: só pedidos pendentes, com confirmação.
+- **Local no mapa**: "Buscar pelo endereço" procura rua + número + cidade (Nominatim); sem
+  resultado, usa o CEP; por último, só a cidade (avisa que é aproximado). O pino pode ser
+  arrastado ou colocado com um toque no mapa (`geoManual: true`). Mudar só o cliente ou o peso
+  mantém o local salvo; mudar o endereço sem marcar o ponto volta para o centro da cidade e o
+  CEP é localizado em segundo plano.
+- A página Pedidos avisa quantos pendentes estão sem local exato e marca cada um.
+- Número repetido: pergunta antes de trocar; se a nota com esse número já saiu em rota, não deixa.
+- Nos dados de exemplo (banco vazio) e na demonstração com as regras antigas, as mudanças ficam
+  só na tela. Cadastrar o primeiro pedido de verdade tira os pedidos de exemplo, como a importação.
+- O Nominatim recebe no máximo 1 consulta por segundo (a política dele pede isso).
+
+## Ajuste manual da rota (antes de confirmar a saída)
+
+- Depois de gerar a rota, **Ajustar a rota** mostra, em cada parada: subir, descer, tirar da
+  rota e (com mais de uma viagem) mover para outra viagem. Embaixo, **Adicionar parada** lista os
+  pendentes desta viagem (mesmo tipo e data), com busca. Parada tirada continua pendente.
+- A cada mudança, a tela estima na hora (linha reta) e pede ao servidor a medida da ordem nova
+  (`POST /avaliar`: km, tempo total e chegada em cada parada, pelo OSRM, com 15 min por parada e
+  espera pela janela). Mudanças seguidas geram uma medição só. Sem resposta do servidor, fica a
+  estimativa em linha reta, com aviso.
+- **Otimizar a ordem**: o motor reordena só as paradas que estão na rota (todas continuam nela).
+  **Desfazer ajustes** volta todas as viagens ao que o sistema montou.
+- Avisos na rota: passa da capacidade (carga máxima a bordo), mais paradas que o limite, parada
+  que chega depois do horário marcado, viagem com mais de 8 horas. Ao confirmar com algum aviso,
+  o sistema pergunta antes.
+- Ao confirmar, espera a medição terminar e confere se todos os pedidos ainda estão pendentes
+  (excluídos ou despachados em outra aba bloqueiam). A rota vai para `rotas_confirmadas` na ordem
+  ajustada, com `ajustada: true`, e o link do motorista sai nessa ordem.
+- Rota já confirmada não é editada (as baixas do motorista são guardadas pela posição da parada).
+  Para mudar, use **Devolver** na página Rotas e gere de novo.
+- "Gerar outra rota" ou sair da página Roteirização descarta a rota que não foi confirmada.
+
 ## Conta de demonstração e página Acessos
 
 - **Acessos** (só o administrador, `ADMIN_UID` no `index.html` e nas regras): cria acesso de
@@ -169,7 +211,8 @@ Variáveis de ambiente usadas:
 | `DOCS_PUBLICAS=1` | Mostra a documentação em `/docs` | Não |
 
 Verificação: `https://rotainteligente2sl-production.up.railway.app/status` deve responder
-`"versao": "3.3.0"` e `"login": "obrigatório"`.
+`"versao": "3.5.0"` e `"login": "obrigatório"`. Enquanto o Railway não publicar a 3.5.0, o
+ajuste da rota funciona com a estimativa em linha reta (a tela avisa).
 
 ### 4. Tela (GitHub Pages)
 
@@ -199,7 +242,9 @@ troque `BACKEND_URL` no `index.html`.
   - Motor de rotas (`tests/test_vrp_coletas.py`): só entregas, só coletas, pedidos antigos sem
     tipo, viagem mista com entregas antes das coletas, capacidade, limite de paradas, plano B e
     janela de horário (ordem decidida pela janela, espera até abrir, janela que já passou,
-    janela impossível pelo caminho, sem hora de saída).
+    janela impossível pelo caminho, sem hora de saída) e medida da rota ajustada (`/avaliar`:
+    mantém a ordem, ordem ruim custa mais km, atendimento, espera da janela, jornada, limite de
+    paradas e mesma conta do motor para a mesma ordem).
     Roda com um OR-Tools simulado (`tests/fake_ortools.py`, força bruta com as mesmas regras de
     dimensão), porque o pacote não instala no ambiente de testes; as chamadas usadas são as dos
     exemplos oficiais do OR-Tools 9.9.
@@ -214,12 +259,25 @@ troque `BACKEND_URL` no `index.html`.
   não realizado com motivo, correção, link encerrado/cortado, escritório aplicando as baixas,
   foto no escritório, encerrar link, devolver sem desfazer o que foi entregue),
   em 1440 px e no celular (390 px).
+- Versão 3.5 (pedido à mão e ajuste da rota), com a separação por empresa: cadastro com CEP que
+  completa o endereço, busca pelo endereço, ponto marcado no mapa, edição que mantém o local,
+  troca entrega ↔ coleta preservando a nota, NF repetida, exclusão, pino do Mapa abrindo o pedido,
+  dados de exemplo sem gravar; ajuste com subir/descer/tirar/adicionar, medição pelo servidor
+  (e estimativa quando ele falha), várias mudanças em uma medição, otimizar, desfazer, avisos de
+  capacidade, confirmação com aviso, rota salva na ordem ajustada com o link do motorista, pedido
+  despachado em outra aba bloqueando a confirmação; em 1440, 390, 360 e 320 px sem rolagem para o
+  lado e sem erros no console.
 
 Não testado daqui: o Firebase e o Railway de verdade (bloqueados neste ambiente), o motor
 OR-Tools rodando (não instalado aqui) e o mapa com as ruas.
 
 ## Histórico
 
+- Versão 3.5 (01/11/2026): pedido à mão (cadastrar, editar, excluir), local corrigido no mapa
+  (busca pelo endereço ou pino arrastado), aviso de pedidos sem local exato, ajuste manual da rota
+  antes de confirmar (ordem, tirar, adicionar, mover entre viagens, otimizar, desfazer) com nova
+  medição pelo servidor (`POST /avaliar`), avisos de capacidade/horário/jornada e cabeçalho sem
+  rolagem lateral em celulares de 320 px.
 - Versão 3.4 (31/10/2026): separação por empresa (`empresas/<id>`, `membros/<uid>`), operação do
   administrador em `empresas/principal` com cópia automática da raiz, demonstração com as notas do
   cliente salvas na própria área e "Virar cliente", CD pelo CEP por empresa, servidor sem acesso

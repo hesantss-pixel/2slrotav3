@@ -211,6 +211,42 @@ def _horarios(seq: list[int], dur_mx: list[list[int]], janelas: list) -> tuple[l
     return chegadas, t
 
 
+MAX_PARADAS_AVALIAR = 100
+
+
+def avaliar_sequencia(
+    pedidos: list[dict],
+    deposito: dict | None = None,
+    saida_min: int | None = None,
+) -> dict:
+    """
+    Km, tempo e chegada em cada parada para uma ordem JÁ DEFINIDA (a rota que o
+    usuário ajustou à mão). Não reordena nada: só mede.
+
+    Retorna {km, mins, chegada_min:[...], fonte_distancia, passa_da_jornada}.
+    chegada_min fica None quando não há hora de saída.
+    """
+    if not pedidos:
+        return {"km": 0.0, "mins": 0, "chegada_min": [], "fonte_distancia": "—", "passa_da_jornada": False}
+    if len(pedidos) > MAX_PARADAS_AVALIAR:
+        raise ValueError(f"No máximo {MAX_PARADAS_AVALIAR} paradas por rota.")
+    dep = deposito if deposito and deposito.get("lat") is not None and deposito.get("lng") is not None else DEPOT
+    points = [{"lat": float(dep["lat"]), "lng": float(dep["lng"])}]
+    for p in pedidos:
+        points.append({"lat": float(p["lat"]), "lng": float(p["lng"])})
+    dist_mx, dur_mx, fonte = build_distance_matrix(points)
+    seq = list(range(1, len(points)))
+    janelas = [_janela_s(p, saida_min) for p in pedidos]
+    chegadas, volta_s = _horarios(seq, dur_mx, janelas)
+    return {
+        "km": _calc_km(seq, dist_mx),
+        "mins": max(_calc_mins(seq, dur_mx), math.ceil(volta_s / 60)),
+        "chegada_min": [saida_min + int(round(t / 60)) if saida_min is not None else None for t in chegadas],
+        "fonte_distancia": fonte,
+        "passa_da_jornada": volta_s > JORNADA_S,
+    }
+
+
 def _rotas_dentro_da_regra(routes: list[dict], veiculos: list[dict]) -> bool:
     caps = {v["id"]: int(v["capKg"]) for v in veiculos}
     maxp = {v["id"]: int(v["maxPed"]) for v in veiculos}

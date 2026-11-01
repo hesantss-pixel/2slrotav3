@@ -190,5 +190,72 @@ class TesteJanela(unittest.TestCase):
         self.assertEqual(r["pedidos"][0]["chegada_min"], 480)
 
 
+def avaliar(pedidos, saida=None):
+    with mock.patch.object(vs.requests, "get", side_effect=OSError("sem rede")):
+        return vs.avaliar_sequencia(pedidos, CD, saida)
+
+
+class TesteAvaliarSequencia(unittest.TestCase):
+    """Rota ajustada à mão: mede na ordem recebida, sem reordenar."""
+
+    def test_vazia(self):
+        r = avaliar([])
+        self.assertEqual((r["km"], r["mins"], r["chegada_min"]), (0.0, 0, []))
+
+    def test_mantem_a_ordem_e_mede_ida_e_volta(self):
+        perto, longe = ped("P", "entrega", 10, .01, 0), ped("L", "entrega", 10, .05, 0)
+        a = avaliar([perto, longe], saida=420)
+        b = avaliar([longe, perto], saida=420)
+        # CD → P → L → CD e CD → L → P → CD têm o mesmo km (mesma reta), mas as chegadas mudam
+        self.assertAlmostEqual(a["km"], b["km"], places=1)
+        self.assertLess(a["chegada_min"][0], a["chegada_min"][1])
+        self.assertGreater(b["chegada_min"][1], b["chegada_min"][0])
+        self.assertLess(a["chegada_min"][0], b["chegada_min"][1])
+        self.assertEqual(a["fonte_distancia"], "Haversine")
+
+    def test_ordem_ruim_custa_mais_km(self):
+        norte, sul = ped("N", "entrega", 10, .05, 0), ped("S", "entrega", 10, -.05, 0)
+        norte2 = ped("N2", "entrega", 10, .06, 0)
+        boa = avaliar([norte, norte2, sul])
+        ruim = avaliar([norte, sul, norte2])
+        self.assertGreater(ruim["km"], boa["km"])
+
+    def test_tempo_inclui_atendimento(self):
+        r = avaliar([ped("A", "entrega", 10, 0, 0)], saida=420)
+        # ponto em cima do CD: só os 15 min de atendimento
+        self.assertEqual(r["mins"], 15)
+        self.assertEqual(r["chegada_min"], [420])
+
+    def test_espera_a_janela_abrir(self):
+        a = jan(ped("A", "entrega", 10, .001, 0), 600, 660)
+        r = avaliar([a], saida=420)
+        self.assertEqual(r["chegada_min"], [600])
+        self.assertGreaterEqual(r["mins"], 600 - 420 + 15)
+
+    def test_sem_saida_nao_tem_chegada(self):
+        r = avaliar([ped("A", "entrega", 10, .01, 0)])
+        self.assertEqual(r["chegada_min"], [None])
+
+    def test_passa_da_jornada(self):
+        # janela abre 7 h depois da saída e o ponto fica a ~1 h: volta depois das 8 h
+        a = jan(ped("A", "entrega", 10, .3, 0), 420 + 7 * 60, 420 + 7 * 60 + 30)
+        self.assertTrue(avaliar([a], saida=420)["passa_da_jornada"])
+        self.assertFalse(avaliar([ped("B", "entrega", 10, .01, 0)], saida=420)["passa_da_jornada"])
+
+    def test_limite_de_paradas(self):
+        with self.assertRaises(ValueError):
+            avaliar([ped(str(i), "entrega", 1, 0, 0) for i in range(vs.MAX_PARADAS_AVALIAR + 1)])
+
+    def test_mesmo_calculo_do_motor(self):
+        # a medida da rota gerada pelo motor e a da mesma ordem medida aqui batem
+        peds = [ped("A", "entrega", 50, .01, .01), ped("B", "entrega", 50, .02, -.01), ped("C", "entrega", 50, -.01, .02)]
+        res = resolver(peds, 1000, saida=420)
+        rota = res["routes"][0]
+        med = avaliar(rota["pedidos"], saida=420)
+        self.assertEqual(med["km"], rota["km"])
+        self.assertEqual(med["mins"], rota["mins"])
+        self.assertEqual(med["chegada_min"], [p["chegada_min"] for p in rota["pedidos"]])
+
+
 if __name__ == "__main__":
     unittest.main()

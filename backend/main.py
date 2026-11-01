@@ -3,6 +3,7 @@ main.py — Servidor de rotas do ROTAV3 (FastAPI)
 -----------------------------------------------
 Endpoints (todos, menos /status, exigem login — ver auth_firebase.py):
   POST /solve       — Monta as rotas (OR-Tools VRP) a partir dos pedidos
+  POST /avaliar     — Km, tempo e chegadas de uma rota na ordem ajustada à mão
   POST /chat        — Assistente de IA (com histórico por session_id)
   POST /upload-nf   — Lê notas fiscais (PDF, XML, XLSX, CSV)
   POST /sync        — Sincronização manual TOTVS → Firebase (opcional)
@@ -23,7 +24,7 @@ from fastapi import Depends, FastAPI, HTTPException, Header, UploadFile, File, F
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from vrp_solver   import solve_vrp
+from vrp_solver   import solve_vrp, avaliar_sequencia, MAX_PARADAS_AVALIAR
 from groq_agent import GroqChat as GeminiChat, consulta_unica, analisar_rotas_geradas
 from nf_parser    import parse_many
 import auth_firebase
@@ -41,7 +42,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="ROTAV3 — Servidor de rotas",
     description="Roteirização (OR-Tools VRP), assistente de IA e leitura de notas fiscais",
-    version="3.3.0",
+    version="3.5.0",
     docs_url="/docs" if os.getenv("DOCS_PUBLICAS", "0") == "1" else None,
     redoc_url=None,
 )
@@ -133,7 +134,7 @@ def exigir_admin(authorization: Optional[str] = Header(None)) -> str:
 
 def exigir_login_ou_demo(authorization: Optional[str] = Header(None)) -> tuple[str, str]:
     """Como exigir_login, mas aceita também a conta de demonstração (dados fictícios).
-    Só para /solve e /chat, que não leem nem gravam o banco quando a tela manda os pedidos."""
+    Só para /solve, /avaliar e /chat, que não leem nem gravam o banco quando a tela manda os pedidos."""
     try:
         return auth_firebase.verificar_papel(authorization)
     except auth_firebase.AuthError as e:
@@ -227,6 +228,14 @@ class SyncRequest(BaseModel):
     # Corpo vazio — apenas POST para disparar
     pass
 
+class AvaliarRequest(BaseModel):
+    """Rota na ordem escolhida pelo usuário: cada pedido com lat/lng e, se tiver,
+    janela_ini/janela_fim em minutos desde a meia-noite."""
+    model_config = {"extra": "ignore"}
+    pedidos:    list[dict]
+    deposito:   Optional[Deposito] = None
+    hora_saida: Optional[int] = None
+
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
 @app.get("/status")
@@ -234,7 +243,7 @@ def status():
     """Verificação de funcionamento (pública, sem dados da operação)."""
     return {
         "status": "online",
-        "versao": "3.3.0",
+        "versao": "3.5.0",
         "login": "obrigatório" if auth_firebase.AUTH_REQUIRED else "desligado (teste local)",
     }
 
@@ -369,6 +378,29 @@ def solve(body: SolveRequest, quem: tuple = Depends(exigir_login_ou_demo)):
     except Exception as e:
         logger.exception("Erro no /solve: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/avaliar")
+def avaliar(body: AvaliarRequest, quem: tuple = Depends(exigir_login_ou_demo)):
+    """
+    Mede uma rota na ordem que o usuário deixou (depois de ajustar à mão):
+    km, tempo total e chegada prevista em cada parada. Não lê nem grava o banco.
+    """
+    _limite_demo(quem, "avaliar", 300)
+    if len(body.pedidos) > MAX_PARADAS_AVALIAR:
+        raise HTTPException(status_code=422, detail=f"No máximo {MAX_PARADAS_AVALIAR} paradas por rota.")
+    try:
+        pedidos = [
+            {
+                "lat": float(p["lat"]), "lng": float(p["lng"]),
+                "janela_ini": p.get("janela_ini"), "janela_fim": p.get("janela_fim"),
+            }
+            for p in body.pedidos
+        ]
+    except (KeyError, TypeError, ValueError):
+        raise HTTPException(status_code=422, detail="Cada parada precisa de lat e lng.")
+    deposito = body.deposito.model_dump() if body.deposito else None
+    return avaliar_sequencia(pedidos, deposito, body.hora_saida)
 
 
 @app.post("/chat")
