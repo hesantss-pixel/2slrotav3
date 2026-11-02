@@ -2361,6 +2361,7 @@ let locaisEmp = {};         // chave do endereço → {lat,lng,p,em}: p = manual
 let _locaisProntos = null;
 let _geoFila = [];          // pedidos aguardando localização
 let _geoRodando = false;
+let _geoAtual = null;       // id do pedido sendo localizado agora (não entra de novo na fila)
 const LOCAL_AUTO_DIAS = 90; // depois disso, o que foi achado automaticamente é procurado de novo
 const UF_NOME={AC:'Acre',AL:'Alagoas',AP:'Amapá',AM:'Amazonas',BA:'Bahia',CE:'Ceará',DF:'Distrito Federal',ES:'Espírito Santo',GO:'Goiás',MA:'Maranhão',MT:'Mato Grosso',MS:'Mato Grosso do Sul',MG:'Minas Gerais',PA:'Pará',PB:'Paraíba',PR:'Paraná',PE:'Pernambuco',PI:'Piauí',RJ:'Rio de Janeiro',RN:'Rio Grande do Norte',RS:'Rio Grande do Sul',RO:'Rondônia',RR:'Roraima',SC:'Santa Catarina',SP:'São Paulo',SE:'Sergipe',TO:'Tocantins'};
 
@@ -2501,6 +2502,7 @@ async function _processarFilaGeo(){
 
   while(_geoFila.length){
     const o = _geoFila.shift();
+    _geoAtual = o.id;
     try{
       const g = await _localizarPedido(o, !modoDemo);
       // o pedido pode ter sido excluído enquanto era localizado: não recriar
@@ -2535,7 +2537,7 @@ async function _processarFilaGeo(){
     // re-render ao vivo conforme os pinos chegam
     if(document.getElementById('page-mapa')?.style.display==='block'){ atualizarMapaCompleto(); }
   }
-  _geoRodando = false;
+  _geoRodando = false; _geoAtual = null;
   const det=[n.numero&&`${n.numero} pelo número`, n.lembrado&&`${n.lembrado} pelo ponto que você já tinha marcado`, n.aprox&&`${n.aprox} só com o bairro ou a cidade`].filter(Boolean);
   _geoStatusUI(n.ok||n.falhou ? `Mapa atualizado: ${_plural(n.ok,'pedido localizado','pedidos localizados')}${det.length?' ('+det.join(', ')+')':''}${n.falhou?`, ${n.falhou} sem localização`:''}.` : '');
   if(modoDemo) render();
@@ -2566,7 +2568,7 @@ function _precisaLocalizar(o){
   return o.geoStatus==='ok' && !o.geoPrec && !!o.cep && !!_partesEndereco(o.endereco).numero;
 }
 function agendarGeocodificacao(pedidos){
-  const candidatos = pedidos.filter(o=>_precisaLocalizar(o) && !_geoFila.find(f=>f.id===o.id));
+  const candidatos = pedidos.filter(o=>_precisaLocalizar(o) && o.id!==_geoAtual && !_geoFila.find(f=>f.id===o.id));
   if(!candidatos.length) return;
   _geoFila.push(...candidatos.map(o=>({...o,_melhorar:o.geoStatus==='ok'})));
   _processarFilaGeo();
