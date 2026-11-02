@@ -70,6 +70,22 @@ Banco e login: Firebase, projeto `slog-pedidos` (Realtime Database + Authenticat
   só na tela. Cadastrar o primeiro pedido de verdade tira os pedidos de exemplo, como a importação.
 - O Nominatim recebe no máximo 1 consulta por segundo (a política dele pede isso).
 
+## Buscar e excluir notas (nota cancelada, importada por engano…)
+
+- **Buscar notas** (página Pedidos, também no celular): por NF, cliente, cidade, bairro ou
+  endereço (sem acento), e por parte da chave de acesso ou do CEP. Vários números separados por
+  espaço ou vírgula buscam uma lista de notas (NF com ou sem zeros à esquerda) e mostram as que
+  não foram encontradas. A busca do topo (computador) usa a mesma busca.
+- Marque as notas (ou "Selecionar todas") e toque em **Excluir notas**: confirmação, exclusão de
+  uma vez no banco e **Desfazer** por 30 segundos (volta a cópia completa de cada nota).
+  Nota **em rota** aparece, mas não pode ser marcada: devolva a rota na página Rotas antes.
+- **XML de cancelamento**: importar o XML do evento de cancelamento da NF-e (tipo 110111 ou
+  110112) acha a nota pela chave de acesso e pergunta se tira dos pendentes (com Desfazer). Se a
+  nota já está em rota, avisa para devolver a rota; se não está no sistema, avisa. Carta de
+  correção (110110) é recusada com mensagem.
+- Excluir um pedido enquanto ele é localizado no mapa não o recria (a fila confere se ele ainda
+  existe antes de gravar o local).
+
 ## Ajuste manual da rota (antes de confirmar a saída)
 
 - Depois de gerar a rota, **Ajustar a rota** mostra, em cada parada: subir, descer, tirar da
@@ -267,12 +283,22 @@ troque `BACKEND_URL` no `index.html`.
   capacidade, confirmação com aviso, rota salva na ordem ajustada com o link do motorista, pedido
   despachado em outra aba bloqueando a confirmação; em 1440, 390, 360 e 320 px sem rolagem para o
   lado e sem erros no console.
+- Versão 3.6 (buscar e excluir): busca por número (exato primeiro), sem acento, por cidade, por
+  parte da chave, lista de números com zeros à esquerda e "não encontradas", nota em rota sem
+  seleção, selecionar todas, cancelar a confirmação, exclusão em lote, Desfazer com todos os
+  dados, busca do topo, exclusão pelo pedido aberto com Desfazer, XML de cancelamento (pendente,
+  em rota, fora do sistema), carta de correção recusada, pedido excluído durante a localização
+  não volta, dados de exemplo sem gravar; celular 390/360/320 px com a barra "Excluir" presa
+  embaixo.
 
 Não testado daqui: o Firebase e o Railway de verdade (bloqueados neste ambiente), o motor
 OR-Tools rodando (não instalado aqui) e o mapa com as ruas.
 
 ## Histórico
 
+- Versão 3.6 (01/11/2026): buscar notas na página Pedidos (texto, chave, CEP ou lista de
+  números), excluir várias de uma vez com Desfazer, XML de cancelamento da NF-e tirando a nota dos
+  pendentes, e a fila de localização deixou de recriar pedido excluído.
 - Versão 3.5 (01/11/2026): pedido à mão (cadastrar, editar, excluir), local corrigido no mapa
   (busca pelo endereço ou pino arrastado), aviso de pedidos sem local exato, ajuste manual da rota
   antes de confirmar (ordem, tirar, adicionar, mover entre viagens, otimizar, desfazer) com nova

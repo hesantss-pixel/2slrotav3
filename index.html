@@ -541,6 +541,31 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
 .ped-excluir:hover{text-decoration:underline;}
 .aprox-bt{border:1px solid #f6dca6;background:#fff3df;color:#8a5a06;border-radius:6px;padding:1px 6px;margin-left:7px;font:700 10px var(--body);cursor:pointer;white-space:nowrap;text-decoration:underline;}
 @media(max-width:520px){.trio{grid-template-columns:minmax(0,1fr) 70px;}.trio>:nth-child(2){grid-column:1/-1;order:-1;}.ped-mapa{height:220px;}.modal-overlay{padding:16px 10px;}.modal-box{padding:20px 16px;}}
+/* ── Busca e exclusão de notas ── */
+.busca-box{max-width:760px;margin:14px 0 0;background:var(--s2);border:1px solid var(--border);border-radius:16px;padding:14px 16px;}
+.busca-campo{display:flex;align-items:center;gap:10px;height:46px;padding:0 14px;background:var(--s3);border:1px solid var(--border2);border-radius:12px;}
+.busca-campo:focus-within{border-color:var(--vv);box-shadow:0 0 0 3px rgba(243,182,43,.18);}
+.busca-campo svg{width:18px;height:18px;stroke:var(--text3);fill:none;stroke-width:1.8;flex-shrink:0;}
+.busca-campo input{flex:1;min-width:0;height:100%;border:0;background:none;outline:none;font:500 14.5px var(--body);color:var(--text);}
+.busca-res{max-width:760px;margin-top:12px;}
+.busca-topo{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-size:12.5px;color:var(--text2);}
+.busca-topo .chk{margin-top:0;}
+.busca-lista{display:flex;flex-direction:column;gap:6px;}
+.busca-item{display:flex;align-items:center;gap:12px;background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;}
+.busca-item.sel{border-color:var(--vv);background:#fffbf0;}
+.busca-item>input{width:20px;height:20px;flex-shrink:0;accent-color:var(--navy);cursor:pointer;}
+.busca-item>input:disabled{cursor:not-allowed;opacity:.4;}
+.busca-item .bi-txt{flex:1;min-width:0;cursor:pointer;}
+.busca-item .bi-nf{font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text);}
+.busca-item .bi-nf .tipo-tag{margin-left:7px;}
+.busca-item .bi-sub{font-size:11.5px;color:var(--text3);margin-top:2px;overflow-wrap:anywhere;}
+.st-rota{font-family:var(--body);font-size:10px;font-weight:700;color:var(--navy);background:#e9eef6;border:1px solid #c8d3e3;border-radius:6px;padding:1px 6px;margin-left:7px;white-space:nowrap;}
+.busca-faltou{font-size:12px;color:#8a5a06;background:#fff8ea;border:1px solid #f6dca6;border-radius:10px;padding:8px 12px;margin-bottom:8px;}
+.busca-acoes{position:sticky;bottom:10px;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:10px;padding:10px 12px;background:var(--navy);color:#fff;border-radius:14px;box-shadow:0 10px 24px -12px rgba(13,27,46,.6);font-size:13px;font-weight:600;}
+.btn-del{height:40px;padding:0 16px;border:0;border-radius:10px;background:#d64545;color:#fff;font:700 13px var(--body);cursor:pointer;}
+.btn-del:hover{background:#bf3434;}
+.btn-del:disabled{opacity:.5;cursor:default;}
+.btn-lk{border:0;background:none;padding:0;font:inherit;font-weight:800;color:var(--navy);text-decoration:underline;cursor:pointer;margin-left:6px;}
 /* ── Ajuste manual da rota ── */
 .ajuste-barra{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 12px;}
 .ajuste-barra .info{font-size:12px;color:var(--text3);}
@@ -773,12 +798,22 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
           </button>
         </div>
       </div>
-      <div class="imp-help" id="imp-help">XML da NF-e, Excel, CSV ou PDF. Pode escolher vários arquivos de uma vez. <b>Entrega:</b> o sistema usa o endereço do <b>destinatário</b> (ou o local de entrega, se a nota tiver). Na planilha, uma coluna <b>tipo</b> com "coleta" ou "entrega" vale linha a linha.</div>
+      <div class="imp-help" id="imp-help">XML da NF-e, Excel, CSV ou PDF. Pode escolher vários arquivos de uma vez. <b>Entrega:</b> o sistema usa o endereço do <b>destinatário</b> (ou o local de entrega, se a nota tiver). Na planilha, uma coluna <b>tipo</b> com "coleta" ou "entrega" vale linha a linha. O <b>XML de cancelamento</b> da nota tira ela dos pendentes.</div>
     </div>
     <input type="file" id="file-input" accept=".xml,.csv,.xlsx,.xls,.pdf" multiple hidden onchange="importarArquivo(this)">
     <div id="import-msg-pedidos" class="import-msg" role="status" style="max-width:760px;"></div>
+    <div id="busca-msg" class="import-msg" role="status" style="max-width:760px;"></div>
+    <div class="busca-box">
+      <label class="field-lbl" for="busca-notas" style="margin-top:0">Buscar notas</label>
+      <div class="busca-campo">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+        <input type="search" id="busca-notas" autocomplete="off" enterkeyhint="search" placeholder="NF, chave, cliente, cidade ou CEP" oninput="buscarNotas(this.value)" aria-describedby="busca-dica">
+      </div>
+      <div class="rot-nota" id="busca-dica">Para várias notas de uma vez, digite os números separados por espaço ou vírgula (ex.: 1001, 1002, 1003).</div>
+    </div>
+    <div id="busca-res" aria-live="polite"></div>
     <div id="ped-aprox" class="ped-aprox"></div>
-    <div class="filtro-row"><span class="field-lbl">Mostrar</span><div class="seg" data-filtro role="group" aria-label="Mostrar pedidos"></div></div>
+    <div class="filtro-row" id="ped-filtro-row"><span class="field-lbl">Mostrar</span><div class="seg" data-filtro role="group" aria-label="Mostrar pedidos"></div></div>
     <div class="reg-cards-grid" id="reg-cards-grid"></div>
   </div>
 
@@ -1302,7 +1337,7 @@ function setTipoImport(v){
   document.getElementById('imp-help').innerHTML = 'XML da NF-e, Excel, CSV ou PDF. Pode escolher vários arquivos de uma vez. ' + (tipoImport==='coleta'
     ? '<b>Coleta:</b> o sistema usa o endereço do <b>remetente</b>, quem emitiu a nota (ou o local de retirada, se a nota tiver).'
     : '<b>Entrega:</b> o sistema usa o endereço do <b>destinatário</b> (ou o local de entrega, se a nota tiver).')
-    + ' Na planilha, uma coluna <b>tipo</b> com "coleta" ou "entrega" vale linha a linha.';
+    + ' Na planilha, uma coluna <b>tipo</b> com "coleta" ou "entrega" vale linha a linha. O <b>XML de cancelamento</b> da nota tira ela dos pendentes.';
 }
 document.addEventListener('click',e=>{
   const f=e.target.closest('[data-filtro] button'); if(f){ setFiltroTipo(f.dataset.v); return; }
@@ -1319,7 +1354,7 @@ function carregarPedidos(){
       _statusPorId=Object.fromEntries(Object.entries(data).map(([k,p])=>[k,(p&&p.status)||'pendente']));
       _regPorId=Object.fromEntries(Object.entries(data).map(([k,p])=>[k,{status:(p&&p.status)||'pendente',rota_atual:(p&&p.rota_atual)||''}]));
       allOrders=Object.entries(data).map(([key,p])=>({
-        id:key, nf:String(p.nf||key), tipo:p.tipo==='coleta'?'coleta':'entrega',
+        id:key, nf:String(p.nf||key), tipo:p.tipo==='coleta'?'coleta':'entrega', chave:p.chave||'',
         dest:p.dest||'', endereco:p.endereco||'', uf:p.uf||'',
         cidade:p.cidade||'Sem cidade', peso:p.peso||100, itens:p.itens||1,
         urgente:p.urgente||false, agendado:p.agendado||false, dataAgendada:p.dataAgendada||'',
@@ -1739,6 +1774,7 @@ function renderPedidosPage(){
   const aprox=pend.filter(o=>o.geoStatus!=='ok').length;
   $id('ped-aprox').innerHTML = aprox
     ? `<div class="mapa-nota" style="margin:0">⚠️ ${aprox===1?'1 pedido está sem local exato (no mapa, aparece no centro da cidade)':`${aprox} pedidos estão sem local exato (no mapa, aparecem no centro da cidade)`}. Toque no pedido para buscar o endereço ou marcar o ponto no mapa. Isso deixa a ordem e os km da rota mais certos.</div>` : '';
+  _renderBusca();
 }
 function toggleRcCard(i){ document.getElementById('rcd-'+i).classList.toggle('exp'); }
 window.toggleRcCard=toggleRcCard;
@@ -1962,22 +1998,173 @@ async function salvarPedido(){
 window.salvarPedido=salvarPedido;
 async function excluirPedido(){
   const o=_pedEdit; if(!o||_pedBloq()) return;
-  const soTela=_pedSoNaTela(o);
-  if(!confirm(`Excluir o pedido NF ${o.nf}? Ele sai da lista de pendentes.${soTela?'':' Não dá para desfazer.'}`)) return;
-  try{
-    if(soTela){
-      allOrders=allOrders.filter(x=>x.id!==o.id);
-      render(); renderPedidosPage();
-      if($id('page-mapa')?.style.display==='block') atualizarMapaCompleto();
-    } else await update(ref(db),{[TP('pedidos_rota/'+o.id)]:null});
-  }catch(e){ return _pedErro(null,'Não foi possível excluir: '+e.message); }
-  _pedNaRota(o.id,null);
+  if(!confirm(`Excluir o pedido NF ${o.nf}? Ele sai da lista de pendentes.`)) return;
+  try{ await _excluirPedidos([o.id]); }
+  catch(e){ return _pedErro(null,'Não foi possível excluir: '+e.message); }
   fecharPedido();
+  _msgExclusao(`Pedido NF ${o.nf} excluído.`);
   _toast(`Pedido NF ${o.nf} excluído.`);
 }
 window.excluirPedido=excluirPedido;
 document.addEventListener('click',e=>{ const b=e.target.closest('#ped-tipo button'); if(b&&!b.disabled) _pedSetTipo(b.dataset.t); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&$id('modal-pedido').classList.contains('open')) fecharPedido(); });
+
+// ══════════════════════════════════════════════════════════════════════════
+// BUSCAR E EXCLUIR NOTAS — nota cancelada, importada por engano, repetida...
+// ══════════════════════════════════════════════════════════════════════════
+let _buscaQ='', _buscaSel=new Set(), _ultimaExclusao=null, _exclTimer=null;
+const BUSCA_MAX=100;
+function _semAcento(s){ return String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); }
+function _semZeros(s){ return String(s??'').trim().replace(/^0+(?=\d)/,''); }
+// chave de acesso da NF-e (44 dígitos), guardada no pedido ou usada como chave no banco
+function _chaveDe(o){ if(o.chave) return String(o.chave); const m=/^(?:C_)?(\d{44})$/.exec(o.id||''); return m?m[1]:''; }
+function _statusTxt(o){ return o.status==='pendente'?'':o.status==='despachado'?'em rota':o.status; }
+// Texto livre (sem acento) em NF, cliente, cidade, bairro e endereço; números também
+// na chave e no CEP. Vários números separados por espaço ou vírgula = lista de notas.
+function _buscarPedidos(q){
+  const lista=allOrders;
+  const toks=q.split(/[\s,;]+/).filter(Boolean);
+  if(toks.length>1&&toks.every(t=>/^\d+$/.test(t))){
+    const achou=[], faltou=[];
+    toks.forEach(t=>{
+      const m=lista.filter(o=>_semZeros(o.nf)===_semZeros(t)||(t.length===44&&_chaveDe(o)===t));
+      if(m.length) m.forEach(o=>{ if(!achou.includes(o)) achou.push(o); }); else faltou.push(t);
+    });
+    return {res:achou, faltou};
+  }
+  const t=_semAcento(q.trim()), dig=q.replace(/\D/g,'');
+  const res=lista.filter(o=>[o.nf,o.dest,o.cidade,o.bairro,o.endereco].some(f=>_semAcento(f).includes(t))
+    ||(dig.length>=5&&(String(o.cep||'').includes(dig)||_chaveDe(o).includes(dig))));
+  // nota com o número exato primeiro
+  res.sort((a,b)=>(_semZeros(b.nf)===_semZeros(q))-(_semZeros(a.nf)===_semZeros(q)));
+  return {res, faltou:[]};
+}
+function buscarNotas(v,deFora){
+  _buscaQ=String(v||'');
+  if(deFora){ const el=$id('busca-notas'); if(el&&el.value!==_buscaQ) el.value=_buscaQ; }
+  _renderBusca();
+}
+window.buscarNotas=buscarNotas;
+function _renderBusca(){
+  const box=$id('busca-res'); if(!box) return;
+  const q=_buscaQ.trim(), busca=!!q;
+  $id('reg-cards-grid').hidden=busca; $id('ped-filtro-row').hidden=busca; $id('ped-aprox').hidden=busca;
+  if(!busca){ box.innerHTML=''; box.className=''; _buscaSel.clear(); return; }
+  box.className='busca-res';
+  const {res,faltou}=_buscarPedidos(q);
+  // a seleção só guarda o que ainda está na busca e pendente
+  const pendIds=new Set(res.filter(o=>o.status==='pendente').map(o=>o.id));
+  [..._buscaSel].forEach(id=>{ if(!pendIds.has(id)) _buscaSel.delete(id); });
+  const mostrar=res.slice(0,BUSCA_MAX), nPend=pendIds.size;
+  const todasSel=nPend>0&&[...pendIds].every(id=>_buscaSel.has(id));
+  box.innerHTML=`
+    ${faltou.length?`<div class="busca-faltou">Não ${faltou.length===1?'encontrada':'encontradas'}: ${faltou.map(esc).join(', ')}</div>`:''}
+    <div class="busca-topo"><span>${res.length?_plural(res.length,'nota encontrada','notas encontradas'):'Nenhuma nota encontrada.'}${res.length>BUSCA_MAX?` (mostrando ${BUSCA_MAX})`:''}</span>
+      ${nPend>1?`<label class="chk"><input type="checkbox" id="busca-todas" ${todasSel?'checked':''} onchange="selTodasBusca(this.checked)"> Selecionar todas (${nPend})</label>`:''}</div>
+    <div class="busca-lista">${mostrar.map(o=>{
+      const pend=o.status==='pendente', sel=_buscaSel.has(o.id), cid='bs-'+o.id.replace(/[^A-Za-z0-9_-]/g,'_');
+      const ch=_chaveDe(o);
+      return `<div class="busca-item${sel?' sel':''}">
+        <input type="checkbox" id="${esc(cid)}" data-id="${esc(o.id)}" ${sel?'checked':''} ${pend?'':'disabled'} onchange="selBusca(this.dataset.id,this.checked)" aria-label="Selecionar NF ${esc(o.nf)}${pend?'':' (em rota, não pode ser excluída)'}">
+        <div class="bi-txt" onclick="abrirPedido(${esc(JSON.stringify(o.id))})"><div class="bi-nf">NF ${esc(o.nf)}${_tag(o)}${pend?'':`<span class="st-rota">${esc(_statusTxt(o))}</span>`}</div>
+          <div class="bi-sub">${o.dest&&o.dest!==o.cidade?esc(o.dest)+' · ':''}${esc(o.cidade)} · ${(+o.peso||0).toLocaleString('pt-BR')} kg${ch?` · chave …${esc(ch.slice(-8))}`:''}${pend?'':' · para excluir, devolva a rota na página Rotas'}</div></div>
+        <button type="button" class="btn-sm" onclick="abrirPedido(${esc(JSON.stringify(o.id))})" aria-label="Abrir NF ${esc(o.nf)}">Abrir</button>
+      </div>`;
+    }).join('')}</div>
+    ${_buscaSel.size?`<div class="busca-acoes" role="region" aria-label="Notas selecionadas"><span>${_plural(_buscaSel.size,'nota selecionada','notas selecionadas')}</span><button type="button" class="btn-del" id="btn-excluir-sel" onclick="excluirSelecionadas()">Excluir ${_buscaSel.size===1?'nota':'notas'}</button></div>`:''}`;
+}
+function selBusca(id,on){
+  if(on) _buscaSel.add(id); else _buscaSel.delete(id);
+  _renderBusca();
+  const el=document.querySelector(`#busca-res input[data-id="${CSS.escape(id)}"]`); if(el) el.focus();
+}
+window.selBusca=selBusca;
+function selTodasBusca(on){
+  const {res}=_buscarPedidos(_buscaQ.trim());
+  res.filter(o=>o.status==='pendente').forEach(o=>{ if(on) _buscaSel.add(o.id); else _buscaSel.delete(o.id); });
+  _renderBusca();
+  const el=$id('busca-todas'); if(el) el.focus();
+}
+window.selTodasBusca=selTodasBusca;
+// Exclui pedidos pendentes (guarda uma cópia para "Desfazer"). Devolve quantos saíram.
+async function _excluirPedidos(ids){
+  ids=[...new Set(ids)];
+  const soTela=(contaDemo&&!EID)||modoDemo, backup={};
+  if(soTela){
+    allOrders.filter(o=>ids.includes(o.id)&&o.status==='pendente').forEach(o=>{ backup[o.id]=o; });
+    allOrders=allOrders.filter(o=>!backup[o.id]);
+  } else {
+    const banco=(await get(ref(db,TP('pedidos_rota')))).val()||{};
+    const upd={};
+    ids.forEach(id=>{ const r=banco[id]; if(r&&(r.status||'pendente')==='pendente'){ backup[id]=r; upd[TP('pedidos_rota/'+id)]=null; } });
+    if(!Object.keys(upd).length) return 0;
+    await update(ref(db),upd);
+  }
+  _geoFila=_geoFila.filter(f=>!backup[f.id]);       // não localizar no mapa o que foi apagado
+  Object.keys(backup).forEach(id=>{ _buscaSel.delete(id); _pedNaRota(id,null); });
+  if(soTela){ render(); renderPedidosPage(); if($id('page-mapa')?.style.display==='block') atualizarMapaCompleto(); }
+  _ultimaExclusao={backup, soTela};
+  return Object.keys(backup).length;
+}
+function _msgExclusao(txt){
+  const el=$id('busca-msg'); if(!el) return;
+  clearTimeout(_exclTimer);
+  el.className='import-msg show ok';
+  el.innerHTML=esc(txt)+(_ultimaExclusao?' <button type="button" class="btn-lk" onclick="desfazerExclusao()">Desfazer</button>':'');
+  _exclTimer=setTimeout(()=>{ el.className='import-msg'; el.innerHTML=''; _ultimaExclusao=null; },30000);
+}
+async function excluirSelecionadas(){
+  const ids=[..._buscaSel]; if(!ids.length) return;
+  const nfs=allOrders.filter(o=>ids.includes(o.id)).map(o=>o.nf);
+  if(!confirm(`Excluir ${_plural(ids.length,'nota','notas')} da lista de pendentes?\n\nNF ${nfs.slice(0,15).join(', ')}${nfs.length>15?` e mais ${nfs.length-15}`:''}\n\nVocê pode desfazer logo em seguida.`)) return;
+  const bt=$id('btn-excluir-sel'); if(bt){ bt.disabled=true; bt.textContent='Excluindo...'; }
+  let n=0;
+  try{ n=await _excluirPedidos(ids); }
+  catch(e){ if(bt){ bt.disabled=false; bt.textContent='Excluir notas'; } alert('Não foi possível excluir: '+e.message); return; }
+  _msgExclusao(n?`${_plural(n,'nota excluída','notas excluídas')}.`:'Nada foi excluído: as notas não estão mais pendentes.');
+  _renderBusca();
+}
+window.excluirSelecionadas=excluirSelecionadas;
+async function desfazerExclusao(){
+  const u=_ultimaExclusao; if(!u) return;
+  _ultimaExclusao=null;
+  const n=Object.keys(u.backup).length;
+  try{
+    if(u.soTela){
+      Object.values(u.backup).forEach(o=>{ if(!allOrders.find(x=>x.id===o.id)) allOrders.push(o); });
+      render(); renderPedidosPage();
+    } else {
+      // volta só o que não foi recriado nesse meio-tempo (por uma importação, por exemplo)
+      const upd={};
+      Object.entries(u.backup).forEach(([id,r])=>{ if(!(id in _statusPorId)) upd[TP('pedidos_rota/'+id)]=r; });
+      if(Object.keys(upd).length) await update(ref(db),upd);
+    }
+  }catch(e){ alert('Não foi possível desfazer: '+e.message); return; }
+  clearTimeout(_exclTimer);
+  const el=$id('busca-msg'); el.className='import-msg show info'; el.textContent=`Exclusão desfeita: ${_plural(n,'nota voltou','notas voltaram')} para os pendentes.`;
+  _exclTimer=setTimeout(()=>{ el.className='import-msg'; el.textContent=''; },8000);
+}
+window.desfazerExclusao=desfazerExclusao;
+// XML do evento de cancelamento da NF-e: acha a nota pela chave e pergunta se tira dos pendentes
+async function _tratarCancelamentos(chaves){
+  const alvo=[], emRota=[], fora=[];
+  chaves.forEach(ch=>{
+    const m=allOrders.filter(o=>_chaveDe(o)===ch);
+    if(!m.length){ fora.push(ch); return; }
+    m.forEach(o=>(o.status==='pendente'?alvo:emRota).push(o));
+  });
+  const partes=[];
+  let n=0;
+  if(alvo.length){
+    const ok=confirm(`${alvo.length===1?'Esta nota foi cancelada':'Estas notas foram canceladas'} (XML de cancelamento da NF-e):\n\n${alvo.slice(0,15).map(o=>`NF ${o.nf}${o.dest&&o.dest!==o.cidade?' · '+o.dest:''} · ${o.cidade}`).join('\n')}${alvo.length>15?`\ne mais ${alvo.length-15}`:''}\n\nTirar da lista de pendentes?`);
+    if(ok){ n=await _excluirPedidos(alvo.map(o=>o.id)); partes.push(`${_plural(n,'nota cancelada saiu','notas canceladas saíram')} dos pendentes.`); }
+    else partes.push('As notas canceladas continuam nos pendentes.');
+  }
+  if(emRota.length) partes.push(`NF ${emRota.map(o=>o.nf).join(', ')} ${emRota.length===1?'foi cancelada mas já está':'foram canceladas mas já estão'} em rota: devolva a rota na página Rotas e exclua a nota depois.`);
+  if(fora.length) partes.push(`${_plural(fora.length,'cancelamento é','cancelamentos são')} de nota que não está nos pendentes.`);
+  if(n) _msgExclusao(partes.join(' '));
+  else { const el=$id('busca-msg'); clearTimeout(_exclTimer); el.className='import-msg show '+(emRota.length?'warn':'info'); el.textContent=partes.join(' '); }
+}
 
 // ══════════════════════════════════════════════════════════════════════════
 // IMPORTAÇÃO — CSV / Excel / PDF (com aviso p/ peso ausente e PDF experimental)
@@ -2050,7 +2237,14 @@ function _lerXmlNFe(texto,tipo){
   const infs=[...doc.getElementsByTagNameNS('*','infNFe')];
   if(!infs.length){
     if(doc.getElementsByTagNameNS('*','infCte').length) throw new Error('é um CT-e; por enquanto o sistema lê o XML da NF-e');
-    if(doc.getElementsByTagNameNS('*','infEvento').length) throw new Error('é um evento (cancelamento ou carta de correção), não uma nota');
+    const evs=[...doc.getElementsByTagNameNS('*','infEvento')];
+    if(evs.length){
+      // 110111 = cancelamento; 110112 = cancelamento por substituição
+      const canc=new Set(); let tipoEv='';
+      evs.forEach(ev=>{ const tp=_txtXml(ev,'tpEvento'), ch=_txtXml(ev,'chNFe'); if(/^11011[12]$/.test(tp)&&/^\d{44}$/.test(ch)) canc.add(ch); else if(tp) tipoEv=tp; });
+      if(canc.size) return {orders:[], semPeso:0, cancelamentos:[...canc]};
+      throw new Error(tipoEv==='110110'?'é uma carta de correção, não uma nota':'é um evento da nota, não a nota nem um cancelamento');
+    }
     throw new Error('não é o XML de uma NF-e');
   }
   let semPeso=0;
@@ -2184,6 +2378,8 @@ async function _processarFilaGeo(){
     const o = _geoFila.shift();
     try{
       const g = await _geocodificarCep(o.cep);
+      // o pedido pode ter sido excluído enquanto era localizado: não recriar
+      if(!modoDemo && !(o.id in _statusPorId)) continue;
       const payload = {
         lat: g.lat, lng: g.lng, geoStatus:'ok',
         bairro: g.bairro,
@@ -2199,7 +2395,7 @@ async function _processarFilaGeo(){
       ok++;
     }catch(e){
       falhou++;
-      if(!modoDemo){
+      if(!modoDemo && (o.id in _statusPorId)){
         update(ref(db,TP('pedidos_rota/'+o.id)), { geoStatus:'falhou' }).catch(()=>{});
       } else {
         const local = allOrders.find(x=>x.id===o.id);
@@ -2265,7 +2461,7 @@ async function _parsePDF(file,tipo){
 
 async function _lerArquivo(file,tipo){
   const ext=file.name.split('.').pop().toLowerCase();
-  if(ext==='xml'){ const r=_lerXmlNFe(await file.text(),tipo); return {orders:r.orders, semPeso:r.semPeso}; }
+  if(ext==='xml'){ const r=_lerXmlNFe(await file.text(),tipo); return {orders:r.orders, semPeso:r.semPeso, cancelamentos:r.cancelamentos||[]}; }
   if(ext==='pdf'){ return {orders:await _parsePDF(file,tipo), semPeso:0}; }
   if(ext==='csv'){
     const text=(await file.text()).replace(/^﻿/,'');
@@ -2297,15 +2493,21 @@ async function importarArquivo(input){
     if(!ok){ _impMsg('err','Importação cancelada.'); return; }
   }
   _impMsg('info',`Lendo ${_plural(files.length,'arquivo','arquivos')}...`);
-  const lidos=[], erros=[]; let semPeso=0;
+  const lidos=[], erros=[], canc=[]; let semPeso=0;
   for(const f of files){
     try{
       const r=await _lerArquivo(f,tipo);
-      if(!r.orders.length) throw new Error('nenhuma nota encontrada');
-      lidos.push(...r.orders); semPeso+=r.semPeso;
+      if(!r.orders.length&&!(r.cancelamentos||[]).length) throw new Error('nenhuma nota encontrada');
+      lidos.push(...r.orders); semPeso+=r.semPeso; canc.push(...(r.cancelamentos||[]));
     }catch(e){ erros.push(`${f.name}: ${e.message}`); }
   }
-  if(!lidos.length){ _impMsg('err','❌ Nada foi importado. '+erros.join(' · ')); return; }
+  if(!lidos.length){
+    if(!canc.length){ _impMsg('err','❌ Nada foi importado. '+erros.join(' · ')); return; }
+    // só XML de cancelamento: tira as notas canceladas dos pendentes (com confirmação)
+    _impMsg(erros.length?'warn':'info',`${_plural(new Set(canc).size,'cancelamento de NF-e lido','cancelamentos de NF-e lidos')}.${erros.length?' Não deu para ler: '+erros.join(' · ')+'.':''}`);
+    await _tratarCancelamentos([...new Set(canc)]);
+    return;
+  }
   if(semPeso){
     const ok=confirm(`⚠️ ${_plural(semPeso,'nota está','notas estão')} sem peso no arquivo.\n\nElas entram com 100 kg cada. Confira antes de roteirizar, para não passar da capacidade do veículo.\n\nImportar mesmo assim?`);
     if(!ok){ _impMsg('err','Importação cancelada: notas sem peso.'); return; }
@@ -2334,6 +2536,7 @@ async function importarArquivo(input){
   _impMsg(erros.length||!novos.length?'warn':'ok', msg);
   // localiza no mapa em segundo plano as que vieram com CEP
   agendarGeocodificacao(novos);
+  if(canc.length) await _tratarCancelamentos([...new Set(canc)]);
 }
 window.importarArquivo=importarArquivo;
 
@@ -3662,10 +3865,9 @@ document.getElementById('menu-btn').addEventListener('click',function(){b.classL
 document.getElementById('nav-scrim').addEventListener('click',c);
 document.getElementById('sb-nav').addEventListener('click',c);
 var s=document.getElementById('top-search');
-s.addEventListener('input',function(){var q=s.value.trim().toLowerCase(),pg=document.getElementById('page-pedidos');
-  if(q&&pg.style.display==='none'&&window.irParaPagina)window.irParaPagina('pedidos');
-  pg.querySelectorAll('.rc-card').forEach(function(card){var ok=!q||card.textContent.toLowerCase().indexOf(q)>-1;card.style.display=ok?'':'none';
-    if(q&&ok&&[].some.call(card.querySelectorAll('.nf-mini-code'),function(x){return x.textContent.toLowerCase().indexOf(q)>-1})){card.classList.add('exp','todos');var mb=card.querySelector('.rc-mais');if(mb)mb.textContent='Mostrar menos';}});});
+s.addEventListener('input',function(){var pg=document.getElementById('page-pedidos');
+  if(s.value.trim()&&pg.style.display==='none'&&window.irParaPagina)window.irParaPagina('pedidos');
+  if(window.buscarNotas)window.buscarNotas(s.value,true);});
 var al=document.getElementById('alert-list'),bell=document.getElementById('bell');
 new MutationObserver(function(){bell.classList.toggle('has',!!al.querySelector('.alert-row'))}).observe(al,{childList:true,subtree:true});
 bell.addEventListener('click',function(){if(window.irParaPagina)window.irParaPagina('dashboard');setTimeout(function(){al.scrollIntoView({behavior:'smooth',block:'center'})},120);c();});})();
