@@ -59,16 +59,56 @@ Banco e login: Firebase, projeto `slog-pedidos` (Realtime Database + Authenticat
   coleta muda a chave (`C_`), copiando os outros campos da nota (chave da NF-e, remetente…).
   Pedido que já saiu em rota abre só para leitura ("devolva a rota para mudar").
 - **Excluir**: só pedidos pendentes, com confirmação.
-- **Local no mapa**: "Buscar pelo endereço" procura rua + número + cidade (Nominatim); sem
-  resultado, usa o CEP; por último, só a cidade (avisa que é aproximado). O pino pode ser
-  arrastado ou colocado com um toque no mapa (`geoManual: true`). Mudar só o cliente ou o peso
-  mantém o local salvo; mudar o endereço sem marcar o ponto volta para o centro da cidade e o
-  CEP é localizado em segundo plano.
-- A página Pedidos avisa quantos pendentes estão sem local exato e marca cada um.
+- **Local no mapa**: "Buscar pelo endereço" usa a mesma ordem da importação (veja "Como o
+  sistema acha o endereço" abaixo) e diz o que achou: o número, só a rua, só o bairro ou só a
+  cidade. O pino pode ser arrastado ou colocado com um toque no mapa (`geoManual: true`). Mudar só
+  o cliente ou o peso mantém o local salvo; mudar o endereço sem marcar o ponto volta para o
+  centro da cidade e o endereço é localizado em segundo plano.
+- A página Pedidos avisa quantos pendentes estão sem local exato (sem ponto, ou só com o bairro
+  ou a cidade) e marca cada um.
 - Número repetido: pergunta antes de trocar; se a nota com esse número já saiu em rota, não deixa.
 - Nos dados de exemplo (banco vazio) e na demonstração com as regras antigas, as mudanças ficam
   só na tela. Cadastrar o primeiro pedido de verdade tira os pedidos de exemplo, como a importação.
 - O Nominatim recebe no máximo 1 consulta por segundo (a política dele pede isso).
+
+## Como o sistema acha o endereço (versão 3.7)
+
+Para cada pedido, nesta ordem:
+
+1. **Ponto já corrigido à mão para o mesmo endereço** (a empresa marcou o pino uma vez):
+   usa direto, sem consultar o mapa.
+2. **Endereço já localizado antes** (até 90 dias): usa direto.
+3. **Rua + número** no Nominatim (OpenStreetMap), com o nome oficial da rua que o CEP dá
+   (ViaCEP), a cidade e o estado. Só vale se o mapa devolver aquele número e se ele ficar a até
+   6 km da rua do CEP (mais longe é provavelmente outra rua com o mesmo nome).
+4. **CEP**: rua do CEP; sem a rua, o bairro; sem o bairro, a cidade.
+5. **Sem CEP** (planilha ou pedido à mão): a rua na cidade; sem achar, a cidade.
+
+O pedido guarda de onde veio o ponto em `geoPrec`: `numero`, `rua`, `bairro`, `cidade`,
+`manual` (pino marcado no pedido), `lembrado` (ponto marcado antes para o endereço) ou
+`endereco` (busca de antes da 3.7). `bairro` e `cidade` aparecem como "local aproximado" na lista,
+no mapa e na rota.
+
+- **Lembrar o ponto**: ao salvar um pedido com o pino marcado à mão, o ponto fica guardado em
+  `empresas/<id>/config/locais/<chave>` (`{lat, lng, p: "manual", em}`) e os outros pedidos
+  pendentes do mesmo endereço recebem o mesmo ponto. Notas novas do mesmo endereço já entram no
+  ponto certo. Marcar de novo troca o ponto guardado.
+- **Chave do endereço**: CEP (ou a cidade, sem CEP) + número + nome da rua sem acento, sem
+  "Rua/Av." e com abreviações por extenso ("R. Dr. João Silva, 12" = "Rua Doutor João Silva, 12").
+  Complemento ("- sala 2", "fundos") não entra. Sem o nome da rua, nada é guardado.
+- O cache geral `geo_cache/<cep>` guarda só o resultado do CEP (dado público, sem número nem
+  cliente); agora com a rua oficial e a precisão (`prec`). CEP gravado antes da 3.7 é procurado
+  de novo uma vez para saber a precisão.
+- Pedidos localizados só pelo CEP antes da 3.7 que têm número são procurados de novo uma vez: o
+  ponto só muda se o número for achado (ou houver ponto marcado à mão para o endereço).
+- Planilha: além de `tipo`, lê as colunas `endereço` (ou `logradouro`/`rua`), `número`
+  (ou `nº`/`nro`), `bairro` e `uf`/`estado`.
+- **Limite real**: o OpenStreetMap não tem o número de toda rua (em Guarulhos, muitas ruas não
+  têm). Nesses casos o ponto fica na rua do CEP, e o jeito de acertar é marcar o pino uma vez.
+- **Limite de uso**: o Nominatim público aceita no máximo 1 consulta por segundo e não é feito
+  para uso pesado. Com muitas empresas importando muitas notas, trocar por um serviço pago de
+  endereços ou um Nominatim próprio.
+- Nenhuma regra nova no banco: `config` já pode ser gravado pela empresa.
 
 ## Buscar e excluir notas (nota cancelada, importada por engano…)
 
@@ -290,12 +330,25 @@ troque `BACKEND_URL` no `index.html`.
   em rota, fora do sistema), carta de correção recusada, pedido excluído durante a localização
   não volta, dados de exemplo sem gravar; celular 390/360/320 px com a barra "Excluir" presa
   embaixo.
+- Versão 3.7 (endereço pelo número e ponto lembrado): número achado (com "1.000" = mil) e com o
+  nome oficial da rua e o estado por extenso, número fora do mapa ficando na rua, CEP só da
+  cidade marcado como aproximado, pedido sem CEP achado pela rua, número longe da rua do CEP
+  recusado, pino marcado à mão intocado, "R." e "Rua" + complemento como o mesmo endereço, uma
+  consulta só para notas do mesmo endereço, chaves válidas no Firebase, cache antigo do CEP
+  refeito sem dados de cliente, ponto marcado à mão guardado e aplicado aos outros pendentes do
+  endereço, planilha com endereço/número/bairro/UF, nota nova já no ponto guardado sem consultar o
+  mapa, "Buscar" no cadastro usando o ponto guardado; celular 390 e 320 px sem rolagem lateral.
 
 Não testado daqui: o Firebase e o Railway de verdade (bloqueados neste ambiente), o motor
-OR-Tools rodando (não instalado aqui) e o mapa com as ruas.
+OR-Tools rodando (não instalado aqui) e o mapa com as ruas. O formato da resposta do Nominatim
+(com o número achado e sem ele) foi conferido ao vivo em 02/11/2026.
 
 ## Histórico
 
+- Versão 3.7 (02/11/2026): endereço procurado pelo número antes do CEP, ponto marcado à mão
+  guardado por endereço e usado nas próximas notas (e nos outros pendentes do mesmo endereço),
+  precisão do ponto em cada pedido (pedidos só com o bairro ou a cidade aparecem como
+  aproximados), pedido sem CEP localizado pela rua e planilha com colunas de endereço.
 - Versão 3.6 (01/11/2026): buscar notas na página Pedidos (texto, chave, CEP ou lista de
   números), excluir várias de uma vez com Desfazer, XML de cancelamento da NF-e tirando a nota dos
   pendentes, e a fila de localização deixou de recriar pedido excluído.

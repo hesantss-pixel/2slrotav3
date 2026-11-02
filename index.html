@@ -798,7 +798,7 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
           </button>
         </div>
       </div>
-      <div class="imp-help" id="imp-help">XML da NF-e, Excel, CSV ou PDF. Pode escolher vários arquivos de uma vez. <b>Entrega:</b> o sistema usa o endereço do <b>destinatário</b> (ou o local de entrega, se a nota tiver). Na planilha, uma coluna <b>tipo</b> com "coleta" ou "entrega" vale linha a linha. O <b>XML de cancelamento</b> da nota tira ela dos pendentes.</div>
+      <div class="imp-help" id="imp-help">XML da NF-e, Excel, CSV ou PDF. Pode escolher vários arquivos de uma vez. <b>Entrega:</b> o sistema usa o endereço do <b>destinatário</b> (ou o local de entrega, se a nota tiver). Na planilha, uma coluna <b>tipo</b> com "coleta" ou "entrega" vale linha a linha, e as colunas <b>endereço</b> e <b>número</b> ajudam a achar o ponto certo. O <b>XML de cancelamento</b> da nota tira ela dos pendentes.</div>
     </div>
     <input type="file" id="file-input" accept=".xml,.csv,.xlsx,.xls,.pdf" multiple hidden onchange="importarArquivo(this)">
     <div id="import-msg-pedidos" class="import-msg" role="status" style="max-width:760px;"></div>
@@ -1230,6 +1230,13 @@ function calcularRegioes(pedidos){
   if(resto.length){ const r=mk('Outras cidades',resto,COR_OUTRAS); r.isolado=false; regs.push(r); }
   return regs;
 }
+// local aproximado: ainda sem ponto, ou achado só pelo bairro ou pela cidade
+function _aprox(o){ return !!o && ((!!o.geoStatus&&o.geoStatus!=='ok') || o.geoPrec==='bairro' || o.geoPrec==='cidade'); }
+function _origemLocal(o){
+  if(o.geoManual) return 'Ponto marcado à mão';
+  return ({lembrado:'Ponto que você já marcou para este endereço',numero:'Achado pelo número',rua:'Achado pela rua (sem o número)',
+    bairro:'Local aproximado: só o bairro',cidade:'Local aproximado: só a cidade',endereco:'Achado pelo endereço'})[o.geoPrec]||'Localização via CEP ou endereço';
+}
 function _pedidoIsolado(o){ return Number.isFinite(o.lat)&&Number.isFinite(o.lng)&&_haversineKm(o,DEPOT)>RAIO_ISOLADO_KM; }
 
 let allOrders = [];
@@ -1337,7 +1344,7 @@ function setTipoImport(v){
   document.getElementById('imp-help').innerHTML = 'XML da NF-e, Excel, CSV ou PDF. Pode escolher vários arquivos de uma vez. ' + (tipoImport==='coleta'
     ? '<b>Coleta:</b> o sistema usa o endereço do <b>remetente</b>, quem emitiu a nota (ou o local de retirada, se a nota tiver).'
     : '<b>Entrega:</b> o sistema usa o endereço do <b>destinatário</b> (ou o local de entrega, se a nota tiver).')
-    + ' Na planilha, uma coluna <b>tipo</b> com "coleta" ou "entrega" vale linha a linha. O <b>XML de cancelamento</b> da nota tira ela dos pendentes.';
+    + ' Na planilha, uma coluna <b>tipo</b> com "coleta" ou "entrega" vale linha a linha, e as colunas <b>endereço</b> e <b>número</b> ajudam a achar o ponto certo. O <b>XML de cancelamento</b> da nota tira ela dos pendentes.';
 }
 document.addEventListener('click',e=>{
   const f=e.target.closest('[data-filtro] button'); if(f){ setFiltroTipo(f.dataset.v); return; }
@@ -1360,6 +1367,7 @@ function carregarPedidos(){
         urgente:p.urgente||false, agendado:p.agendado||false, dataAgendada:p.dataAgendada||'',
         horaEntrega:p.horaEntrega||'', horaFim:p.horaFim||'', rota_atual:p.rota_atual||'', status:p.status||'pendente',
         cep:p.cep||'', geoStatus:p.geoStatus||(p.cep?'pendente':'sem_cep'), bairro:p.bairro||'',
+        geoPrec:p.geoPrec||'', geoManual:!!p.geoManual,
         lat:p.lat||(CITY_COORDS[p.cidade]?.lat??DEPOT.lat), lng:p.lng||(CITY_COORDS[p.cidade]?.lng??DEPOT.lng),
       })).filter(o=>o.status!=='entregue'&&o.status!=='coletado');
     } else {
@@ -1571,7 +1579,7 @@ function atualizarMapaCompleto(){
   comGeo.forEach(o=>{
     const col=_tipoDe(o)==='coleta';
     L.circleMarker([o.lat,o.lng],{radius:col?6.5:6,color:col?'#f3b62b':'#fff',weight:col?2:1.5,fillColor:col?'#0d1b2e':'#16a36a',fillOpacity:.92}).addTo(mapLayerFull)
-      .bindTooltip(`<b>${col?'Coleta':'Entrega'} · NF ${esc(o.nf)}</b>${o.dest&&o.dest!==o.cidade?'<br>'+esc(o.dest):''}<br>${o.bairro?esc(o.bairro)+' — ':''}${esc(o.cidade)}<br>${(o.peso||0).toLocaleString('pt-BR')} kg · ${o.itens||1} volume(s)<br><span style="color:#1f7a4a">📍 ${o.geoManual?'Ponto marcado à mão':'Localização via CEP ou endereço'}</span><br><span style="color:#64748b">Toque para editar ou corrigir o ponto</span>`)
+      .bindTooltip(`<b>${col?'Coleta':'Entrega'} · NF ${esc(o.nf)}</b>${o.dest&&o.dest!==o.cidade?'<br>'+esc(o.dest):''}<br>${o.bairro?esc(o.bairro)+' — ':''}${esc(o.cidade)}<br>${(o.peso||0).toLocaleString('pt-BR')} kg · ${o.itens||1} volume(s)<br><span style="color:${_aprox(o)?'#8a5a06':'#1f7a4a'}">📍 ${_origemLocal(o)}</span><br><span style="color:#64748b">Toque para editar ou corrigir o ponto</span>`)
       .on('click',()=>abrirPedido(o.id));
   });
 
@@ -1766,14 +1774,14 @@ function renderPedidosPage(){
         <div class="rc-card-n">${os.length}</div><div class="rc-card-chev">›</div>
       </div>
       <div class="rc-card-body"><div class="nf-mini-grid">${os.map((o,j)=>
-        `<button type="button" class="nf-mini${j>=10?' extra':''}" onclick="abrirPedido(${esc(JSON.stringify(o.id))})" aria-label="Editar pedido NF ${esc(o.nf)}"><div class="nf-mini-code">NF ${esc(o.nf)}${_tag(o)}</div>${o.dest&&o.dest!==o.cidade?`<div class="nf-mini-end">${esc(o.dest)}</div>`:''}<div class="nf-mini-meta">${(+o.peso||0).toLocaleString('pt-BR')} kg · ${o.itens} vol.${o.urgente?' · urgente':''}</div>${o.geoStatus!=='ok'?'<span class="aprox">local aproximado</span>':''}</button>`
+        `<button type="button" class="nf-mini${j>=10?' extra':''}" onclick="abrirPedido(${esc(JSON.stringify(o.id))})" aria-label="Editar pedido NF ${esc(o.nf)}"><div class="nf-mini-code">NF ${esc(o.nf)}${_tag(o)}</div>${o.dest&&o.dest!==o.cidade?`<div class="nf-mini-end">${esc(o.dest)}</div>`:''}<div class="nf-mini-meta">${(+o.peso||0).toLocaleString('pt-BR')} kg · ${o.itens} vol.${o.urgente?' · urgente':''}</div>${_aprox(o)?'<span class="aprox">local aproximado</span>':''}</button>`
       ).join('')}</div>${os.length>10?`<button type="button" class="rc-mais" onclick="verTodosRc(${i})">${todos.has(r.nome)?'Mostrar menos':`Mostrar todos (${os.length})`}</button>`:''}</div>
     </div>`;
   }).join('') : `<div class="empty-mini">${vazio}</div>`;
   // aviso dos pedidos que ainda estão só com a cidade ou o bairro
-  const aprox=pend.filter(o=>o.geoStatus!=='ok').length;
+  const aprox=pend.filter(_aprox).length;
   $id('ped-aprox').innerHTML = aprox
-    ? `<div class="mapa-nota" style="margin:0">⚠️ ${aprox===1?'1 pedido está sem local exato (no mapa, aparece no centro da cidade)':`${aprox} pedidos estão sem local exato (no mapa, aparecem no centro da cidade)`}. Toque no pedido para buscar o endereço ou marcar o ponto no mapa. Isso deixa a ordem e os km da rota mais certos.</div>` : '';
+    ? `<div class="mapa-nota" style="margin:0">⚠️ ${aprox===1?'1 pedido está sem local exato (no mapa, fica no centro do bairro ou da cidade)':`${aprox} pedidos estão sem local exato (no mapa, ficam no centro do bairro ou da cidade)`}. Toque no pedido para buscar o endereço ou marcar o ponto no mapa. O ponto que você marcar fica guardado para as próximas notas do mesmo endereço.</div>` : '';
   _renderBusca();
 }
 function toggleRcCard(i){ document.getElementById('rcd-'+i).classList.toggle('exp'); }
@@ -1790,7 +1798,7 @@ window.verTodosRc=verTodosRc;
 // ══════════════════════════════════════════════════════════════════════════
 let _pedEdit=null;      // pedido em edição (null = novo)
 let _pedTipo='entrega';
-let _pedGeo=null;       // {lat,lng,fonte:'salvo'|'endereco'|'cep'|'cidade'|'manual',exato}
+let _pedGeo=null;       // {lat,lng,fonte,prec,exato}; fonte: salvo | manual | lembrado | numero | rua | bairro | cidade
 let _pedMap=null, _pedMk=null, _pedFoco=null;
 const PED_CAMPOS=['nf','dest','cep','end','bairro','cidade','uf','peso','itens'];
 function _fmtCep(c){ c=String(c||'').replace(/\D/g,''); return c.length===8?c.slice(0,5)+'-'+c.slice(5):c; }
@@ -1835,7 +1843,7 @@ function abrirPedido(id){
   $id('ped-salvar').hidden=bloq; $id('ped-salvar').disabled=false; $id('ped-salvar').textContent=o?'Salvar alterações':'Cadastrar pedido';
   $id('ped-excluir').hidden=!o||bloq;
   $id('ped-msg').className='import-msg'; $id('ped-msg').textContent='';
-  _pedGeo = o&&Number.isFinite(o.lat)&&Number.isFinite(o.lng) ? {lat:o.lat,lng:o.lng,fonte:'salvo',exato:o.geoStatus==='ok'} : null;
+  _pedGeo = o&&Number.isFinite(o.lat)&&Number.isFinite(o.lng) ? {lat:o.lat,lng:o.lng,fonte:'salvo',prec:o.geoManual?'manual':o.geoPrec,exato:o.geoStatus==='ok'&&!_aprox(o)} : null;
   $id('modal-pedido').classList.add('open');
   setTimeout(()=>{ _pedDesenharMapa(); (bloq?document.querySelector('#modal-pedido .modal-close'):$id('ped-nf')).focus(); },40);
 }
@@ -1849,16 +1857,24 @@ function fecharPedido(){
   _pedFoco=null;
 }
 window.fecharPedido=fecharPedido;
+// chave do endereço que está no formulário (para lembrar o ponto marcado à mão)
+function _pedChaveForm(){
+  return _chaveLocal({endereco:$id('ped-end').value.trim().replace(/,\s*$/,''), cep:$id('ped-cep').value.replace(/\D/g,''), cidade:_cidadeNorm($id('ped-cidade').value)});
+}
 function _pedGeoStatus(){
   const el=$id('ped-geo-st'); let t, c='';
-  const g=_pedGeo;
-  if(!g){ t='Ainda sem local. Preencha a rua e a cidade (ou o CEP) e toque em "Buscar pelo endereço", ou toque no mapa.'; c='warn'; }
-  else if(g.fonte==='manual'){ t='Ponto marcado por você.'; c='ok'; }
-  else if(g.fonte==='endereco'){ t='Achamos pelo endereço. Confira o pino e arraste se precisar.'; c='ok'; }
-  else if(g.fonte==='cep'){ t='Achamos pelo CEP (a rua ou o bairro, sem o número). Arraste o pino até o ponto certo.'; c='warn'; }
-  else if(g.fonte==='cidade'){ t='Só achamos a cidade. Arraste o pino até o endereço.'; c='warn'; }
-  else if(g.exato){ t=_pedEdit&&_pedEdit.geoManual?'Ponto marcado à mão. Arraste o pino para corrigir.':'Local salvo. Arraste o pino se não estiver no ponto certo.'; }
-  else { t='Ainda sem local exato: o pino está no centro da cidade. Busque pelo endereço ou arraste o pino.'; c='warn'; }
+  const g=_pedGeo, f=g&&(g.fonte==='salvo'?(g.prec||'salvo'):g.fonte);
+  const guarda=' O sistema guarda este ponto e usa nas próximas notas do mesmo endereço.';
+  if(!g){ t='Ainda sem local. Preencha a rua com o número e a cidade (ou o CEP) e toque em "Buscar pelo endereço", ou toque no mapa.'; c='warn'; }
+  else if(g.fonte==='salvo'&&!g.exato&&!['bairro','cidade'].includes(f)){ t='Ainda sem local exato: o pino está no centro da cidade. Busque pelo endereço ou arraste o pino.'; c='warn'; }
+  else if(f==='manual'){ t=g.fonte==='salvo'?'Ponto marcado à mão. Arraste o pino para corrigir.':'Ponto marcado por você.'+(_pedChaveForm()?guarda:''); c='ok'; }
+  else if(f==='lembrado'){ t='Ponto que você já tinha marcado para este endereço. Arraste o pino se precisar.'; c='ok'; }
+  else if(f==='numero'){ t='Achamos pelo número. Confira o pino e arraste se precisar.'; c='ok'; }
+  else if(f==='endereco'){ t='Achamos pelo endereço. Confira o pino e arraste se precisar.'; c='ok'; }
+  else if(f==='rua'){ t='Achamos a rua, mas não o número (o mapa não tem o número de toda rua). Arraste o pino até o ponto certo.'+(_pedChaveForm()?guarda:''); c='warn'; }
+  else if(f==='bairro'){ t='Só achamos o bairro. Arraste o pino até o endereço.'; c='warn'; }
+  else if(f==='cidade'){ t='Só achamos a cidade. Arraste o pino até o endereço.'; c='warn'; }
+  else { t='Local salvo. Arraste o pino se não estiver no ponto certo.'; }
   el.textContent=t; el.className='ped-geo-st'+(c?' '+c:'');
 }
 function _pedMarcador(){
@@ -1872,7 +1888,7 @@ function _pedMarcador(){
   _pedGeoStatus();
 }
 function _pedPino(lat,lng,fonte,zoom){
-  _pedGeo={lat,lng,fonte,exato:fonte!=='cidade'};
+  _pedGeo={lat,lng,fonte,exato:!['bairro','cidade'].includes(fonte)};
   _pedMarcador();
   if(zoom&&_pedMap) _pedMap.setView([lat,lng],zoom);
 }
@@ -1910,17 +1926,14 @@ async function buscarLocalPedido(){
   const cidTxt=$id('ped-cidade').value.trim(), cidade=_cidadeNorm(cidTxt), uf=$id('ped-uf').value.trim().toUpperCase();
   const cep=$id('ped-cep').value.replace(/\D/g,'');
   const st=$id('ped-geo-st');
-  if(!(end&&cidTxt) && cep.length!==8 && !cidTxt){ st.textContent='Preencha a rua e a cidade, ou o CEP.'; st.className='ped-geo-st warn'; return; }
+  if(cep.length!==8 && !cidTxt){ st.textContent='Preencha a rua com o número e a cidade, ou o CEP.'; st.className='ped-geo-st warn'; return; }
   const bt=$id('ped-buscar'); bt.disabled=true; st.textContent='Procurando...'; st.className='ped-geo-st';
-  let g=null, fonte='';
-  try{
-    if(end&&cidTxt){ g=await _nominatim(`${end}${bairro?', '+bairro:''}, ${cidade}${uf?', '+uf:''}, Brasil`); if(g) fonte='endereco'; }
-    if(!g&&cep.length===8){ try{ const r=await _geocodificarCep(cep); g={lat:r.lat,lng:r.lng}; fonte='cep'; _pedCompletar(r); }catch(e){} }
-    if(!g&&cidTxt){ g=await _nominatim(`${cidade}${uf?', '+uf:''}, Brasil`); if(g) fonte='cidade'; }
-  }catch(e){}
+  let g=null;
+  try{ g=await _localizarPedido({endereco:end, bairro, cep:cep.length===8?cep:'', cidade:cidTxt?cidade:'Sem cidade', uf}, !_pedSoNaTela(_pedEdit)); }catch(e){}
   bt.disabled=false;
   if(!g){ st.textContent='Não achamos esse endereço. Toque no mapa para marcar o ponto.'; st.className='ped-geo-st warn'; return; }
-  _pedPino(g.lat,g.lng,fonte,fonte==='cidade'?13:17);
+  _pedCompletar({bairro:g.bairro, cidade:g.cidade, uf:g.uf});
+  _pedPino(g.lat,g.lng,g.prec,g.prec==='cidade'?13:g.prec==='bairro'?15:17);
 }
 window.buscarLocalPedido=buscarLocalPedido;
 function _pedErro(campo,txt){
@@ -1948,11 +1961,11 @@ async function salvarPedido(){
   // Local: o que a pessoa achou ou marcou vale; sem isso, endereço igual mantém o
   // local salvo; endereço novo volta para o centro da cidade e é localizado pelo CEP.
   const endMudou=!o || (o.cep||'')!==cep || (o.endereco||'')!==dados.endereco || o.cidade!==cidade;
-  if(_pedGeo&&['manual','endereco','cep'].includes(_pedGeo.fonte)){
-    Object.assign(dados,{lat:_pedGeo.lat,lng:_pedGeo.lng,geoStatus:'ok',geoManual:_pedGeo.fonte==='manual'});
+  if(_pedGeo&&_pedGeo.fonte!=='salvo'){
+    Object.assign(dados,{lat:_pedGeo.lat,lng:_pedGeo.lng,geoStatus:'ok',geoManual:_pedGeo.fonte==='manual',geoPrec:_pedGeo.fonte});
   } else if(!(o&&!endMudou)){
-    const c=_pedGeo&&_pedGeo.fonte==='cidade'?_pedGeo:(CITY_COORDS[cidade]||DEPOT);
-    Object.assign(dados,{lat:c.lat,lng:c.lng,geoStatus:cep?'pendente':'sem_cep',geoManual:false});
+    const c=CITY_COORDS[cidade]||DEPOT;
+    Object.assign(dados,{lat:c.lat,lng:c.lng,geoStatus:cep?'pendente':'sem_cep',geoManual:false,geoPrec:''});
   }
   // chave no banco: entrega = número; coleta = "C_" + número (trocar o tipo troca a chave)
   let id, idAntigo=null;
@@ -1990,12 +2003,37 @@ async function salvarPedido(){
     bt.disabled=false; bt.textContent=o?'Salvar alterações':'Cadastrar pedido';
     return _pedErro(null,'Não foi possível salvar: '+e.message);
   }
-  if(dados.geoStatus==='pendente') agendarGeocodificacao([{id,cep,cidade,geoStatus:'pendente'}]);
+  if(dados.geoStatus&&_precisaLocalizar(dados)) agendarGeocodificacao([{...dados,id}]);
   _pedNaRota(idAntigo||id, {...dados,id});
+  // ponto marcado à mão: guarda para o endereço e corrige os outros pendentes iguais
+  let outros=0;
+  if(dados.geoManual){
+    const chave=_chaveLocal(dados);
+    if(chave){
+      _guardarLocal(chave,{lat:dados.lat,lng:dados.lng,p:'manual',em:Date.now()},!soTela);
+      outros=await _aplicarLocalLembrado(chave,id,dados.lat,dados.lng,soTela);
+    }
+  }
   fecharPedido();
-  _toast(o?`Pedido NF ${nf} atualizado.`:`Pedido NF ${nf} cadastrado.`);
+  _toast((o?`Pedido NF ${nf} atualizado.`:`Pedido NF ${nf} cadastrado.`)+(outros?` O ponto também foi usado em ${_plural(outros,'outro pedido','outros pedidos')} do mesmo endereço.`:''));
 }
 window.salvarPedido=salvarPedido;
+// leva o ponto marcado à mão para os outros pedidos pendentes do mesmo endereço
+async function _aplicarLocalLembrado(chave,exceto,lat,lng,soTela){
+  const alvo=allOrders.filter(x=>x.id!==exceto&&x.status==='pendente'&&!x.geoManual&&_chaveLocal(x)===chave
+    &&!(x.geoPrec==='lembrado'&&x.lat===lat&&x.lng===lng));
+  if(!alvo.length) return 0;
+  const novo={lat,lng,geoStatus:'ok',geoPrec:'lembrado'};
+  if(soTela) alvo.forEach(x=>Object.assign(x,novo));
+  else {
+    const upd={};
+    alvo.forEach(x=>Object.entries(novo).forEach(([k,v])=>{ upd[TP('pedidos_rota/'+x.id+'/'+k)]=v; }));
+    try{ await update(ref(db),upd); }catch(e){ return 0; }
+  }
+  alvo.forEach(x=>_pedNaRota(x.id,novo));
+  if(soTela){ render(); renderPedidosPage(); if($id('page-mapa')?.style.display==='block') atualizarMapaCompleto(); }
+  return alvo.length;
+}
 async function excluirPedido(){
   const o=_pedEdit; if(!o||_pedBloq()) return;
   if(!confirm(`Excluir o pedido NF ${o.nf}? Ele sai da lista de pendentes.`)) return;
@@ -2174,7 +2212,10 @@ const COL_MAP={
   cidade:['cidade','municipio','município','city','localidade','destino'],
   peso:['peso','pesobruto','peso_bruto','kg','massa','pesoliquido'],
   itens:['itens','quantidade','qtd','qty','volumes','vol','caixas'],
-  dest:['dest','destinatario','destinatário','endereco','endereço','cliente','razao'],
+  dest:['dest','destinatario','destinatário','cliente','razao'],
+  endereco:['endereco','endereço','logradouro','rua'],
+  bairro:['bairro'],
+  uf:['uf','estado'],
   cep:['cep','codigopostal','codpostal','postal','zipcode','zip'],
   tipo:['tipo','operacao','coletaentrega'],
 };
@@ -2201,7 +2242,12 @@ function _pesoNum(v){ if(!v) return 100; const n=parseFloat(String(v).replace(',
 
 function _tipoCelula(v,padrao){ const t=_norm(v); if(t.includes('colet')) return 'coleta'; if(t.includes('entreg')) return 'entrega'; return padrao; }
 function _rowsToOrders(rows,headers,tipoPadrao){
-  const ci={ nf:_findCol(headers,COL_MAP.nf), cidade:_findCol(headers,COL_MAP.cidade), peso:_findCol(headers,COL_MAP.peso), itens:_findCol(headers,COL_MAP.itens), dest:_findCol(headers,COL_MAP.dest), cep:_findCol(headers,COL_MAP.cep), tipo:_findCol(headers,COL_MAP.tipo) };
+  const ci={ nf:_findCol(headers,COL_MAP.nf), cidade:_findCol(headers,COL_MAP.cidade), peso:_findCol(headers,COL_MAP.peso), itens:_findCol(headers,COL_MAP.itens), dest:_findCol(headers,COL_MAP.dest), cep:_findCol(headers,COL_MAP.cep), tipo:_findCol(headers,COL_MAP.tipo),
+    endereco:_findCol(headers,COL_MAP.endereco), bairro:_findCol(headers,COL_MAP.bairro), uf:_findCol(headers,COL_MAP.uf) };
+  if(ci.dest===ci.endereco) ci.dest=-1;
+  // coluna só com o número da casa ("Número", "Nº"), diferente da coluna da nota
+  ci.numero=headers.map(h=>_semAcento(h).replace(/[^a-z0-9]/g,'')).findIndex((h,i)=>i!==ci.nf&&['numero','num','nro','no','n'].includes(h));
+  const cel=(k,row)=>ci[k]>=0?String(row[ci[k]]??'').trim():'';
   const orders=[]; let semNumero=0;
   for(const row of rows){
     if(!row||row.every(c=>!c)) continue;
@@ -2212,11 +2258,16 @@ function _rowsToOrders(rows,headers,tipoPadrao){
     const coord=CITY_COORDS[cidade]||DEPOT;
     const cepRaw=ci.cep>=0?String(row[ci.cep]||'').replace(/\D/g,''):'';
     const cep=cepRaw.length===8?cepRaw:'';
+    let endereco=cel('endereco',row).replace(/,\s*$/,'');
+    const num=cel('numero',row);
+    if(endereco&&num&&!_partesEndereco(endereco).numero) endereco+=', '+num;
+    const uf=cel('uf',row).toUpperCase();
     orders.push({
       id:_chaveId(nfLido||('SN-'+Date.now().toString(36)+'-'+(++semNumero)),tipo), nf, tipo,
       cidade, peso:_pesoNum(ci.peso>=0?row[ci.peso]:null),
       itens:Math.max(1,ci.itens>=0?parseInt(row[ci.itens])||1:1),
-      dest:(ci.dest>=0?String(row[ci.dest]||'').trim():'')||cidade,
+      dest:cel('dest',row)||cidade,
+      endereco, bairro:cel('bairro',row), uf:/^[A-Z]{2}$/.test(uf)?uf:'',
       cep,
       geoStatus: cep ? 'pendente' : 'sem_cep',
       urgente:false, agendado:false, dataAgendada:'', status:'pendente', origem:'planilha',
@@ -2295,19 +2346,70 @@ function _impMsg(tipo,txt){
 }
 
 // ══════════════════════════════════════════════════════════════════════════
-// GEOCODIFICAÇÃO — CEP → coordenada real (ViaCEP + Nominatim)
+// GEOCODIFICAÇÃO — endereço → coordenada (ViaCEP + Nominatim)
 // ══════════════════════════════════════════════════════════════════════════
-// Fluxo: CEP → ViaCEP (endereço em texto) → Nominatim (lat/lng) → cache
-// no Firebase em geo_cache/<cep> pra nunca repetir a mesma consulta.
-// Nominatim exige máx. 1 requisição/segundo — fila serial com espera.
+// Ordem para cada pedido:
+//  1. ponto que a empresa já corrigiu à mão para este endereço (config/locais);
+//  2. endereço já localizado antes (config/locais, vale por 90 dias);
+//  3. rua + número no Nominatim (o OpenStreetMap não tem o número de toda rua);
+//  4. CEP → ViaCEP → rua, bairro ou cidade no Nominatim (cache geral geo_cache/<cep>).
+// O cache geral guarda só o CEP (dado público). O que tem número ou ponto marcado
+// à mão fica na área da própria empresa. Nominatim: no máximo 1 consulta por segundo.
 
-let geoCache = {};          // cep → {lat,lng,bairro,cidade,uf} (espelho local do Firebase)
-let _geoFila = [];          // NFs aguardando geocodificação
+let geoCache = {};          // cep → {lat,lng,bairro,cidade,uf,rua,prec}
+let locaisEmp = {};         // chave do endereço → {lat,lng,p,em}: p = manual | numero | rua | bairro | cidade
+let _locaisProntos = null;
+let _geoFila = [];          // pedidos aguardando localização
 let _geoRodando = false;
+const LOCAL_AUTO_DIAS = 90; // depois disso, o que foi achado automaticamente é procurado de novo
+const UF_NOME={AC:'Acre',AL:'Alagoas',AP:'Amapá',AM:'Amazonas',BA:'Bahia',CE:'Ceará',DF:'Distrito Federal',ES:'Espírito Santo',GO:'Goiás',MA:'Maranhão',MT:'Mato Grosso',MS:'Mato Grosso do Sul',MG:'Minas Gerais',PA:'Pará',PB:'Paraíba',PR:'Paraná',PE:'Pernambuco',PI:'Piauí',RJ:'Rio de Janeiro',RN:'Rio Grande do Norte',RS:'Rio Grande do Sul',RO:'Rondônia',RR:'Roraima',SC:'Santa Catarina',SP:'São Paulo',SE:'Sergipe',TO:'Tocantins'};
 
-// carrega cache persistido (uma vez, no boot — listener já existente adiciona depois)
 function _geoCarregarCache(){
   onValue(ref(db,'geo_cache'), snap=>{ geoCache = snap.val() || {}; }, ()=>{});
+}
+// pontos da empresa: só com área própria no banco (EID)
+function _locaisCarregar(){
+  if(!EID) return;
+  _locaisProntos=new Promise(ok=>{
+    const t=setTimeout(ok,6000);
+    onValue(ref(db,TP('config/locais')), snap=>{ locaisEmp=snap.val()||{}; clearTimeout(t); ok(); }, ()=>{ clearTimeout(t); ok(); });
+  });
+}
+function _guardarLocal(chave,v,persistir){
+  locaisEmp[chave]=v;
+  if(persistir&&EID) Promise.resolve(update(ref(db,TP('config/locais')),{[chave]:v})).catch(()=>{});
+}
+
+// "Rua X, 123 - sala 2" → {rua:'Rua X', numero:'123'}; S/N → numero ''
+function _partesEndereco(t){
+  t=String(t||'').split(/\s+-\s+/)[0].trim().replace(/\s+/g,' ');
+  const m=t.match(/^(.+?),\s*(?:n[º°o]?\.?\s*)?(\d{1,3}(?:\.\d{3})+|\d{1,6})([a-z](?![a-z]))?/i)   // "1.000" = mil
+       || t.match(/^(.*\D)\s+(?:n[º°o]?\.?\s*)?(\d{1,3}(?:\.\d{3})+|\d{1,6})([a-z])?$/i);
+  if(!m) return {rua:t.replace(/,\s*(s\/?n[º°o]?|sem n[uú]mero)\.?$/i,'').trim(), numero:''};
+  const n=String(+m[2].replace(/\./g,''));
+  return {rua:m[1].trim(), numero:n==='0'?'':n+(m[3]||'').toUpperCase()};
+}
+// nome da rua para comparar: sem acento, sem "Rua/Av.", abreviações por extenso
+const _TIPO_VIA=new Set(['r','rua','av','ave','avenida','al','alameda','tv','trav','travessa','est','estr','estrada','rod','rodovia','pc','pca','praca','lg','largo','vl','viela']);
+const _ABREV={dr:'doutor',dra:'doutora',prof:'professor',profa:'professora',eng:'engenheiro',cel:'coronel',cap:'capitao',gen:'general',sen:'senador',dep:'deputado',gov:'governador',pres:'presidente',sto:'santo',sta:'santa',ten:'tenente',mal:'marechal',alm:'almirante',pe:'padre',sr:'senhor',sra:'senhora'};
+function _ruaChave(t){
+  let w=_semAcento(t).split(/[^a-z0-9]+/).filter(Boolean);
+  if(w.length>1&&_TIPO_VIA.has(w[0])) w=w.slice(1);
+  return w.map(x=>_ABREV[x]||x).filter(x=>!['de','da','do','das','dos','e'].includes(x)).join('-');
+}
+// chave do endereço: CEP (ou cidade) + número + rua. Vazia sem rua.
+function _chaveLocal(o){
+  const {rua,numero}=_partesEndereco(o&&o.endereco);
+  const r=_ruaChave(rua).slice(0,80);
+  if(!r) return '';
+  const cep=String(o.cep||'').replace(/\D/g,'');
+  const cid=o.cidade&&o.cidade!=='Sem cidade'?_ruaChave(o.cidade).slice(0,40):'';
+  const base=cep.length===8?cep:(cid?'c-'+cid:'');
+  return base?`${base}_${(numero||'sn').toLowerCase()}_${r}`:'';
+}
+function _mesmoNumero(achado,pedido){
+  const d=String(pedido).replace(/\D/g,'');
+  return !!d && (String(achado||'').match(/\d+/g)||[]).includes(d);
 }
 
 async function _viaCep(cep){
@@ -2319,97 +2421,126 @@ async function _viaCep(cep){
 }
 
 let _nomUlt=0;   // última consulta ao Nominatim (a política pede no máximo 1 por segundo)
-async function _nominatim(query){
+async function _nominatimGet(params){
   const espera=_nomUlt+1100-Date.now();
   if(espera>0) await _sleep(espera);
   _nomUlt=Date.now();
-  const url =`https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&q=${encodeURIComponent(query)}`;
-  const r = await fetch(url, { headers: { 'Accept-Language':'pt-BR' } });
+  const q=new URLSearchParams({format:'jsonv2',addressdetails:'1',limit:'1',countrycodes:'br',...params});
+  const r = await fetch('https://nominatim.openstreetmap.org/search?'+q, { headers: { 'Accept-Language':'pt-BR' } });
   if(!r.ok) throw new Error('Nominatim HTTP '+r.status);
   const arr = await r.json();
   if(!arr.length) return null;
-  return { lat: parseFloat(arr[0].lat), lng: parseFloat(arr[0].lon) };
+  const a=arr[0].address||{};
+  return { lat: parseFloat(arr[0].lat), lng: parseFloat(arr[0].lon), numero:a.house_number||'', rua:a.road||'' };
 }
+function _nominatim(query){ return _nominatimGet({q:query}); }
 
-// Geocodifica UM cep: cache → ViaCEP → Nominatim (com fallback progressivo)
+// Geocodifica UM cep: cache → ViaCEP → Nominatim (rua, depois bairro, depois cidade)
 async function _geocodificarCep(cep){
-  if(geoCache[cep]) return geoCache[cep];
-
-  const end = await _viaCep(cep);
-  // tentativa 1: logradouro + cidade + UF (mais preciso)
-  let coord = null;
-  if(end.logradouro){
-    coord = await _nominatim(`${end.logradouro}, ${end.localidade}, ${end.uf}, Brasil`);
-    await _sleep(1100);
-  }
-  // tentativa 2: bairro + cidade + UF
-  if(!coord && end.bairro){
-    coord = await _nominatim(`${end.bairro}, ${end.localidade}, ${end.uf}, Brasil`);
-    await _sleep(1100);
-  }
-  // tentativa 3: só cidade + UF (garante pelo menos a cidade certa)
-  if(!coord){
-    coord = await _nominatim(`${end.localidade}, ${end.uf}, Brasil`);
-    await _sleep(1100);
-  }
-  if(!coord) throw new Error('Nominatim não achou coordenada');
-
-  const resultado = {
-    lat: coord.lat, lng: coord.lng,
-    bairro: end.bairro||'', cidade: end.localidade||'', uf: end.uf||'',
-  };
+  const salvo=geoCache[cep];
+  if(salvo&&salvo.prec) return salvo;   // sem "prec" = gravado antes da versão 3.7: procura de novo para saber a precisão
+  let resultado;
+  try{
+    const end = await _viaCep(cep);
+    let coord=null, prec='';
+    if(end.logradouro){ coord=await _nominatim(`${end.logradouro}, ${end.localidade}, ${end.uf}, Brasil`); if(coord) prec=coord.rua?'rua':'bairro'; }
+    if(!coord&&end.bairro){ coord=await _nominatim(`${end.bairro}, ${end.localidade}, ${end.uf}, Brasil`); if(coord) prec='bairro'; }
+    if(!coord){ coord=await _nominatim(`${end.localidade}, ${end.uf}, Brasil`); if(coord) prec='cidade'; }
+    if(!coord) throw new Error('Nominatim não achou coordenada');
+    resultado = { lat:coord.lat, lng:coord.lng, bairro:end.bairro||'', cidade:end.localidade||'', uf:end.uf||'', rua:end.logradouro||'', prec };
+  }catch(e){ if(salvo) return salvo; throw e; }
   geoCache[cep] = resultado;
   // persiste no Firebase — próxima vez é instantâneo
   if(!contaDemo) Promise.resolve(update(ref(db,'geo_cache'), { [cep]: resultado })).catch(()=>{});
   return resultado;
 }
 
+// Localiza UM pedido. Devolve {lat,lng,prec,bairro,cidade,uf}; prec = lembrado | numero | rua | bairro | cidade
+async function _localizarPedido(o, persistir=true){
+  if(_locaisProntos) await _locaisProntos;
+  const chave=_chaveLocal(o), salvo=chave?locaisEmp[chave]:null;
+  if(salvo&&salvo.p==='manual') return {lat:salvo.lat,lng:salvo.lng,prec:'lembrado',bairro:'',cidade:''};
+  if(salvo&&Date.now()-(salvo.em||0)<LOCAL_AUTO_DIAS*864e5) return {lat:salvo.lat,lng:salvo.lng,prec:salvo.p,bairro:'',cidade:''};
+  const cep=String(o.cep||'').replace(/\D/g,'');
+  let base=null;
+  if(cep.length===8){ try{ base=await _geocodificarCep(cep); }catch(e){} }
+  const {rua,numero}=_partesEndereco(o.endereco);
+  const cidade=base?.cidade||(o.cidade&&o.cidade!=='Sem cidade'?o.cidade:'');
+  const uf=String(base?.uf||o.uf||'').toUpperCase();
+  const lugar={city:cidade, ...(UF_NOME[uf]?{state:UF_NOME[uf]}:{}), country:'Brasil'};
+  let res=null, g=null;
+  // 1) rua + número (com o nome oficial da rua pelo CEP, quando houver)
+  if(numero&&cidade&&(base?.rua||rua)&&!/\bkm$/i.test(rua)){
+    g=await _nominatimGet({street:`${numero} ${base?.rua||rua}`, ...lugar});
+    // número achado longe demais da rua do CEP = provavelmente outra rua com o mesmo nome
+    if(g&&_mesmoNumero(g.numero,numero)&&!(base&&base.prec==='rua'&&_haversineKm(g,base)>6)) res={lat:g.lat,lng:g.lng,prec:'numero'};
+  }
+  // 2) o que o CEP deu (rua, bairro ou cidade)
+  if(!res&&base) res={lat:base.lat,lng:base.lng,prec:base.prec||'rua'};
+  // 3) sem CEP: a rua sem o número, depois só a cidade
+  if(!res&&cidade){
+    if(!g&&rua) g=await _nominatimGet({street:rua, ...lugar});
+    if(g&&g.rua) res={lat:g.lat,lng:g.lng,prec:'rua'};
+    else { const c=await _nominatimGet(lugar); if(c) res={lat:c.lat,lng:c.lng,prec:'cidade'}; }
+  }
+  if(!res) throw new Error('endereço não encontrado');
+  // guarda o que deu mais trabalho (número, ou endereço sem CEP) para não consultar a cada nota
+  if(chave&&(numero||!base)) _guardarLocal(chave,{lat:res.lat,lng:res.lng,p:res.prec,em:Date.now()},persistir);
+  return {...res, bairro:base?.bairro||'', cidade:base?.cidade||'', uf:base?.uf||''};
+}
+
 function _sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
-// Processa a fila de NFs pendentes de geocodificação — serial, 1/s
+// Processa a fila de pedidos a localizar — um de cada vez (Nominatim: 1 por segundo)
 async function _processarFilaGeo(){
   if(_geoRodando) return;
   _geoRodando = true;
-  let ok=0, falhou=0;
+  const n={numero:0,lembrado:0,aprox:0,ok:0,falhou:0};
   const total=_geoFila.length;
   _geoStatusUI(`Localizando pedidos no mapa: 0/${total}...`);
 
   while(_geoFila.length){
     const o = _geoFila.shift();
     try{
-      const g = await _geocodificarCep(o.cep);
+      const g = await _localizarPedido(o, !modoDemo);
       // o pedido pode ter sido excluído enquanto era localizado: não recriar
       if(!modoDemo && !(o.id in _statusPorId)) continue;
-      const payload = {
-        lat: g.lat, lng: g.lng, geoStatus:'ok',
-        bairro: g.bairro,
-        // corrige a cidade se ViaCEP discordar do que veio no arquivo
-        cidade: g.cidade || o.cidade,
-      };
+      // marcado à mão enquanto estava na fila: o ponto da pessoa vale
+      const agora=allOrders.find(x=>x.id===o.id);
+      if(agora&&agora.geoManual) continue;
+      let payload = { lat:g.lat, lng:g.lng, geoStatus:'ok', geoPrec:g.prec, bairro:g.bairro||o.bairro||'', cidade:g.cidade||o.cidade };
+      // já localizado antes da versão 3.7: só troca o ponto se achar o número (ou um ponto marcado à mão)
+      if(o._melhorar && !['numero','lembrado'].includes(g.prec)){
+        payload = { geoPrec: _haversineKm(g,o)<0.05 ? g.prec : 'endereco' };
+      }
       if(!modoDemo){
         await update(ref(db,TP('pedidos_rota/'+o.id)), payload);
       } else {
         const local = allOrders.find(x=>x.id===o.id);
         if(local) Object.assign(local, payload);
       }
-      ok++;
+      const p=payload.geoPrec;
+      n.ok++; if(p==='numero') n.numero++; else if(p==='lembrado') n.lembrado++; else if(p==='bairro'||p==='cidade') n.aprox++;
     }catch(e){
-      falhou++;
-      if(!modoDemo && (o.id in _statusPorId)){
+      n.falhou++;
+      if(o._melhorar){ /* continua com o ponto que já tinha */ }
+      else if(!modoDemo && (o.id in _statusPorId)){
         update(ref(db,TP('pedidos_rota/'+o.id)), { geoStatus:'falhou' }).catch(()=>{});
       } else {
         const local = allOrders.find(x=>x.id===o.id);
         if(local) local.geoStatus='falhou';
       }
     }
-    _geoStatusUI(`Localizando pedidos no mapa: ${ok+falhou}/${total}...`);
+    _geoStatusUI(`Localizando pedidos no mapa: ${n.ok+n.falhou}/${total}...`);
     // re-render ao vivo conforme os pinos chegam
     if(document.getElementById('page-mapa')?.style.display==='block'){ atualizarMapaCompleto(); }
   }
   _geoRodando = false;
-  _geoStatusUI(ok||falhou ? `Mapa atualizado: ${ok} pedido(s) localizado(s)${falhou?`, ${falhou} sem localização exata`:''}.` : '');
+  const det=[n.numero&&`${n.numero} pelo número`, n.lembrado&&`${n.lembrado} pelo ponto que você já tinha marcado`, n.aprox&&`${n.aprox} só com o bairro ou a cidade`].filter(Boolean);
+  _geoStatusUI(n.ok||n.falhou ? `Mapa atualizado: ${_plural(n.ok,'pedido localizado','pedidos localizados')}${det.length?' ('+det.join(', ')+')':''}${n.falhou?`, ${n.falhou} sem localização`:''}.` : '');
   if(modoDemo) render();
-  setTimeout(()=>_geoStatusUI(''), 8000);
+  else if(document.getElementById('page-pedidos')?.style.display==='block') renderPedidosPage();
+  setTimeout(()=>_geoStatusUI(''), 9000);
 }
 
 function _geoStatusUI(txt){
@@ -2417,18 +2548,27 @@ function _geoStatusUI(txt){
   if(!el){
     el = document.createElement('div');
     el.id='geo-status-bar';
-    el.style.cssText='position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--s2);border:1px solid var(--border2);border-radius:20px;padding:9px 18px;font-size:12px;color:var(--ac);z-index:2000;box-shadow:0 4px 20px rgba(22,53,42,.22);display:none;font-family:var(--body)';
+    el.setAttribute('role','status');
+    el.style.cssText='position:fixed;bottom:18px;left:50%;transform:translateX(-50%);max-width:calc(100vw - 32px);text-align:center;background:var(--s2);border:1px solid var(--border2);border-radius:20px;padding:9px 18px;font-size:12px;color:var(--ac);z-index:2000;box-shadow:0 4px 20px rgba(22,53,42,.22);display:none;font-family:var(--body)';
     document.body.appendChild(el);
   }
   if(txt){ el.textContent=txt; el.style.display='block'; }
   else el.style.display='none';
 }
 
-// Enfileira todos os pedidos com CEP ainda não geocodificado
+// Quem precisa ser localizado: CEP ou endereço ainda sem ponto, e os que foram
+// localizados só pelo CEP antes da versão 3.7 e têm número (tenta o número uma vez).
+function _temEndereco(o){ return !!(o.endereco&&o.cidade&&o.cidade!=='Sem cidade'); }
+function _precisaLocalizar(o){
+  if(o.geoManual) return false;
+  if(o.geoStatus==='pendente') return !!o.cep||_temEndereco(o);
+  if(o.geoStatus==='sem_cep') return _temEndereco(o);
+  return o.geoStatus==='ok' && !o.geoPrec && !!o.cep && !!_partesEndereco(o.endereco).numero;
+}
 function agendarGeocodificacao(pedidos){
-  const candidatos = pedidos.filter(o=>o.cep && o.geoStatus==='pendente' && !_geoFila.find(f=>f.id===o.id));
+  const candidatos = pedidos.filter(o=>_precisaLocalizar(o) && !_geoFila.find(f=>f.id===o.id));
   if(!candidatos.length) return;
-  _geoFila.push(...candidatos);
+  _geoFila.push(...candidatos.map(o=>({...o,_melhorar:o.geoStatus==='ok'})));
   _processarFilaGeo();
 }
 window.agendarGeocodificacao = agendarGeocodificacao;
@@ -2676,9 +2816,9 @@ function irConfirmD(){
     : rotTipoD==='entrega' ? _plural(nV.entrega,'entrega','entregas')
     : `${_plural(nV.entrega,'entrega','entregas')} e ${_plural(nV.coleta,'coleta','coletas')}`;
   const comHora=viagem.filter(o=>o.janela_ini!=null).length;
-  const semLocal=viagem.filter(o=>o.geoStatus!=='ok').length;
+  const semLocal=viagem.filter(_aprox).length;
   document.getElementById('confirm-veh-name').textContent=vehSel.nome;
-  document.getElementById('confirm-details-d').innerHTML=`Capacidade: <b style="color:var(--ac)">${kg.toLocaleString('pt-BR')} kg</b><br>Máx. de paradas: <b>${maxPedD}</b><br>Nesta viagem: <b>${oque} pendentes</b>${rotTipoD==='todos'?' <span style="color:var(--text3)">(entregas primeiro, coletas depois)</span>':''}<br>Saída: <b>${esc(DEPOT.name)}</b> às <b>${_hhmm(rotaCtxD.saida)}</b> de <b>${_dataBR(rotaCtxD.data)}</b>${comHora?`<br>Com horário marcado: <b>${comHora}</b>`:''}${outroDia?`<br><span style="color:var(--text3)">${_plural(outroDia,'agendado para outro dia fica','agendados para outro dia ficam')} de fora.</span>`:''}${semLocal?`<br><span style="color:#8a5a06">⚠️ ${_plural(semLocal,'pedido ainda está','pedidos ainda estão')} sem localização exata (só a cidade). A ordem e os km desses pedidos são aproximados.</span>`:''}`;
+  document.getElementById('confirm-details-d').innerHTML=`Capacidade: <b style="color:var(--ac)">${kg.toLocaleString('pt-BR')} kg</b><br>Máx. de paradas: <b>${maxPedD}</b><br>Nesta viagem: <b>${oque} pendentes</b>${rotTipoD==='todos'?' <span style="color:var(--text3)">(entregas primeiro, coletas depois)</span>':''}<br>Saída: <b>${esc(DEPOT.name)}</b> às <b>${_hhmm(rotaCtxD.saida)}</b> de <b>${_dataBR(rotaCtxD.data)}</b>${comHora?`<br>Com horário marcado: <b>${comHora}</b>`:''}${outroDia?`<br><span style="color:var(--text3)">${_plural(outroDia,'agendado para outro dia fica','agendados para outro dia ficam')} de fora.</span>`:''}${semLocal?`<br><span style="color:#8a5a06">⚠️ ${_plural(semLocal,'pedido ainda está','pedidos ainda estão')} sem localização exata (só o bairro ou a cidade). A ordem e os km desses pedidos são aproximados.</span>`:''}`;
   document.getElementById('rot-step-cap').style.display='none';
   document.getElementById('rot-step-confirm').style.display='block';
 }
@@ -3645,7 +3785,7 @@ function selRotaTabD(idx){
     : fonte==='OSRM' ? `<div style="margin-top:10px;font-size:11px;color:var(--text3)">✓ Distância real via OSRM (rota de estrada)</div>` : '';
   const linha=(p,i)=>{
     const pid=_idDe(p), tarde=p.janela_fim!=null&&p.chegada_min!=null&&p.chegada_min>p.janela_fim;
-    const aprox=p.geoStatus&&p.geoStatus!=='ok';
+    const aprox=_aprox(p);
     const acoes=ajusteD?`<div class="dm-acoes">
         <button type="button" data-foco="${esc(pid)}|up" onclick="moverParadaD(${idx},${i},-1)" ${i===0?'disabled':''} aria-label="Subir NF ${esc(p.nf)}" title="Subir">↑</button>
         <button type="button" data-foco="${esc(pid)}|down" onclick="moverParadaD(${idx},${i},1)" ${i===paradas.length-1?'disabled':''} aria-label="Descer NF ${esc(p.nf)}" title="Descer">↓</button>
@@ -3656,7 +3796,7 @@ function selRotaTabD(idx){
   };
   document.getElementById('rota-detail-d').innerHTML=`
     <div id="rota-map"></div>
-    ${paradas.some(p=>p.geoStatus&&p.geoStatus!=='ok')?`<div class="mapa-nota">⚠️ ${_plural(paradas.filter(p=>p.geoStatus&&p.geoStatus!=='ok').length,'parada está','paradas estão')} sem endereço exato. No mapa, ficam no centro da cidade, e a ordem e os km delas são aproximados. Toque em "corrigir" para buscar o endereço ou marcar o ponto.</div>`:''}
+    ${paradas.some(_aprox)?`<div class="mapa-nota">⚠️ ${_plural(paradas.filter(_aprox).length,'parada está','paradas estão')} sem endereço exato. No mapa, ficam no centro do bairro ou da cidade, e a ordem e os km delas são aproximados. Toque em "corrigir" para buscar o endereço ou marcar o ponto.</div>`:''}
     ${paradas.length?`<div class="nav-btns-d"><a href="${gmaps}" target="_blank" rel="noopener" class="btn-nav-d gmaps">📍 Google Maps</a>${last?`<a href="https://waze.com/ul?ll=${last.lat},${last.lng}&navigate=yes" target="_blank" rel="noopener" class="btn-nav-d waze">🚗 Waze</a>`:''}</div>`:''}
     <div class="card" style="margin-bottom:14px"><div style="display:flex;gap:20px;font-size:13px;color:var(--text2);flex-wrap:wrap"><span>📦 <b style="color:var(--text)">${peso.toLocaleString('pt-BR')} kg</b></span><span>📍 <b style="color:var(--text)">${paradas.length}</b> paradas</span>${nT.coleta&&nT.entrega?`<span>🚚 sai com <b style="color:var(--text)">${carga.saida.toLocaleString('pt-BR')} kg</b> · no máximo <b style="color:var(--text)">${carga.max.toLocaleString('pt-BR')} kg</b> a bordo</span>`:''}<span>🛣️ <b style="color:var(--text)">${km.toFixed(1)}</b> km</span>${mins?`<span>⏱️ <b style="color:var(--text)">${mins}</b> min</span>`:''}</div>
       ${notaFonte}
@@ -3855,6 +3995,7 @@ async function iniciarApp(){
   setInterval(_atualizarVeiculos, 30000);
   carregarPedidos();
   _geoCarregarCache();
+  _locaisCarregar();
   // retoma geocodificação de pedidos que ficaram pendentes (ex: aba fechada no meio)
   setTimeout(()=>{ agendarGeocodificacao(allOrders.filter(o=>o.status==='pendente')); }, 4000);
 }
