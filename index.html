@@ -595,6 +595,19 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
 @media(max-width:360px){.header{padding:0 10px;}.header-inner{gap:6px;}.hdr-logo img{width:96px;height:auto;}}
 @media(max-width:430px){.delivery-mini.ajuste{flex-wrap:wrap;}.delivery-mini.ajuste .dm-txt{flex-basis:calc(100% - 40px);}.delivery-mini.ajuste .dm-acoes{width:100%;justify-content:flex-end;}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
+
+/* Oferta: sistema + rastreador 4G (página Mapa) */
+.rastr-oferta{margin-top:18px;display:flex;gap:18px;align-items:center;justify-content:space-between;background:var(--navy);color:#fff;border-radius:16px;padding:18px 20px;box-shadow:0 18px 40px -26px rgba(13,27,46,.8);}
+.rastr-oferta[hidden]{display:none;}
+.rastr-oferta__txt{max-width:720px;min-width:0;}
+.rastr-oferta__selo{display:inline-block;padding:4px 10px;border-radius:999px;background:rgba(243,182,43,.18);color:#f8d77a;font:700 11.5px var(--body);letter-spacing:.01em;}
+.rastr-oferta h3{margin:8px 0 6px;font:700 17px var(--sans);color:#fff;letter-spacing:-.2px;}
+.rastr-oferta p{margin:0;font-size:13px;line-height:1.5;color:#c9d4e3;}
+.rastr-oferta__nota{margin-top:8px!important;padding:7px 10px;border-left:3px solid var(--vv);border-radius:0 8px 8px 0;background:rgba(255,255,255,.06);font-size:12px!important;color:#dbe3ef!important;}
+.rastr-oferta__bt{flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:12px;background:var(--gold-grad);color:var(--navy);font:700 14px var(--body);text-decoration:none;box-shadow:0 8px 18px -10px rgba(224,156,18,.85),inset 0 1px 0 rgba(255,255,255,.55);white-space:nowrap;}
+.rastr-oferta__bt:hover{filter:brightness(1.04);}
+.rastr-oferta__bt:focus-visible{outline:3px solid #f8d77a;outline-offset:3px;}
+@media(max-width:700px){.rastr-oferta{flex-direction:column;align-items:stretch;padding:16px;}.rastr-oferta__bt{width:100%;}}
 </style>
 </head>
 <body>
@@ -905,6 +918,15 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
     <div class="filtro-row" style="margin-top:0"><span class="field-lbl">Mostrar</span><div class="seg" data-filtro role="group" aria-label="Mostrar no mapa"></div></div>
     <div id="mapa-completo" style="width:100%;height:560px;border-radius:16px;border:1px solid var(--border2);"></div>
     <div id="mapa-completo-legenda" class="map-leg"></div>
+    <section class="rastr-oferta" id="rastr-oferta" aria-labelledby="rastr-oferta-tit">
+      <div class="rastr-oferta__txt">
+        <span class="rastr-oferta__selo">Sistema + rastreamento · valor sob consulta</span>
+        <h3 id="rastr-oferta-tit">Sua frota ainda não tem rastreador?</h3>
+        <p>Hoje o veículo aparece neste mapa pelo celular do motorista, enquanto o link da rota está aberto. Para acompanhar a frota mesmo com o celular desligado, a ROTAV3 fornece e instala um rastreador 4G homologado pela Anatel em cada veículo, com o chip de dados.</p>
+        <p class="rastr-oferta__nota">Serviço novo: a posição do rastreador neste mapa está em implantação. Valor, condições e data da instalação são combinados com você.</p>
+      </div>
+      <a class="rastr-oferta__bt" href="https://wa.me/5511955914618?text=Ol%C3%A1!%20Uso%20o%20ROTAV3%20e%20quero%20saber%20do%20rastreador%204G%20para%20os%20ve%C3%ADculos%20da%20minha%20frota." target="_blank" rel="noopener">Quero rastreador 4G</a>
+    </section>
   </div>
 
   <!-- ── PÁGINA: MOTORISTAS ── -->
@@ -1177,6 +1199,7 @@ async function verificarEEntrar(user){
   if(EID===false){ EID=null; telaPendente(user,'sem_empresa'); return; }
   if(ehAdmin && EID) await _migrarPrincipal();
   $id('sb-acessos').hidden=!ehAdmin;
+  $id('rastr-oferta').hidden=ehAdmin;   // oferta do rastreador: para os clientes, não para a própria ROTAV3
   mostrarTela('app');
   if(!appIniciado){ appIniciado=true; if(contaDemo) iniciarAppDemo(); else iniciarApp(); }
 }
