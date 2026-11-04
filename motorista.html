@@ -12,6 +12,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Sora:wght@700;800&display=swap" rel="stylesheet">
 <style>
+.ic{width:1em;height:1em;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.14em;}
 :root{--navy:#0d1b2e;--gold:#f3b62b;--gold2:#e09c12;--gold-grad:linear-gradient(180deg,#f8d77a 0%,#f3b62b 55%,#e09c12 100%);
   --bg:#f3f6fa;--card:#fff;--line:#e3e8ef;--line2:#d3dae4;--text:#0d1b2e;--text2:#475569;--text3:#64748b;
   --ok:#0f7a4c;--okbg:#e8f7ef;--nok:#b91c1c;--nokbg:#fdecec;}
@@ -84,6 +85,12 @@ label.foto input{font-size:14px;}
 </style>
 </head>
 <body>
+<svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute"><defs>
+<symbol id="i-local" viewBox="0 0 24 24"><path d="M12 21.4s7.2-5.9 7.2-11.2a7.2 7.2 0 1 0-14.4 0c0 5.3 7.2 11.2 7.2 11.2Z"/><circle cx="12" cy="10" r="2.6"/></symbol>
+<symbol id="i-ok" viewBox="0 0 24 24"><path d="m4.6 12.6 4.9 4.9 9.9-10.8"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="m6.2 6.2 11.6 11.6"/><path d="M17.8 6.2 6.2 17.8"/></symbol>
+<symbol id="i-camera" viewBox="0 0 24 24"><path d="M3.2 8.4h3.4l1.6-2.6h6.8l1.6 2.6h3.2a1.4 1.4 0 0 1 1.4 1.4v9a1.4 1.4 0 0 1-1.4 1.4H3.2a1.4 1.4 0 0 1-1.4-1.4v-9a1.4 1.4 0 0 1 1.4-1.4Z"/><circle cx="12" cy="14" r="3.6"/></symbol>
+</defs></svg>
 <header class="top"><img src="assets/logo-rotav3.png" alt="ROTAV3 Systems" width="124" height="30"><span class="top-tag" id="top-tag">ROTA DO MOTORISTA</span></header>
 <main id="app"><div class="estado" role="status">Carregando a rota…</div></main>
 <div class="offline" id="offline" role="status" hidden>Sem internet. As baixas ficam guardadas e são enviadas quando a conexão voltar. Não feche esta página.</div>
@@ -219,7 +226,7 @@ function cardLocalizacao() {
   if (DEMO) return '';
   const on = watchId !== null;
   return `<section class="loc${on ? ' on' : ''}" aria-label="Localização ao vivo">
-    <div class="loc-txt"><b>📍 Localização ao vivo</b><span id="loc-status">${esc(locStatus)}</span></div>
+    <div class="loc-txt"><b><svg class="ic" viewBox="0 0 24 24"><use href="#i-local"/></svg> Localização ao vivo</b><span id="loc-status">${esc(locStatus)}</span></div>
     <button type="button" class="loc-sw" role="switch" aria-checked="${on}" data-acao="loc">${on ? 'Desligar' : 'Ligar'}</button>
   </section>`;
 }
@@ -294,7 +301,7 @@ function render() {
       <div class="r-prog"><div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${feitas}"><i style="width:${n ? (feitas / n) * 100 : 0}%"></i></div><b>${feitas} de ${n}</b></div>
     </section>
     ${DEMO ? `<div class="demo-aviso">${EMBUTIDO ? 'Rota de exemplo: marque uma parada e veja o painel do escritório mudar. Nada sai deste navegador.' : 'Rota de exemplo para demonstração: as baixas ficam só neste aparelho e não vão para nenhum escritório.'}</div>` : cardLocalizacao()}
-    ${n && feitas === n ? '<div class="fim">✅ Todas as paradas têm baixa. Pode voltar ao centro de distribuição.</div>' : ''}
+    ${n && feitas === n ? '<div class="fim"><svg class="ic" viewBox="0 0 24 24"><use href="#i-ok"/></svg> Todas as paradas têm baixa. Pode voltar ao centro de distribuição.</div>' : ''}
     <ol class="lista">${paradas.map((p, i) => card(p, i, i === prox)).join('')}</ol>
     <p class="rodape">Ao dar baixa, o celular pode pedir sua localização: ela fica guardada junto com a baixa.<br>Dúvidas sobre a rota: fale com o escritório.</p>`;
   if (!rolou && prox > 0) { rolou = true; setTimeout(() => rolarAte($('p-' + prox), 'center'), 60); }
@@ -310,8 +317,8 @@ function card(p, i, prox) {
   if (aberto && aberto.i === i) corpo = form(p, i);
   else if (b) {
     corpo = `<div class="feito-linha">${b.status === 'feito'
-      ? `✓ ${verbo} às ${horaTs(b.hora)}${b.recebedor ? ' · ' + esc(b.recebedor) : ''}${b.temFoto ? ' · 📷 foto enviada' : ''}`
-      : `✗ Não realizado: ${esc(b.motivo || '')}${b.obs ? ' — ' + esc(b.obs) : ''}`}</div>
+      ? `<svg class="ic" viewBox="0 0 24 24"><use href="#i-ok"/></svg> ${verbo} às ${horaTs(b.hora)}${b.recebedor ? ' · ' + esc(b.recebedor) : ''}${b.temFoto ? ' · <svg class="ic" viewBox="0 0 24 24"><use href="#i-camera"/></svg> foto enviada' : ''}`
+      : `<svg class="ic" viewBox="0 0 24 24"><use href="#i-x"/></svg> Não realizado: ${esc(b.motivo || '')}${b.obs ? ' — ' + esc(b.obs) : ''}`}</div>
       <button type="button" class="btn-link" data-acao="corrigir" data-i="${i}">Corrigir</button>`;
   } else {
     corpo = `<div class="acoes"><a class="btn nav" href="${esc(linkMapa(p))}" target="_blank" rel="noopener">Google Maps</a><a class="btn nav" href="${esc(linkWaze(p))}" target="_blank" rel="noopener">Waze</a></div>
@@ -335,7 +342,7 @@ function form(p, i) {
     : `<label>${col ? 'Quem entregou a carga' : 'Quem recebeu'} (opcional)<input name="recebedor" maxlength="80" autocomplete="off" value="${esc(b.status === 'feito' ? b.recebedor || '' : '')}"></label>`;
   return `<form class="baixa" data-i="${i}">
     ${campos}
-    <label class="foto">📷 ${aberto.modo === 'nao' ? 'Foto (opcional)' : 'Foto do canhoto (opcional)'}<input type="file" name="foto" accept="image/*" capture="environment"></label>
+    <label class="foto"><svg class="ic" viewBox="0 0 24 24"><use href="#i-camera"/></svg> ${aberto.modo === 'nao' ? 'Foto (opcional)' : 'Foto do canhoto (opcional)'}<input type="file" name="foto" accept="image/*" capture="environment"></label>
     <div class="foto-prev" id="prev-${i}"></div>
     <div class="acoes"><button type="submit" class="btn ok">Confirmar ${aberto.modo === 'nao' ? '' : col ? 'coleta' : 'entrega'}</button><button type="button" class="btn sec" data-acao="cancelar">Cancelar</button></div>
   </form>`;

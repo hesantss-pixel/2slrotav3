@@ -79,9 +79,10 @@ button{font-family:inherit;}
 .kpi{background:var(--s2);border:1px solid var(--border);border-radius:16px;padding:16px 17px;position:relative;overflow:hidden;}
 .kpi::after{content:'';position:absolute;right:-24px;top:-24px;width:90px;height:90px;background:radial-gradient(circle,var(--kc,rgba(243,182,43,.14)),transparent 70%);}
 .kpi-top{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.ic{width:1em;height:1em;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.14em;}
 .kpi-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:var(--kbg,rgba(243,182,43,.15));flex-shrink:0;}
 .kpi-icon svg{width:17px;height:17px;stroke:var(--kfg,var(--ac));fill:none;stroke-width:1.8;}
-.kpi-lbl{font-size:10.5px;font-weight:700;letter-spacing:.5px;color:var(--text2);}
+.kpi-lbl{font-size:11.5px;font-weight:600;color:var(--text2);}
 .kpi-val{font-family:var(--sans);font-weight:800;font-size:24px;color:var(--text);line-height:1;}
 .kpi-delta{font-size:10.5px;font-weight:700;color:var(--text3);margin-top:6px;}
 .kpi-delta.up{color:var(--green);}
@@ -162,7 +163,7 @@ button{font-family:inherit;}
 .modal-close{background:var(--s3);border:none;color:var(--text2);width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:16px;}
 .btn-add-ag{background:var(--s3);border:1px dashed var(--border2);border-radius:10px;padding:9px 14px;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;transition:all .15s;}
 .btn-add-ag:hover{border-color:var(--mid);color:var(--ac);}
-.field-lbl{display:block;font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);margin-bottom:6px;margin-top:14px;}
+.field-lbl{display:block;font-size:11.5px;font-weight:600;color:var(--text3);margin-bottom:6px;margin-top:14px;}
 .field-inp{width:100%;background:var(--s3);border:1px solid var(--border2);border-radius:10px;padding:11px 13px;color:var(--text);font-family:var(--mono);font-size:14px;outline:none;box-sizing:border-box;}
 .field-inp:focus{border-color:var(--mid);}
 .field-inp-text{font-family:var(--body);}
@@ -209,7 +210,11 @@ button{font-family:inherit;}
 .veh-card{background:var(--s2);border:1px solid var(--border);border-radius:16px;padding:18px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden;}
 .veh-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--vc,var(--mid));}
 .veh-card:hover{border-color:var(--vc,var(--mid));transform:translateY(-2px);}
-.veh-card-icon{width:50px;height:50px;background:var(--s3);border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;}
+.veh-card-icon{height:64px;margin-bottom:8px;display:flex;align-items:flex-end;}
+.veh-card-icon.mini{height:34px;margin-bottom:6px;}
+.veh-sil.mini{height:20px;width:auto;max-width:100%;}
+.veh-sil{width:100%;height:100%;stroke:var(--vc,var(--navy));fill:none;stroke-width:1.1;stroke-linecap:round;stroke-linejoin:round;}
+.veh-card.sel .veh-sil,.veh-card:hover .veh-sil{stroke:var(--vc,var(--navy));}
 .veh-card-name{font-family:var(--sans);font-weight:800;font-size:15px;color:var(--text);}
 .veh-card-tag{display:inline-block;background:rgba(243,182,43,.15);border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700;color:var(--ac);margin:5px 0;font-family:var(--mono);}
 .veh-card-desc{font-size:11.5px;color:var(--text2);line-height:1.4;}
@@ -296,7 +301,7 @@ body::before{display:none;}
 .page-title::after{display:none;}
 .page-sub{font-size:14px;color:var(--text3);margin-top:4px;}
 .hpills{margin-left:0;display:flex;gap:10px;flex-wrap:wrap;}
-.hpill{display:flex;align-items:center;gap:8px;height:40px;padding:0 18px;border-radius:12px;background:#e8f7ef;border:1px solid #c9ecd9;color:#0f7a4c;font-size:13px;font-weight:700;}
+.hpill{display:flex;align-items:center;gap:8px;min-height:40px;padding:6px 16px;border-radius:12px;background:#e8f7ef;border:1px solid #c9ecd9;color:#0f7a4c;font-size:13px;font-weight:700;max-width:100%;}
 .hpill .hdot{width:9px;height:9px;border-radius:50%;background:var(--green);}
 .hpill.ia{background:#fff;border:1.5px solid var(--vv);color:var(--navy);cursor:pointer;}
 .hpill.ia img{width:18px;height:18px;}
@@ -307,9 +312,10 @@ body::before{display:none;}
 .kpi{padding:20px 22px;}
 .kpi::after{display:none;}
 .kpi-top{gap:14px;margin-bottom:14px;}
-.kpi .kpi-icon{width:48px;height:48px;border-radius:12px;background:var(--kbg,#fff5d9);}
+.kpi .kpi-icon{width:44px;height:44px;border-radius:12px;background:rgba(243,182,43,.14);}
+.kpi .kpi-icon svg{width:21px;height:21px;stroke:var(--ac);}
 .kpi .kpi-icon img{width:30px;height:30px;display:block;}
-.kpi-lbl{font-size:12px;letter-spacing:.7px;color:var(--text2);}
+.kpi-lbl{font-size:12.5px;}
 .kpi-val{font-family:var(--sans);font-size:34px;font-weight:700;letter-spacing:-.8px;}
 .kpi-delta{font-size:13px;font-weight:500;color:var(--text3);margin-top:8px;}
 .kpi-delta.up,#kpi-rotas-d.up{color:#0f7a4c;font-weight:600;}
@@ -320,7 +326,9 @@ body::before{display:none;}
 .card-head{margin-bottom:16px;}
 .card-title{gap:10px;font-family:var(--body);font-size:15px;font-weight:700;}
 .card-title .em{width:26px;height:26px;display:block;flex-shrink:0;}
-.card-title svg{width:28px;height:28px;padding:6px;box-sizing:border-box;background:#fff5d9;border-radius:9px;stroke:var(--mid);}
+.card-title svg{width:26px;height:26px;padding:5px;box-sizing:border-box;background:rgba(243,182,43,.14);border-radius:8px;stroke:var(--ac);stroke-width:1.75;}
+.card-title .seta,.card-link .seta{width:14px;height:14px;padding:0;background:none;border-radius:0;stroke:currentColor;}
+.card-link{display:inline-flex;align-items:center;gap:3px;}
 .card-link{font-size:12.5px;font-weight:600;color:var(--text);}
 .card-link:hover{color:var(--ac);}
 .reg-row{gap:14px;margin-bottom:13px;font-size:13px;}
@@ -486,7 +494,7 @@ body:not(.autorizado)>.sidebar,body:not(.autorizado)>.main,body:not(.autorizado)
 .ac-card h3{font-family:var(--sans);font-size:16px;color:var(--text);margin:0 0 4px;}
 .ac-card>.mot-sub{margin:0 0 12px;}
 .ac-campos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
-.ac-campos label{display:flex;flex-direction:column;gap:5px;min-width:0;font-size:10.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);}
+.ac-campos label{display:flex;flex-direction:column;gap:5px;min-width:0;font-size:11.5px;font-weight:600;color:var(--text3);}
 .ac-campos input,.ac-campos select{width:100%;min-width:0;box-sizing:border-box;height:42px;border:1px solid var(--border2);border-radius:10px;padding:0 12px;font:500 14px var(--body);color:var(--text);background:#fff;text-transform:none;letter-spacing:0;}
 .ac-res{margin-top:14px;padding:14px;border:1px solid #c9ecd9;background:#f3fbf6;border-radius:12px;}
 .ac-ok{font-weight:800;color:#0f7a4c;margin-bottom:6px;}
@@ -615,14 +623,14 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
 .auto-ent>summary::-webkit-details-marker{display:none;}
 .auto-ent>summary::after{content:'›';margin-left:auto;font-size:20px;color:var(--text3);transition:transform .15s;}
 .auto-ent[open]>summary::after{transform:rotate(90deg);}
-.auto-ent>summary svg{width:30px;height:30px;flex-shrink:0;padding:6px;border-radius:9px;background:var(--navy);stroke:#f8d77a;fill:none;stroke-width:1.8;}
+.auto-ent>summary .ic{width:28px;height:28px;flex-shrink:0;padding:5px;border-radius:8px;background:rgba(243,182,43,.14);stroke:var(--ac);}
 .auto-ent>summary b{display:block;font:700 13.5px var(--sans);color:var(--navy);}
 .auto-ent>summary small{display:block;font-size:12px;color:var(--text3);margin-top:1px;}
 .auto-ent>summary:focus-visible{outline:3px solid var(--vv);outline-offset:2px;border-radius:14px;}
 .auto-ent__corpo{padding:0 14px 14px;font-size:12.5px;line-height:1.55;color:var(--text2);}
 .ae-bloco{border-top:1px solid var(--border);padding-top:12px;margin-top:12px;}
 .ae-bloco:first-child{border-top:0;margin-top:0;padding-top:0;}
-.ae-bloco h4{margin:0 0 6px;font:700 12.5px var(--sans);color:var(--navy);text-transform:uppercase;letter-spacing:.04em;}
+.ae-bloco h4{margin:0 0 6px;font:700 12.5px var(--sans);color:var(--navy);}
 .ae-linha{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0;}
 .ae-linha>span{font-size:11.5px;color:var(--text3);min-width:64px;}
 .ae-cod{flex:1;min-width:0;overflow-wrap:anywhere;font:600 12.5px var(--mono);color:var(--navy);background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:7px 10px;}
@@ -641,6 +649,37 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
 </style>
 </head>
 <body>
+<svg id="ic-sprite" width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
+<defs>
+<!-- Ícones do ROTAV3: grade 24x24, traço 1.75, pontas arredondadas, cor herdada do texto. -->
+<symbol id="i-pedido" viewBox="0 0 24 24"><path d="M12 2.8 3.4 7.3v9.4L12 21.2l8.6-4.5V7.3L12 2.8Z"/><path d="M3.4 7.3 12 11.8l8.6-4.5"/><path d="M12 11.8v9.4"/><path d="m7.7 5.1 8.6 4.5"/></symbol>
+<symbol id="i-rota" viewBox="0 0 24 24"><circle cx="5.5" cy="18.5" r="2.3"/><circle cx="18.5" cy="5.5" r="2.3"/><path d="M7.8 18.5h4.4a3.7 3.7 0 0 0 0-7.4h-1.6a3.7 3.7 0 0 1 0-7.4h0"/><path d="M16.2 5.5h-5.6"/></symbol>
+<symbol id="i-tempo" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8.2"/><path d="M12 8.6V13l3 1.9"/><path d="M9.4 2.6h5.2"/><path d="M12 2.6v2.2"/></symbol>
+<symbol id="i-barras" viewBox="0 0 24 24"><path d="M3.2 20.4h17.6"/><path d="M6.6 20.4v-6.2"/><path d="M11.2 20.4V6.4"/><path d="M15.8 20.4v-9.6"/><path d="M20.2 20.4v-3.4"/></symbol>
+<symbol id="i-agenda" viewBox="0 0 24 24"><rect x="3.2" y="5.2" width="17.6" height="16" rx="2.4"/><path d="M3.2 10.2h17.6"/><path d="M8.2 2.8v4.2"/><path d="M15.8 2.8v4.2"/><path d="M8 14.4h2.2"/><path d="M14 14.4h2.2"/><path d="M8 17.8h2.2"/></symbol>
+<symbol id="i-ia" viewBox="0 0 24 24"><path d="M11 3.2 12.9 8.4 18.2 10.3 12.9 12.2 11 17.4 9.1 12.2 3.8 10.3 9.1 8.4 11 3.2Z"/><path d="M18 15.2l.8 2.1 2.2.8-2.2.8-.8 2.1-.8-2.1-2.2-.8 2.2-.8.8-2.1Z"/></symbol>
+<symbol id="i-mapa" viewBox="0 0 24 24"><path d="M9 3.6 3.2 5.8v14.6L9 18.2l6 2.2 5.8-2.2V3.6L15 5.8 9 3.6Z"/><path d="M9 3.6v14.6"/><path d="M15 5.8v14.6"/></symbol>
+<symbol id="i-alerta" viewBox="0 0 24 24"><path d="M12 3.4 2.6 19.8a1.4 1.4 0 0 0 1.2 2.1h16.4a1.4 1.4 0 0 0 1.2-2.1L12 3.4Z"/><path d="M12 9.6v4.4"/><path d="M12 17.8h.01"/></symbol>
+<symbol id="i-local" viewBox="0 0 24 24"><path d="M12 21.4s7.2-5.9 7.2-11.2a7.2 7.2 0 1 0-14.4 0c0 5.3 7.2 11.2 7.2 11.2Z"/><circle cx="12" cy="10" r="2.6"/></symbol>
+<symbol id="i-estrada" viewBox="0 0 24 24"><path d="M8.6 2.8 4.4 21.2"/><path d="M15.4 2.8l4.2 18.4"/><path d="M12 3.6v2.8"/><path d="M12 10.6v2.8"/><path d="M12 17.6v2.8"/></symbol>
+<symbol id="i-peso" viewBox="0 0 24 24"><path d="M6.4 9.2h11.2l2.2 11.4a1.3 1.3 0 0 1-1.3 1.6H5.5a1.3 1.3 0 0 1-1.3-1.6L6.4 9.2Z"/><path d="M9.2 9.2V7.6a2.8 2.8 0 0 1 5.6 0v1.6"/></symbol>
+<symbol id="i-ok" viewBox="0 0 24 24"><path d="m4.6 12.6 4.9 4.9 9.9-10.8"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="m6.2 6.2 11.6 11.6"/><path d="M17.8 6.2 6.2 17.8"/></symbol>
+<symbol id="i-lixo" viewBox="0 0 24 24"><path d="M3.8 6.4h16.4"/><path d="M8.6 6.4V4.2a1.4 1.4 0 0 1 1.4-1.4h4a1.4 1.4 0 0 1 1.4 1.4v2.2"/><path d="M6.2 6.4l1 14a1.4 1.4 0 0 0 1.4 1.3h6.8a1.4 1.4 0 0 0 1.4-1.3l1-14"/><path d="M10.4 10.6v6.6"/><path d="M13.6 10.6v6.6"/></symbol>
+<symbol id="i-camera" viewBox="0 0 24 24"><path d="M3.2 8.4h3.4l1.6-2.6h6.8l1.6 2.6h3.2a1.4 1.4 0 0 1 1.4 1.4v9a1.4 1.4 0 0 1-1.4 1.4H3.2a1.4 1.4 0 0 1-1.4-1.4v-9a1.4 1.4 0 0 1 1.4-1.4Z"/><circle cx="12" cy="14" r="3.6"/></symbol>
+<symbol id="i-caminhao" viewBox="0 0 24 24"><path d="M2.2 6.8h11v9.4h-11z"/><path d="M13.2 10.2h3.6l3 3.2v2.8h-6.6v-6Z"/><circle cx="6.6" cy="18.2" r="1.9"/><circle cx="16.8" cy="18.2" r="1.9"/><path d="M8.5 18.2h6.4"/><path d="M2.2 16.2h.6"/></symbol>
+<symbol id="i-entrada" viewBox="0 0 24 24"><path d="M3.2 14.6v4.2a1.6 1.6 0 0 0 1.6 1.6h14.4a1.6 1.6 0 0 0 1.6-1.6v-4.2"/><path d="M12 3.4v10.8"/><path d="m7.4 9.8 4.6 4.4 4.6-4.4"/></symbol>
+<symbol id="i-urgente" viewBox="0 0 24 24"><path d="M13.4 2.6 5.2 13.8h5.6l-1.4 7.6 8.6-11.6h-5.8l1.2-7.2Z"/></symbol>
+<symbol id="i-dir" viewBox="0 0 24 24"><path d="m9.4 5.4 6.4 6.6-6.4 6.6"/></symbol>
+<symbol id="i-empresa" viewBox="0 0 24 24"><path d="M3.6 21h16.8"/><path d="M5.4 21V5.2a1.4 1.4 0 0 1 1.4-1.4h6.4a1.4 1.4 0 0 1 1.4 1.4V21"/><path d="M14.6 21V10.4h3.6a1.4 1.4 0 0 1 1.4 1.4V21"/><path d="M8.4 7.8h2.6"/><path d="M8.4 12h2.6"/><path d="M8.4 16.2h2.6"/></symbol>
+<!-- Veículos: todos na mesma escala dentro de 48x24, o desenho mostra o porte real -->
+<symbol id="v-fiorino" viewBox="0 0 48 24"><path d="M4 8.4h7.6l4.4 4.2v4.6H4V8.4Z"/><path d="M11.6 8.4v4.2h4.4"/><circle cx="7.2" cy="18.4" r="1.9"/><circle cx="13.8" cy="18.4" r="1.9"/><path d="M9.1 18.4h2.8"/></symbol>
+<symbol id="v-vuc" viewBox="0 0 48 24"><path d="M4 7.6h11.4v9.6H4z"/><path d="M15.4 10.4h3.4l2.6 2.8v4h-6V10.4Z"/><circle cx="8" cy="18.4" r="1.9"/><circle cx="18.4" cy="18.4" r="1.9"/><path d="M9.9 18.4h6.6"/></symbol>
+<symbol id="v-toco" viewBox="0 0 48 24"><path d="M4 6.4h15.6v10.8H4z"/><path d="M19.6 9.8h4l3 3.2v4.2h-7V9.8Z"/><circle cx="8.4" cy="18.4" r="2"/><circle cx="22.4" cy="18.4" r="2"/><path d="M10.4 18.4h10"/></symbol>
+<symbol id="v-bitruck" viewBox="0 0 48 24"><path d="M4 5.6h20.4v11.6H4z"/><path d="M24.4 9.4h4.4l3.2 3.4v4.4h-7.6V9.4Z"/><circle cx="8.6" cy="18.6" r="2"/><circle cx="27" cy="18.6" r="2"/><circle cx="31.6" cy="18.6" r="2"/><path d="M10.6 18.6h14.4"/></symbol>
+<symbol id="v-carreta" viewBox="0 0 48 24"><path d="M3.4 4.8h27.2v12.4H3.4z"/><path d="M31.6 4.8h4.8v12.4h-4.8z"/><path d="M36.4 9.2h3.6l3.6 3.6v4.4h-7.2V9.2Z"/><circle cx="8" cy="18.8" r="1.9"/><circle cx="24.6" cy="18.8" r="1.9"/><circle cx="29.4" cy="18.8" r="1.9"/><circle cx="38.8" cy="18.8" r="1.9"/><circle cx="43.4" cy="18.8" r="1.9"/><path d="M9.9 18.8h12.8"/><path d="M31.3 18.8h5.6"/></symbol>
+</defs>
+</svg>
 
 <!-- ═══════════ ENTRADA ═══════════ -->
 <div class="boot" id="boot"><img src="assets/logo-rotav3-escuro.png" alt="ROTAV3 Systems" width="170" height="41"><div class="boot-ring" aria-label="Carregando"></div></div>
@@ -711,7 +750,7 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
     </div>
     <div class="sb-item" data-page="ia">
       <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="14" rx="3"/><circle cx="9" cy="10.5" r="1.2"/><circle cx="15" cy="10.5" r="1.2"/><path d="M9 14.5c1 1 4 1 6 0M12 4V2"/></svg>
-      IA Assistente
+      Assistente de IA
     </div>
     <div class="sb-item" data-page="acessos" id="sb-acessos" hidden>
       <svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M16 7l3 3M14 9l2 2"/></svg>
@@ -746,24 +785,24 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
       <div class="hpills">
         <div class="hpill"><div class="hdot"></div><span id="hdr-total">0</span> pendentes</div>
         <div class="hpill demo" id="hpill-demo" hidden>Dados de demonstração</div>
-        <div class="hpill ia" data-page="ia"><img src="assets/em/sparkles_3d.png" alt="">IA Assistente</div>
+        <div class="hpill ia" data-page="ia"><svg class="ic" viewBox="0 0 24 24"><use href="#i-ia"/></svg>Assistente de IA</div>
       </div>
     </div>
 
     <div class="kpis">
-      <div class="kpi" style="--kbg:#fff3df">
-        <div class="kpi-top"><div class="kpi-icon"><img src="assets/em/package_3d.png" alt=""></div><div class="kpi-lbl">PEDIDOS</div></div>
+      <div class="kpi">
+        <div class="kpi-top"><div class="kpi-icon"><svg class="ic" viewBox="0 0 24 24"><use href="#i-pedido"/></svg></div><div class="kpi-lbl">Pedidos</div></div>
         <div class="kpi-val" id="kpi-pedidos">—</div>
         <div class="kpi-split" id="kpi-split"></div>
         <div class="kpi-delta" id="kpi-pedidos-d"></div>
       </div>
-      <div class="kpi" style="--kbg:#ffe9e7">
-        <div class="kpi-top"><div class="kpi-icon"><img src="assets/em/round_pushpin_3d.png" alt=""></div><div class="kpi-lbl">ROTAS</div></div>
+      <div class="kpi">
+        <div class="kpi-top"><div class="kpi-icon"><svg class="ic" viewBox="0 0 24 24"><use href="#i-rota"/></svg></div><div class="kpi-lbl">Rotas</div></div>
         <div class="kpi-val" id="kpi-rotas">—</div>
         <div class="kpi-delta" id="kpi-rotas-d">nenhuma gerada ainda</div>
       </div>
-      <div class="kpi" style="--kbg:#e6f7ef">
-        <div class="kpi-top"><div class="kpi-icon"><img src="assets/em/stopwatch_3d.png" alt=""></div><div class="kpi-lbl">TEMPO ESTIMADO</div></div>
+      <div class="kpi">
+        <div class="kpi-top"><div class="kpi-icon"><svg class="ic" viewBox="0 0 24 24"><use href="#i-tempo"/></svg></div><div class="kpi-lbl">Tempo estimado</div></div>
         <div class="kpi-val" id="kpi-tempo">—</div>
         <div class="kpi-delta" id="kpi-tempo-d">estimativa</div>
       </div>
@@ -772,28 +811,28 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
     <div class="grid-main">
       <div class="col-a">
         <div class="card">
-          <div class="card-head"><div class="card-title"><img class="em" src="assets/em/bar_chart_3d.png" alt="">Pedidos por Região</div><div class="card-link" data-page="pedidos">Ver detalhes →</div></div>
+          <div class="card-head"><div class="card-title"><svg class="ic em" viewBox="0 0 24 24"><use href="#i-barras"/></svg>Pedidos por região</div><div class="card-link" data-page="pedidos">Ver detalhes<svg class="ic seta" viewBox="0 0 24 24"><use href="#i-dir"/></svg></div></div>
           <div id="reg-list"></div>
           <div class="reg-total" id="reg-total">—</div>
         </div>
         <div class="card">
-          <div class="card-head"><div class="card-title"><img class="em" src="assets/em/spiral_calendar_3d.png" alt="">Pedidos Agendados</div><div class="btn-add-ag" onclick="abrirModalAgendar()">+ Agendar</div></div>
+          <div class="card-head"><div class="card-title"><svg class="ic em" viewBox="0 0 24 24"><use href="#i-agenda"/></svg>Pedidos agendados</div><div class="btn-add-ag" onclick="abrirModalAgendar()">+ Agendar</div></div>
           <div id="ag-list"></div>
         </div>
         <div class="card ia-panel">
-          <div class="card-head"><div class="card-title"><img class="em" src="assets/em/robot_3d.png" alt="">IA Assistente</div></div>
-          <div class="ia-hello"><div class="ia-greet">Olá! <img src="assets/em/waving_hand_3d_default.png" alt="" style="width:20px;height:20px;vertical-align:-4px"></div><div class="ia-sub">Aqui estão os insights de hoje com base nos pedidos pendentes.</div></div>
+          <div class="card-head"><div class="card-title"><svg class="ic em" viewBox="0 0 24 24"><use href="#i-ia"/></svg>Assistente de IA</div></div>
+          <div class="ia-hello"><div class="ia-greet">Olá!</div><div class="ia-sub">Aqui estão os insights de hoje com base nos pedidos pendentes.</div></div>
           <div id="ia-insights"></div>
           <button class="ia-btn" data-page="ia"><svg viewBox="0 0 24 24"><path d="M12 2l2.4 7.2H22l-6 4.4 2.3 7.4-6.3-4.6L5.7 21l2.3-7.4-6-4.4h7.6z"/></svg>Analisar com IA</button>
         </div>
       </div>
       <div class="col-b">
         <div class="card">
-          <div class="card-head"><div class="card-title"><img class="em" src="assets/em/world_map_3d.png" alt="">Mapa de Distribuição</div><div class="card-link" data-page="mapa">Ver mapa completo →</div></div>
+          <div class="card-head"><div class="card-title"><svg class="ic em" viewBox="0 0 24 24"><use href="#i-mapa"/></svg>Mapa de distribuição</div><div class="card-link" data-page="mapa">Ver mapa completo<svg class="ic seta" viewBox="0 0 24 24"><use href="#i-dir"/></svg></div></div>
           <div id="mapa-dist"></div>
         </div>
         <div class="card">
-          <div class="card-head"><div class="card-title"><img class="em" src="assets/em/warning_3d.png" alt="">Alertas</div><div class="card-link" data-page="pedidos">Ver todos →</div></div>
+          <div class="card-head"><div class="card-title"><svg class="ic em" viewBox="0 0 24 24"><use href="#i-alerta"/></svg>Alertas</div><div class="card-link" data-page="pedidos">Ver todos<svg class="ic seta" viewBox="0 0 24 24"><use href="#i-dir"/></svg></div></div>
           <div id="alert-list"></div>
         </div>
       </div>
@@ -843,7 +882,7 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
       </div>
       <div class="imp-help" id="imp-help">XML da NF-e, Excel, CSV ou PDF. Pode escolher vários arquivos de uma vez. <b>Entrega:</b> o sistema usa o endereço do <b>destinatário</b> (ou o local de entrega, se a nota tiver). Na planilha, uma coluna <b>tipo</b> com "coleta" ou "entrega" vale linha a linha, e as colunas <b>endereço</b> e <b>número</b> ajudam a achar o ponto certo. O <b>XML de cancelamento</b> da nota tira ela dos pendentes.</div>
       <details class="auto-ent" id="auto-ent">
-        <summary><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/></svg><span><b>Receber pedidos automaticamente</b><small>Por e-mail ou pelo sistema da sua empresa, sem subir arquivo</small></span></summary>
+        <summary><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-entrada"/></svg><span><b>Receber pedidos automaticamente</b><small>Por e-mail ou pelo sistema da sua empresa, sem subir arquivo</small></span></summary>
         <div class="auto-ent__corpo" id="auto-ent-corpo" aria-live="polite">Carregando…</div>
       </details>
     </div>
@@ -900,7 +939,7 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
       <div class="cap-form-box">
         <div class="veh-card-name" id="confirm-veh-name" style="font-size:19px;margin-bottom:14px;"></div>
         <div style="font-size:12.5px;color:var(--text2);line-height:2;" id="confirm-details-d"></div>
-        <button class="btn-modal-primary" onclick="executarVRPD()">✔ Gerar Rota Agora</button>
+        <button class="btn-modal-primary" onclick="executarVRPD()"><svg class="ic" viewBox="0 0 24 24"><use href="#i-ok"/></svg>Gerar rota agora</button>
         <button class="btn-modal-sec" onclick="voltarCapD()">← Voltar</button>
       </div>
     </div>
@@ -915,7 +954,7 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
   <div class="page" id="page-ia" style="display:none">
     <button class="btn-voltar-topo" onclick="irParaPagina('dashboard')"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Voltar ao Dashboard</button>
     <div class="page-head">
-      <div class="page-title">IA Assistente</div>
+      <div class="page-title">Assistente de IA</div>
       <div class="page-sub">Converse com a IA sobre a operação de hoje</div>
     </div>
     <div class="chat-box">
@@ -1027,7 +1066,7 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
 <!-- ── MODAL: Agendar Entrega ── -->
 <div class="modal-overlay" id="modal-agendar">
   <div class="modal-box">
-    <div class="modal-head"><div class="modal-title">Agendar entrega ou coleta</div><button class="modal-close" onclick="fecharModalAgendar()">✕</button></div>
+    <div class="modal-head"><div class="modal-title">Agendar entrega ou coleta</div><button class="modal-close" onclick="fecharModalAgendar()">×</button></div>
     <div id="ag-search-step-d">
       <input type="text" class="field-inp field-inp-text" id="ag-search-inp-d" placeholder="Digite o número da NF..." oninput="buscarNFAgendarD(this.value)">
       <div class="search-results" id="ag-search-results-d"></div>
@@ -1048,7 +1087,7 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
 <!-- ── MODAL: foto do canhoto ── -->
 <div class="modal-overlay" id="modal-foto" onclick="if(event.target===this)fecharFoto()">
   <div class="modal-box foto-modal">
-    <div class="modal-head"><div class="modal-title" id="foto-tit">Foto da baixa</div><button class="modal-close" onclick="fecharFoto()" aria-label="Fechar">✕</button></div>
+    <div class="modal-head"><div class="modal-title" id="foto-tit">Foto da baixa</div><button class="modal-close" onclick="fecharFoto()" aria-label="Fechar">×</button></div>
     <div id="foto-corpo"></div>
   </div>
 </div>
@@ -1056,7 +1095,7 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
 <!-- ── MODAL: novo pedido / editar pedido / corrigir local ── -->
 <div class="modal-overlay" id="modal-pedido" onclick="if(event.target===this)fecharPedido()">
   <div class="modal-box ped-modal" role="dialog" aria-modal="true" aria-labelledby="ped-tit">
-    <div class="modal-head"><div class="modal-title" id="ped-tit">Novo pedido</div><button type="button" class="modal-close" onclick="fecharPedido()" aria-label="Fechar">✕</button></div>
+    <div class="modal-head"><div class="modal-title" id="ped-tit">Novo pedido</div><button type="button" class="modal-close" onclick="fecharPedido()" aria-label="Fechar">×</button></div>
     <div class="ped-aviso" id="ped-aviso" hidden></div>
     <form id="ped-form" class="ped-form" novalidate onsubmit="event.preventDefault();salvarPedido()">
       <span class="field-lbl" id="ped-tipo-lbl" style="margin-top:0">Tipo</span>
@@ -1269,8 +1308,10 @@ const CITY_COORDS = {
 // Regiões montadas a partir dos próprios pedidos: as 7 cidades com mais pedidos
 // ganham cor própria; o resto vira "Outras cidades". Pedido a mais de
 // RAIO_ISOLADO_KM do centro de distribuição conta como região isolada.
-const CORES_REGIAO = ['#f3b62b','#2f6fe4','#e08a00','#16a36a','#7c5cc4','#0e8f9f','#d1425e'];
-const COR_OUTRAS = '#94a3b8';
+// Família de cores das regiões: ligam a lista de cidades às bolhas do mapa.
+// Mesma saturação contida, puxando para o dourado e o azul-marinho da marca.
+const CORES_REGIAO = ['#e09c12','#1f4e79','#2e7d6b','#a3561f','#5b4a8a','#1f7a8c','#8c3a4a'];
+const COR_OUTRAS = '#8795a8';
 const RAIO_ISOLADO_KM = 70;
 function calcularRegioes(pedidos){
   const porCidade=new Map();
@@ -1417,7 +1458,7 @@ function _avisarChegadas(){
     const novos=allOrders.filter(o=>!_idsVistos.has(o.id)&&(o.origem==='email'||o.origem==='api'));
     if(novos.length){
       const porEmail=novos.filter(o=>o.origem==='email').length;
-      _toast(`📥 ${_plural(novos.length,'pedido novo chegou','pedidos novos chegaram')} ${porEmail===novos.length?'por e-mail':porEmail?'por e-mail e pela API':'pela API'}.`);
+      _toast(`${_plural(novos.length,'pedido novo chegou','pedidos novos chegaram')} ${porEmail===novos.length?'por e-mail':porEmail?'por e-mail e pela API':'pela API'}.`);
       if($id('auto-ent')?.open) carregarIntegracao(true);
     }
   }
@@ -1549,15 +1590,15 @@ function render(){
   ].filter(a=>a.n>0);
   document.getElementById('alert-list').innerHTML = alerts.length
     ? alerts.map(a=>`<div class="alert-row"><div class="alert-dot" style="background:${a.cor}"></div>${a.txt}<div class="alert-count">${a.n}</div></div>`).join('')
-    : `<div class="empty-mini">Nenhum alerta no momento ✅</div>`;
+    : `<div class="empty-mini">Nenhum alerta no momento.</div>`;
 
   // Insights (heurística local; "Analisar com IA" abre o chat)
   const insights=[];
-  if(isolados>0) insights.push({cor:'var(--yellow)',h:'⚠ Atenção',t:`${isolados} pedido(s) a mais de ${RAIO_ISOLADO_KM} km do centro de distribuição — considere agendar separadamente.`});
+  if(isolados>0) insights.push({cor:'var(--yellow)',h:`<svg class="ic" viewBox="0 0 24 24"><use href="#i-alerta"/></svg>Atenção`,t:`${isolados} pedido(s) a mais de ${RAIO_ISOLADO_KM} km do centro de distribuição — considere agendar separadamente.`});
   const maiorRegiao=ativos[0];
-  if(maiorRegiao && maiorRegiao.nome!=='Outras cidades') insights.push({cor:'var(--blue)',h:'📊 Maior volume',t:`${maiorRegiao.nome} concentra ${maiorRegiao.lista.length} pedido(s) hoje.`});
-  if(urgentes>0) insights.push({cor:'var(--red)',h:'🔺 Urgente',t:`${urgentes} pedido(s) marcados como urgentes precisam de rota prioritária.`});
-  if(!insights.length) insights.push({cor:'var(--green)',h:'✅ Tudo certo',t:'Nenhum ponto de atenção identificado nos pedidos pendentes.'});
+  if(maiorRegiao && maiorRegiao.nome!=='Outras cidades') insights.push({cor:'var(--blue)',h:`<svg class="ic" viewBox="0 0 24 24"><use href="#i-barras"/></svg>Maior volume`,t:`${maiorRegiao.nome} concentra ${maiorRegiao.lista.length} pedido(s) hoje.`});
+  if(urgentes>0) insights.push({cor:'var(--red)',h:`<svg class="ic" viewBox="0 0 24 24"><use href="#i-urgente"/></svg>Urgente`,t:`${urgentes} pedido(s) marcados como urgentes precisam de rota prioritária.`});
+  if(!insights.length) insights.push({cor:'var(--green)',h:`<svg class="ic" viewBox="0 0 24 24"><use href="#i-ok"/></svg>Tudo certo`,t:'Nenhum ponto de atenção identificado nos pedidos pendentes.'});
   document.getElementById('ia-insights').innerHTML=insights.map(i=>
     `<div class="ia-insight" style="--kc:${i.cor}"><div class="ia-insight-h">${i.h}</div><div class="ia-insight-t">${i.t}</div></div>`).join('');
 
@@ -1652,7 +1693,7 @@ function atualizarMapaCompleto(){
   comGeo.forEach(o=>{
     const col=_tipoDe(o)==='coleta';
     L.circleMarker([o.lat,o.lng],{radius:col?6.5:6,color:col?'#f3b62b':'#fff',weight:col?2:1.5,fillColor:col?'#0d1b2e':'#16a36a',fillOpacity:.92}).addTo(mapLayerFull)
-      .bindTooltip(`<b>${col?'Coleta':'Entrega'} · NF ${esc(o.nf)}</b>${o.dest&&o.dest!==o.cidade?'<br>'+esc(o.dest):''}<br>${o.bairro?esc(o.bairro)+' — ':''}${esc(o.cidade)}<br>${(o.peso||0).toLocaleString('pt-BR')} kg · ${o.itens||1} volume(s)<br><span style="color:${_aprox(o)?'#8a5a06':'#1f7a4a'}">📍 ${_origemLocal(o)}</span><br><span style="color:#64748b">Toque para editar ou corrigir o ponto</span>`)
+      .bindTooltip(`<b>${col?'Coleta':'Entrega'} · NF ${esc(o.nf)}</b>${o.dest&&o.dest!==o.cidade?'<br>'+esc(o.dest):''}<br>${o.bairro?esc(o.bairro)+' — ':''}${esc(o.cidade)}<br>${(o.peso||0).toLocaleString('pt-BR')} kg · ${o.itens||1} volume(s)<br><span style="color:${_aprox(o)?'#8a5a06':'#1f7a4a'}"><svg class="ic" viewBox="0 0 24 24"><use href="#i-local"/></svg> ${_origemLocal(o)}</span><br><span style="color:#64748b">Toque para editar ou corrigir o ponto</span>`)
       .on('click',()=>abrirPedido(o.id));
   });
 
@@ -1672,7 +1713,7 @@ function atualizarMapaCompleto(){
   // mini-mapa individual na aba Rotas (fica mais limpo, sem misturar as duas coisas).
   const legEl = document.getElementById('mapa-completo-legenda');
   _desenharVeiculosMapa();
-  if(legEl) legEl.innerHTML = `<span>🚚 Veículo em rota (localização ao vivo)</span><span><i style="background:#16a36a;border:2px solid #fff;box-shadow:0 0 0 1px #9fd8bb"></i>Entrega</span><span><i style="background:#0d1b2e;border:2px solid #f3b62b"></i>Coleta</span><span><i style="background:#e09c12;border:2px solid #fff;box-shadow:0 0 0 1px #e09c12"></i>${esc(DEPOT.name)}</span><span><i style="background:rgba(148,163,184,.35);border:2px solid #94a3b8"></i>Cidade (pedidos ainda sem endereço exato)</span>`;
+  if(legEl) legEl.innerHTML = `<span><svg class="ic" viewBox="0 0 24 24"><use href="#i-caminhao"/></svg> Veículo em rota (localização ao vivo)</span><span><i style="background:#16a36a;border:2px solid #fff;box-shadow:0 0 0 1px #9fd8bb"></i>Entrega</span><span><i style="background:#0d1b2e;border:2px solid #f3b62b"></i>Coleta</span><span><i style="background:#e09c12;border:2px solid #fff;box-shadow:0 0 0 1px #e09c12"></i>${esc(DEPOT.name)}</span><span><i style="background:rgba(148,163,184,.35);border:2px solid #94a3b8"></i>Cidade (pedidos ainda sem endereço exato)</span>`;
 }
 window.atualizarMapaCompleto=atualizarMapaCompleto;
 
@@ -1684,7 +1725,7 @@ const PAGE_META = {
   motoristas:{title:'Motoristas',sub:'Cadastro e acompanhamento de motoristas e veículos'},
   mapa:{title:'Mapa',sub:'Visualização completa da distribuição e trajetos'},
   relatorios:{title:'Relatórios',sub:'KPIs, exportações e histórico de desempenho'},
-  ia:{title:'IA Assistente',sub:'Converse com a IA sobre a operação de hoje'},
+  ia:{title:'Assistente de IA',sub:'Converse com a IA sobre a operação de hoje'},
   config:{title:'Configurações',sub:'Integrações e preferências da conta'},
 };
 
@@ -1842,7 +1883,7 @@ function renderPedidosPage(){
     const k=esc(r.nome);
     return `<div class="rc-card${abertos.has(r.nome)?' exp':''}${todos.has(r.nome)?' todos':''}" id="rcd-${i}" data-reg="${k}" style="--rc:${r.cor}">
       <div class="rc-card-head" onclick="toggleRcCard(${i})">
-        <div class="rc-card-icon">${r.isolado?'⚠️':'📍'}</div>
+        <div class="rc-card-icon">${r.isolado?'<svg class="ic" viewBox="0 0 24 24"><use href="#i-alerta"/></svg>':'<svg class="ic" viewBox="0 0 24 24"><use href="#i-local"/></svg>'}</div>
         <div class="rc-card-info"><div class="rc-card-name">${k}</div><div class="rc-card-sub">${partes}${r.isolado?` · a mais de ${RAIO_ISOLADO_KM} km do CD`:''}</div></div>
         <div class="rc-card-n">${os.length}</div><div class="rc-card-chev">›</div>
       </div>
@@ -1854,7 +1895,7 @@ function renderPedidosPage(){
   // aviso dos pedidos que ainda estão só com a cidade ou o bairro
   const aprox=pend.filter(_aprox).length;
   $id('ped-aprox').innerHTML = aprox
-    ? `<div class="mapa-nota" style="margin:0">⚠️ ${aprox===1?'1 pedido está sem local exato (no mapa, fica no centro do bairro ou da cidade)':`${aprox} pedidos estão sem local exato (no mapa, ficam no centro do bairro ou da cidade)`}. Toque no pedido para buscar o endereço ou marcar o ponto no mapa. O ponto que você marcar fica guardado para as próximas notas do mesmo endereço.</div>` : '';
+    ? `<div class="mapa-nota" style="margin:0"><svg class="ic" viewBox="0 0 24 24"><use href="#i-alerta"/></svg> ${aprox===1?'1 pedido está sem local exato (no mapa, fica no centro do bairro ou da cidade)':`${aprox} pedidos estão sem local exato (no mapa, ficam no centro do bairro ou da cidade)`}. Toque no pedido para buscar o endereço ou marcar o ponto no mapa. O ponto que você marcar fica guardado para as próximas notas do mesmo endereço.</div>` : '';
   _renderBusca();
 }
 function toggleRcCard(i){ document.getElementById('rcd-'+i).classList.toggle('exp'); }
@@ -2801,7 +2842,7 @@ async function importarArquivo(input){
   if(!files.length) return;
   const tipo=tipoImport;
   if(files.some(f=>/\.pdf$/i.test(f.name))){
-    const ok=confirm('⚠️ A LEITURA DE PDF É EXPERIMENTAL.\n\nO sistema tenta achar os números das notas e os pesos no PDF, mas pode errar. Confira os dados antes de gerar a rota.\n\nPara um resultado confiável, use o XML da nota ou uma planilha (Excel/CSV).\n\nContinuar mesmo assim?');
+    const ok=confirm('A leitura de PDF é experimental.\n\nO sistema tenta achar os números das notas e os pesos no PDF, mas pode errar. Confira os dados antes de gerar a rota.\n\nPara um resultado confiável, use o XML da nota ou uma planilha (Excel/CSV).\n\nContinuar mesmo assim?');
     if(!ok){ _impMsg('err','Importação cancelada.'); return; }
   }
   _impMsg('info',`Lendo ${_plural(files.length,'arquivo','arquivos')}...`);
@@ -2814,14 +2855,14 @@ async function importarArquivo(input){
     }catch(e){ erros.push(`${f.name}: ${e.message}`); }
   }
   if(!lidos.length){
-    if(!canc.length){ _impMsg('err','❌ Nada foi importado. '+erros.join(' · ')); return; }
+    if(!canc.length){ _impMsg('err','Nada foi importado. '+erros.join(' · ')); return; }
     // só XML de cancelamento: tira as notas canceladas dos pendentes (com confirmação)
     _impMsg(erros.length?'warn':'info',`${_plural(new Set(canc).size,'cancelamento de NF-e lido','cancelamentos de NF-e lidos')}.${erros.length?' Não deu para ler: '+erros.join(' · ')+'.':''}`);
     await _tratarCancelamentos([...new Set(canc)]);
     return;
   }
   if(semPeso){
-    const ok=confirm(`⚠️ ${_plural(semPeso,'nota está','notas estão')} sem peso no arquivo.\n\nElas entram com 100 kg cada. Confira antes de roteirizar, para não passar da capacidade do veículo.\n\nImportar mesmo assim?`);
+    const ok=confirm(`${_plural(semPeso,'nota está','notas estão')} sem peso no arquivo.\n\nElas entram com 100 kg cada. Confira antes de roteirizar, para não passar da capacidade do veículo.\n\nImportar mesmo assim?`);
     if(!ok){ _impMsg('err','Importação cancelada: notas sem peso.'); return; }
   }
   // Nota que já saiu para rota (despachada/entregue) não é alterada.
@@ -2836,13 +2877,13 @@ async function importarArquivo(input){
     render(); renderPedidosPage();
   } else {
     try{ if(novos.length) await update(ref(db,TP('pedidos_rota')),payload); }
-    catch(e){ _impMsg('err','❌ Não foi possível salvar as notas: '+e.message); return; }
+    catch(e){ _impMsg('err','Não foi possível salvar as notas: '+e.message); return; }
   }
   const nT=_contarTipos(novos);
   let msg = !novos.length ? 'Nenhuma nota nova.'
-    : nT.entrega&&nT.coleta ? `✅ ${_plural(novos.length,'nota importada','notas importadas')}: ${_resumoTipos(nT,' e ')}.`
-    : nT.coleta ? `✅ ${_plural(nT.coleta,'coleta importada','coletas importadas')}.`
-    : `✅ ${_plural(nT.entrega,'entrega importada','entregas importadas')}.`;
+    : nT.entrega&&nT.coleta ? `${_plural(novos.length,'nota importada','notas importadas')}: ${_resumoTipos(nT,' e ')}.`
+    : nT.coleta ? `${_plural(nT.coleta,'coleta importada','coletas importadas')}.`
+    : `${_plural(nT.entrega,'entrega importada','entregas importadas')}.`;
   if(jaEmRota) msg+=` ${_plural(jaEmRota,'nota já estava','notas já estavam')} em rota e não ${jaEmRota===1?'foi alterada':'foram alteradas'}.`;
   if(erros.length) msg+=` Não deu para ler: ${erros.join(' · ')}.`;
   _impMsg(erros.length||!novos.length?'warn':'ok', msg);
@@ -2852,15 +2893,21 @@ async function importarArquivo(input){
 }
 window.importarArquivo=importarArquivo;
 
+// Silhueta do veículo: todos desenhados na mesma escala, então o tamanho do
+// desenho mostra o porte (um Fiorino ocupa menos da metade de uma carreta).
+function _svgVeic(v,cls='veh-sil'){
+  return `<svg class="${cls}" viewBox="0 0 48 24" preserveAspectRatio="xMinYMid meet" aria-hidden="true"><use href="#${(v&&v.ic)||'v-vuc'}"/></svg>`;
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 // ROTEIRIZAÇÃO — wizard veículo → capacidade → confirma → /solve backend
 // ══════════════════════════════════════════════════════════════════════════
 const VEICULOS=[
-  {id:'fiorino',nome:'Fiorino',tag:'até 1.5t',desc:'Furgão leve — entregas urbanas',presets:[500,800,1200],cor:'#6f9a1f',emoji:'🚐'},
-  {id:'vuc',nome:'VUC',tag:'até 3t',desc:'Veículo Urbano de Carga',presets:[1500,2000,3000],cor:'#2f6fe4',emoji:'🚚'},
-  {id:'toco',nome:'Truck Toco',tag:'até 8t',desc:'Truck 2 eixos — cargas médias',presets:[4000,6000,8000],cor:'#0e8f9f',emoji:'🚛'},
-  {id:'bitruck',nome:'Bitruck',tag:'até 16t',desc:'Truck 3 eixos — cargas pesadas',presets:[10000,12000,16000],cor:'#3b7fd0',emoji:'🚛'},
-  {id:'carreta',nome:'Carreta',tag:'até 33t',desc:'Articulada — grandes volumes',presets:[20000,27000,32000],cor:'#7c5cc4',emoji:'🚛'},
+  {id:'fiorino',nome:'Fiorino',tag:'até 1.5t',desc:'Furgão leve — entregas urbanas',presets:[500,800,1200],cor:'#e09c12',ic:'v-fiorino'},
+  {id:'vuc',nome:'VUC',tag:'até 3t',desc:'Veículo Urbano de Carga',presets:[1500,2000,3000],cor:'#c07f12',ic:'v-vuc'},
+  {id:'toco',nome:'Truck Toco',tag:'até 8t',desc:'Truck 2 eixos — cargas médias',presets:[4000,6000,8000],cor:'#8a6a2c',ic:'v-toco'},
+  {id:'bitruck',nome:'Bitruck',tag:'até 16t',desc:'Truck 3 eixos — cargas pesadas',presets:[10000,12000,16000],cor:'#4d5a6e',ic:'v-bitruck'},
+  {id:'carreta',nome:'Carreta',tag:'até 33t',desc:'Articulada — grandes volumes',presets:[20000,27000,32000],cor:'#0d1b2e',ic:'v-carreta'},
 ];
 let vehSel=null, capKgD=0, maxPedD=6, rotaGeradaD=[], fonteDistanciaD='—';
 let rotasConfirmadasDemo=[];
@@ -2910,21 +2957,21 @@ function renderVeiculosD(){
   const mots = modoDemo ? motoristasDemo : Object.values(motoristasFirebase);
   const veicMap=Object.fromEntries(VEICULOS.map(v=>[v.id,v]));
   const atalhoHtml = mots.length ? `
-    <div class="sec-title" style="font-family:var(--sans);font-weight:700;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text2);margin-bottom:12px">Motoristas fixos — clique pra usar direto</div>
+    <div class="sec-title" style="font-family:var(--sans);font-weight:700;font-size:12px;color:var(--text2);margin-bottom:12px">Motoristas fixos — clique pra usar direto</div>
     <div class="veh-grid" style="margin-bottom:26px">${mots.map(m=>{
       const v=veicMap[m.veiculo_id];
       return `<div class="veh-card" style="--vc:${v?.cor||'#f3b62b'}" onclick="usarMotoristaD('${m.id}')">
-        <div class="veh-card-icon" style="font-size:24px">${v?.emoji||'🚚'}</div>
+        <div class="veh-card-icon">${_svgVeic(v)}</div>
         <div class="veh-card-name">${m.nome}</div>
         <div class="veh-card-tag">${m.veiculo_nome} · ${(m.cap_kg||0).toLocaleString('pt-BR')}kg</div>
         <div class="veh-card-desc">Clique pra gerar rota com este motorista</div>
       </div>`;
     }).join('')}</div>
-    <div class="sec-title" style="font-family:var(--sans);font-weight:700;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text2);margin-bottom:12px">Ou escolha o veículo manualmente</div>` : '';
+    <div class="sec-title" style="font-family:var(--sans);font-weight:700;font-size:12px;color:var(--text2);margin-bottom:12px">Ou escolha o veículo manualmente</div>` : '';
 
   document.getElementById('veh-grid').innerHTML=VEICULOS.map(v=>
     `<div class="veh-card" style="--vc:${v.cor}" onclick="selVeicD('${v.id}')">
-      <div class="veh-card-icon" style="font-size:26px">${v.emoji}</div>
+      <div class="veh-card-icon">${_svgVeic(v)}</div>
       <div class="veh-card-name">${v.nome}</div><div class="veh-card-tag">${v.tag}</div>
       <div class="veh-card-desc">${v.desc}</div></div>`).join('');
   // injeta o atalho ANTES do grid de veículos
@@ -2990,7 +3037,7 @@ function irConfirmD(){
   const comHora=viagem.filter(o=>o.janela_ini!=null).length;
   const semLocal=viagem.filter(_aprox).length;
   document.getElementById('confirm-veh-name').textContent=vehSel.nome;
-  document.getElementById('confirm-details-d').innerHTML=`Capacidade: <b style="color:var(--ac)">${kg.toLocaleString('pt-BR')} kg</b><br>Máx. de paradas: <b>${maxPedD}</b><br>Nesta viagem: <b>${oque} pendentes</b>${rotTipoD==='todos'?' <span style="color:var(--text3)">(entregas primeiro, coletas depois)</span>':''}<br>Saída: <b>${esc(DEPOT.name)}</b> às <b>${_hhmm(rotaCtxD.saida)}</b> de <b>${_dataBR(rotaCtxD.data)}</b>${comHora?`<br>Com horário marcado: <b>${comHora}</b>`:''}${outroDia?`<br><span style="color:var(--text3)">${_plural(outroDia,'agendado para outro dia fica','agendados para outro dia ficam')} de fora.</span>`:''}${semLocal?`<br><span style="color:#8a5a06">⚠️ ${_plural(semLocal,'pedido ainda está','pedidos ainda estão')} sem localização exata (só o bairro ou a cidade). A ordem e os km desses pedidos são aproximados.</span>`:''}`;
+  document.getElementById('confirm-details-d').innerHTML=`Capacidade: <b style="color:var(--ac)">${kg.toLocaleString('pt-BR')} kg</b><br>Máx. de paradas: <b>${maxPedD}</b><br>Nesta viagem: <b>${oque} pendentes</b>${rotTipoD==='todos'?' <span style="color:var(--text3)">(entregas primeiro, coletas depois)</span>':''}<br>Saída: <b>${esc(DEPOT.name)}</b> às <b>${_hhmm(rotaCtxD.saida)}</b> de <b>${_dataBR(rotaCtxD.data)}</b>${comHora?`<br>Com horário marcado: <b>${comHora}</b>`:''}${outroDia?`<br><span style="color:var(--text3)">${_plural(outroDia,'agendado para outro dia fica','agendados para outro dia ficam')} de fora.</span>`:''}${semLocal?`<br><span style="color:#8a5a06"><svg class="ic" viewBox="0 0 24 24"><use href="#i-alerta"/></svg> ${_plural(semLocal,'pedido ainda está','pedidos ainda estão')} sem localização exata (só o bairro ou a cidade). A ordem e os km desses pedidos são aproximados.</span>`:''}`;
   document.getElementById('rot-step-cap').style.display='none';
   document.getElementById('rot-step-confirm').style.display='block';
 }
@@ -3028,7 +3075,7 @@ async function executarVRPD(){
   }catch(e){
     document.getElementById('rot-step-loading').style.display='none';
     document.getElementById('rot-step-results').style.display='block';
-    document.getElementById('rot-step-results').innerHTML=`<div class="import-msg show err">❌ Não foi possível gerar a rota: ${e.message}.<br>Tente de novo em instantes. Se continuar, fale com o suporte.</div><button class="btn-modal-sec" onclick="renderVeiculosD()" style="max-width:300px">← Tentar novamente</button>`;
+    document.getElementById('rot-step-results').innerHTML=`<div class="import-msg show err">Não foi possível gerar a rota: ${e.message}.<br>Tente de novo em instantes. Se continuar, fale com o suporte.</div><button class="btn-modal-sec" onclick="renderVeiculosD()" style="max-width:300px">← Tentar novamente</button>`;
   }
 }
 window.executarVRPD=executarVRPD;
@@ -3251,7 +3298,7 @@ function _renderResultadoD(){
     <div class="rota-tabs-d" id="rota-tabs-d" role="tablist">${rotas.map((r,i)=>`<div class="rota-tab-d ${i===rotaSelD?'active':''}" role="tab" tabindex="0" aria-selected="${i===rotaSelD}" onclick="selRotaTabD(${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selRotaTabD(${i})}">Rota ${i+1} · ${_paradasD(r).length} paradas${r._ajustada?' · ajustada':''}</div>`).join('')}</div>
     <div id="rota-detail-d"></div>
     <div id="confirmar-rota-wrap" style="margin-top:18px;max-width:640px">
-      <button class="btn-modal-primary" id="btn-confirmar-rota" onclick="confirmarRotaD()" style="margin-top:0">✔ Confirmar saída do veículo</button>
+      <button class="btn-modal-primary" id="btn-confirmar-rota" onclick="confirmarRotaD()" style="margin-top:0"><svg class="ic" viewBox="0 0 24 24"><use href="#i-ok"/></svg>Confirmar saída do veículo</button>
       <div style="font-size:11.5px;color:var(--text3);margin-top:8px;text-align:center">Ao confirmar, as entregas e coletas desta rota saem da lista de pendentes e a rota fica salva na aba Rotas.</div>
     </div>`;
   selRotaTabD(rotaSelD);
@@ -3283,7 +3330,7 @@ async function confirmarRotaD(){
   // espera o recálculo da rota ajustada (km e horários) terminar
   const pend=Object.values(_avPend);
   if(pend.length){ btn.textContent='Terminando o cálculo...'; await Promise.all(pend); Object.keys(_avPend).forEach(k=>delete _avPend[k]); }
-  const volta=()=>{ const b=document.getElementById('btn-confirmar-rota'); if(b){ b.disabled=false; b.textContent='✔ Confirmar saída do veículo'; } };
+  const volta=()=>{ const b=document.getElementById('btn-confirmar-rota'); if(b){ b.disabled=false; b.innerHTML=`<svg class="ic" viewBox="0 0 24 24"><use href="#i-ok"/></svg>Confirmar saída do veículo`; } };
   // pedidos que foram excluídos ou saíram em outra rota enquanto esta era ajustada
   const sumiu=[];
   rotaGeradaD.forEach(r=>_paradasD(r).forEach(p=>{ const o=allOrders.find(x=>x.id===_idDe(p)); if(!o||o.status!=='pendente') sumiu.push(p.nf); }));
@@ -3332,14 +3379,14 @@ async function confirmarRotaD(){
       });
       _simularVeiculosDemo();
     }
-    btn.textContent='✔ Rota confirmada!';
+    btn.innerHTML=`<svg class="ic" viewBox="0 0 24 24"><use href="#i-ok"/></svg>Rota confirmada`;
     setTimeout(()=>{
       rotaGeradaD=[];
       irParaPagina('rotas');
       render();
     },900);
   }catch(e){
-    btn.disabled=false; btn.textContent='✔ Confirmar saída do veículo';
+    btn.disabled=false; btn.innerHTML=`<svg class="ic" viewBox="0 0 24 24"><use href="#i-ok"/></svg>Confirmar saída do veículo`;
     alert('Erro ao confirmar rota: '+e.message);
   }
 }
@@ -3354,7 +3401,7 @@ function _haVisto(ts){
 }
 function _iconeVeiculo(pos){
   const velho=!pos.simulado && Date.now()-(pos.hora||0)>10*60e3;
-  return L.divIcon({className:'',html:`<div class="veic-mk${velho?' velho':''}">🚚</div>`,iconSize:[30,30],iconAnchor:[15,15]});
+  return L.divIcon({className:'',html:`<div class="veic-mk${velho?' velho':''}"><svg class="ic" viewBox="0 0 24 24"><use href="#i-caminhao"/></svg></div>`,iconSize:[30,30],iconAnchor:[15,15]});
 }
 function _textoVeiculo(r,pos){
   return `<b>${esc(r.veiculo||'Veículo')}${r.motorista?' · '+esc(r.motorista):''}</b><br>${pos.simulado?'Simulação (conta de demonstração)':'Localização do celular do motorista'} · ${_haVisto(pos.hora)}`;
@@ -3742,7 +3789,7 @@ function renderRotasConfirmadas(){
     const concluida = paradas.length && feitas===paradas.length;
     const linkAtivo = r.token && (r.link_expira||0) > Date.now();
     const pos = posicaoPorRota[r.id];
-    const linhaPos = `<div class="mot-sub" style="margin-top:6px">📍 ${pos?`Localização ao vivo: <b data-visto="${ridSafe}">${_haVisto(pos.hora)}</b>${pos.simulado?' (simulação da conta de demonstração)':''}`:'Localização ao vivo: o motorista ainda não ligou no celular.'}</div>`;
+    const linhaPos = `<div class="mot-sub" style="margin-top:6px"><svg class="ic" viewBox="0 0 24 24"><use href="#i-local"/></svg> ${pos?`Localização ao vivo: <b data-visto="${ridSafe}">${_haVisto(pos.hora)}</b>${pos.simulado?' (simulação da conta de demonstração)':''}`:'Localização ao vivo: o motorista ainda não ligou no celular.'}</div>`;
     const mot = contaDemo
       ? `<div class="mot-box">
         <div class="mot-head">
@@ -3776,24 +3823,24 @@ function renderRotasConfirmadas(){
           </div>
         </div>
         <div style="display:flex;gap:8px;align-items:center">
-          <span style="background:rgba(243,182,43,.15);border:1px solid rgba(243,182,43,.3);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;color:var(--ac)">${concluida?'✓ Concluída':'🚚 Em rota'}</span>
+          <span style="background:rgba(243,182,43,.15);border:1px solid rgba(243,182,43,.3);border-radius:20px;padding:4px 12px;font-size:11px;font-weight:700;color:var(--ac)">${concluida?`<svg class="ic" viewBox="0 0 24 24"><use href="#i-ok"/></svg>Concluída`:`<svg class="ic" viewBox="0 0 24 24"><use href="#i-caminhao"/></svg>Em rota`}</span>
         </div>
       </div>
       <div style="display:flex;gap:18px;font-size:12.5px;color:var(--text2);flex-wrap:wrap;margin-bottom:12px">
-        <span>📦 <b style="color:var(--text)">${(r.peso_total||0).toLocaleString('pt-BR')} kg</b></span>
-        <span>🛣️ <b style="color:var(--text)">${(+r.km||0).toFixed(1)}</b> km</span>
-        ${r.tempo_min?`<span>⏱️ <b style="color:var(--text)">${r.tempo_min}</b> min</span>`:''}
+        <span><svg class="ic" viewBox="0 0 24 24"><use href="#i-peso"/></svg> <b style="color:var(--text)">${(r.peso_total||0).toLocaleString('pt-BR')} kg</b></span>
+        <span><svg class="ic" viewBox="0 0 24 24"><use href="#i-estrada"/></svg> <b style="color:var(--text)">${(+r.km||0).toFixed(1)}</b> km</span>
+        ${r.tempo_min?`<span><svg class="ic" viewBox="0 0 24 24"><use href="#i-tempo"/></svg> <b style="color:var(--text)">${r.tempo_min}</b> min</span>`:''}
       </div>
       ${mot}
       <div id="${mapId}" style="height:220px;border-radius:11px;border:1px solid var(--border);margin-bottom:12px;overflow:hidden;background:var(--s3)"></div>
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
         ${paradas.map((p,i)=>{ const b=bx[i], col=_tipoDe(p)==='coleta';
-          const st=b?(b.status==='feito'?` ✓ ${col?'coletada':'entregue'} ${_horaTs(b.hora)}`:` ✗ ${esc(b.motivo||'não realizada')}`):'';
+          const st=b?(b.status==='feito'?` ${col?'coletada':'entregue'} ${_horaTs(b.hora)}`:` ${esc(b.motivo||'não realizada')}`):'';
           return `<span class="parada-chip${b?(b.status==='feito'?' ok':' nok'):''}"><b style="color:${b?'inherit':cor}">${i+1}.</b> ${col?'Coleta':'Entrega'} NF ${esc(p.nf)}${p.cidade?' · '+esc(p.cidade):''}${st}${b&&b.temFoto?` <button onclick="verFotoCanhoto('${ridSafe}',${i})">ver foto</button>`:''}</span>`; }).join('')}
       </div>
       <div style="display:flex;gap:8px;border-top:1px solid var(--border);padding-top:12px">
         <button class="btn-toolbar" style="flex:1;justify-content:center;color:#a16207;border-color:rgba(161,98,7,.4)" onclick="devolverRotaD('${ridSafe}')">↩ Devolver ao sistema</button>
-        <button class="btn-toolbar" style="flex:1;justify-content:center;color:#b91c1c;border-color:rgba(185,28,28,.35)" onclick="apagarRotaD('${ridSafe}')">🗑 Apagar rota</button>
+        <button class="btn-toolbar" style="flex:1;justify-content:center;color:#b91c1c;border-color:rgba(185,28,28,.35)" onclick="apagarRotaD('${ridSafe}')"><svg class="ic" viewBox="0 0 24 24"><use href="#i-lixo"/></svg> Apagar rota</button>
       </div>
     </div>`;
   }).join('');
@@ -3876,7 +3923,7 @@ function toggleFormMotorista(){
     document.getElementById('mot-cap-kg').value='';
     document.getElementById('mot-veh-grid').innerHTML=VEICULOS.map(v=>
       `<div class="veh-card" style="--vc:${v.cor};padding:12px" onclick="selVeicMotorista('${v.id}',this)">
-        <div style="font-size:20px;margin-bottom:4px">${v.emoji}</div>
+        <div class="veh-card-icon mini">${_svgVeic(v)}</div>
         <div class="veh-card-name" style="font-size:12.5px">${v.nome}</div>
         <div class="veh-card-tag" style="margin:3px 0 0">${v.tag}</div>
       </div>`).join('');
@@ -3927,7 +3974,7 @@ function renderMotoristasPage(){
     const v=veicMap[m.veiculo_id];
     return `<div class="rc-card" style="--rc:${v?.cor||'#f3b62b'}">
       <div class="rc-card-head" style="cursor:default">
-        <div class="rc-card-icon" style="font-size:20px">${v?.emoji||'🚚'}</div>
+        <div class="rc-card-icon">${_svgVeic(v,'veh-sil mini')}</div>
         <div class="rc-card-info">
           <div class="rc-card-name">${m.nome}</div>
           <div class="rc-card-sub">${m.veiculo_nome} · ${(m.cap_kg||0).toLocaleString('pt-BR')} kg</div>
@@ -3953,8 +4000,8 @@ function selRotaTabD(idx){
   const outras=rotaGeradaD.map((x,k)=>k).filter(k=>k!==idx);
   const notaFonte = calc==='calculando' ? '<div class="calc-st" role="status">Recalculando km e horários na ordem nova…</div>'
     : calc==='otimizando' ? '<div class="calc-st" role="status">Otimizando a ordem das paradas…</div>'
-    : (calc==='local'||fonte==='Haversine') ? `<div style="margin-top:10px;font-size:11.5px;color:#8a5a06;background:rgba(250,204,21,.16);border:1px solid rgba(202,138,4,.35);border-radius:8px;padding:8px 12px">⚠️ ${calc==='local'?'Servidor de rotas sem resposta: km e horários estimados em linha reta.':'Distância calculada em linha reta (OSRM indisponível).'} O km real de estrada costuma ser maior.</div>`
-    : fonte==='OSRM' ? `<div style="margin-top:10px;font-size:11px;color:var(--text3)">✓ Distância real via OSRM (rota de estrada)</div>` : '';
+    : (calc==='local'||fonte==='Haversine') ? `<div style="margin-top:10px;font-size:11.5px;color:#8a5a06;background:rgba(250,204,21,.16);border:1px solid rgba(202,138,4,.35);border-radius:8px;padding:8px 12px"><svg class="ic" viewBox="0 0 24 24"><use href="#i-alerta"/></svg> ${calc==='local'?'Servidor de rotas sem resposta: km e horários estimados em linha reta.':'Distância calculada em linha reta (OSRM indisponível).'} O km real de estrada costuma ser maior.</div>`
+    : fonte==='OSRM' ? `<div style="margin-top:10px;font-size:11px;color:var(--text3)"><svg class="ic" viewBox="0 0 24 24"><use href="#i-ok"/></svg> Distância real via OSRM (rota de estrada)</div>` : '';
   const linha=(p,i)=>{
     const pid=_idDe(p), tarde=p.janela_fim!=null&&p.chegada_min!=null&&p.chegada_min>p.janela_fim;
     const aprox=_aprox(p);
@@ -3962,22 +4009,22 @@ function selRotaTabD(idx){
         <button type="button" data-foco="${esc(pid)}|up" onclick="moverParadaD(${idx},${i},-1)" ${i===0?'disabled':''} aria-label="Subir NF ${esc(p.nf)}" title="Subir">↑</button>
         <button type="button" data-foco="${esc(pid)}|down" onclick="moverParadaD(${idx},${i},1)" ${i===paradas.length-1?'disabled':''} aria-label="Descer NF ${esc(p.nf)}" title="Descer">↓</button>
         ${outras.length?`<select data-foco="${esc(pid)}|rota" aria-label="Mover NF ${esc(p.nf)} para outra viagem" onchange="moverParaRotaD(${idx},${i},this.value)"><option value="">Viagem…</option>${outras.map(k=>`<option value="${k}">Rota ${k+1}</option>`).join('')}</select>`:''}
-        <button type="button" class="tirar" data-foco="${esc(pid)}|tirar" onclick="tirarParadaD(${idx},${i})" aria-label="Tirar NF ${esc(p.nf)} desta rota" title="Tirar da rota">✕</button>
+        <button type="button" class="tirar" data-foco="${esc(pid)}|tirar" onclick="tirarParadaD(${idx},${i})" aria-label="Tirar NF ${esc(p.nf)} desta rota" title="Tirar da rota">×</button>
       </div>`:'';
     return `<div class="delivery-mini${ajusteD?' ajuste':''}"><div class="delivery-mini-num${_tipoDe(p)==='coleta'?' c':''}">${i+1}</div><div class="dm-txt"><div style="font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text)">NF ${esc(p.nf)}${_tag(p)}${p.chegada_min!=null?`<span class="cheg">~${_hhmm(p.chegada_min)}</span>`:''}${tarde?'<span class="atraso">depois do horário</span>':''}${aprox?`<button type="button" class="aprox-bt" data-foco="${esc(pid)}|local" onclick="abrirPedido(${esc(JSON.stringify(pid))})">local aproximado · corrigir</button>`:''}</div><div style="font-size:11px;color:var(--text3)">${p.janela_ini!=null?`Horário ${_hhmm(p.janela_ini)}–${_hhmm(p.janela_fim)} · `:''}${p.dest&&p.dest!==p.cidade?esc(p.dest)+' · ':''}${p.endereco?esc(p.endereco)+' · ':''}${esc(p.cidade||'')} · ${(+p.peso||0).toLocaleString('pt-BR')} kg</div></div>${acoes}</div>`;
   };
   document.getElementById('rota-detail-d').innerHTML=`
     <div id="rota-map"></div>
-    ${paradas.some(_aprox)?`<div class="mapa-nota">⚠️ ${_plural(paradas.filter(_aprox).length,'parada está','paradas estão')} sem endereço exato. No mapa, ficam no centro do bairro ou da cidade, e a ordem e os km delas são aproximados. Toque em "corrigir" para buscar o endereço ou marcar o ponto.</div>`:''}
-    ${paradas.length?`<div class="nav-btns-d"><a href="${gmaps}" target="_blank" rel="noopener" class="btn-nav-d gmaps">📍 Google Maps</a>${last?`<a href="https://waze.com/ul?ll=${last.lat},${last.lng}&navigate=yes" target="_blank" rel="noopener" class="btn-nav-d waze">🚗 Waze</a>`:''}</div>`:''}
-    <div class="card" style="margin-bottom:14px"><div style="display:flex;gap:20px;font-size:13px;color:var(--text2);flex-wrap:wrap"><span>📦 <b style="color:var(--text)">${peso.toLocaleString('pt-BR')} kg</b></span><span>📍 <b style="color:var(--text)">${paradas.length}</b> paradas</span>${nT.coleta&&nT.entrega?`<span>🚚 sai com <b style="color:var(--text)">${carga.saida.toLocaleString('pt-BR')} kg</b> · no máximo <b style="color:var(--text)">${carga.max.toLocaleString('pt-BR')} kg</b> a bordo</span>`:''}<span>🛣️ <b style="color:var(--text)">${km.toFixed(1)}</b> km</span>${mins?`<span>⏱️ <b style="color:var(--text)">${mins}</b> min</span>`:''}</div>
+    ${paradas.some(_aprox)?`<div class="mapa-nota"><svg class="ic" viewBox="0 0 24 24"><use href="#i-alerta"/></svg> ${_plural(paradas.filter(_aprox).length,'parada está','paradas estão')} sem endereço exato. No mapa, ficam no centro do bairro ou da cidade, e a ordem e os km delas são aproximados. Toque em "corrigir" para buscar o endereço ou marcar o ponto.</div>`:''}
+    ${paradas.length?`<div class="nav-btns-d"><a href="${gmaps}" target="_blank" rel="noopener" class="btn-nav-d gmaps"><svg class="ic" viewBox="0 0 24 24"><use href="#i-local"/></svg> Google Maps</a>${last?`<a href="https://waze.com/ul?ll=${last.lat},${last.lng}&navigate=yes" target="_blank" rel="noopener" class="btn-nav-d waze"><svg class="ic" viewBox="0 0 24 24"><use href="#i-rota"/></svg> Waze</a>`:''}</div>`:''}
+    <div class="card" style="margin-bottom:14px"><div style="display:flex;gap:20px;font-size:13px;color:var(--text2);flex-wrap:wrap"><span><svg class="ic" viewBox="0 0 24 24"><use href="#i-peso"/></svg> <b style="color:var(--text)">${peso.toLocaleString('pt-BR')} kg</b></span><span><svg class="ic" viewBox="0 0 24 24"><use href="#i-local"/></svg> <b style="color:var(--text)">${paradas.length}</b> paradas</span>${nT.coleta&&nT.entrega?`<span><svg class="ic" viewBox="0 0 24 24"><use href="#i-caminhao"/></svg> sai com <b style="color:var(--text)">${carga.saida.toLocaleString('pt-BR')} kg</b> · no máximo <b style="color:var(--text)">${carga.max.toLocaleString('pt-BR')} kg</b> a bordo</span>`:''}<span><svg class="ic" viewBox="0 0 24 24"><use href="#i-estrada"/></svg> <b style="color:var(--text)">${km.toFixed(1)}</b> km</span>${mins?`<span><svg class="ic" viewBox="0 0 24 24"><use href="#i-tempo"/></svg> <b style="color:var(--text)">${mins}</b> min</span>`:''}</div>
       ${notaFonte}
     </div>
-    ${probs.length?`<div class="rota-alertas">${probs.map(t=>`<div class="import-msg show warn">⚠️ ${esc(t)}</div>`).join('')}</div>`:''}
+    ${probs.length?`<div class="rota-alertas">${probs.map(t=>`<div class="import-msg show warn"><svg class="ic" viewBox="0 0 24 24"><use href="#i-alerta"/></svg> ${esc(t)}</div>`).join('')}</div>`:''}
     <div class="ajuste-barra">
       <span class="info">${ajusteD?'Mude a ordem com as setas, tire paradas ou adicione pedidos pendentes. Os km e horários são recalculados a cada mudança.':(r._ajustada?'Rota ajustada à mão.':'Ordem montada pelo sistema.')}${r._ajustada?'<span class="ajuste-tag">ajustada</span>':''}</span>
       <div class="ajuste-acoes">
-        <button type="button" class="btn-sm${ajusteD?' on':''}" data-foco="ajustar" aria-pressed="${ajusteD}" onclick="toggleAjusteD()">${ajusteD?'✔ Concluir ajuste':'✏️ Ajustar a rota'}</button>
+        <button type="button" class="btn-sm${ajusteD?' on':''}" data-foco="ajustar" aria-pressed="${ajusteD}" onclick="toggleAjusteD()">${ajusteD?'<svg class="ic" viewBox="0 0 24 24"><use href="#i-ok"/></svg>Concluir ajuste':'Ajustar a rota'}</button>
         ${r._ajustada&&paradas.length>1?`<button type="button" class="btn-sm" data-foco="otimizar" onclick="otimizarRotaD(${idx})" ${calc==='otimizando'?'disabled':''}>Otimizar a ordem</button>`:''}
         ${rotaGeradaD.some(x=>x._ajustada)?`<button type="button" class="btn-sm" data-foco="desfazer" onclick="desfazerAjusteD()">Desfazer ajustes</button>`:''}
       </div>

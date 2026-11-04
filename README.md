@@ -10,11 +10,31 @@ motoristas e assistente de IA.
 |---|---|---|
 | `index.html` | A tela do sistema (um arquivo só: HTML, CSS e JavaScript) | GitHub Pages |
 | `motorista.html` | A página do motorista (abre pelo link da rota, sem senha) | GitHub Pages |
-| `assets/` | Logo, ícone do site e ícones 3D (Fluent Emoji, licença MIT) | GitHub Pages |
+| `assets/` | Logo e ícone do site | GitHub Pages |
 | `backend/` | Servidor de rotas em Python (FastAPI + OR-Tools + IA) | Railway |
 | `firebase/database.rules.json` | Regras de acesso do banco (Realtime Database) | Console do Firebase |
 
 Banco e login: Firebase, projeto `slog-pedidos` (Realtime Database + Authentication).
+
+## Visual: ícones próprios, sem emoji (versão 3.8)
+
+Toda a interface usa **um conjunto de ícones desenhado para o sistema**, não emoji. Emoji é
+desenhado pelo aparelho de quem olha: muda de forma e de cor entre Android, iPhone e Windows,
+e não combina com a identidade (preto, azul-marinho, dourado, branco).
+
+- Os ícones ficam num **sprite SVG** logo depois do `<body>` do `index.html` (e um menor no
+  `motorista.html`), usados como `<svg class="ic"><use href="#i-..."/></svg>`.
+- Padrão: grade 24×24, traço 1,75, pontas arredondadas, **cor herdada do texto** (`currentColor`),
+  tamanho em `em` — o ícone acompanha a fonte de onde está.
+- **Veículos**: Fiorino, VUC, Toco, Bitruck e Carreta são silhuetas desenhadas na **mesma escala**
+  (`viewBox="0 0 48 24"`), então o tamanho do desenho mostra o porte: o Fiorino ocupa 16 das 48
+  unidades e a carreta, 45. Um teste confere que essa ordem não se perde.
+- **Cores das regiões** (`CORES_REGIAO`): uma família só, puxando para o dourado e o azul-marinho,
+  com saturação contida. Elas ligam a lista de cidades às bolhas do mapa, por isso continuam
+  distinguíveis entre si.
+- Rótulos de campo em frase, não em CAIXA ALTA espaçada.
+- Para acrescentar um ícone: crie o `<symbol id="i-nome">` no sprite e use `#i-nome`. Não voltar a
+  usar emoji nem imagem PNG de ícone.
 
 ## Como o acesso funciona
 
@@ -408,6 +428,9 @@ OR-Tools rodando (não instalado aqui) e o mapa com as ruas. O formato da respos
 
 ## Histórico
 
+- Versão 3.8 (04/11/2026): visual geral — ícones próprios em SVG no lugar dos emoji 3D e dos emoji
+  de texto (sistema e página do motorista), silhuetas de veículo na mesma escala, cores de região
+  harmonizadas com a marca, rótulos em frase e KPIs com um tratamento só.
 - Versão 3.7 (03/11/2026): entrada automática de pedidos por e-mail (XML da NF-e numa
   caixa lida a cada minuto) e por API com chave por empresa, pedidos aparecendo na tela
   sem recarregar, e XML lido no encoding que ele declara (acentos de notas antigas).
