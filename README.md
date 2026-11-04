@@ -110,6 +110,50 @@ no mapa e na rota.
   endereços ou um Nominatim próprio.
 - Nenhuma regra nova no banco: `config` já pode ser gravado pela empresa.
 
+## Entrada automática de pedidos (versão 3.7)
+
+Para quem recebe pedido o dia todo e não quer ficar subindo arquivo. Fica na página
+Pedidos, em **"Receber pedidos automaticamente"** (fechado por padrão). Dois caminhos,
+que podem ser usados juntos:
+
+**1. Por e-mail.** A empresa ganha dois endereços só dela, criados no botão
+"Criar endereço de e-mail":
+
+    pedidos.rotav3+<código>@gmail.com          → entregas
+    pedidos.rotav3+<código>-coleta@gmail.com   → coletas
+
+O cliente manda (ou a transportadora encaminha) o XML da NF-e para lá; aceita vários
+anexos e .zip. O servidor lê a caixa a cada 1 minuto (IMAP, com senha de app) e grava
+os pedidos. O código fica em `integracao_email/<código>` → `{eid}`; trocar o endereço
+apaga o antigo na hora.
+
+**2. Pelo sistema da empresa (API).** O botão "Gerar chave da API" devolve uma chave
+`rv3_…` que **aparece uma vez só** (o banco guarda apenas o sha256, em
+`integracao_chaves/<hash>`). Com ela:
+
+    POST /entrada/xml       Authorization: Bearer <chave>   (XML no corpo, ou vários em multipart; ?tipo=coleta)
+    POST /entrada/pedidos   Authorization: Bearer <chave>   {"tipo":"entrega","pedidos":[{nf,cidade,peso,...}]}
+
+Regras das duas entradas:
+- Os pedidos entram em `empresas/<id>/pedidos_rota` com `origem: "email"|"api"`, lidos
+  com as mesmas regras da tela (mesma chave de pedido, mesma leitura da NF-e).
+- **Pedido que já existe não é alterado**: reenviar a mesma nota não apaga edição nem
+  local corrigido. Para mudar, use a tela.
+- XML de cancelamento tira a nota dos pendentes; se já está em rota, fica e o aviso
+  aparece nos recebimentos.
+- Cada recebimento fica em `empresas/<id>/entrada_log` (últimos 100) e aparece em
+  "Últimos recebimentos".
+- Limite de 600 envios por hora por empresa; até 500 pedidos por envio; 20 MB por envio
+  na API e 5 MB por XML no e-mail.
+- Com a tela aberta, o pedido que chega aparece na hora, avisa no rodapé e é localizado
+  no mapa sem recarregar.
+
+Para ligar no servidor (Railway → Variables): `FIREBASE_SECRET` (já existe),
+`ENTRADA_EMAIL_USUARIO`, `ENTRADA_EMAIL_SENHA` (senha de app do Google, 16 letras) e,
+se quiser, `ENTRADA_EMAIL_IMAP` (padrão `imap.gmail.com`) e `ENTRADA_EMAIL_INTERVALO`
+(padrão 60 s). Sem essas duas, só a entrada por API funciona, e `/status` mostra o que
+está ligado em `entrada_automatica`.
+
 ## Buscar e excluir notas (nota cancelada, importada por engano…)
 
 - **Buscar notas** (página Pedidos, também no celular): por NF, cliente, cidade, bairro ou
@@ -265,13 +309,17 @@ Variáveis de ambiente usadas:
 |---|---|---|
 | `GROQ_API_KEY` | Assistente de IA | Sim, para o chat |
 | `ALLOWED_ORIGINS` | Endereços que podem chamar o servidor, separados por vírgula. Se existir, precisa incluir `https://hesantss-pixel.github.io` | Não (o padrão já inclui) |
-| `FIREBASE_SECRET` | Chave antiga do banco, só para `/pedidos`, `/upload-nf` e TOTVS. Sem ela, a tela salva a prévia da rota sozinha | Não |
+| `FIREBASE_SECRET` | Chave antiga do banco: `/pedidos`, `/upload-nf`, TOTVS e **a entrada automática de pedidos**. Sem ela, a tela salva a prévia da rota sozinha | Só para a entrada automática |
+| `ENTRADA_EMAIL_USUARIO` / `ENTRADA_EMAIL_SENHA` | Caixa que recebe os XML e a senha de app do Google (16 letras) | Só para a entrada por e-mail |
+| `ENTRADA_EMAIL_IMAP` / `ENTRADA_EMAIL_INTERVALO` | Servidor IMAP (padrão `imap.gmail.com`) e segundos entre leituras (padrão 60) | Não |
 | `FIREBASE_PROJECT_ID` / `FIREBASE_URL` | Outro projeto Firebase | Não |
 | `DOCS_PUBLICAS=1` | Mostra a documentação em `/docs` | Não |
 
 Verificação: `https://rotainteligente2sl-production.up.railway.app/status` deve responder
-`"versao": "3.5.0"` e `"login": "obrigatório"`. Enquanto o Railway não publicar a 3.5.0, o
-ajuste da rota funciona com a estimativa em linha reta (a tela avisa).
+`"versao": "3.7.0"`, `"login": "obrigatório"` e `entrada_automatica` dizendo o que está
+ligado (`api` e `email`). Enquanto o Railway não publicar a versão nova, a tela continua
+funcionando com a importação de arquivo e o cartão de entrada automática avisa que o
+servidor ainda não foi configurado.
 
 ### 4. Tela (GitHub Pages)
 
@@ -296,6 +344,14 @@ troque `BACKEND_URL` no `index.html`.
 ## Testes
 
 - Servidor: `cd backend && python3 -m unittest discover -s tests`.
+  - Entrada automática (`tests/test_entrada.py`, `tests/test_entrada_api.py`): leitura da
+    NF-e igual à da tela (grupo entrega/retirada, peso e volumes, CEP incompleto, sem
+    chave, ISO-8859-1, cancelamento, carta de correção, CT-e e XML quebrado), pedido em
+    JSON e suas validações, gravação sem mexer no que já existe, cancelamento de
+    pendente e de nota em rota, registro dos últimos 100 recebimentos, chave e endereço
+    (o antigo para de valer, a chave só guarda o hash), limite por hora, e-mail
+    (código no endereço, .zip, anexo que não é XML, código desconhecido, e-mail que fica
+    para depois quando o banco cai) e as rotas do servidor com um substituto do FastAPI.
   - Login: token ausente, malformado, de outro projeto, vencido, recusado pelo Firebase, usuário
     sem liberação, liberado com cache, Firebase fora do ar; toda rota, menos `/status`, exige login.
   - Motor de rotas (`tests/test_vrp_coletas.py`): só entregas, só coletas, pedidos antigos sem
@@ -333,6 +389,10 @@ troque `BACKEND_URL` no `index.html`.
   em rota, fora do sistema), carta de correção recusada, pedido excluído durante a localização
   não volta, dados de exemplo sem gravar; celular 390/360/320 px com a barra "Excluir" presa
   embaixo.
+- Versão 3.7 (entrada automática): cartão na página Pedidos, criar endereço de e-mail e
+  chave da API, aviso de "guarde a chave", exemplo da API, botão Copiar, recebimentos,
+  aviso quando o pedido entra sozinho com a tela aberta e conta de demonstração sem a
+  função; em 1440, 390 e 320 px sem rolagem lateral e sem erros no console.
 - Versão 3.7 (endereço pelo número e ponto lembrado): número achado (com "1.000" = mil) e com o
   nome oficial da rua e o estado por extenso, número fora do mapa ficando na rua, CEP só da
   cidade marcado como aproximado, pedido sem CEP achado pela rua, número longe da rua do CEP
@@ -348,6 +408,9 @@ OR-Tools rodando (não instalado aqui) e o mapa com as ruas. O formato da respos
 
 ## Histórico
 
+- Versão 3.7 (03/11/2026): entrada automática de pedidos por e-mail (XML da NF-e numa
+  caixa lida a cada minuto) e por API com chave por empresa, pedidos aparecendo na tela
+  sem recarregar, e XML lido no encoding que ele declara (acentos de notas antigas).
 - Versão 3.7 (02/11/2026): endereço procurado pelo número antes do CEP, ponto marcado à mão
   guardado por endereço e usado nas próximas notas (e nos outros pendentes do mesmo endereço),
   precisão do ponto em cada pedido (pedidos só com o bairro ou a cidade aparecem como

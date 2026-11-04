@@ -9,6 +9,10 @@ Endpoints (todos, menos /status, exigem login — ver auth_firebase.py):
   POST /sync        — Sincronização manual TOTVS → Firebase (opcional)
   GET  /status      — Verificação de funcionamento (público)
   GET  /pedidos     — Lista pedidos pendentes do Firebase
+  GET  /integracao          — Entrada automática da empresa: e-mail, chave da API e recebimentos
+  POST /integracao/gerar    — Gera a chave da API ou o endereço de e-mail da empresa
+  POST /entrada/xml         — Recebe XML da NF-e (chave da API da empresa)
+  POST /entrada/pedidos     — Recebe pedidos em JSON (chave da API da empresa)
 
 Deploy: Railway.app (ver railway.toml)
 Docs:   http://localhost:8000/docs  (Swagger automático do FastAPI)
@@ -20,7 +24,7 @@ import uuid
 from typing import Optional
 
 import requests as req_lib
-from fastapi import Depends, FastAPI, HTTPException, Header, UploadFile, File, Form
+from fastapi import Depends, FastAPI, HTTPException, Header, Request, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -28,6 +32,8 @@ from vrp_solver   import solve_vrp, avaliar_sequencia, MAX_PARADAS_AVALIAR
 from groq_agent import GroqChat as GeminiChat, consulta_unica, analisar_rotas_geradas
 from nf_parser    import parse_many
 import auth_firebase
+import entrada
+import entrada_email
 
 try:
     from totvs_sync import sincronizar
@@ -42,7 +48,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="ROTAV3 — Servidor de rotas",
     description="Roteirização (OR-Tools VRP), assistente de IA e leitura de notas fiscais",
-    version="3.5.0",
+    version="3.7.0",
     docs_url="/docs" if os.getenv("DOCS_PUBLICAS", "0") == "1" else None,
     redoc_url=None,
 )
@@ -114,6 +120,55 @@ def _salvar_pedido_firebase(pedido: dict) -> str:
 
 def _tem_segredo() -> bool:
     return bool(FIREBASE_SECRET)
+
+
+# ── Entrada automática de pedidos (e-mail e API) ─────────────────────────────
+
+BANCO = entrada.Banco(FIREBASE_URL, FIREBASE_SECRET)
+EMAIL_USUARIO = os.getenv("ENTRADA_EMAIL_USUARIO", "").strip().lower()
+EMAIL_SENHA = os.getenv("ENTRADA_EMAIL_SENHA", "").replace(" ", "")
+EMAIL_IMAP = os.getenv("ENTRADA_EMAIL_IMAP", "imap.gmail.com").strip()
+EMAIL_INTERVALO = int(os.getenv("ENTRADA_EMAIL_INTERVALO", "60") or 60)
+MAX_ENTRADA_BYTES = 20 * 1024 * 1024
+
+
+def exigir_chave_api(authorization: Optional[str] = Header(None)) -> str:
+    """Entrada por API: 'Authorization: Bearer rv3_...' -> empresa dona da chave."""
+    if not BANCO.ligado():
+        raise HTTPException(status_code=503, detail="Entrada automática ainda não configurada no servidor.")
+    a = authorization or ""
+    chave = a[7:].strip() if a[:7].lower() == "bearer " else ""
+    try:
+        eid = entrada.eid_da_chave(BANCO, chave) if chave else None
+    except entrada.ErroBanco:
+        raise HTTPException(status_code=503, detail="Banco indisponível. Tente de novo em instantes.")
+    if not eid:
+        raise HTTPException(status_code=401, detail="Chave da API inválida ou trocada.")
+    if not entrada.limitar(eid):
+        raise HTTPException(status_code=429, detail="Limite de 600 envios por hora atingido.")
+    return eid
+
+
+def exigir_empresa(authorization: Optional[str] = Header(None)) -> str:
+    """Usuário com acesso completo -> id da empresa dele (para gerar chave e endereço)."""
+    uid = exigir_login(authorization)
+    if not BANCO.ligado():
+        raise HTTPException(status_code=503, detail="Entrada automática ainda não configurada no servidor.")
+    try:
+        eid = entrada.eid_do_usuario(BANCO, uid, ADMIN_UID, EMPRESA_PRINCIPAL)
+    except entrada.ErroBanco:
+        raise HTTPException(status_code=503, detail="Banco indisponível. Tente de novo em instantes.")
+    if not eid:
+        raise HTTPException(status_code=403, detail="Usuário sem empresa cadastrada.")
+    return eid
+
+
+@app.on_event("startup")
+def _ligar_entrada_email():
+    if entrada_email.iniciar(EMAIL_USUARIO, EMAIL_SENHA, EMAIL_IMAP, BANCO, EMAIL_INTERVALO):
+        logger.info("Entrada por e-mail ligada (%s, a cada %ss).", EMAIL_USUARIO, EMAIL_INTERVALO)
+    else:
+        logger.info("Entrada por e-mail desligada (falta ENTRADA_EMAIL_USUARIO/SENHA ou FIREBASE_SECRET).")
 
 
 def exigir_login(authorization: Optional[str] = Header(None)) -> str:
@@ -243,8 +298,9 @@ def status():
     """Verificação de funcionamento (pública, sem dados da operação)."""
     return {
         "status": "online",
-        "versao": "3.5.0",
+        "versao": "3.7.0",
         "login": "obrigatório" if auth_firebase.AUTH_REQUIRED else "desligado (teste local)",
+        "entrada_automatica": {"api": BANCO.ligado(), "email": bool(entrada_email.estado["ligado"])},
     }
 
 
@@ -508,6 +564,116 @@ def sync_totvs(uid: str = Depends(exigir_admin)):
     except Exception as e:
         logger.exception("Erro no /sync: %s", e)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── Entrada automática: configuração (tela) e recebimento (sistemas) ─────────
+
+class GerarRequest(BaseModel):
+    qual: str   # "chave" ou "email"
+
+
+@app.get("/integracao")
+def integracao(eid: str = Depends(exigir_empresa)):
+    """O que a empresa tem configurado e os últimos recebimentos (sem a chave inteira)."""
+    try:
+        cfg = BANCO.ler(f"empresas/{eid}/config/integracao") or {}
+        rec = entrada.ultimos_recebimentos(BANCO, eid)
+    except entrada.ErroBanco:
+        raise HTTPException(status_code=503, detail="Banco indisponível. Tente de novo em instantes.")
+    cfg = cfg if isinstance(cfg, dict) else {}
+    email_ligado = bool(entrada_email.estado["ligado"])
+    return {
+        "email": {
+            "ligado": email_ligado,
+            "enderecos": entrada.enderecos_email(EMAIL_USUARIO, cfg.get("email_codigo", "")) if email_ligado else {},
+            "criado_em": cfg.get("email_em"),
+            "ultima_leitura": entrada_email.estado["ultima_leitura"],
+            "com_erro": bool(entrada_email.estado["ultimo_erro"]),
+        },
+        "chave": {"inicio": cfg.get("chave_inicio"), "criada_em": cfg.get("chave_em")} if cfg.get("chave_inicio") else None,
+        "recebimentos": rec,
+    }
+
+
+@app.post("/integracao/gerar")
+def integracao_gerar(body: GerarRequest, eid: str = Depends(exigir_empresa)):
+    """Gera (ou troca) a chave da API ou o endereço de e-mail. A chave só aparece aqui."""
+    try:
+        if body.qual == "chave":
+            return {"chave": entrada.gerar_chave(BANCO, eid)}
+        if body.qual == "email":
+            if not entrada_email.estado["ligado"]:
+                raise HTTPException(status_code=503, detail="A caixa de e-mail de entrada ainda não foi configurada no servidor.")
+            codigo = entrada.gerar_codigo_email(BANCO, eid)
+            return {"enderecos": entrada.enderecos_email(EMAIL_USUARIO, codigo)}
+    except entrada.ErroBanco:
+        raise HTTPException(status_code=503, detail="Banco indisponível. Tente de novo em instantes.")
+    raise HTTPException(status_code=422, detail="Use qual='chave' ou qual='email'.")
+
+
+@app.post("/entrada/xml")
+async def entrada_xml(request: Request, tipo: str = "entrega", eid: str = Depends(exigir_chave_api)):
+    """XML da NF-e no corpo (Content-Type: application/xml) ou vários em multipart
+    (campo 'arquivos'). ?tipo=coleta para notas de coleta."""
+    if tipo not in entrada.TIPOS:
+        raise HTTPException(status_code=422, detail="tipo deve ser 'entrega' ou 'coleta'.")
+    if int(request.headers.get("content-length") or 0) > MAX_ENTRADA_BYTES:
+        raise HTTPException(status_code=413, detail="Envio maior que 20 MB.")
+    arquivos: list[tuple[str, bytes]] = []
+    if (request.headers.get("content-type") or "").startswith("multipart/"):
+        form = await request.form()
+        for _, v in form.multi_items():
+            if hasattr(v, "read"):
+                arquivos.append((getattr(v, "filename", "") or "arquivo.xml", await v.read()))
+    else:
+        arquivos.append(("corpo", await request.body()))
+    if not arquivos or sum(len(d) for _, d in arquivos) == 0:
+        raise HTTPException(status_code=400, detail="Nenhum XML enviado.")
+    if sum(len(d) for _, d in arquivos) > MAX_ENTRADA_BYTES:
+        raise HTTPException(status_code=413, detail="Envio maior que 20 MB.")
+    pedidos, canc, erros, sem_peso = [], [], [], 0
+    for nome, dados in arquivos:
+        try:
+            r = entrada.ler_xml_nfe(dados, tipo)
+        except ValueError as e:
+            erros.append(f"{nome}: {e}")
+            continue
+        pedidos += r["pedidos"]
+        sem_peso += r["sem_peso"]
+        canc += [c for c in r["cancelamentos"] if c not in canc]
+    if not pedidos and not canc:
+        raise HTTPException(status_code=422, detail="Nada importado: " + "; ".join(erros))
+    try:
+        return entrada.receber(BANCO, eid, pedidos, canc, "api", arquivos=len(arquivos), erros=erros, sem_peso=sem_peso)
+    except entrada.ErroBanco:
+        raise HTTPException(status_code=503, detail="Banco indisponível. Tente de novo em instantes.")
+
+
+class EntradaPedidos(BaseModel):
+    model_config = {"extra": "ignore"}
+    pedidos: list[dict]
+    tipo: str = "entrega"
+
+
+@app.post("/entrada/pedidos")
+def entrada_pedidos(body: EntradaPedidos, eid: str = Depends(exigir_chave_api)):
+    """Pedidos em JSON: {"pedidos":[{"nf","cidade","peso",...}], "tipo":"entrega"}."""
+    if body.tipo not in entrada.TIPOS:
+        raise HTTPException(status_code=422, detail="tipo deve ser 'entrega' ou 'coleta'.")
+    if not body.pedidos:
+        raise HTTPException(status_code=400, detail="Lista de pedidos vazia.")
+    pedidos, erros = [], []
+    for i, d in enumerate(body.pedidos[: entrada.MAX_PEDIDOS_POR_ENVIO], 1):
+        try:
+            pedidos.append(entrada.pedido_de_json(d, body.tipo))
+        except ValueError as e:
+            erros.append(f"pedido {i}: {e}")
+    if not pedidos:
+        raise HTTPException(status_code=422, detail="Nenhum pedido válido: " + "; ".join(erros[:10]))
+    try:
+        return entrada.receber(BANCO, eid, pedidos, [], "api", erros=erros)
+    except entrada.ErroBanco:
+        raise HTTPException(status_code=503, detail="Banco indisponível. Tente de novo em instantes.")
 
 
 # ── Servidor local ────────────────────────────────────────────────────────────

@@ -608,6 +608,36 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
 .rastr-oferta__bt:hover{filter:brightness(1.04);}
 .rastr-oferta__bt:focus-visible{outline:3px solid #f8d77a;outline-offset:3px;}
 @media(max-width:700px){.rastr-oferta{flex-direction:column;align-items:stretch;padding:16px;}.rastr-oferta__bt{width:100%;}}
+
+/* Entrada automática de pedidos (página Pedidos) */
+.auto-ent{margin-top:14px;border:1px solid var(--border2);border-radius:14px;background:#fbfcfe;}
+.auto-ent>summary{display:flex;gap:12px;align-items:center;padding:12px 14px;cursor:pointer;list-style:none;}
+.auto-ent>summary::-webkit-details-marker{display:none;}
+.auto-ent>summary::after{content:'›';margin-left:auto;font-size:20px;color:var(--text3);transition:transform .15s;}
+.auto-ent[open]>summary::after{transform:rotate(90deg);}
+.auto-ent>summary svg{width:30px;height:30px;flex-shrink:0;padding:6px;border-radius:9px;background:var(--navy);stroke:#f8d77a;fill:none;stroke-width:1.8;}
+.auto-ent>summary b{display:block;font:700 13.5px var(--sans);color:var(--navy);}
+.auto-ent>summary small{display:block;font-size:12px;color:var(--text3);margin-top:1px;}
+.auto-ent>summary:focus-visible{outline:3px solid var(--vv);outline-offset:2px;border-radius:14px;}
+.auto-ent__corpo{padding:0 14px 14px;font-size:12.5px;line-height:1.55;color:var(--text2);}
+.ae-bloco{border-top:1px solid var(--border);padding-top:12px;margin-top:12px;}
+.ae-bloco:first-child{border-top:0;margin-top:0;padding-top:0;}
+.ae-bloco h4{margin:0 0 6px;font:700 12.5px var(--sans);color:var(--navy);text-transform:uppercase;letter-spacing:.04em;}
+.ae-linha{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0;}
+.ae-linha>span{font-size:11.5px;color:var(--text3);min-width:64px;}
+.ae-cod{flex:1;min-width:0;overflow-wrap:anywhere;font:600 12.5px var(--mono);color:var(--navy);background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:7px 10px;}
+.ae-bt{border:1px solid var(--border2);background:#fff;color:var(--navy);border-radius:9px;padding:7px 12px;font:700 12px var(--body);cursor:pointer;min-height:34px;}
+.ae-bt:hover{border-color:var(--vv);}
+.ae-bt.prim{background:var(--gold-grad);border-color:transparent;}
+.ae-bt:disabled{opacity:.6;cursor:default;}
+.ae-aviso{background:#fff8e6;border:1px solid #f6dca6;color:#8a5a06;border-radius:9px;padding:8px 10px;margin:8px 0;}
+.ae-rec{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:6px;}
+.ae-rec li{background:#fff;border:1px solid var(--border);border-radius:9px;padding:7px 10px;font-size:12px;}
+.ae-rec time{font-weight:700;color:var(--navy);margin-right:6px;}
+.ae-rec .err{color:#b91c1c;}
+.auto-ent details{margin-top:8px;}
+.auto-ent details summary{cursor:pointer;font-weight:700;color:var(--ac);}
+.auto-ent pre{white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.5 var(--mono);background:var(--navy);color:#e8eef7;border-radius:9px;padding:10px 12px;margin:6px 0;}
 </style>
 </head>
 <body>
@@ -812,6 +842,10 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
         </div>
       </div>
       <div class="imp-help" id="imp-help">XML da NF-e, Excel, CSV ou PDF. Pode escolher vários arquivos de uma vez. <b>Entrega:</b> o sistema usa o endereço do <b>destinatário</b> (ou o local de entrega, se a nota tiver). Na planilha, uma coluna <b>tipo</b> com "coleta" ou "entrega" vale linha a linha, e as colunas <b>endereço</b> e <b>número</b> ajudam a achar o ponto certo. O <b>XML de cancelamento</b> da nota tira ela dos pendentes.</div>
+      <details class="auto-ent" id="auto-ent">
+        <summary><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/></svg><span><b>Receber pedidos automaticamente</b><small>Por e-mail ou pelo sistema da sua empresa, sem subir arquivo</small></span></summary>
+        <div class="auto-ent__corpo" id="auto-ent-corpo" aria-live="polite">Carregando…</div>
+      </details>
     </div>
     <input type="file" id="file-input" accept=".xml,.csv,.xlsx,.xls,.pdf" multiple hidden onchange="importarArquivo(this)">
     <div id="import-msg-pedidos" class="import-msg" role="status" style="max-width:760px;"></div>
@@ -1206,11 +1240,11 @@ async function verificarEEntrar(user){
 onAuthStateChanged(auth, verificarEEntrar);
 
 // Chamada ao servidor de rotas com o login do usuário
-async function apiPost(path, body){
+async function apiPost(path, body, metodo='POST'){
   const u=auth.currentUser;
   const tok=u ? await u.getIdToken() : '';
-  const resp=await fetch(`${BACKEND_URL}${path}`,{
-    method:'POST',
+  const resp=await fetch(`${BACKEND_URL}${path}`,metodo==='GET'?{headers:{'Authorization':'Bearer '+tok}}:{
+    method:metodo,
     headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},
     body:JSON.stringify(body),
   });
@@ -1375,6 +1409,21 @@ document.addEventListener('click',e=>{
   const r=e.target.closest('#rot-tipo button'); if(r){ setRotTipoD(r.dataset.v); }
 });
 
+// Pedidos que entram sozinhos (e-mail ou API) enquanto a tela está aberta: avisa e localiza.
+let _idsVistos=null, _geoAuto=false;
+function _avisarChegadas(){
+  const ids=new Set(allOrders.map(o=>o.id));
+  if(_idsVistos){
+    const novos=allOrders.filter(o=>!_idsVistos.has(o.id)&&(o.origem==='email'||o.origem==='api'));
+    if(novos.length){
+      const porEmail=novos.filter(o=>o.origem==='email').length;
+      _toast(`📥 ${_plural(novos.length,'pedido novo chegou','pedidos novos chegaram')} ${porEmail===novos.length?'por e-mail':porEmail?'por e-mail e pela API':'pela API'}.`);
+      if($id('auto-ent')?.open) carregarIntegracao(true);
+    }
+  }
+  _idsVistos=ids;
+  if(_geoAuto) agendarGeocodificacao(allOrders.filter(o=>o.status==='pendente'));
+}
 function carregarPedidos(){
   onValue(ref(db,TP('pedidos_rota')), snap=>{
     const data=snap.val();
@@ -1390,7 +1439,7 @@ function carregarPedidos(){
         urgente:p.urgente||false, agendado:p.agendado||false, dataAgendada:p.dataAgendada||'',
         horaEntrega:p.horaEntrega||'', horaFim:p.horaFim||'', rota_atual:p.rota_atual||'', status:p.status||'pendente',
         cep:p.cep||'', geoStatus:p.geoStatus||(p.cep?'pendente':'sem_cep'), bairro:p.bairro||'',
-        geoPrec:p.geoPrec||'', geoManual:!!p.geoManual,
+        geoPrec:p.geoPrec||'', geoManual:!!p.geoManual, origem:p.origem||'',
         lat:p.lat||(CITY_COORDS[p.cidade]?.lat??DEPOT.lat), lng:p.lng||(CITY_COORDS[p.cidade]?.lng??DEPOT.lng),
       })).filter(o=>o.status!=='entregue'&&o.status!=='coletado');
     } else {
@@ -1402,6 +1451,7 @@ function carregarPedidos(){
     render();
     if(document.getElementById('page-pedidos')?.style.display==='block'){ renderPedidosPage(); }
     if(document.getElementById('page-mapa')?.style.display==='block'){ atualizarMapaCompleto(); }
+    if(!modoDemo) _avisarChegadas();
     // baixas que chegaram antes dos pedidos carregarem
     Object.entries(baixasPorRota).forEach(([rid,b])=>_aplicarBaixas(rotasFirebase[rid],b));
   }, ()=>{ modoDemo=true; allOrders=gerarDemoOrders(); render(); });
@@ -2369,6 +2419,96 @@ function _impMsg(tipo,txt){
 }
 
 // ══════════════════════════════════════════════════════════════════════════
+// ENTRADA AUTOMÁTICA — endereço de e-mail e chave da API da empresa
+// ══════════════════════════════════════════════════════════════════════════
+let _aeInfo=null, _aeChaveNova='';
+function _dataHora(ms){ if(!ms) return ''; const d=new Date(ms); return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
+async function _copiar(txt,bt){
+  try{ await navigator.clipboard.writeText(txt); const t=bt.textContent; bt.textContent='Copiado'; setTimeout(()=>{ bt.textContent=t; },1600); }
+  catch(e){ prompt('Copie o texto:',txt); }
+}
+window._aeCopiar=(i,bt)=>{ const el=document.querySelectorAll('#auto-ent-corpo .ae-cod')[i]; if(el) _copiar(el.textContent,bt); };
+async function carregarIntegracao(silencioso){
+  const c=$id('auto-ent-corpo'); if(!c) return;
+  if(contaDemo){ c.innerHTML='<p>Disponível no acesso completo. Na demonstração, use <b>Importar notas</b>.</p>'; return; }
+  if(!silencioso&&!_aeInfo) c.textContent='Carregando…';
+  try{ _aeInfo=await apiPost('/integracao',null,'GET'); _renderIntegracao(); }
+  catch(e){
+    c.innerHTML=/não configurada/i.test(e.message)
+      ? '<p>A entrada automática ainda não foi ligada no servidor da ROTAV3. Enquanto isso, use <b>Importar notas</b>.</p>'
+      : `<p class="ae-aviso">Não foi possível carregar agora: ${esc(e.message)}. Tente de novo em instantes.</p>`;
+  }
+}
+window.carregarIntegracao=carregarIntegracao;
+$id('auto-ent').addEventListener('toggle',()=>{ if($id('auto-ent').open) carregarIntegracao(); });
+function _linhaRec(r){
+  const como=r.origem==='email'?'e-mail':'API';
+  const partes=[];
+  if(r.novos) partes.push(`<b>${_plural(r.novos,'pedido novo','pedidos novos')}</b>${r.nfs_novas&&r.nfs_novas.length?' (NF '+r.nfs_novas.slice(0,6).map(esc).join(', ')+(r.nfs_novas.length>6?'…':'')+')':''}`);
+  if(r.ja_existiam) partes.push(`${_plural(r.ja_existiam,'já estava','já estavam')} no sistema`);
+  if(r.cancelados&&r.cancelados.length) partes.push(`${_plural(r.cancelados.length,'cancelada saiu','canceladas saíram')} dos pendentes (NF ${r.cancelados.slice(0,6).map(esc).join(', ')})`);
+  if(r.cancelados_em_rota&&r.cancelados_em_rota.length) partes.push(`<span class="err">NF ${r.cancelados_em_rota.map(esc).join(', ')} cancelada${r.cancelados_em_rota.length>1?'s':''} mas em rota: devolva a rota</span>`);
+  if(r.sem_peso) partes.push(`${_plural(r.sem_peso,'sem peso (entrou com 100 kg)','sem peso (entraram com 100 kg)')}`);
+  if(r.erros&&r.erros.length) partes.push(`<span class="err">${r.erros.slice(0,3).map(esc).join(' · ')}</span>`);
+  if(!partes.length) partes.push('nada novo');
+  return `<li><time>${_dataHora(r.em)}</time>${como} · ${partes.join(' · ')}</li>`;
+}
+function _renderIntegracao(){
+  const c=$id('auto-ent-corpo'), d=_aeInfo; if(!c||!d) return;
+  let codN=0;
+  const cod=(txt)=>`<span class="ae-cod">${esc(txt)}</span><button type="button" class="ae-bt" onclick="_aeCopiar(${codN++},this)">Copiar</button>`;
+  const em=d.email||{}, en=em.enderecos||{};
+  let h='<div class="ae-bloco"><h4>Por e-mail</h4>';
+  if(!em.ligado) h+='<p>A caixa de entrada de e-mail ainda não foi ligada no servidor da ROTAV3.</p>';
+  else if(en.entregas){
+    h+=`<div class="ae-linha"><span>Entregas</span>${cod(en.entregas)}</div><div class="ae-linha"><span>Coletas</span>${cod(en.coletas)}</div>
+      <p>Mande o XML da nota (pode ser em .zip, várias por e-mail) para o endereço de entregas ou de coletas. Dá para pedir aos seus clientes que copiem esse endereço ao enviar a nota, ou criar no seu e-mail uma regra que <b>encaminhe</b> os e-mails com XML. Em cerca de 1 minuto o pedido aparece aqui e é localizado no mapa.</p>
+      ${em.com_erro?'<p class="ae-aviso">A última leitura da caixa de e-mail falhou. Avise a ROTAV3 se os pedidos não chegarem.</p>':''}
+      <div class="ae-linha"><button type="button" class="ae-bt" onclick="gerarIntegracao('email')">Trocar endereço</button></div>`;
+  } else h+='<p>Crie um endereço só da sua empresa. Os XML enviados para ele entram sozinhos como pedidos.</p><div class="ae-linha"><button type="button" class="ae-bt prim" onclick="gerarIntegracao(\'email\')">Criar endereço de e-mail</button></div>';
+  h+='</div><div class="ae-bloco"><h4>Pelo sistema da sua empresa (API)</h4>';
+  if(_aeChaveNova){
+    h+=`<p class="ae-aviso">Guarde esta chave agora: ela não aparece de novo. Quem tiver a chave consegue mandar pedidos para a sua empresa.</p><div class="ae-linha"><span>Chave</span>${cod(_aeChaveNova)}</div>`;
+  } else if(d.chave){
+    h+=`<p>Chave criada em ${_dataHora(d.chave.criada_em)} (começa com <b>${esc(d.chave.inicio)}…</b>).</p>`;
+  } else h+='<p>Para o seu sistema, ERP ou n8n mandar os pedidos direto para o ROTAV3.</p>';
+  h+=`<div class="ae-linha"><button type="button" class="ae-bt${d.chave||_aeChaveNova?'':' prim'}" onclick="gerarIntegracao('chave')">${d.chave||_aeChaveNova?'Gerar nova chave':'Gerar chave da API'}</button></div>
+    <details><summary>Como usar a API</summary>
+      <p>XML da NF-e (um por envio, ou vários como arquivos; <code>?tipo=coleta</code> para coletas):</p>
+      <pre>POST ${esc(BACKEND_URL)}/entrada/xml
+Authorization: Bearer SUA_CHAVE
+Content-Type: application/xml
+
+&lt;nfeProc&gt;...&lt;/nfeProc&gt;</pre>
+      <p>Pedidos em JSON (obrigatórios: nf, cidade e peso em kg):</p>
+      <pre>POST ${esc(BACKEND_URL)}/entrada/pedidos
+Authorization: Bearer SUA_CHAVE
+Content-Type: application/json
+
+{"tipo":"entrega","pedidos":[{"nf":"1234","cliente":"Mercado X",
+ "endereco":"Rua Tal","numero":"100","bairro":"Centro",
+ "cidade":"Guarulhos","uf":"SP","cep":"07010-000",
+ "peso":250,"volumes":4,"urgente":false,
+ "data_agendada":"2026-11-05","hora_inicio":"08:00","hora_fim":"12:00"}]}</pre>
+      <p>Pedido que já existe não é alterado; o XML de cancelamento tira a nota dos pendentes. Até 600 envios por hora.</p>
+    </details></div>`;
+  const rec=d.recebimentos||[];
+  h+=`<div class="ae-bloco"><h4>Últimos recebimentos</h4>${rec.length?`<ul class="ae-rec">${rec.map(_linhaRec).join('')}</ul>`:'<p>Nada recebido ainda.</p>'}</div>`;
+  c.innerHTML=h;
+}
+async function gerarIntegracao(qual){
+  const troca=qual==='chave'?!!(_aeInfo&&_aeInfo.chave):!!(_aeInfo&&_aeInfo.email&&_aeInfo.email.enderecos&&_aeInfo.email.enderecos.entregas);
+  if(troca&&!confirm(qual==='chave'?'Gerar uma chave nova? A chave atual para de funcionar na hora.':'Trocar o endereço? O endereço atual para de receber pedidos na hora.')) return;
+  const bts=[...document.querySelectorAll('#auto-ent-corpo .ae-bt')]; bts.forEach(b=>b.disabled=true);
+  try{
+    const r=await apiPost('/integracao/gerar',{qual});
+    if(r.chave) _aeChaveNova=r.chave;
+    await carregarIntegracao(true);
+  }catch(e){ bts.forEach(b=>b.disabled=false); alert('Não foi possível: '+e.message); }
+}
+window.gerarIntegracao=gerarIntegracao;
+
+// ══════════════════════════════════════════════════════════════════════════
 // GEOCODIFICAÇÃO — endereço → coordenada (ViaCEP + Nominatim)
 // ══════════════════════════════════════════════════════════════════════════
 // Ordem para cada pedido:
@@ -2624,9 +2764,16 @@ async function _parsePDF(file,tipo){
   return orders;
 }
 
+// XML no encoding que ele declara (nota antiga em ISO-8859-1 não perde os acentos)
+async function _textoXml(file){
+  const buf=await file.arrayBuffer();
+  const ini=new TextDecoder('ascii').decode(buf.slice(0,300));
+  const enc=(/encoding\s*=\s*["']([\w.-]+)["']/i.exec(ini)||[])[1]||'utf-8';
+  try{ return new TextDecoder(enc).decode(buf); }catch(e){ return new TextDecoder('utf-8').decode(buf); }
+}
 async function _lerArquivo(file,tipo){
   const ext=file.name.split('.').pop().toLowerCase();
-  if(ext==='xml'){ const r=_lerXmlNFe(await file.text(),tipo); return {orders:r.orders, semPeso:r.semPeso, cancelamentos:r.cancelamentos||[]}; }
+  if(ext==='xml'){ const r=_lerXmlNFe(await _textoXml(file),tipo); return {orders:r.orders, semPeso:r.semPeso, cancelamentos:r.cancelamentos||[]}; }
   if(ext==='pdf'){ return {orders:await _parsePDF(file,tipo), semPeso:0}; }
   if(ext==='csv'){
     const text=(await file.text()).replace(/^﻿/,'');
@@ -4022,7 +4169,7 @@ async function iniciarApp(){
   _geoCarregarCache();
   _locaisCarregar();
   // retoma geocodificação de pedidos que ficaram pendentes (ex: aba fechada no meio)
-  setTimeout(()=>{ agendarGeocodificacao(allOrders.filter(o=>o.status==='pendente')); }, 4000);
+  setTimeout(()=>{ _geoAuto=true; agendarGeocodificacao(allOrders.filter(o=>o.status==='pendente')); }, 4000);
 }
 </script>
 <script>

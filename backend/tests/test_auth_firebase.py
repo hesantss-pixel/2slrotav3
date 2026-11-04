@@ -144,7 +144,7 @@ class TesteRotasProtegidas(unittest.TestCase):
     def test_todas_menos_status_exigem_login(self):
         src = open(os.path.join(os.path.dirname(af.__file__), "main.py"), encoding="utf-8").read()
         arvore = ast.parse(src)
-        protegidas, abertas, demo = [], [], []
+        protegidas, abertas, demo, empresa, chave = [], [], [], [], []
         for no in arvore.body:
             if isinstance(no, (ast.FunctionDef, ast.AsyncFunctionDef)) and any(
                 isinstance(d, ast.Call) and getattr(d.func, "attr", "") in ("get", "post") for d in no.decorator_list
@@ -156,6 +156,10 @@ class TesteRotasProtegidas(unittest.TestCase):
                 ]
                 if "exigir_admin" in deps:
                     protegidas.append(no.name)
+                elif "exigir_empresa" in deps:
+                    empresa.append(no.name)
+                elif "exigir_chave_api" in deps:
+                    chave.append(no.name)
                 elif "exigir_login" in deps:
                     abertas.append(no.name + " (login sem empresa)")
                 elif "exigir_login_ou_demo" in deps:
@@ -167,6 +171,9 @@ class TesteRotasProtegidas(unittest.TestCase):
         self.assertEqual(sorted(protegidas), sorted(["listar_pedidos", "upload_nf", "sync_totvs"]))
         # a conta de demonstração só calcula rota, mede a rota ajustada e conversa com a IA
         self.assertEqual(sorted(demo), sorted(["solve", "avaliar", "chat"]))
+        # entrada automática: a tela (login com empresa) gera a chave; os sistemas entram com a chave
+        self.assertEqual(sorted(empresa), sorted(["integracao", "integracao_gerar"]))
+        self.assertEqual(sorted(chave), sorted(["entrada_xml", "entrada_pedidos"]))
 
 
 if __name__ == "__main__":
