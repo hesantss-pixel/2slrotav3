@@ -1513,7 +1513,7 @@ function render(){
   const regList=document.getElementById('reg-list');
   regList.innerHTML = ativos.length ? ativos.map(r=>{
     const n=r.lista.length, pct=total?(n/total*100):0;
-    return `<div class="reg-row"><div class="reg-name">${r.nome}</div><div class="reg-bar-wrap"><div class="reg-bar-fill" style="width:${pct}%;background:${r.cor}"></div></div><div class="reg-val">${n} (${pct.toFixed(0)}%)</div></div>`;
+    return `<div class="reg-row"><div class="reg-name">${esc(r.nome)}</div><div class="reg-bar-wrap"><div class="reg-bar-fill" style="width:${pct}%;background:${r.cor}"></div></div><div class="reg-val">${n} (${pct.toFixed(0)}%)</div></div>`;
   }).join('') : `<div class="empty-mini">Nenhum pedido pendente</div>`;
   document.getElementById('reg-total').textContent = total?`Total de ${total} pedidos`:'—';
 
@@ -1566,7 +1566,7 @@ function render(){
   const insights=[];
   if(isolados>0) insights.push({cor:'var(--yellow)',h:'⚠ Atenção',t:`${isolados} pedido(s) a mais de ${RAIO_ISOLADO_KM} km do centro de distribuição — considere agendar separadamente.`});
   const maiorRegiao=ativos[0];
-  if(maiorRegiao && maiorRegiao.nome!=='Outras cidades') insights.push({cor:'var(--blue)',h:'📊 Maior volume',t:`${maiorRegiao.nome} concentra ${maiorRegiao.lista.length} pedido(s) hoje.`});
+  if(maiorRegiao && maiorRegiao.nome!=='Outras cidades') insights.push({cor:'var(--blue)',h:'📊 Maior volume',t:`${esc(maiorRegiao.nome)} concentra ${maiorRegiao.lista.length} pedido(s) hoje.`});
   if(urgentes>0) insights.push({cor:'var(--red)',h:'🔺 Urgente',t:`${urgentes} pedido(s) marcados como urgentes precisam de rota prioritária.`});
   if(!insights.length) insights.push({cor:'var(--green)',h:'✅ Tudo certo',t:'Nenhum ponto de atenção identificado nos pedidos pendentes.'});
   document.getElementById('ia-insights').innerHTML=insights.map(i=>
@@ -1631,7 +1631,7 @@ function atualizarMapa(regioes){
     const coord={lat:r.lat,lng:r.lng};
     const radius=6+Math.min(18,n*0.7);
     L.circleMarker([coord.lat,coord.lng],{radius,color:r.cor,weight:2,fillColor:r.cor,fillOpacity:.35}).addTo(mapLayer)
-      .bindTooltip(`${r.nome}: ${n} pedido(s)`);
+      .bindTooltip(`${esc(r.nome)}: ${n} pedido(s)`);
     L.polyline([[DEPOT.lat,DEPOT.lng],[coord.lat,coord.lng]],{color:'#0d1b2e',weight:1.4,opacity:.45,dashArray:'4,6'}).addTo(mapLayer);
   });
 }
@@ -2312,7 +2312,8 @@ function _findCol(headers,keys){
 function _cidadeNorm(raw){
   // Nome da cidade como veio da nota, padronizado (sem "- SP", com maiúsculas
   // certas). A comparação é pelo nome inteiro: "Itupeva" continua "Itupeva".
-  const t=String(raw||'').trim().replace(/\s+/g,' ');
+  // tira sinais que não existem em nome de cidade e que viram marcação na tela
+  const t=String(raw||'').replace(/[<>"']/g,'').trim().replace(/\s+/g,' ');
   if(!t) return 'Sem cidade';
   const base=t.replace(/\s*[-\/]\s*[A-Za-z]{2}$/,'');
   const k=base.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
@@ -2926,8 +2927,8 @@ function renderVeiculosD(){
       const v=veicMap[m.veiculo_id];
       return `<div class="veh-card" style="--vc:${v?.cor||'#f3b62b'}" onclick="usarMotoristaD('${m.id}')">
         <div class="veh-card-icon">${imgVeiculo(v,'veh-img')}</div>
-        <div class="veh-card-name">${m.nome}</div>
-        <div class="veh-card-tag">${m.veiculo_nome} · ${(m.cap_kg||0).toLocaleString('pt-BR')}kg</div>
+        <div class="veh-card-name">${esc(m.nome)}</div>
+        <div class="veh-card-tag">${esc(m.veiculo_nome)} · ${(m.cap_kg||0).toLocaleString('pt-BR')}kg</div>
         <div class="veh-card-desc">Clique pra gerar rota com este motorista</div>
       </div>`;
     }).join('')}</div>
@@ -3940,8 +3941,8 @@ function renderMotoristasPage(){
       <div class="rc-card-head" style="cursor:default">
         <div class="rc-card-veic">${imgVeiculo(v,'veh-img-mini')}</div>
         <div class="rc-card-info">
-          <div class="rc-card-name">${m.nome}</div>
-          <div class="rc-card-sub">${m.veiculo_nome} · ${(m.cap_kg||0).toLocaleString('pt-BR')} kg</div>
+          <div class="rc-card-name">${esc(m.nome)}</div>
+          <div class="rc-card-sub">${esc(m.veiculo_nome)} · ${(m.cap_kg||0).toLocaleString('pt-BR')} kg</div>
         </div>
       </div>
     </div>`;
