@@ -1,0 +1,3 @@
+NF;Cliente;Endereço;Número;Bairro;Cidade;UF;CEP;Peso
+3010;Cliente B;Rua Sem Número no Mapa;50;Vila B;Guarulhos;SP;07020-000;80
+3011;Cliente Novo;Rua Nova;12;;Guarulhos;SP;;30

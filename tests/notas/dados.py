@@ -1,0 +1,30 @@
+# Notas de teste: endereços reais (CEP conferido no ViaCEP em 02/11/2026), clientes fictícios.
+# (cliente, rua, numero, complemento, bairro, cidade, cMun, cep, peso_kg, volumes)
+GRU, SPA, ARU, ITQ = ('Guarulhos','3518800'), ('São Paulo','3550308'), ('Arujá','3503901'), ('Itaquaquecetuba','3523107')
+NOTAS = [
+ ('Mercado Teste Bom Preço', 'Avenida Tiradentes', '845', '', 'Jardim Guarulhos', GRU, '07090000', 320, 8),
+ ('Farmácia Teste Macedo', 'Avenida Tiradentes', '2150', '', 'Macedo', GRU, '07113001', 45, 3),
+ ('Auto Peças Teste Bom Clima', 'Avenida Tiradentes', '3320', '', 'Jardim Bom Clima', GRU, '07196000', 180, 6),
+ ('Mercearia Teste Faccini', 'Avenida Paulo Faccini', '1480', '', 'Macedo', GRU, '07111000', 260, 7),
+ ('Mercearia Teste Faccini', 'Avenida Paulo Faccini', '1480', '', 'Macedo', GRU, '07111000', 95, 2),
+ ('Padaria Teste Lobato', 'Avenida Monteiro Lobato', '1120', '', 'Macedo', GRU, '07112000', 140, 5),
+ ('Distribuidora Teste Miriam', 'Avenida Monteiro Lobato', '3050', 'Galpão 3', 'Vila Miriam', GRU, '07190000', 850, 22),
+ ('Materiais Teste Cumbica', 'Avenida Monteiro Lobato', '5210', '', 'Cidade Jardim Cumbica', GRU, '07180000', 610, 15),
+ ('Loja Teste Vila Flórida', 'Avenida Otávio Braga de Mesquita', '1640', '', 'Vila Flórida', GRU, '07191000', 75, 3),
+ ('Bazar Teste São Geraldo', 'Avenida Otávio Braga de Mesquita', '3180', '', 'Jardim São Geraldo', GRU, '07140230', 60, 2),
+ ('Indústria Teste Satélite', 'Avenida Santos Dumont', '2200', '', 'Cidade Industrial Satélite de São Paulo', GRU, '07220000', 540, 12),
+ ('Restaurante Teste Cumbica', 'Avenida Santos Dumont', '780', '', 'Cumbica', GRU, '07180270', 110, 4),
+ ('Papelaria Teste Centro', 'Rua Dom Pedro II', '327', '', 'Centro', GRU, '07010003', 38, 2),
+ ('Ótica Teste Centro', 'Rua Dom Pedro II', '410', 'Loja 2', 'Centro', GRU, '07011003', 15, 1),
+ ('Eletro Teste Salgado', 'Avenida Salgado Filho', '1720', '', 'Centro', GRU, '07115000', 230, 6),
+ ('Pet Shop Teste Tijuco', 'Avenida Emílio Ribas', '760', '', 'Jardim Tijuco', GRU, '07020010', 90, 4),
+ ('Mercado Teste Tranquilidade', 'Avenida Emílio Ribas', '1777', '', 'Jardim Tranqüilidade', GRU, '07051000', 410, 11),
+ ('Hortifrúti Teste Hunnicutt', 'Avenida Benjamin Harris Hunnicutt', '960', '', 'Vila Rio de Janeiro', GRU, '07124075', 300, 9),
+ ('Livraria Teste Santana', 'Rua Voluntários da Pátria', '455', '', 'Santana', SPA, '02011000', 52, 3),
+ ('Calçados Teste Santana', 'Rua Voluntários da Pátria', '1500', 'Sala 4', 'Santana', SPA, '02010300', 66, 4),
+ ('Mercado Teste Santana Norte', 'Rua Voluntários da Pátria', '3850', '', 'Santana', SPA, '02402400', 380, 10),
+ ('Armazém Teste Arujá', 'Avenida Dutra', '215', '', 'Jardim Emília', ARU, '07432050', 290, 8),
+ ('Fábrica Teste Arujá', 'Avenida Paris', 'S/N', 'Quadra B', 'Centro Industrial de Arujá', ARU, '07411690', 720, 18),
+ ('Supermercado Teste Zeferina', 'Avenida Ítalo Adami', '380', '', 'Vila Zeferina', ITQ, '08573000', 470, 13),
+ ('Depósito Teste Gonçalves', 'Avenida Brasil', '150', '', 'Jardim Gonçalves', ITQ, '08573520', 205, 6),
+]

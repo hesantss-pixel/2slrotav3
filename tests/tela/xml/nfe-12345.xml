@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00"><NFe><infNFe Id="NFe35261012345678000199550010000123451000000000" versao="4.00">
+<ide><cUF>35</cUF><natOp>VENDA</natOp><mod>55</mod><serie>1</serie><nNF>12345</nNF></ide>
+<emit><CNPJ>12345678000199</CNPJ><xNome>Indústria Exemplo Ltda</xNome><xFant>Exemplo</xFant><enderEmit><xLgr>Rua das Indústrias</xLgr><nro>100</nro><xBairro>Cumbica</xBairro><cMun>3518800</cMun><xMun>GUARULHOS</xMun><UF>SP</UF><CEP>07180000</CEP></enderEmit></emit>
+<dest><CNPJ>98765432000155</CNPJ><xNome>Cliente Destino SA</xNome><enderDest><xLgr>Avenida Central</xLgr><nro>2000</nro><xCpl>Galpão 3</xCpl><xBairro>Alphaville</xBairro><cMun>3505708</cMun><xMun>BARUERI</xMun><UF>SP</UF><CEP>06454000</CEP></enderDest></dest>
+<det nItem="1"><prod><cProd>1</cProd></prod></det><det nItem="2"><prod><cProd>2</cProd></prod></det>
+<total><ICMSTot><vNF>1000.00</vNF></ICMSTot></total>
+<transp><modFrete>0</modFrete><vol><qVol>3</qVol><pesoL>110.000</pesoL><pesoB>120.500</pesoB></vol></transp>
+</infNFe></NFe><protNFe versao="4.00"><infProt><chNFe>35261012345678000199550010000123451000000000</chNFe></infProt></protNFe></nfeProc>

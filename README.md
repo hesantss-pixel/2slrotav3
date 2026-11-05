@@ -13,6 +13,7 @@ motoristas e assistente de IA.
 | `assets/` | Logo, ícone do site e ícones 3D (Fluent Emoji, licença MIT) | GitHub Pages |
 | `assets/veic/` | Desenho dos cinco veículos da frota (SVG próprio) | GitHub Pages |
 | `backend/` | Servidor de rotas em Python (FastAPI + OR-Tools + IA) | Railway |
+| `tests/` | Testes: `tests/tela` (Playwright) e `tests/notas` (notas de exemplo) | Só no computador |
 | `firebase/database.rules.json` | Regras de acesso do banco (Realtime Database) | Console do Firebase |
 
 Banco e login: Firebase, projeto `slog-pedidos` (Realtime Database + Authentication).
@@ -364,6 +365,13 @@ troque `BACKEND_URL` no `index.html`.
     Roda com um OR-Tools simulado (`tests/fake_ortools.py`, força bruta com as mesmas regras de
     dimensão), porque o pacote não instala no ambiente de testes; as chamadas usadas são as dos
     exemplos oficiais do OR-Tools 9.9.
+- Tela: `cd tests/tela && ./rodar.sh` (precisa de Node e Playwright: `npx playwright install chromium`).
+  O script sobe o servidor local na porta 8771 e roda tudo; `./rodar.sh t_demo` roda uma só.
+  As suítes `t_hero` e `t_oferta` são da página de vendas: passe o caminho dela em
+  `PAGINA_VENDAS=/caminho/p-ginadevendasv3 ./rodar.sh`, senão são puladas.
+  Hoje são 482 verificações. Nenhuma chama a internet: o Firebase é simulado
+  (`tests/tela/fakefb`), o Leaflet vem de `tests/tela/vendor` e ViaCEP/Nominatim/OSRM são cortados.
+  `t_xss.js` é a trava de segurança: falha se alguém tirar o `esc()` de um texto que vem de fora.
 - Tela: testada com um Firebase simulado (login, senha errada, esqueci a senha, acesso
   pendente, liberação, dashboard, regiões a partir dos pedidos, importação de CSV,
   roteirização com o token, confirmação de saída, motoristas, agendamento, chat, sair; e
