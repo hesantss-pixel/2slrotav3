@@ -505,6 +505,7 @@ body:not(.autorizado)>.sidebar,body:not(.autorizado)>.main,body:not(.autorizado)
 .ac-tag{display:inline-block;font-size:10.5px;font-weight:800;border-radius:6px;padding:2px 7px;margin-left:6px;}
 .ac-tag.on{background:#e8f7ef;color:#0f7a4c;}
 .ac-tag.off{background:#f1f5f9;color:var(--text3);}
+.ac-tag.alerta{background:#fdecec;color:#b02a2a;}
 .ac-msg{margin-top:10px;font-size:12.5px;}
 .ac-msg.err{color:#b91c1c;}
 .ac-msg.ok{color:#0f7a4c;}
@@ -3362,7 +3363,8 @@ let posicaoPorRota={}, _posUnsub={}, _veicMk={}, _camadaVeic=null, _simTimer=nul
 function _haVisto(ts){
   const s=Math.max(0,(Date.now()-(ts||0))/1000);
   if(s<60) return 'agora'; if(s<3600) return `há ${Math.round(s/60)} min`;
-  if(s<86400) return `há ${Math.round(s/3600)} h`; return `há ${Math.round(s/86400)} dia(s)`;
+  if(s<86400) return `há ${Math.round(s/3600)} h`;
+  const d=Math.round(s/86400); return `há ${d} ${d===1?'dia':'dias'}`;
 }
 function _iconeVeiculo(pos){
   const velho=!pos.simulado && Date.now()-(pos.hora||0)>10*60e3;
@@ -3544,6 +3546,13 @@ window.fecharFoto=fecharFoto;
 let _appCriador=null, _acessoCriado=null;
 function _gerarSenha(){ const c='abcdefghjkmnpqrstuvwxyz23456789', b=new Uint8Array(8); crypto.getRandomValues(b); return 'rv3-'+[...b].map(x=>c[x%c.length]).join(''); }
 function _dataCurta(ts){ return ts?new Date(ts).toLocaleDateString('pt-BR'):''; }
+// Último acesso da conta. A tela grava usuarios/<uid>/visto a cada login, então
+// isto responde a pergunta que decide o follow-up: a pessoa chegou a entrar?
+function _ultimoAcesso(us,uid){
+  const v=us[uid]&&us[uid].visto;
+  if(!v) return '<span class="ac-tag alerta" title="A conta foi criada mas ninguém entrou nela">nunca entrou</span>';
+  return `<span class="ac-tag ${Date.now()-v<=7*86400e3?'on':'off'}" title="${esc(new Date(v).toLocaleString('pt-BR'))}">entrou ${_haVisto(v)}</span>`;
+}
 function _acMsg(txt,tipo){ const el=$id('ac-msg'); el.textContent=txt; el.className='ac-msg'+(tipo?' '+tipo:''); }
 // Cria o usuário numa instância separada do login, para o administrador continuar conectado
 async function _criarUsuario(email,senha){
@@ -3617,11 +3626,11 @@ async function renderAcessos(){
       <div class="mot-acts"><button class="btn-sm" onclick="liberarAcesso('${u}','demo')">Liberar demonstração</button><button class="btn-sm" onclick="liberarAcesso('${u}','completo')">Liberar completo</button><button class="btn-sm" onclick="ignorarSolicitacao('${u}')">Ignorar</button></div></div>`; }).join('')
     : '<div class="empty-mini">Nenhum pedido de acesso.</div>';
   const dem=Object.entries(de).sort((a,b)=>(b[1].criado||0)-(a[1].criado||0));
-  $id('ac-demos').innerHTML = dem.length ? dem.map(([uid,x])=>{ const u=esc(uid), ativo=ac[uid]==='demo'&&(x.expira||0)>agora; return `<div class="ac-row"><div class="ac-row-info"><b>${esc(x.nome?x.nome+' · ':'')}${esc(x.email||emailDe(uid))}<span class="ac-tag ${ativo?'on':'off'}">${ativo?'ativo':'encerrado'}</span></b><span>criado em ${_dataCurta(x.criado)} · ${ativo?'vale até':'venceu em'} ${_dataCurta(x.expira)}</span></div>
+  $id('ac-demos').innerHTML = dem.length ? dem.map(([uid,x])=>{ const u=esc(uid), ativo=ac[uid]==='demo'&&(x.expira||0)>agora; return `<div class="ac-row"><div class="ac-row-info"><b>${esc(x.nome?x.nome+' · ':'')}${esc(x.email||emailDe(uid))}<span class="ac-tag ${ativo?'on':'off'}">${ativo?'ativo':'encerrado'}</span>${_ultimoAcesso(us,uid)}</b><span>criado em ${_dataCurta(x.criado)} · ${ativo?'vale até':'venceu em'} ${_dataCurta(x.expira)}</span></div>
       ${ativo?`<div class="mot-acts"><button class="btn-sm" onclick="virarCliente('${u}')">Virar cliente</button><button class="btn-sm" onclick="encerrarDemo('${u}')">Encerrar</button></div>`:''}</div>`; }).join('')
     : '<div class="empty-mini">Nenhum acesso de demonstração ainda.</div>';
   const comp=Object.entries(ac).filter(([,v])=>v===true);
-  $id('ac-completos').innerHTML = comp.length ? comp.map(([uid])=>{ const u=esc(uid), eu=uid===ADMIN_UID; return `<div class="ac-row"><div class="ac-row-info"><b>${esc(emailDe(uid)||uid)}${eu?'<span class="ac-tag on">você</span>':''}</b><span>${esc(nomeEmp(eu?'principal':mem[uid])||'sem empresa')} · ${us[uid]&&us[uid].visto?'último acesso em '+_dataCurta(us[uid].visto):'sem registro de acesso'}</span></div>
+  $id('ac-completos').innerHTML = comp.length ? comp.map(([uid])=>{ const u=esc(uid), eu=uid===ADMIN_UID; return `<div class="ac-row"><div class="ac-row-info"><b>${esc(emailDe(uid)||uid)}${eu?'<span class="ac-tag on">você</span>':_ultimoAcesso(us,uid)}</b><span>${esc(nomeEmp(eu?'principal':mem[uid])||'sem empresa')} · ${us[uid]&&us[uid].visto?'último acesso em '+_dataCurta(us[uid].visto):'sem registro de acesso'}</span></div>
       ${eu?'':`<div class="mot-acts"><button class="btn-sm" onclick="trocarEmpresa('${u}')">${mem[uid]?'Trocar empresa':'Ligar à empresa'}</button><button class="btn-sm" onclick="tirarAcesso('${u}')">Tirar acesso</button></div>`}</div>`; }).join('')
     : '<div class="empty-mini">Ninguém com acesso completo.</div>';
 }
