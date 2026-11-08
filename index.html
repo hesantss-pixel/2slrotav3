@@ -643,6 +643,44 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
 .auto-ent details{margin-top:8px;}
 .auto-ent details summary{cursor:pointer;font-weight:700;color:var(--ac);}
 .auto-ent pre{white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.5 var(--mono);background:var(--navy);color:#e8eef7;border-radius:9px;padding:10px 12px;margin:6px 0;}
+/* Relatórios */
+.rel-barra{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:18px;}
+.rel-acoes{display:flex;gap:8px;flex-wrap:wrap;}
+.rel-sec{margin-top:18px;}
+.rel-sec h3{font:800 14px var(--sans);color:var(--text);margin:0 0 11px;}
+.rel-wrap{overflow-x:auto;}
+.rel-rola{display:none;font-size:11px;color:var(--text3);margin-bottom:7px;}
+@media (max-width:760px){.rel-rola{display:block;}}
+@media print{.rel-rola{display:none!important;}}
+.rel-tab{width:100%;border-collapse:collapse;font-size:13px;min-width:560px;}
+.rel-tab th{text-align:left;font:700 10.5px var(--body);letter-spacing:.5px;color:var(--text2);
+ text-transform:uppercase;padding:0 10px 9px;border-bottom:1px solid var(--border2);white-space:nowrap;}
+.rel-tab td{padding:10px;border-bottom:1px solid var(--border);color:var(--text);}
+.rel-tab tr:last-child td{border-bottom:0;}
+.rel-tab .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+.rel-tab .ruim{color:#b02a2a;font-weight:700;}
+.rel-mot{display:grid;gap:10px;}
+.rel-mot-l{display:grid;grid-template-columns:minmax(120px,1.3fr) 2fr auto;gap:12px;align-items:center;font-size:13px;}
+.rel-bar{height:9px;background:var(--s3);border-radius:5px;overflow:hidden;}
+.rel-bar i{display:block;height:100%;border-radius:5px;background:var(--gold-grad);}
+.rel-mot-v{font:700 12.5px var(--body);color:var(--text2);font-variant-numeric:tabular-nums;white-space:nowrap;}
+.rel-nota{font-size:11.5px;color:var(--text3);line-height:1.65;margin-top:14px;}
+.rel-vazio{text-align:center;color:var(--text2);padding:34px 16px;font-size:14px;}
+.rel-cab-imp{display:none;}
+@media (max-width:640px){
+  .rel-mot-l{grid-template-columns:1fr auto;}
+  .rel-mot-l .rel-bar{grid-column:1 / -1;}
+}
+@media print{
+  .sidebar,.header,.no-print,.btn-voltar-topo,.faixa-demo{display:none!important;}
+  .main{margin-left:0!important;}
+  .page{padding:0!important;max-width:none!important;}
+  body{background:#fff!important;}
+  .card{break-inside:avoid;page-break-inside:avoid;border:1px solid #ccc!important;box-shadow:none!important;}
+  .rel-tab{min-width:0;font-size:11px;}
+  .rel-cab-imp{display:block;margin-bottom:14px;}
+  .kpis{max-width:none;}
+}
 </style>
 </head>
 <body>
@@ -705,6 +743,10 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
     <div class="sb-item" data-page="rotas">
       <svg viewBox="0 0 24 24"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg>
       Rotas
+    </div>
+    <div class="sb-item" data-page="relatorios">
+      <svg viewBox="0 0 24 24"><path d="M4 19V6M4 19h16"/><rect x="7" y="12" width="3" height="5"/><rect x="12" y="8" width="3" height="9"/><rect x="17" y="10" width="3" height="7"/></svg>
+      Relatórios
     </div>
     <div class="sb-item" data-page="motoristas">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c1.2-4 4-6 7.5-6s6.3 2 7.5 6"/></svg>
@@ -948,6 +990,28 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
   </div>
 
   <!-- ── PÁGINA: MAPA ── -->
+  <div class="page" id="page-relatorios" style="display:none">
+    <button class="btn-voltar-topo" onclick="irParaPagina('dashboard')"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Voltar ao Dashboard</button>
+    <div class="page-head">
+      <div class="page-title">Relatórios</div>
+      <div class="page-sub">O que saiu, o que foi entregue e o que não foi — por período, rota e motorista</div>
+    </div>
+    <div class="rel-barra no-print">
+      <div class="seg" id="rel-periodo" role="group" aria-label="Período do relatório">
+        <button type="button" data-p="0" aria-pressed="false">Hoje</button>
+        <button type="button" data-p="7" aria-pressed="false">7 dias</button>
+        <button type="button" data-p="30" aria-pressed="true">30 dias</button>
+        <button type="button" data-p="mes" aria-pressed="false">Este mês</button>
+        <button type="button" data-p="mes-1" aria-pressed="false">Mês passado</button>
+      </div>
+      <div class="rel-acoes">
+        <button class="btn-sm" id="rel-csv" type="button">Baixar planilha</button>
+        <button class="btn-sm" id="rel-imp" type="button">Imprimir / PDF</button>
+      </div>
+    </div>
+    <div id="rel-corpo"></div>
+  </div>
+
   <div class="page" id="page-mapa" style="display:none">
     <button class="btn-voltar-topo" onclick="irParaPagina('dashboard')"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Voltar ao Dashboard</button>
     <div class="page-head">
@@ -1439,6 +1503,7 @@ function _avisarChegadas(){
 function carregarPedidos(){
   onValue(ref(db,TP('pedidos_rota')), snap=>{
     const data=snap.val();
+    pedidosCrus=data||{};   // relatórios precisam dos entregues, que allOrders descarta
     if(data && Object.keys(data).length>0){
       modoDemo=false;
       if(contaDemo&&!demoComNotasReais){ demoComNotasReais=true; _faixaDemo(); }
@@ -1457,6 +1522,7 @@ function carregarPedidos(){
     } else {
       modoDemo=true;
       _statusPorId={};
+      pedidosCrus={};
       allOrders=gerarDemoOrders();
       if(contaDemo&&demoComNotasReais){ demoComNotasReais=false; _faixaDemo(); }
     }
@@ -1704,10 +1770,189 @@ const PAGE_META = {
 const PAGES_REAIS = ['dashboard','pedidos','roteirizacao','ia'];
 const TODAS_PAGES = ['dashboard','page-other','pedidos','roteirizacao','ia'];
 
+// ── Relatórios ──────────────────────────────────────────────────────────────
+// Usa só o que fica guardado de verdade: as rotas confirmadas e, em cada pedido,
+// a baixa (entregue/coletado) e a ocorrência (não realizado). As baixas no nó do
+// motorista expiram em 7 dias, então o relatório não depende delas.
+let pedidosCrus={};          // pedidos como estão no banco (allOrders descarta os entregues)
+let relPeriodo='30';
+let _relDadosAtuais=null, _relLigado=false;
+
+function _relIntervalo(p){
+  const h=new Date(); h.setHours(0,0,0,0); const dia=864e5;
+  if(p==='0')     return [h, new Date(+h+dia)];
+  if(p==='7')     return [new Date(+h-6*dia), new Date(+h+dia)];
+  if(p==='mes')   return [new Date(h.getFullYear(),h.getMonth(),1), new Date(h.getFullYear(),h.getMonth()+1,1)];
+  if(p==='mes-1') return [new Date(h.getFullYear(),h.getMonth()-1,1), new Date(h.getFullYear(),h.getMonth(),1)];
+  return [new Date(+h-29*dia), new Date(+h+dia)];
+}
+function _relTitulo(p){
+  return {'0':'Hoje','7':'Últimos 7 dias','30':'Últimos 30 dias','mes':'Este mês','mes-1':'Mês passado'}[p]||'';
+}
+function _relDiaBR(d){ return d.toLocaleDateString('pt-BR'); }
+function _n(v,c){ return (Number(v)||0).toLocaleString('pt-BR',{minimumFractionDigits:c||0,maximumFractionDigits:c||0}); }
+
+function _relCalcular(){
+  const [ini,fim]=_relIntervalo(relPeriodo);
+  const dentro=iso=>{ const t=Date.parse(String(iso||'')+'T12:00:00'); return Number.isFinite(t)&&t>=+ini&&t<+fim; };
+  const rotas=Object.values(rotasFirebase||{})
+    .filter(r=>r&&r.id&&r.status!=='apagada'&&dentro(r.data))
+    .sort((a,b)=>String((b.data||'')+b.id).localeCompare(String((a.data||'')+a.id)));
+  const cont={}; rotas.forEach(r=>cont[r.id]={feitos:0,falhas:0});
+  const motivos={};
+  Object.values(pedidosCrus||{}).forEach(p=>{
+    if(!p) return;
+    if(p.baixa && cont[p.baixa.rota]) cont[p.baixa.rota].feitos++;
+    if(p.ocorrencia && cont[p.ocorrencia.rota]){
+      cont[p.ocorrencia.rota].falhas++;
+      const m=String(p.ocorrencia.motivo||'').trim()||'não informado';
+      motivos[m]=(motivos[m]||0)+1;
+    }
+  });
+  const linhas=rotas.map(r=>{
+    const c=cont[r.id], par=Number(r.num_paradas)||(r.paradas||[]).length;
+    return { id:r.id, data:r.data||'', veiculo:r.veiculo||'', motorista:(r.motorista||'').trim()||'—',
+      paradas:par, feitos:c.feitos, falhas:c.falhas, semBaixa:Math.max(0,par-c.feitos-c.falhas),
+      km:Number(r.km)||0, min:Number(r.tempo_min)||0, peso:Number(r.peso_total)||0,
+      devolvida:r.status==='devolvida' };
+  });
+  const tot=linhas.reduce((a,r)=>({rotas:a.rotas+1,paradas:a.paradas+r.paradas,feitos:a.feitos+r.feitos,
+    falhas:a.falhas+r.falhas,km:a.km+r.km,peso:a.peso+r.peso,min:a.min+r.min}),
+    {rotas:0,paradas:0,feitos:0,falhas:0,km:0,peso:0,min:0});
+  const mot={};
+  linhas.forEach(r=>{
+    const m=mot[r.motorista]=mot[r.motorista]||{nome:r.motorista,rotas:0,paradas:0,feitos:0,falhas:0,km:0};
+    m.rotas++; m.paradas+=r.paradas; m.feitos+=r.feitos; m.falhas+=r.falhas; m.km+=r.km;
+  });
+  return { ini, fim, linhas, tot, motivos,
+    motoristas:Object.values(mot).sort((a,b)=>b.paradas-a.paradas) };
+}
+
+function renderRelatorios(){
+  const d=_relDadosAtuais=_relCalcular();
+  const alvo=document.getElementById('rel-corpo'); if(!alvo) return;
+  document.querySelectorAll('#rel-periodo button').forEach(b=>
+    b.setAttribute('aria-pressed', String(b.dataset.p===relPeriodo)));
+
+  const cab=`<div class="rel-cab-imp"><div style="font:800 17px var(--sans)">ROTAV3 — relatório de entregas</div>
+    <div style="font-size:12px;color:var(--text2)">${esc(_relTitulo(relPeriodo))} · ${_relDiaBR(d.ini)} a ${_relDiaBR(new Date(+d.fim-864e5))}
+    ${modoDemo?' · DADOS DE DEMONSTRAÇÃO':''}</div></div>`;
+
+  if(!d.linhas.length){
+    alvo.innerHTML=cab+`<div class="card"><div class="rel-vazio">
+      Nenhuma rota confirmada em <b>${esc(_relTitulo(relPeriodo).toLowerCase())}</b>.<br>
+      O relatório é montado a partir das rotas que saíram. Confirme uma saída na Roteirização e ela aparece aqui.
+    </div></div>`;
+    return;
+  }
+  const comBaixa=d.tot.feitos+d.tot.falhas;
+  const pct=comBaixa?Math.round(d.tot.feitos/comBaixa*100):null;
+
+  const kpis=`<div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(128px,1fr));max-width:none;gap:11px">
+    ${[['Rotas',_n(d.tot.rotas),''],
+       ['Paradas planejadas',_n(d.tot.paradas),''],
+       ['Entregues / coletados',_n(d.tot.feitos),''],
+       ['Não realizados',_n(d.tot.falhas),d.tot.falhas?'ruim':''],
+       ['Sucesso nas baixas',pct===null?'—':pct+'%',''],
+       ['Km planejado',_n(d.tot.km,1),''],
+       ['Peso',_n(d.tot.peso)+'<small style="font-size:14px;font-weight:700;margin-left:3px">kg</small>','']]
+      .map(([l,v,c])=>`<div class="kpi"><div class="kpi-val${c?' ':''}" ${c?'style="color:#b02a2a"':''}>${v}</div>
+        <div class="kpi-lbl">${l.toUpperCase()}</div></div>`).join('')}
+  </div>`;
+
+  const mot=Object.entries(d.motivos).sort((a,b)=>b[1]-a[1]);
+  const maxM=mot.length?mot[0][1]:1;
+  const blocoMotivos=mot.length?`<div class="card rel-sec"><h3>Por que não foi entregue</h3>
+    <div class="rel-mot">${mot.map(([m,q])=>`<div class="rel-mot-l"><span>${esc(m)}</span>
+      <div class="rel-bar"><i style="width:${Math.round(q/maxM*100)}%"></i></div>
+      <span class="rel-mot-v">${q}</span></div>`).join('')}</div></div>`
+    :`<div class="card rel-sec"><h3>Por que não foi entregue</h3>
+      <div class="rel-vazio" style="padding:14px">Nenhuma ocorrência registrada no período.</div></div>`;
+
+  const tabRotas=`<div class="card rel-sec"><h3>Rotas do período</h3><div class="rel-rola">Arraste a tabela para o lado para ver o resto.</div><div class="rel-wrap"><table class="rel-tab">
+    <thead><tr><th>Data</th><th>Veículo</th><th>Motorista</th><th class="num">Paradas</th>
+      <th class="num">Feitas</th><th class="num">Não feitas</th><th class="num">Sem baixa</th>
+      <th class="num">Km</th><th class="num">Tempo</th></tr></thead>
+    <tbody>${d.linhas.map(r=>`<tr><td>${esc(_dataBR(r.data))}${r.devolvida?' <span style="color:var(--text3)">(devolvida)</span>':''}</td>
+      <td>${esc(r.veiculo)}</td><td>${esc(r.motorista)}</td>
+      <td class="num">${r.paradas}</td><td class="num">${r.feitos}</td>
+      <td class="num${r.falhas?' ruim':''}">${r.falhas}</td><td class="num">${r.semBaixa}</td>
+      <td class="num">${_n(r.km,1)}</td><td class="num">${_n(r.min)} min</td></tr>`).join('')}</tbody>
+  </table></div></div>`;
+
+  const tabMot=`<div class="card rel-sec"><h3>Por motorista</h3><div class="rel-rola">Arraste a tabela para o lado para ver o resto.</div><div class="rel-wrap"><table class="rel-tab">
+    <thead><tr><th>Motorista</th><th class="num">Rotas</th><th class="num">Paradas</th>
+      <th class="num">Feitas</th><th class="num">Não feitas</th><th class="num">Sucesso</th>
+      <th class="num">Km</th></tr></thead>
+    <tbody>${d.motoristas.map(m=>{const cb=m.feitos+m.falhas;
+      return `<tr><td>${esc(m.nome)}</td><td class="num">${m.rotas}</td><td class="num">${m.paradas}</td>
+      <td class="num">${m.feitos}</td><td class="num${m.falhas?' ruim':''}">${m.falhas}</td>
+      <td class="num">${cb?Math.round(m.feitos/cb*100)+'%':'—'}</td>
+      <td class="num">${_n(m.km,1)}</td></tr>`;}).join('')}</tbody>
+  </table></div></div>`;
+
+  const notas=`<div class="rel-nota">
+    <b>Como ler estes números.</b><br>
+    · <b>Km planejado</b> é a distância que o sistema calculou ao montar a rota, não a do odômetro do veículo.<br>
+    · <b>Sucesso</b> considera só as paradas que receberam baixa pelo link do motorista. "Sem baixa" são as paradas em que ninguém marcou nada.<br>
+    · Cada pedido guarda a <b>última</b> ocorrência. Se a mesma nota falhou mais de uma vez, ela conta uma vez aqui.<br>
+    · Rotas apagadas ficam de fora; devolvidas aparecem marcadas.
+    ${modoDemo?'<br>· <b>Atenção: estes são dados de demonstração</b>, não a sua operação.':''}
+  </div>`;
+
+  alvo.innerHTML=cab+kpis+blocoMotivos+tabRotas+tabMot+notas;
+}
+
+function _relCSV(){
+  const d=_relDadosAtuais||_relCalcular();
+  const num=v=>String(v).replace('.',',');
+  const lin=[];
+  lin.push(['ROTAV3 — relatório de entregas']);
+  lin.push([_relTitulo(relPeriodo), _relDiaBR(d.ini)+' a '+_relDiaBR(new Date(+d.fim-864e5))]);
+  if(modoDemo) lin.push(['ATENÇÃO: dados de demonstração']);
+  lin.push([]);
+  lin.push(['Data','Veículo','Motorista','Paradas','Feitas','Não feitas','Sem baixa','Km planejado','Tempo (min)','Peso (kg)']);
+  d.linhas.forEach(r=>lin.push([_dataBR(r.data),r.veiculo,r.motorista,r.paradas,r.feitos,r.falhas,
+    r.semBaixa,num(r.km.toFixed(1)),Math.round(r.min),Math.round(r.peso)]));
+  lin.push(['TOTAL','','',d.tot.paradas,d.tot.feitos,d.tot.falhas,
+    d.tot.paradas-d.tot.feitos-d.tot.falhas,num(d.tot.km.toFixed(1)),Math.round(d.tot.min),Math.round(d.tot.peso)]);
+  lin.push([]);
+  lin.push(['Não realizados por motivo','Quantidade']);
+  Object.entries(d.motivos).sort((a,b)=>b[1]-a[1]).forEach(([m,q])=>lin.push([m,q]));
+  lin.push([]);
+  lin.push(['Motorista','Rotas','Paradas','Feitas','Não feitas','Km planejado']);
+  d.motoristas.forEach(m=>lin.push([m.nome,m.rotas,m.paradas,m.feitos,m.falhas,num(m.km.toFixed(1))]));
+
+  const csv=lin.map(l=>l.map(c=>{
+    const t=String(c==null?'':c);
+    return /[;"\n]/.test(t)?'"'+t.replace(/"/g,'""')+'"':t;
+  }).join(';')).join('\r\n');
+  const nome='rotav3-relatorio-'+relPeriodo+'-'+_hojeISO()+'.csv';
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=nome;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },0);
+  _toast('Planilha baixada: '+nome);
+}
+
+function _relLigarBotoes(){
+  if(_relLigado) return; _relLigado=true;
+  const seg=document.getElementById('rel-periodo');
+  if(seg) seg.addEventListener('click',e=>{
+    const b=e.target.closest('button[data-p]'); if(!b) return;
+    relPeriodo=b.dataset.p; renderRelatorios();
+  });
+  const csv=document.getElementById('rel-csv');
+  if(csv) csv.addEventListener('click',_relCSV);
+  const imp=document.getElementById('rel-imp');
+  if(imp) imp.addEventListener('click',()=>window.print());
+}
+
 function irParaPagina(p){
   document.querySelectorAll('.sb-item').forEach(i=>i.classList.toggle('active', i.dataset.page===p));
   // esconde todas
-  ['page-dashboard','page-other','page-pedidos','page-roteirizacao','page-ia','page-rotas','page-mapa','page-motoristas','page-acessos'].forEach(id=>{
+  ['page-dashboard','page-other','page-pedidos','page-roteirizacao','page-ia','page-rotas','page-relatorios','page-mapa','page-motoristas','page-acessos'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.style.display='none';
   });
   if(p==='dashboard'){
@@ -1721,6 +1966,10 @@ function irParaPagina(p){
   } else if(p==='rotas'){
     document.getElementById('page-rotas').style.display='block';
     renderRotasConfirmadas();
+  } else if(p==='relatorios'){
+    document.getElementById('page-relatorios').style.display='block';
+    _relLigarBotoes();
+    renderRelatorios();
   } else if(p==='mapa'){
     document.getElementById('page-mapa').style.display='block';
     setTimeout(()=>atualizarMapaCompleto(),50);

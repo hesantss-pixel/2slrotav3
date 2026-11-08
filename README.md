@@ -417,6 +417,13 @@ OR-Tools rodando (não instalado aqui) e o mapa com as ruas. O formato da respos
 
 ## Histórico
 
+- Versão 3.9 (08/11/2026): página **Relatórios**. Soma as rotas confirmadas do período (hoje,
+  7, 30 dias, este mês, mês passado) e cruza com o que ficou gravado em cada pedido: a `baixa`
+  (entregue/coletado) e a `ocorrencia` (não realizado, com motivo). Mostra rotas, paradas
+  planejadas, feitas, não feitas, sem baixa, porcentagem de sucesso, km planejado e peso; os
+  motivos das não realizadas; uma tabela por rota e outra por motorista. Exporta planilha CSV
+  (separador `;` e BOM, para o Excel em português abrir com acento) e imprime em PDF com o
+  layout limpo. Não depende do nó `entregador/<token>/baixas`, que expira em 7 dias.
 - Versão 3.8 (04/11/2026): os cinco veículos da frota deixaram de ser emoji e passaram a ter
   desenho próprio (`assets/veic/*.svg`). Antes, toco, bitruck e carreta usavam o mesmo 🚛, o que
   não deixava diferenciar um do outro. Agora cada um aparece de perfil com os eixos de verdade
