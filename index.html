@@ -646,8 +646,11 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
 /* Relatórios */
 .rel-barra{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between;margin-bottom:18px;}
 .rel-acoes{display:flex;gap:8px;flex-wrap:wrap;}
+#rel-corpo .kpi-val{font-size:21px;}
+#rel-corpo .kpi{padding:14px 15px;}
 .rel-sec{margin-top:18px;}
 .rel-sec h3{font:800 14px var(--sans);color:var(--text);margin:0 0 11px;}
+.rc-reta{color:#8a5a06;background:rgba(250,204,21,.16);border:1px solid rgba(202,138,4,.35);border-radius:7px;padding:1px 8px;font-weight:700;font-size:11.5px;}
 .rel-wrap{overflow-x:auto;}
 .rel-rola{display:none;font-size:11px;color:var(--text3);margin-bottom:7px;}
 @media (max-width:760px){.rel-rola{display:block;}}
@@ -664,6 +667,8 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
 .rel-bar{height:9px;background:var(--s3);border-radius:5px;overflow:hidden;}
 .rel-bar i{display:block;height:100%;border-radius:5px;background:var(--gold-grad);}
 .rel-mot-v{font:700 12.5px var(--body);color:var(--text2);font-variant-numeric:tabular-nums;white-space:nowrap;}
+.rel-alerta{background:rgba(250,204,21,.16);border:1px solid rgba(202,138,4,.35);color:#8a5a06;border-radius:12px;padding:12px 15px;font-size:13px;line-height:1.6;margin-bottom:4px;}
+.rel-alerta.leve{background:var(--s3);border-color:var(--border2);color:var(--text2);}
 .rel-nota{font-size:11.5px;color:var(--text3);line-height:1.65;margin-top:14px;}
 .rel-vazio{text-align:center;color:var(--text2);padding:34px 16px;font-size:14px;}
 .rel-cab-imp{display:none;}
@@ -1814,11 +1819,13 @@ function _relCalcular(){
     return { id:r.id, data:r.data||'', veiculo:r.veiculo||'', motorista:(r.motorista||'').trim()||'—',
       paradas:par, feitos:c.feitos, falhas:c.falhas, semBaixa:Math.max(0,par-c.feitos-c.falhas),
       km:Number(r.km)||0, min:Number(r.tempo_min)||0, peso:Number(r.peso_total)||0,
-      devolvida:r.status==='devolvida' };
+      devolvida:r.status==='devolvida', fonte:r.fonte_dist||'—', reta:_eReta(r.fonte_dist) };
   });
   const tot=linhas.reduce((a,r)=>({rotas:a.rotas+1,paradas:a.paradas+r.paradas,feitos:a.feitos+r.feitos,
-    falhas:a.falhas+r.falhas,km:a.km+r.km,peso:a.peso+r.peso,min:a.min+r.min}),
-    {rotas:0,paradas:0,feitos:0,falhas:0,km:0,peso:0,min:0});
+    falhas:a.falhas+r.falhas,km:a.km+r.km,peso:a.peso+r.peso,min:a.min+r.min,
+    kmReta:a.kmReta+(r.reta?r.km:0), rotasReta:a.rotasReta+(r.reta?1:0),
+    semFonte:a.semFonte+(r.fonte==='—'?1:0)}),
+    {rotas:0,paradas:0,feitos:0,falhas:0,km:0,peso:0,min:0,kmReta:0,rotasReta:0,semFonte:0});
   const mot={};
   linhas.forEach(r=>{
     const m=mot[r.motorista]=mot[r.motorista]||{nome:r.motorista,rotas:0,paradas:0,feitos:0,falhas:0,km:0};
@@ -1845,6 +1852,15 @@ function renderRelatorios(){
     </div></div>`;
     return;
   }
+  const alertaReta = d.tot.rotasReta
+    ? `<div class="rel-alerta">⚠️ <b>${d.tot.rotasReta} ${d.tot.rotasReta===1?'rota teve':'rotas tiveram'} o km medido em linha reta</b>,
+        não pelas ruas — são ${_n(d.tot.kmReta,1)} dos ${_n(d.tot.km,1)} km deste relatório. O km real de estrada costuma ser maior.
+        Acontece quando o servidor de rotas não responde ou quando passa de 100 paradas num cálculo só.</div>`
+    : d.tot.semFonte===d.tot.rotas
+    ? `<div class="rel-alerta leve">Estas rotas foram criadas antes de o sistema passar a registrar como mediu a distância, então o km não pode ser conferido.</div>`
+    : d.tot.semFonte
+    ? `<div class="rel-alerta leve">${d.tot.semFonte} ${d.tot.semFonte===1?'rota é anterior':'rotas são anteriores'} ao registro de como a distância foi medida.</div>`
+    : '';
   const comBaixa=d.tot.feitos+d.tot.falhas;
   const pct=comBaixa?Math.round(d.tot.feitos/comBaixa*100):null;
 
@@ -1872,12 +1888,13 @@ function renderRelatorios(){
   const tabRotas=`<div class="card rel-sec"><h3>Rotas do período</h3><div class="rel-rola">Arraste a tabela para o lado para ver o resto.</div><div class="rel-wrap"><table class="rel-tab">
     <thead><tr><th>Data</th><th>Veículo</th><th>Motorista</th><th class="num">Paradas</th>
       <th class="num">Feitas</th><th class="num">Não feitas</th><th class="num">Sem baixa</th>
-      <th class="num">Km</th><th class="num">Tempo</th></tr></thead>
+      <th class="num">Km</th><th class="num">Tempo</th><th>Medida</th></tr></thead>
     <tbody>${d.linhas.map(r=>`<tr><td>${esc(_dataBR(r.data))}${r.devolvida?' <span style="color:var(--text3)">(devolvida)</span>':''}</td>
       <td>${esc(r.veiculo)}</td><td>${esc(r.motorista)}</td>
       <td class="num">${r.paradas}</td><td class="num">${r.feitos}</td>
       <td class="num${r.falhas?' ruim':''}">${r.falhas}</td><td class="num">${r.semBaixa}</td>
-      <td class="num">${_n(r.km,1)}</td><td class="num">${_n(r.min)} min</td></tr>`).join('')}</tbody>
+      <td class="num">${_n(r.km,1)}</td><td class="num">${_n(r.min)} min</td>
+      <td${r.reta?' class="ruim"':''}>${esc(_rotuloFonte(r.fonte))}</td></tr>`).join('')}</tbody>
   </table></div></div>`;
 
   const tabMot=`<div class="card rel-sec"><h3>Por motorista</h3><div class="rel-rola">Arraste a tabela para o lado para ver o resto.</div><div class="rel-wrap"><table class="rel-tab">
@@ -1894,13 +1911,14 @@ function renderRelatorios(){
   const notas=`<div class="rel-nota">
     <b>Como ler estes números.</b><br>
     · <b>Km planejado</b> é a distância que o sistema calculou ao montar a rota, não a do odômetro do veículo.<br>
+    · <b>Medida</b> diz como aquele km foi obtido: "pelas ruas" é o cálculo bom; "linha reta" é a estimativa que o sistema usa quando o servidor de rotas falha ou quando passam de 100 paradas.<br>
     · <b>Sucesso</b> considera só as paradas que receberam baixa pelo link do motorista. "Sem baixa" são as paradas em que ninguém marcou nada.<br>
     · Cada pedido guarda a <b>última</b> ocorrência. Se a mesma nota falhou mais de uma vez, ela conta uma vez aqui.<br>
     · Rotas apagadas ficam de fora; devolvidas aparecem marcadas.
     ${modoDemo?'<br>· <b>Atenção: estes são dados de demonstração</b>, não a sua operação.':''}
   </div>`;
 
-  alvo.innerHTML=cab+kpis+blocoMotivos+tabRotas+tabMot+notas;
+  alvo.innerHTML=cab+kpis+alertaReta+blocoMotivos+tabRotas+tabMot+notas;
 }
 
 function _relCSV(){
@@ -1911,9 +1929,9 @@ function _relCSV(){
   lin.push([_relTitulo(relPeriodo), _relDiaBR(d.ini)+' a '+_relDiaBR(new Date(+d.fim-864e5))]);
   if(modoDemo) lin.push(['ATENÇÃO: dados de demonstração']);
   lin.push([]);
-  lin.push(['Data','Veículo','Motorista','Paradas','Feitas','Não feitas','Sem baixa','Km planejado','Tempo (min)','Peso (kg)']);
+  lin.push(['Data','Veículo','Motorista','Paradas','Feitas','Não feitas','Sem baixa','Km planejado','Tempo (min)','Peso (kg)','Distância medida']);
   d.linhas.forEach(r=>lin.push([_dataBR(r.data),r.veiculo,r.motorista,r.paradas,r.feitos,r.falhas,
-    r.semBaixa,num(r.km.toFixed(1)),Math.round(r.min),Math.round(r.peso)]));
+    r.semBaixa,num(r.km.toFixed(1)),Math.round(r.min),Math.round(r.peso),_rotuloFonte(r.fonte)]));
   lin.push(['TOTAL','','',d.tot.paradas,d.tot.feitos,d.tot.falhas,
     d.tot.paradas-d.tot.feitos-d.tot.falhas,num(d.tot.km.toFixed(1)),Math.round(d.tot.min),Math.round(d.tot.peso)]);
   lin.push([]);
@@ -3568,6 +3586,7 @@ async function confirmarRotaD(){
         km:r.km||r.distancia_km||0, tempo_min:r.mins||r.tempo_min||0,
         peso_total:r.peso_total||paradas.reduce((s,p)=>s+(p.peso||0),0),
         num_paradas:paradas.length, entregas:nP.entrega, coletas:nP.coleta, status:'em_rota', paradas,
+        fonte_dist:r._fonte||fonteDistanciaD||'—',   // como o km e os horários foram medidos
         ...(r._ajustada?{ajustada:true}:{}) };
     }).filter(r=>r.paradas.length);
     if(!rotas.length){ throw new Error('Nenhuma nota nas rotas.'); }
@@ -4053,6 +4072,7 @@ function renderRotasConfirmadas(){
         <span>📦 <b style="color:var(--text)">${(r.peso_total||0).toLocaleString('pt-BR')} kg</b></span>
         <span>🛣️ <b style="color:var(--text)">${(+r.km||0).toFixed(1)}</b> km</span>
         ${r.tempo_min?`<span>⏱️ <b style="color:var(--text)">${r.tempo_min}</b> min</span>`:''}
+        ${_eReta(r.fonte_dist)?`<span class="rc-reta" title="${esc(_motivoReta(r.fonte_dist))}">⚠️ km em linha reta</span>`:''}
       </div>
       ${mot}
       <div id="${mapId}" style="height:220px;border-radius:11px;border:1px solid var(--border);margin-bottom:12px;overflow:hidden;background:var(--s3)"></div>
@@ -4208,6 +4228,20 @@ function renderMotoristasPage(){
 }
 window.renderMotoristasPage=renderMotoristasPage;
 
+// Como a distância foi medida. "OSRM" = pelas ruas. Qualquer "Haversine" = linha reta,
+// que erra o km e o tempo e pode bagunçar a ordem das paradas.
+function _eReta(f){ return String(f||'').startsWith('Haversine'); }
+function _motivoReta(f){
+  return String(f)==='Haversine:limite'
+    ? 'Mais de 100 paradas no mesmo cálculo: km e horários estimados em linha reta.'
+    : 'Servidor de rotas sem resposta: km e horários estimados em linha reta.';
+}
+function _rotuloFonte(f){
+  if(!f||f==='—') return 'não registrado';
+  if(f==='OSRM') return 'pelas ruas';
+  return f==='Haversine:limite' ? 'linha reta (mais de 100 paradas)' : 'linha reta (servidor fora do ar)';
+}
+
 function selRotaTabD(idx){
   rotaSelD=idx;
   document.querySelectorAll('.rota-tab-d').forEach((t,i)=>{ t.classList.toggle('active',i===idx); t.setAttribute('aria-selected',String(i===idx)); });
@@ -4223,7 +4257,7 @@ function selRotaTabD(idx){
   const outras=rotaGeradaD.map((x,k)=>k).filter(k=>k!==idx);
   const notaFonte = calc==='calculando' ? '<div class="calc-st" role="status">Recalculando km e horários na ordem nova…</div>'
     : calc==='otimizando' ? '<div class="calc-st" role="status">Otimizando a ordem das paradas…</div>'
-    : (calc==='local'||fonte==='Haversine') ? `<div style="margin-top:10px;font-size:11.5px;color:#8a5a06;background:rgba(250,204,21,.16);border:1px solid rgba(202,138,4,.35);border-radius:8px;padding:8px 12px">⚠️ ${calc==='local'?'Servidor de rotas sem resposta: km e horários estimados em linha reta.':'Distância calculada em linha reta (OSRM indisponível).'} O km real de estrada costuma ser maior.</div>`
+    : (calc==='local'||_eReta(fonte)) ? `<div style="margin-top:10px;font-size:11.5px;color:#8a5a06;background:rgba(250,204,21,.16);border:1px solid rgba(202,138,4,.35);border-radius:8px;padding:8px 12px">⚠️ ${calc==='local'?'Servidor de rotas sem resposta: km e horários estimados em linha reta.':_motivoReta(fonte)} O km real de estrada costuma ser maior, e a ordem das paradas pode não ser a melhor.</div>`
     : fonte==='OSRM' ? `<div style="margin-top:10px;font-size:11px;color:var(--text3)">✓ Distância real via OSRM (rota de estrada)</div>` : '';
   const linha=(p,i)=>{
     const pid=_idDe(p), tarde=p.janela_fim!=null&&p.chegada_min!=null&&p.chegada_min>p.janela_fim;

@@ -114,7 +114,7 @@ def build_distance_matrix(points: list[dict]) -> tuple[list[list[int]], list[lis
     if len(points) > OSRM_LIMIT:
         logger.warning("Mais de %d pontos — usando Haversine", OSRM_LIMIT)
         d, t = _haversine_matrix(points)
-        return d, t, "Haversine"
+        return d, t, "Haversine:limite"
 
     coords = ";".join(f"{p['lng']:.5f},{p['lat']:.5f}" for p in points)
     try:
@@ -135,7 +135,7 @@ def build_distance_matrix(points: list[dict]) -> tuple[list[list[int]], list[lis
     except Exception as exc:
         logger.warning("OSRM indisponível (%s) — usando Haversine", exc)
         d, t = _haversine_matrix(points)
-        return d, t, "Haversine"
+        return d, t, "Haversine:indisponivel"
 
 
 # ── Coletas e entregas ─────────────────────────────────────────────────────────
@@ -295,7 +295,7 @@ def solve_vrp(
         "routes": [RotaResultado, ...],
         "nao_alocados": [nf, ...],
         "fora_da_janela": [nf, ...],   # janela impossível para esta saída (não entraram)
-        "fonte_distancia": "OSRM" | "Haversine",
+        "fonte_distancia": "OSRM" | "Haversine:limite" | "Haversine:indisponivel",
         "solver_status": str,
         "regra_carga": "so_entregas" | "so_coletas" | "entregas_antes_das_coletas"
                        | "soma_entregas_e_coletas",

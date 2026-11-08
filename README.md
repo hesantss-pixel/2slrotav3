@@ -417,6 +417,13 @@ OR-Tools rodando (não instalado aqui) e o mapa com as ruas. O formato da respos
 
 ## Histórico
 
+- Versão 3.9.1 (08/11/2026): o sistema passou a **guardar como mediu a distância** de cada rota.
+  O servidor já dizia (`fonte_distancia`) e a tela já avisava na Roteirização, mas o aviso morria
+  ali: a rota confirmada não registrava nada. Agora `rotas_confirmadas/<id>/fonte_dist` guarda
+  `OSRM` (pelas ruas), `Haversine:limite` (passou de 100 paradas) ou `Haversine:indisponivel`
+  (servidor de rotas sem resposta). A página Rotas marca a rota com "km em linha reta", e os
+  Relatórios avisam quantas rotas e quantos km do período vieram de linha reta, com uma coluna
+  "Medida" por rota e na planilha. Rotas anteriores a esta versão aparecem como "não registrado".
 - Versão 3.9 (08/11/2026): página **Relatórios**. Soma as rotas confirmadas do período (hoje,
   7, 30 dias, este mês, mês passado) e cruza com o que ficou gravado em cada pedido: a `baixa`
   (entregue/coletado) e a `ocorrencia` (não realizado, com motivo). Mostra rotas, paradas

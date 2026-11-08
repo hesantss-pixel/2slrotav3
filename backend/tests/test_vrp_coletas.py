@@ -211,7 +211,7 @@ class TesteAvaliarSequencia(unittest.TestCase):
         self.assertLess(a["chegada_min"][0], a["chegada_min"][1])
         self.assertGreater(b["chegada_min"][1], b["chegada_min"][0])
         self.assertLess(a["chegada_min"][0], b["chegada_min"][1])
-        self.assertEqual(a["fonte_distancia"], "Haversine")
+        self.assertTrue(a["fonte_distancia"].startswith("Haversine"), a["fonte_distancia"])
 
     def test_ordem_ruim_custa_mais_km(self):
         norte, sul = ped("N", "entrega", 10, .05, 0), ped("S", "entrega", 10, -.05, 0)

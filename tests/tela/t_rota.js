@@ -37,6 +37,8 @@ const ok = (c, m) => console.log((c ? 'OK   ' : 'FALHA ') + m);
   const st = await p.evaluate(() => Object.values(window.__FAKE.db.empresas.emp1.pedidos_rota).map((x) => x.status));
   const conf = await p.evaluate(() => window.__FAKE.db.empresas.emp1.rotas_confirmadas);
   ok(st.every((x) => x === 'despachado') && conf && Object.keys(conf).length === 1, 'confirmar saída: pedidos viram "despachado" e a rota vai para o histórico');
+  const fonte = conf && Object.values(conf)[0] && Object.values(conf)[0].fonte_dist;
+  ok(!!fonte && fonte !== '—', 'a rota salva registra como a distância foi medida (achei ' + JSON.stringify(fonte) + ')');
   await p.evaluate(() => window.irParaPagina('ia')); await p.waitForTimeout(200);
   await p.fill('#chat-inp', 'Onde tem mais pedido?'); await p.press('#chat-inp', 'Enter'); await p.waitForTimeout(600);
   ok(chatReq && chatReq.headers['authorization'] === 'Bearer TOKEN-ANA' && Array.isArray(chatReq.body.pedidos), '/chat vai com o login e com os pedidos');

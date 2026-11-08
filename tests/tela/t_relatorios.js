@@ -13,8 +13,8 @@ const rota = (id, data, mot, veic, paradas, km, min, peso, extra) => Object.assi
     peso_total: peso, status: 'em_rota', criada_em: new Date().toISOString(), paradas: [] }, extra || {});
 
 const ROTAS = {
-  r_hoje:  rota('r_hoje',  iso(hoje), 'Carlos Souza', 'Truck Toco', 4, 42.5, 180, 3200),
-  r_cinco: rota('r_cinco', dias(5),   'Ana Ribeiro',  'Fiorino',    2, 18.2,  95,  900),
+  r_hoje:  rota('r_hoje',  iso(hoje), 'Carlos Souza', 'Truck Toco', 4, 42.5, 180, 3200, {fonte_dist:'OSRM'}),
+  r_cinco: rota('r_cinco', dias(5),   'Ana Ribeiro',  'Fiorino',    2, 18.2,  95,  900, {fonte_dist:'Haversine:indisponivel'}),
   r_velha: rota('r_velha', dias(40),  'Carlos Souza', 'VUC',        3, 30.0, 120, 1500),
 };
 // pedidos: a baixa e a ocorrência apontam a rota — é isso que o relatório soma
@@ -100,6 +100,24 @@ const seed = () => { window.__FAKE = { user:{uid:'u',email:'a@b.c',getIdToken:as
   ok(csv && /TOTAL;;;6;4;1/.test(csv), 'a planilha fecha com a linha de total: ' +
      (csv ? (csv.split('\r\n').find(l => l.startsWith('TOTAL')) || '(sem TOTAL)') : 'sem csv'));
   ok(res && res.bom, 'a planilha começa com BOM, para o Excel abrir os acentos certos');
+
+  // origem do cálculo
+  await p2.evaluate(() => { document.querySelector('#rel-periodo button[data-p="30"]').click(); });
+  await p2.waitForTimeout(400);
+  const f = await p2.evaluate(() => document.getElementById('rel-corpo').textContent.replace(/\s+/g,' '));
+  ok(/1 rota teve o km medido em linha reta/.test(f), 'avisa quantas rotas foram medidas em linha reta');
+  ok(/18,2 dos 60,7 km/.test(f), 'diz quantos km do relatório vieram de linha reta: ' +
+     (f.match(/são [^.]*km deste relatório/) || ['(não achei)'])[0]);
+  ok(/pelas ruas/.test(f) && /linha reta \(servidor fora do ar\)/.test(f),
+     'a tabela mostra como cada rota foi medida');
+  const csv2 = await p2.evaluate(async () => {
+    let cap=null; const o=URL.createObjectURL; URL.createObjectURL=b=>{cap=b;return 'blob:x';};
+    const c=HTMLAnchorElement.prototype.click; HTMLAnchorElement.prototype.click=function(){};
+    document.getElementById('rel-csv').click();
+    HTMLAnchorElement.prototype.click=c; URL.createObjectURL=o;
+    return cap ? cap.text() : null; });
+  ok(csv2 && csv2.includes('Distância medida') && csv2.includes('linha reta (servidor fora do ar)'),
+     'a planilha traz a coluna de como foi medido');
 
   // celular
   await p2.setViewportSize({ width: 390, height: 844 });
