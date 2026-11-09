@@ -6,3 +6,9 @@ venv/
 .env
 .env.local
 .DS_Store
+
+# saída do vídeo (as telas e os mp4 são gerados por video/capturar.js e renderizar.js)
+video/telas/
+video/*.mp4
+video/*.jpg
+video/*.png
