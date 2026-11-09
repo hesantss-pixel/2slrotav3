@@ -701,6 +701,10 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
 .man-trilho>i{display:block;height:100%;border-radius:9px;background:var(--green);transition:width .18s ease,background .18s ease;}
 .man-trilho.quase>i{background:var(--yellow);}
 .man-trilho.cheio>i{background:var(--red);}
+.man-tempo{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-top:9px;font-size:13px;color:var(--text2);}
+.man-tempo b{font-family:var(--sans);font-weight:800;font-size:15px;color:var(--text);font-variant-numeric:tabular-nums;}
+.man-tempo .est{font-size:11px;color:var(--text3);}
+.man-tempo.longa b{color:var(--red);}
 .man-sub{font-size:12.5px;color:var(--text2);margin-top:9px;line-height:1.65;}
 .man-sub b{color:var(--text);}
 .man-aviso{font-size:12.5px;color:var(--red);font-weight:700;margin-top:7px;line-height:1.5;}
@@ -1016,12 +1020,14 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
             <span class="man-peso" id="man-peso"></span>
           </div>
           <div class="man-trilho" id="man-trilho"><i style="width:0"></i></div>
+          <div class="man-tempo" id="man-tempo"></div>
           <div class="man-sub" id="man-sub"></div>
           <div class="man-aviso" id="man-aviso" role="alert"></div>
         </div>
         <p class="sr-only" id="man-anuncio" role="status" aria-live="polite"></p>
         <div id="mapa-manual"></div>
         <div class="man-acoes">
+          <button class="btn-sm" type="button" id="man-desfazer" onclick="manDesfazer()">↩ Desfazer</button>
           <button class="btn-sm" type="button" onclick="manAddVisiveis()">+ Colocar os que estão à vista</button>
           <button class="btn-sm" type="button" onclick="manLimpar()">Limpar a rota</button>
         </div>
@@ -3412,6 +3418,17 @@ window.executarVRPD=executarVRPD;
 //   O detalhe fica no título do pino e na lista embaixo.
 let manSel=[], manPool=[], manGrupos=[], manMarc=new Map();
 let manMap=null, manLayer=null, manLinha=null, manSemHover=false;
+// Num mapa de toque o dedo erra, e errar no meio de 15 paradas é caro: guarda as
+// últimas 40 situações da rota para dar um passo atrás.
+let manHist=[];
+function _manGuardar(){ manHist.push(manSel.slice()); if(manHist.length>40) manHist.shift(); }
+function manDesfazer(){
+  if(!manHist.length) return;
+  manSel=manHist.pop();
+  _manAnunciar(`Desfeito. A rota tem ${manSel.length===1?'1 parada':manSel.length+' paradas'}.`);
+  _manMudou();
+}
+window.manDesfazer=manDesfazer;
 
 const _manId=o=>_idDe(o);
 function _manTem(id){ return manSel.some(p=>_manId(p)===String(id)); }
@@ -3456,10 +3473,11 @@ function _manTituloHtml(g){
   return `<b>${_manTipoGrupo(g)} · ${quem}</b><br>${onde}<br>${kg.toLocaleString('pt-BR')} kg`
     + `<br><span style="color:#64748b">${rot?`parada ${rot} — clique para tirar da rota`:'clique para colocar na rota'}</span>`;
 }
+const _hm=m=>{ m=Math.max(0,Math.round(m)); return `${Math.floor(m/60)}h${String(m%60).padStart(2,'0')}`; };
 function _manAnunciar(txt){ const el=$id('man-anuncio'); if(el) el.textContent=txt; }
 
 function abrirMapaManualD(){
-  manSel=[]; manMarc=new Map(); manLinha=null;
+  manSel=[]; manHist=[]; manMarc=new Map(); manLinha=null;
   naoAlocD=[]; foraJanelaD=[]; regraCargaD='';
   manSemHover = !!(window.matchMedia && window.matchMedia('(hover: none)').matches);
   manPool=_pedidosDaViagem();
@@ -3547,6 +3565,7 @@ function _manTocarPonto(ev,g){
   _manTocar(alvo);
 }
 function _manTocar(g){
+  _manGuardar();
   const ids=g.lista.map(_manId);
   if(ids.some(_manTem)){
     manSel=manSel.filter(p=>!ids.includes(_manId(p)));
@@ -3560,6 +3579,7 @@ function _manTocar(g){
 function manAddUm(id){
   const o=manPool.find(x=>_manId(x)===String(id));
   if(!o||_manTem(id)) return;
+  _manGuardar();
   manSel.push(o);
   _manAnunciar(`NF ${o.nf} na posição ${manSel.length}.`);
   _manMudou();
@@ -3567,6 +3587,7 @@ function manAddUm(id){
 window.manAddUm=manAddUm;
 function manTirar(i){
   const o=manSel[i]; if(!o) return;
+  _manGuardar();
   manSel.splice(i,1);
   _manAnunciar(`NF ${o.nf} tirada da rota. Agora são ${manSel.length}.`);
   _manMudou();
@@ -3574,6 +3595,7 @@ function manTirar(i){
 window.manTirar=manTirar;
 function manMover(i,d){
   const j=i+d; if(j<0||j>=manSel.length) return;
+  _manGuardar();
   const t=manSel[i]; manSel[i]=manSel[j]; manSel[j]=t;
   _manAnunciar(`NF ${manSel[j].nf} agora é a parada ${j+1} de ${manSel.length}.`);
   _manMudou();
@@ -3585,6 +3607,7 @@ function manMover(i,d){
 window.manMover=manMover;
 function manLimpar(){
   if(!manSel.length) return;
+  _manGuardar();
   manSel=[]; _manAnunciar('Rota limpa.'); _manMudou();
 }
 window.manLimpar=manLimpar;
@@ -3595,6 +3618,7 @@ function manAddVisiveis(){
   const b=manMap.getBounds();
   const novos=manGrupos.filter(g=>b.contains([g.lat,g.lng])&&!g.lista.some(o=>_manTem(_manId(o))));
   if(!novos.length){ _toast('Nenhum pedido novo à vista. Dê zoom na região que você quer.'); return; }
+  _manGuardar();
   let atual=manSel.length?manSel[manSel.length-1]:DEPOT;
   const resta=novos.slice();
   while(resta.length){
@@ -3638,10 +3662,24 @@ function _manAtualizar(){
     ? 'Toque nos pontos do mapa. A ordem dos toques é a ordem das paradas.'
     : `${_resumoTipos(n)} · ${_plural(itens,'volume','volumes')}`
       + (misto ? `<br>${frase}` : `<br>Peso total: <b>${kg(soma)} kg</b>.`);
-  $id('man-aviso').innerHTML = nivel==='cheio'
-    ? `Passa da capacidade do ${esc(vehSel?vehSel.nome:'veículo')} em ${Math.round(carga.max-capKgD).toLocaleString('pt-BR')} kg. Você pode seguir assim mesmo — na hora de confirmar a saída o sistema avisa de novo.`
-    : (maxPedD&&manSel.length>maxPedD
-        ? `${manSel.length} paradas: mais que o limite de ${maxPedD} que você escolheu na tela anterior.` : '');
+  // Estimativa pela mesma conta que o resto do sistema usa enquanto o servidor não
+  // mede (linha reta a 40 km/h + 15 min por parada). Fica marcada com ≈ de propósito:
+  // o km de estrada é sempre maior, e quanto maior varia muito de região para região.
+  const est=manSel.length?_estimarRotaLocal(manSel):{km:0,mins:0};
+  const longa=est.mins>JORNADA_MIN;
+  const apertada=!longa&&est.mins>JORNADA_MIN*0.9;
+  $id('man-tempo').className='man-tempo'+(longa?' longa':'');
+  $id('man-tempo').innerHTML = manSel.length
+    ? `<span title="Estimativa em linha reta. Os quilômetros de estrada são medidos quando você usar a rota.">≈ <b>${Math.round(est.km).toLocaleString('pt-BR')} km</b> · <b>${_hm(est.mins)}</b> de viagem</span>`
+      + `<span class="est">estimativa · medido de verdade ao usar a rota</span>`
+    : '';
+  const avisos=[];
+  if(nivel==='cheio') avisos.push(`Passa da capacidade do ${esc(vehSel?vehSel.nome:'veículo')} em ${kg(carga.max-capKgD)} kg.`);
+  if(longa) avisos.push(`A viagem passa das 8 horas de jornada (${_hm(est.mins)} estimadas).`);
+  else if(apertada) avisos.push(`A viagem já está em ${_hm(est.mins)} estimadas, perto das 8 horas de jornada.`);
+  if(maxPedD&&manSel.length>maxPedD) avisos.push(`${manSel.length} paradas: mais que o limite de ${maxPedD} que você escolheu na tela anterior.`);
+  $id('man-aviso').innerHTML = avisos.join('<br>') + (avisos.length&&nivel==='cheio'?'<br><span style="font-weight:400">Você pode seguir assim mesmo — na hora de confirmar a saída o sistema avisa de novo.</span>':'');
+  $id('man-desfazer').disabled=!manHist.length;
   _manListas(carga);
   const bt=$id('man-usar');
   bt.disabled=!manSel.length;

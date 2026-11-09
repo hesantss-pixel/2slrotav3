@@ -26,6 +26,12 @@ const PED = {
 // Para o teste de toque no celular: três pontos bem separados, que é a situação
 // normal depois de dar zoom na região.
 const PED_LONGE = { '1001': PED['1001'], '1003': PED['1003'], 'C_2001': PED['C_2001'] };
+// Uma parada a ~200 km do CD: a 40 km/h em linha reta dá mais de 8 h só de ida e volta,
+// o que é o gatilho do aviso de jornada.
+const PED_JORNADA = {
+  '1001': PED['1001'],
+  '7777': { nf: '7777', tipo: 'entrega', cidade: 'Cruzeiro', dest: 'Cliente distante', peso: 100, itens: 1, status: 'pendente', lat: -22.57, lng: -44.96, geoStatus: 'ok' },
+};
 
 const seed = (ped) => {
   window.__FAKE = {
@@ -323,7 +329,66 @@ const centro = (p, nf) => p.evaluate((n) => {
   ok(tt.painelGrudado, 'o painel de peso fica grudado no topo ao rolar');
   await m.ctx.close();
 
-  const ruins = errs.concat(m.errs).filter((e) => !/net::|Failed to load/.test(e));
+  // ── 11. desfazer, km e tempo ao vivo, aviso de jornada ───────────────────
+  const j = await open(b, 'index.html', 1440, 900, seed, false, PED_JORNADA);
+  await j.p.waitForTimeout(700);
+  await abrirManual(j.p, 1000);
+  const zerado = await j.p.evaluate(() => ({
+    tempo: document.getElementById('man-tempo').textContent,
+    desfazerTravado: document.getElementById('man-desfazer').disabled,
+  }));
+  ok(zerado.tempo === '', 'sem parada escolhida não mostra km nem tempo');
+  ok(zerado.desfazerTravado, 'o botão de desfazer começa travado');
+
+  await tocar(j.p, '1001');
+  const umaSo = await j.p.evaluate(() => ({
+    tempo: document.getElementById('man-tempo').textContent.replace(/\s+/g, ' ').trim(),
+    titulo: document.querySelector('#man-tempo span[title]').getAttribute('title'),
+    aviso: document.getElementById('man-aviso').textContent,
+    desfazerTravado: document.getElementById('man-desfazer').disabled,
+  }));
+  ok(/≈ \d+ km/.test(umaSo.tempo) && /\dh\d\d de viagem/.test(umaSo.tempo),
+    'mostra km e tempo estimados enquanto a pessoa escolhe → ' + umaSo.tempo);
+  ok(/≈/.test(umaSo.tempo) && /estimativa/.test(umaSo.tempo),
+    'deixa claro que é estimativa, não o km de estrada');
+  ok(/linha reta/.test(umaSo.titulo || ''), 'explica no title de onde vem a estimativa');
+  ok(umaSo.aviso === '', 'rota curta não gera aviso de jornada → ' + umaSo.aviso);
+  ok(!umaSo.desfazerTravado, 'com uma parada na rota o desfazer destrava');
+
+  await tocar(j.p, '7777');
+  const longa = await j.p.evaluate(() => ({
+    tempo: document.getElementById('man-tempo').textContent.replace(/\s+/g, ' ').trim(),
+    classe: document.getElementById('man-tempo').className,
+    aviso: document.getElementById('man-aviso').textContent,
+    travado: document.getElementById('man-usar').disabled,
+  }));
+  ok(/passa das 8 horas de jornada/.test(longa.aviso), 'avisa quando a viagem passa da jornada → ' + longa.aviso);
+  ok(/longa/.test(longa.classe), 'o tempo da viagem fica em vermelho quando passa da jornada');
+  ok(!longa.travado, 'passar da jornada avisa, mas não impede de seguir');
+
+  await j.p.click('#man-desfazer');
+  await j.p.waitForTimeout(300);
+  const desfeito = await j.p.evaluate(() => ({
+    paradas: document.getElementById('man-paradas').textContent,
+    aviso: document.getElementById('man-aviso').textContent,
+    anuncio: document.getElementById('man-anuncio').textContent,
+    pinos: document.querySelectorAll('#mapa-manual .pino.sel').length,
+  }));
+  ok(/1 parada/.test(desfeito.paradas), 'desfazer tira o último toque → ' + desfeito.paradas);
+  ok(desfeito.aviso === '', 'desfazer também tira o aviso que aquele toque tinha gerado');
+  ok(desfeito.pinos === 1, 'desfazer acerta o mapa junto, não só a lista');
+  ok(/Desfeito/.test(desfeito.anuncio), 'desfazer é anunciado para leitor de tela → ' + desfeito.anuncio);
+  await j.p.click('#man-desfazer');
+  await j.p.waitForTimeout(300);
+  const zerou = await j.p.evaluate(() => ({
+    paradas: document.getElementById('man-paradas').textContent,
+    travado: document.getElementById('man-desfazer').disabled,
+  }));
+  ok(/Nenhuma parada/.test(zerou.paradas) && zerou.travado,
+    'desfazendo até o começo a rota volta a zero e o botão trava de novo');
+  await j.ctx.close();
+
+  const ruins = errs.concat(m.errs, j.errs).filter((e) => !/net::|Failed to load/.test(e));
   ok(!ruins.length, 'nenhum erro de JavaScript' + (ruins.length ? ' → ' + ruins.slice(0, 3).join(' | ') : ''));
 
   await b.close();
