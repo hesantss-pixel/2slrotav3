@@ -686,6 +686,55 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
   .rel-cab-imp{display:block;margin-bottom:14px;}
   .kpis{max-width:none;}
 }
+/* ── Montar a rota no mapa, ponto por ponto ──────────────────────────────── */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+.btn-modal-alt{width:100%;background:var(--s3);border:1px solid var(--border2);border-radius:12px;padding:13px;font-family:var(--sans);font-weight:700;font-size:13px;color:var(--text);cursor:pointer;margin-top:10px;}
+.man-wrap{max-width:860px;}
+.man-painel{position:sticky;top:8px;z-index:620;background:var(--s2);border:1px solid var(--border2);border-radius:16px;padding:14px 16px;margin-bottom:14px;box-shadow:0 2px 12px rgba(13,27,46,.07);}
+.man-topo{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;}
+.man-paradas{font-family:var(--sans);font-weight:800;font-size:16px;color:var(--text);}
+.man-peso{font-family:var(--sans);font-weight:800;font-size:16px;color:var(--text2);font-variant-numeric:tabular-nums;margin-left:auto;}
+.man-peso b{color:var(--green);}
+.man-peso.quase b{color:#9a6a00;}
+.man-peso.cheio b{color:var(--red);}
+.man-trilho{height:9px;border-radius:9px;background:var(--s4);margin-top:10px;overflow:hidden;}
+.man-trilho>i{display:block;height:100%;border-radius:9px;background:var(--green);transition:width .18s ease,background .18s ease;}
+.man-trilho.quase>i{background:var(--yellow);}
+.man-trilho.cheio>i{background:var(--red);}
+.man-sub{font-size:12.5px;color:var(--text2);margin-top:9px;line-height:1.65;}
+.man-sub b{color:var(--text);}
+.man-aviso{font-size:12.5px;color:var(--red);font-weight:700;margin-top:7px;line-height:1.5;}
+#mapa-manual{width:100%;height:430px;border-radius:16px;border:1px solid var(--border2);}
+.man-acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+.man-dica{font-size:12px;color:var(--text3);margin:10px 0 0;line-height:1.6;}
+.man-sec{font-family:var(--sans);font-weight:700;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text2);margin:22px 0 10px;}
+.man-lista{display:grid;gap:8px;}
+.man-item{display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;}
+.man-item.pico{border-color:var(--yellow);background:#fffaf0;}
+.man-num{flex:none;width:28px;height:28px;border-radius:28px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font:800 12.5px var(--sans);}
+.man-item.col .man-num{background:#fff;color:var(--navy);border:2px solid var(--vv);border-radius:7px;}
+.man-txt{flex:1;min-width:0;font-size:13px;line-height:1.45;}
+.man-txt b{font-family:var(--sans);font-weight:700;}
+.man-txt span{display:block;color:var(--text3);font-size:11.5px;}
+.man-bts{flex:none;display:flex;gap:5px;}
+.man-bt{border:1px solid var(--border2);background:var(--s2);color:var(--text2);border-radius:9px;min-width:36px;height:36px;font-size:15px;cursor:pointer;line-height:1;}
+.man-bt:disabled{opacity:.3;cursor:default;}
+.man-bt.x{color:var(--red);}
+.man-add{display:block;width:100%;border:1px solid var(--border2);background:var(--s2);color:var(--text2);border-radius:10px;padding:10px 12px;font:600 12.5px var(--body);cursor:pointer;text-align:left;min-height:40px;margin-bottom:7px;}
+.man-vazio{font-size:12.5px;color:var(--text3);padding:16px;border:1px dashed var(--border2);border-radius:12px;text-align:center;}
+.man-det{border:1px solid var(--border);border-radius:12px;background:var(--s2);padding:0 12px;}
+.man-det>summary{cursor:pointer;padding:11px 0;font:700 12.5px var(--sans);color:var(--text2);}
+.man-det-in{padding-bottom:12px;}
+/* o alvo tem 44 px (WCAG 2.5.8); o desenho visível é menor e fica centrado nele */
+#mapa-manual .leaflet-tooltip{width:max-content;max-width:230px;white-space:normal;line-height:1.5;}
+.pino-alvo{background:none;border:0;}
+.pino{display:flex;align-items:center;justify-content:center;box-sizing:border-box;width:22px;height:22px;margin:11px;border-radius:22px;font:800 11px sans-serif;color:#fff;background:var(--green);border:2px solid #fff;box-shadow:0 1px 4px rgba(13,27,46,.35);}
+.pino.coleta{background:var(--navy);border-color:var(--vv);border-radius:6px;}
+.pino.cd{background:var(--vv2);border-color:#fff;width:18px;height:18px;margin:13px;}
+.pino.sel{width:30px;height:30px;margin:7px;font-size:12px;background:var(--navy);border-color:var(--vv);border-width:3px;}
+.pino.coleta.sel{background:#fff;color:var(--navy);}
+@media(max-width:520px){#mapa-manual{height:340px;}.man-peso{margin-left:0;}}
+@media(prefers-reduced-motion:reduce){.man-trilho>i{transition:none;}}
 </style>
 </head>
 <body>
@@ -921,7 +970,7 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
     <button class="btn-voltar-topo" onclick="irParaPagina('dashboard')"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Voltar ao Dashboard</button>
     <div class="page-head">
       <div class="page-title">Roteirização</div>
-      <div class="page-sub">Escolha o veículo e a capacidade e gere a melhor sequência de entregas e coletas</div>
+      <div class="page-sub">Escolha o veículo e a capacidade. Depois gere a melhor sequência automaticamente ou monte a rota você mesmo no mapa</div>
       <div class="cd-linha" id="cd-linha"></div>
     </div>
     <div id="rot-step-veiculo">
@@ -953,7 +1002,35 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
         <div class="veh-card-name" id="confirm-veh-name" style="font-size:19px;margin-bottom:14px;"></div>
         <div style="font-size:12.5px;color:var(--text2);line-height:2;" id="confirm-details-d"></div>
         <button class="btn-modal-primary" onclick="executarVRPD()">✔ Gerar Rota Agora</button>
+        <button class="btn-modal-alt" type="button" onclick="abrirMapaManualD()">🗺️ Montar eu mesmo no mapa</button>
+        <div style="font-size:11.5px;color:var(--text3);margin-top:7px;text-align:center;line-height:1.5">Você toca nos pontos e escolhe a ordem. O peso vai somando contra a capacidade do veículo.</div>
         <button class="btn-modal-sec" onclick="voltarCapD()">← Voltar</button>
+      </div>
+    </div>
+    <div id="rot-step-manual" style="display:none">
+      <div class="man-wrap">
+        <div class="veh-card-name" id="man-veh-name" style="font-size:19px;margin-bottom:12px"></div>
+        <div class="man-painel">
+          <div class="man-topo">
+            <span class="man-paradas" id="man-paradas"></span>
+            <span class="man-peso" id="man-peso"></span>
+          </div>
+          <div class="man-trilho" id="man-trilho"><i style="width:0"></i></div>
+          <div class="man-sub" id="man-sub"></div>
+          <div class="man-aviso" id="man-aviso" role="alert"></div>
+        </div>
+        <p class="sr-only" id="man-anuncio" role="status" aria-live="polite"></p>
+        <div id="mapa-manual"></div>
+        <div class="man-acoes">
+          <button class="btn-sm" type="button" onclick="manAddVisiveis()">+ Colocar os que estão à vista</button>
+          <button class="btn-sm" type="button" onclick="manLimpar()">Limpar a rota</button>
+        </div>
+        <p class="man-dica">Toque num ponto para colocar na rota; toque de novo para tirar. Pedidos no mesmo endereço entram juntos, porque são a mesma parada. A linha pontilhada é o caminho na ordem que você escolheu — os quilômetros de verdade são medidos depois, quando você usar a rota.</p>
+        <div class="man-sec">Ordem das paradas</div>
+        <div class="man-lista" id="man-ordem"></div>
+        <div id="man-disponiveis"></div>
+        <button class="btn-modal-primary" id="man-usar" type="button" onclick="manUsar()" style="max-width:420px">Escolha ao menos uma parada</button>
+        <button class="btn-modal-sec" type="button" onclick="manVoltar()" style="max-width:420px">← Voltar</button>
       </div>
     </div>
     <div id="rot-step-loading" style="display:none;text-align:center;padding:60px 20px;">
@@ -1026,6 +1103,10 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
     <div class="filtro-row" style="margin-top:0"><span class="field-lbl">Mostrar</span><div class="seg" data-filtro role="group" aria-label="Mostrar no mapa"></div></div>
     <div id="mapa-completo" style="width:100%;height:560px;border-radius:16px;border:1px solid var(--border2);"></div>
     <div id="mapa-completo-legenda" class="map-leg"></div>
+    <div class="man-acoes" style="margin-top:12px">
+      <button class="btn-sm" type="button" onclick="irParaPagina('roteirizacao')">🗺️ Montar uma rota escolhendo no mapa</button>
+      <span style="font-size:11.5px;color:var(--text3);align-self:center">Escolhe o veículo e a capacidade primeiro, para o peso poder ser conferido.</span>
+    </div>
     <section class="rastr-oferta" id="rastr-oferta" aria-labelledby="rastr-oferta-tit">
       <div class="rastr-oferta__txt">
         <span class="rastr-oferta__selo">Sistema + rastreamento · valor sob consulta</span>
@@ -1459,9 +1540,9 @@ function _resumoTipos(n,sep=' · '){ return [n.entrega?_plural(n.entrega,'entreg
 function _filtrar(lista,f){ return f==='todos'?lista:lista.filter(o=>_tipoDe(o)===f); }
 function _perfilCarga(seq){
   let c=seq.filter(p=>_tipoDe(p)==='entrega').reduce((s,p)=>s+(+p.peso||0),0);
-  const saida=c; let max=c;
-  seq.forEach(p=>{ c+=_tipoDe(p)==='coleta'?(+p.peso||0):-(+p.peso||0); if(c>max) max=c; });
-  return {saida, max};
+  const saida=c; let max=c, pico=-1; const apos=[];
+  seq.forEach((p,i)=>{ c+=_tipoDe(p)==='coleta'?(+p.peso||0):-(+p.peso||0); apos.push(c); if(c>max){ max=c; pico=i; } });
+  return {saida, max, pico, apos};
 }
 function renderFiltros(){
   const n=_contarTipos(allOrders.filter(o=>o.status==='pendente'));
@@ -1762,7 +1843,7 @@ window.atualizarMapaCompleto=atualizarMapaCompleto;
 // ── Navegação sidebar ────────────────────────────────────────────────────
 const PAGE_META = {
   pedidos:{title:'Pedidos',sub:'Entregas e coletas por região e importação das notas fiscais'},
-  roteirizacao:{title:'Roteirização',sub:'Escolha o veículo e a capacidade e gere a melhor sequência'},
+  roteirizacao:{title:'Roteirização',sub:'Escolha o veículo e a capacidade e gere a sequência, ou monte no mapa'},
   rotas:{title:'Rotas',sub:'Histórico e detalhamento das rotas geradas'},
   motoristas:{title:'Motoristas',sub:'Cadastro e acompanhamento de motoristas e veículos'},
   mapa:{title:'Mapa',sub:'Visualização completa da distribuição e trajetos'},
@@ -3180,6 +3261,8 @@ function renderVeiculosD(){
   document.getElementById('rot-step-confirm').style.display='none';
   document.getElementById('rot-step-loading').style.display='none';
   document.getElementById('rot-step-results').style.display='none';
+  const stMan=$id('rot-step-manual'); if(stMan) stMan.style.display='none';
+  manSel=[];
   motoristaSelecionadoD=null;
   // começar de novo descarta a rota que não foi confirmada (os pedidos continuam pendentes)
   Object.keys(_avTimer).forEach(k=>{ clearTimeout(_avTimer[k]); _avSeq[k]=(_avSeq[k]||0)+1; });
@@ -3312,6 +3395,306 @@ async function executarVRPD(){
   }
 }
 window.executarVRPD=executarVRPD;
+
+// ── Montar a rota no mapa, ponto por ponto ─────────────────────────────────
+// A pessoa já escolheu veículo, capacidade e data. Aqui ela abre o mapa e toca
+// nos pontos: a ordem dos toques é a ordem das paradas. Peso a bordo, paradas e
+// volumes somam na hora, sem chamar servidor nenhum. No fim a rota entra no mesmo
+// caminho da automática — o /avaliar mede km e horários na ordem escolhida, e a
+// confirmação, o link do motorista e o relatório são os mesmos.
+//
+// Decisões que valem explicar:
+// · L.marker com divIcon de 44 px, não circleMarker: vetor não recebe foco de
+//   teclado no Leaflet 1.x e 22 px reprova no WCAG 2.5.8 (alvo mínimo de 24 px).
+// · A cada toque muda só o pino tocado (classe e número no elemento), em vez de
+//   apagar e redesenhar a camada inteira.
+// · Em tela de toque não existe tooltip: ela abre no mesmo toque que seleciona.
+//   O detalhe fica no título do pino e na lista embaixo.
+let manSel=[], manPool=[], manGrupos=[], manMarc=new Map();
+let manMap=null, manLayer=null, manLinha=null, manSemHover=false;
+
+const _manId=o=>_idDe(o);
+function _manTem(id){ return manSel.some(p=>_manId(p)===String(id)); }
+function _manOrdem(id){ const i=manSel.findIndex(p=>_manId(p)===String(id)); return i<0?null:i+1; }
+function _manNoMapa(o){ return o.geoStatus==='ok'&&Number.isFinite(o.lat)&&Number.isFinite(o.lng); }
+
+// Pedidos no mesmo ponto (até 30 m) são a mesma parada: um pino só, entram juntos.
+function _manMontarGrupos(){
+  const g=[];
+  manPool.filter(_manNoMapa).forEach(o=>{
+    const achou=g.find(x=>_haversineKm(x,o)<0.03);
+    if(achou) achou.lista.push(o); else g.push({lat:o.lat,lng:o.lng,lista:[o]});
+  });
+  g.forEach(x=>{ x.chave=_manId(x.lista[0]); });
+  return g;
+}
+function _manRotulo(g){
+  const n=g.lista.map(o=>_manOrdem(_manId(o))).filter(Boolean).sort((a,b)=>a-b);
+  if(!n.length) return '';
+  if(n.length===1) return String(n[0]);
+  if(n.every((v,k)=>!k||v===n[k-1]+1)) return `${n[0]}–${n[n.length-1]}`;
+  return n.length>3 ? `${n[0]}+${n.length-1}` : n.join('·');
+}
+function _manTipoGrupo(g){
+  const c=g.lista.filter(o=>_tipoDe(o)==='coleta').length;
+  return c===g.lista.length?'Coleta':c===0?'Entrega':'Entrega e coleta';
+}
+function _manTitulo(g){
+  const kg=g.lista.reduce((s,o)=>s+(+o.peso||0),0);
+  const p=g.lista[0];
+  const onde=[p.dest&&p.dest!==p.cidade?p.dest:'',p.bairro,p.cidade].filter(Boolean).join(' · ');
+  const quem=g.lista.length>1?`${g.lista.length} notas neste ponto (NF ${g.lista.map(o=>o.nf).join(', ')})`:`NF ${p.nf}`;
+  const rot=_manRotulo(g);
+  const fim=rot?`parada ${rot} da rota — toque para tirar`:'toque para colocar na rota';
+  return `${_manTipoGrupo(g)} · ${quem} · ${onde} · ${kg.toLocaleString('pt-BR')} kg · ${fim}`;
+}
+function _manTituloHtml(g){
+  const kg=g.lista.reduce((s,o)=>s+(+o.peso||0),0), p=g.lista[0];
+  const onde=[p.dest&&p.dest!==p.cidade?p.dest:'',p.bairro,p.cidade].filter(Boolean).map(esc).join(' — ');
+  const quem=g.lista.length>1?`${g.lista.length} notas aqui: NF ${g.lista.map(o=>esc(o.nf)).join(', ')}`:`NF ${esc(p.nf)}`;
+  const rot=_manRotulo(g);
+  return `<b>${_manTipoGrupo(g)} · ${quem}</b><br>${onde}<br>${kg.toLocaleString('pt-BR')} kg`
+    + `<br><span style="color:#64748b">${rot?`parada ${rot} — clique para tirar da rota`:'clique para colocar na rota'}</span>`;
+}
+function _manAnunciar(txt){ const el=$id('man-anuncio'); if(el) el.textContent=txt; }
+
+function abrirMapaManualD(){
+  manSel=[]; manMarc=new Map(); manLinha=null;
+  naoAlocD=[]; foraJanelaD=[]; regraCargaD='';
+  manSemHover = !!(window.matchMedia && window.matchMedia('(hover: none)').matches);
+  manPool=_pedidosDaViagem();
+  ['rot-step-veiculo','rot-step-cap','rot-step-confirm','rot-step-loading','rot-step-results']
+    .forEach(i=>{ const e=$id(i); if(e) e.style.display='none'; });
+  $id('rot-step-manual').style.display='block';
+  $id('man-veh-name').textContent=
+    `${vehSel?vehSel.nome:'Veículo'} · ${capKgD.toLocaleString('pt-BR')} kg · ${_dataBR(rotaCtxD.data)} saindo ${_hhmm(rotaCtxD.saida)}`;
+  _manCriarMapa();
+  _manAtualizar();
+}
+window.abrirMapaManualD=abrirMapaManualD;
+
+function _manIcone(g){
+  const col=_manTipoGrupo(g)==='Coleta';
+  const rot=_manRotulo(g);
+  const txt=rot || (g.lista.length>1?'×'+g.lista.length:'');
+  return L.divIcon({className:'pino-alvo',iconSize:[44,44],iconAnchor:[22,22],
+    html:`<span class="pino${col?' coleta':''}${rot?' sel':''}">${esc(txt)}</span>`});
+}
+function _manCriarMapa(){
+  const el=$id('mapa-manual'); if(!el||!window.L) return;
+  if(!manMap){
+    manMap=L.map('mapa-manual',{attributionControl:false}).setView([DEPOT.lat,DEPOT.lng],9.2);
+    _fundoMapa(manMap);
+  }
+  if(manLayer) manMap.removeLayer(manLayer);
+  manLayer=L.layerGroup().addTo(manMap);
+  manMarc=new Map(); manLinha=null;
+  L.marker([DEPOT.lat,DEPOT.lng],{keyboard:false,title:`${DEPOT.name} — saída e volta da rota`,
+    icon:L.divIcon({className:'pino-alvo',iconSize:[44,44],iconAnchor:[22,22],html:'<span class="pino cd"></span>'})
+  }).addTo(manLayer);
+  manGrupos=_manMontarGrupos();
+  manGrupos.forEach(g=>{
+    const mk=L.marker([g.lat,g.lng],{icon:_manIcone(g),keyboard:true,title:_manTitulo(g)})
+      .addTo(manLayer).on('click',(ev)=>_manTocarPonto(ev,g));
+    if(!manSemHover) mk.bindTooltip(()=>_manTituloHtml(g));
+    manMarc.set(g.chave,mk);
+  });
+  const pts=manGrupos.map(g=>[g.lat,g.lng]).concat([[DEPOT.lat,DEPOT.lng]]);
+  if(pts.length>1){ try{ manMap.fitBounds(pts,{padding:[34,34],maxZoom:13}); }catch(e){} }
+  setTimeout(()=>{ try{ manMap.invalidateSize(); }catch(e){} },40);
+}
+// só o pino que mudou: troca a classe e o número dentro do elemento que já existe
+function _manPintar(g){
+  const mk=manMarc.get(g.chave); if(!mk) return;
+  const el=mk.getElement();
+  const rot=_manRotulo(g);
+  if(!el){ mk.setIcon(_manIcone(g)); return; }
+  const p=el.firstElementChild;
+  if(p){
+    const col=_manTipoGrupo(g)==='Coleta';
+    const cls=`pino${col?' coleta':''}${rot?' sel':''}`;
+    const txt=rot || (g.lista.length>1?'×'+g.lista.length:'');
+    if(p.className!==cls) p.className=cls;
+    if(p.textContent!==txt) p.textContent=txt;
+  }
+  const t=_manTitulo(g);
+  if(el.getAttribute('title')!==t) el.setAttribute('title',t);
+  mk.setZIndexOffset(rot?1000:0);
+}
+function _manDesenharLinha(){
+  if(manLinha&&manLayer){ manLayer.removeLayer(manLinha); manLinha=null; }
+  if(!manLayer) return;
+  const pts=manSel.filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng)).map(p=>[p.lat,p.lng]);
+  if(!pts.length) return;
+  manLinha=L.polyline([[DEPOT.lat,DEPOT.lng],...pts,[DEPOT.lat,DEPOT.lng]],
+    {color:'#0d1b2e',weight:2.5,opacity:.55,dashArray:'6,8',interactive:false}).addTo(manLayer);
+}
+function _manMudou(){ manGrupos.forEach(_manPintar); _manDesenharLinha(); _manAtualizar(); }
+
+function _manTocarPonto(ev,g){
+  let alvo=g;
+  const oe=ev&&ev.originalEvent;
+  if(manMap&&manGrupos.length>1&&oe&&typeof oe.clientX==='number'&&(oe.clientX||oe.clientY)){
+    try{
+      const pt=manMap.mouseEventToContainerPoint(oe);
+      let md=Infinity;
+      manGrupos.forEach(x=>{
+        const d=pt.distanceTo(manMap.latLngToContainerPoint([x.lat,x.lng]));
+        if(d<md){ md=d; alvo=x; }
+      });
+    }catch(e){ alvo=g; }
+  }
+  _manTocar(alvo);
+}
+function _manTocar(g){
+  const ids=g.lista.map(_manId);
+  if(ids.some(_manTem)){
+    manSel=manSel.filter(p=>!ids.includes(_manId(p)));
+    _manAnunciar(`${g.lista.length>1?'Paradas tiradas':'Parada tirada'} da rota. Agora são ${manSel.length}.`);
+  } else {
+    g.lista.forEach(o=>{ if(!_manTem(_manId(o))) manSel.push(o); });
+    _manAnunciar(`${g.lista.length>1?g.lista.length+' notas na posição':'Parada na posição'} ${manSel.length}.`);
+  }
+  _manMudou();
+}
+function manAddUm(id){
+  const o=manPool.find(x=>_manId(x)===String(id));
+  if(!o||_manTem(id)) return;
+  manSel.push(o);
+  _manAnunciar(`NF ${o.nf} na posição ${manSel.length}.`);
+  _manMudou();
+}
+window.manAddUm=manAddUm;
+function manTirar(i){
+  const o=manSel[i]; if(!o) return;
+  manSel.splice(i,1);
+  _manAnunciar(`NF ${o.nf} tirada da rota. Agora são ${manSel.length}.`);
+  _manMudou();
+}
+window.manTirar=manTirar;
+function manMover(i,d){
+  const j=i+d; if(j<0||j>=manSel.length) return;
+  const t=manSel[i]; manSel[i]=manSel[j]; manSel[j]=t;
+  _manAnunciar(`NF ${manSel[j].nf} agora é a parada ${j+1} de ${manSel.length}.`);
+  _manMudou();
+  const lado=d>0?'d':'u';
+  const bt=$id(`man-bt-${j}-${lado}`);
+  if(bt&&!bt.disabled) bt.focus();
+  else { const outro=$id(`man-bt-${j}-${lado==='d'?'u':'d'}`); if(outro) outro.focus(); }
+}
+window.manMover=manMover;
+function manLimpar(){
+  if(!manSel.length) return;
+  manSel=[]; _manAnunciar('Rota limpa.'); _manMudou();
+}
+window.manLimpar=manLimpar;
+// Atalho para quem dá zoom num bairro: entra tudo que está à vista, na ordem do
+// vizinho mais próximo a partir da última parada. Depois dá para ajustar na lista.
+function manAddVisiveis(){
+  if(!manMap) return;
+  const b=manMap.getBounds();
+  const novos=manGrupos.filter(g=>b.contains([g.lat,g.lng])&&!g.lista.some(o=>_manTem(_manId(o))));
+  if(!novos.length){ _toast('Nenhum pedido novo à vista. Dê zoom na região que você quer.'); return; }
+  let atual=manSel.length?manSel[manSel.length-1]:DEPOT;
+  const resta=novos.slice();
+  while(resta.length){
+    let mi=0, md=Infinity;
+    resta.forEach((g,i)=>{ const dd=_haversineKm(atual,g); if(dd<md){ md=dd; mi=i; } });
+    const g=resta.splice(mi,1)[0];
+    g.lista.forEach(o=>{ if(!_manTem(_manId(o))) manSel.push(o); });
+    atual=g;
+  }
+  const n=novos.reduce((s,g)=>s+g.lista.length,0);
+  _manAnunciar(`${_plural(n,'pedido','pedidos')} na rota. Agora são ${manSel.length} paradas.`);
+  _manMudou();
+}
+window.manAddVisiveis=manAddVisiveis;
+
+function _manAtualizar(){
+  const n=_contarTipos(manSel), carga=_perfilCarga(manSel);
+  const itens=manSel.reduce((s,p)=>s+(+p.itens||1),0);
+  const soma=manSel.reduce((s,p)=>s+(+p.peso||0),0);
+  const pico=Math.round(carga.max);
+  const pct=capKgD>0?Math.min(100,carga.max/capKgD*100):0;
+  const nivel=capKgD>0&&carga.max>capKgD?'cheio':(capKgD>0&&pct>=90?'quase':'');
+  $id('man-paradas').textContent=manSel.length?_plural(manSel.length,'parada','paradas'):'Nenhuma parada ainda';
+  const pe=$id('man-peso');
+  pe.className='man-peso'+(nivel?' '+nivel:'');
+  pe.innerHTML=`<b>${pico.toLocaleString('pt-BR')}</b> / ${capKgD.toLocaleString('pt-BR')} kg a bordo`;
+  const tr=$id('man-trilho');
+  tr.className='man-trilho'+(nivel?' '+nivel:'');
+  tr.firstElementChild.style.width=pct.toFixed(1)+'%';
+  // Com coleta na mesma viagem o que tem de caber no veículo é o MÁXIMO a bordo em
+  // algum momento, não a soma de tudo. Por isso a ordem das paradas muda o número.
+  const misto=n.coleta&&n.entrega;
+  const kg=v=>Math.round(v).toLocaleString('pt-BR');
+  const fecho = Math.round(soma)>pico
+    ? `, não a soma de tudo (${kg(soma)} kg).`
+    : '. Mudar a ordem das paradas muda esse número.';
+  const frase = carga.pico>=0
+    ? `Sai do ${esc(DEPOT.name)} com <b>${kg(carga.saida)} kg</b> e chega a <b>${kg(carga.max)} kg</b> a bordo na parada ${carga.pico+1}. É esse máximo que precisa caber no veículo${fecho}`
+    : `Sai do ${esc(DEPOT.name)} com <b>${kg(carga.saida)} kg</b>, que é o máximo a bordo nesta rota. É esse número que precisa caber no veículo${fecho}`;
+  $id('man-sub').innerHTML = !manSel.length
+    ? 'Toque nos pontos do mapa. A ordem dos toques é a ordem das paradas.'
+    : `${_resumoTipos(n)} · ${_plural(itens,'volume','volumes')}`
+      + (misto ? `<br>${frase}` : `<br>Peso total: <b>${kg(soma)} kg</b>.`);
+  $id('man-aviso').innerHTML = nivel==='cheio'
+    ? `Passa da capacidade do ${esc(vehSel?vehSel.nome:'veículo')} em ${Math.round(carga.max-capKgD).toLocaleString('pt-BR')} kg. Você pode seguir assim mesmo — na hora de confirmar a saída o sistema avisa de novo.`
+    : (maxPedD&&manSel.length>maxPedD
+        ? `${manSel.length} paradas: mais que o limite de ${maxPedD} que você escolheu na tela anterior.` : '');
+  _manListas(carga);
+  const bt=$id('man-usar');
+  bt.disabled=!manSel.length;
+  bt.textContent=manSel.length?`Usar esta rota (${_plural(manSel.length,'parada','paradas')}) →`:'Escolha ao menos uma parada';
+}
+function _manListas(carga){
+  $id('man-ordem').innerHTML = manSel.length ? manSel.map((p,i)=>{
+    const col=_tipoDe(p)==='coleta';
+    const apos=carga.apos&&carga.apos[i]!=null?Math.round(carga.apos[i]):null;
+    return `<div class="man-item ${col?'col':''} ${carga.pico===i?'pico':''}">
+      <div class="man-num" aria-hidden="true">${i+1}</div>
+      <div class="man-txt"><b>${col?'Coleta':'Entrega'} · NF ${esc(p.nf)}</b>
+        <span>${p.dest&&p.dest!==p.cidade?esc(p.dest)+' · ':''}${p.bairro?esc(p.bairro)+' — ':''}${esc(p.cidade)} · ${(+p.peso||0).toLocaleString('pt-BR')} kg${apos!=null?` · ${apos.toLocaleString('pt-BR')} kg a bordo depois daqui`:''}${_aprox(p)?' · ponto aproximado':''}</span></div>
+      <div class="man-bts">
+        <button class="man-bt" type="button" id="man-bt-${i}-u" onclick="manMover(${i},-1)" ${i===0?'disabled':''}
+          aria-label="Subir a parada ${i+1}, NF ${esc(p.nf)}">↑</button>
+        <button class="man-bt" type="button" id="man-bt-${i}-d" onclick="manMover(${i},1)" ${i===manSel.length-1?'disabled':''}
+          aria-label="Descer a parada ${i+1}, NF ${esc(p.nf)}">↓</button>
+        <button class="man-bt x" type="button" onclick="manTirar(${i})"
+          aria-label="Tirar da rota a parada ${i+1}, NF ${esc(p.nf)}">✕</button>
+      </div></div>`;
+  }).join('') : '<div class="man-vazio">A rota está vazia. Toque num ponto do mapa para começar.</div>';
+
+  // A mesma coisa em lista: é por aqui que entra quem usa teclado e quem ainda não
+  // tem endereço exato (esses não aparecem no mapa, só o bairro ou a cidade).
+  const sobra=manPool.filter(o=>!_manTem(_manId(o)));
+  const semPonto=sobra.filter(o=>!_manNoMapa(o));
+  $id('man-disponiveis').innerHTML = !sobra.length ? '' : `
+    <details class="man-det"${semPonto.length?' open':''}>
+      <summary>Pedidos que ainda não estão na rota (${sobra.length})${semPonto.length?` · ${semPonto.length} sem ponto exato`:''}</summary>
+      <div class="man-det-in">
+        ${semPonto.length?`<p class="man-dica" style="margin:0 0 10px">${_plural(semPonto.length,'pedido tem','pedidos têm')} só o bairro ou a cidade, então não dá para tocar nele no mapa. Coloque na rota por aqui e corrija o ponto depois, na tela de Pedidos.</p>`:''}
+        ${sobra.map(o=>`<button class="man-add" type="button" onclick="manAddUm('${esc(_manId(o))}')">+ ${_tipoDe(o)==='coleta'?'Coleta':'Entrega'} · NF ${esc(o.nf)} — ${o.bairro?esc(o.bairro)+', ':''}${esc(o.cidade)} · ${(+o.peso||0).toLocaleString('pt-BR')} kg${_manNoMapa(o)?'':' · sem ponto exato'}</button>`).join('')}
+      </div>
+    </details>`;
+}
+// Daqui para frente é o mesmo caminho da rota automática: o /avaliar mede km,
+// tempo e horário de chegada NA ORDEM escolhida, e a confirmação é a mesma.
+function manUsar(){
+  if(!manSel.length) return;
+  rotaGeradaD=[{ pedidos:manSel.slice(), veiculo:vehSel?vehSel.nome:'', _manual:true }];
+  fonteDistanciaD='—';
+  _recalcLocalD(rotaGeradaD[0]);
+  $id('rot-step-manual').style.display='none';
+  renderRotasResultD(rotaGeradaD);
+  _agendarAvaliacaoD(0);
+}
+window.manUsar=manUsar;
+function manVoltar(){
+  $id('rot-step-manual').style.display='none';
+  $id('rot-step-confirm').style.display='block';
+}
+window.manVoltar=manVoltar;
 
 // ── Ajuste manual da rota gerada (antes de confirmar a saída) ───────────────
 // A pessoa muda a ordem, tira, adiciona ou troca paradas de viagem. A cada mudança
@@ -3514,7 +3897,7 @@ function _renderResultadoD(){
   const totalKm=rotas.reduce((s,r)=>s+(r.km||r.distancia_km||0),0);
   const totalE=rotas.reduce((s,r)=>s+_paradasD(r).length,0);
   const tT=_contarTipos(rotas.flatMap(r=>_paradasD(r)));
-  const ajustada=rotas.some(r=>r._ajustada);
+  const ajustada=rotas.some(r=>r._ajustada||r._manual);
   const fora=ajustada?_poolViagemD().length:naoAlocD.length;
   const msgFora = !fora ? ''
     : ajustada ? `<div class="import-msg show info" style="max-width:640px;margin:0 0 16px">${_plural(fora,'pedido pendente ficou','pedidos pendentes ficaram')} fora desta viagem. ${fora===1?'Ele continua':'Eles continuam'} na lista para a próxima.</div>`
@@ -3528,7 +3911,7 @@ function _renderResultadoD(){
     </div>
     ${regraCargaD==='soma_entregas_e_coletas'&&!ajustada?'<div class="import-msg show warn" style="max-width:640px;margin:0 0 16px">Nesta rota o peso das entregas e das coletas foi somado para caber no veículo (regra mais conservadora).</div>':''}
     ${msgFora}
-    <div class="rota-tabs-d" id="rota-tabs-d" role="tablist">${rotas.map((r,i)=>`<div class="rota-tab-d ${i===rotaSelD?'active':''}" role="tab" tabindex="0" aria-selected="${i===rotaSelD}" onclick="selRotaTabD(${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selRotaTabD(${i})}">Rota ${i+1} · ${_paradasD(r).length} paradas${r._ajustada?' · ajustada':''}</div>`).join('')}</div>
+    <div class="rota-tabs-d" id="rota-tabs-d" role="tablist">${rotas.map((r,i)=>`<div class="rota-tab-d ${i===rotaSelD?'active':''}" role="tab" tabindex="0" aria-selected="${i===rotaSelD}" onclick="selRotaTabD(${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selRotaTabD(${i})}">Rota ${i+1} · ${_paradasD(r).length} paradas${r._manual?' · montada no mapa':''}${r._ajustada?' · ajustada':''}</div>`).join('')}</div>
     <div id="rota-detail-d"></div>
     <div id="confirmar-rota-wrap" style="margin-top:18px;max-width:640px">
       <button class="btn-modal-primary" id="btn-confirmar-rota" onclick="confirmarRotaD()" style="margin-top:0">✔ Confirmar saída do veículo</button>
@@ -3587,6 +3970,7 @@ async function confirmarRotaD(){
         peso_total:r.peso_total||paradas.reduce((s,p)=>s+(p.peso||0),0),
         num_paradas:paradas.length, entregas:nP.entrega, coletas:nP.coleta, status:'em_rota', paradas,
         fonte_dist:r._fonte||fonteDistanciaD||'—',   // como o km e os horários foram medidos
+        ...(r._manual?{montagem:'manual'}:{}),            // montada à mão no mapa, não pelo motor
         ...(r._ajustada?{ajustada:true}:{}) };
     }).filter(r=>r.paradas.length);
     if(!rotas.length){ throw new Error('Nenhuma nota nas rotas.'); }
