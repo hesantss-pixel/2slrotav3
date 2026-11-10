@@ -318,8 +318,10 @@ Variáveis de ambiente usadas:
 | `DOCS_PUBLICAS=1` | Mostra a documentação em `/docs` | Não |
 
 Verificação: `https://rotainteligente2sl-production.up.railway.app/status` deve responder
-`"versao": "3.7.0"`, `"login": "obrigatório"` e `entrada_automatica` dizendo o que está
-ligado (`api` e `email`). Enquanto o Railway não publicar a versão nova, a tela continua
+`"login": "obrigatório"`, `entrada_automatica` dizendo o que está ligado (`api` e `email`),
+a `"versao"` do servidor e, em `"codigo"`, os 7 primeiros caracteres do commit que o Railway
+publicou. **É assim que se confere se uma mudança no servidor foi mesmo para o ar**: o
+`codigo` tem de bater com o último commit do ramo `main` que mexeu em `backend/`. Enquanto o Railway não publicar a versão nova, a tela continua
 funcionando com a importação de arquivo e o cartão de entrada automática avisa que o
 servidor ainda não foi configurado.
 

@@ -3109,7 +3109,8 @@ window.agendarGeocodificacao = agendarGeocodificacao;
 async function _parsePDF(file,tipo){
   if(!window.pdfjsLib) throw new Error('Leitor de PDF não carregou. Use CSV ou Excel.');
   const buf=await file.arrayBuffer();
-  const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+  // isEvalSupported:false é a proteção oficial contra a CVE-2024-4367 nas versões antes da 4.2.67
+  const pdf=await pdfjsLib.getDocument({data:buf,isEvalSupported:false}).promise;
   let texto='';
   for(let p=1;p<=pdf.numPages;p++){
     const page=await pdf.getPage(p);

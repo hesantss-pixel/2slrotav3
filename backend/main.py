@@ -45,15 +45,19 @@ logger = logging.getLogger(__name__)
 
 # ── App ───────────────────────────────────────────────────────────────────────
 
+# Versão do servidor. Aparece em /status junto com o commit publicado.
+VERSAO = "3.9.2"
+
 app = FastAPI(
     title="ROTAV3 — Servidor de rotas",
     description="Roteirização (OR-Tools VRP), assistente de IA e leitura de notas fiscais",
-    version="3.7.0",
+    version=VERSAO,
     docs_url="/docs" if os.getenv("DOCS_PUBLICAS", "0") == "1" else None,
     redoc_url=None,
 )
 
 # CORS — de onde a tela pode chamar este servidor (separe por vírgula)
+
 ALLOWED_ORIGINS = [o.strip() for o in os.getenv(
     "ALLOWED_ORIGINS",
     "https://hesantss-pixel.github.io,https://app.rotav3.com.br,"
@@ -298,7 +302,8 @@ def status():
     """Verificação de funcionamento (pública, sem dados da operação)."""
     return {
         "status": "online",
-        "versao": "3.7.0",
+        "versao": VERSAO,
+        "codigo": (os.getenv("RAILWAY_GIT_COMMIT_SHA") or "")[:7] or "local",
         "login": "obrigatório" if auth_firebase.AUTH_REQUIRED else "desligado (teste local)",
         "entrada_automatica": {"api": BANCO.ligado(), "email": bool(entrada_email.estado["ligado"])},
     }
@@ -469,7 +474,7 @@ def chat(body: ChatRequest, quem: tuple = Depends(exigir_login_ou_demo)):
     _limite_demo(quem, "chat", 40)
     try:
         sid = body.session_id or str(uuid.uuid4())
-        session = _get_session(sid)
+        session = _get_session(f"{quem[0]}:{sid}")   # conversa de um usuário não serve para outro
 
         # Atualiza contexto com os pedidos enviados pela tela (ou do Firebase)
         pedidos = body.pedidos if body.pedidos is not None else (_carregar_pedidos_firebase() if _tem_segredo() and quem[0] == ADMIN_UID else [])

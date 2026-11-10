@@ -172,7 +172,10 @@ class TesteRotasEntrada(unittest.TestCase):
 
     def test_status_mostra_o_que_esta_ligado(self):
         st = main.status()
-        self.assertEqual(st["versao"], "3.7.0")
+        # a versão vem de um lugar só (main.VERSAO) e o /status diz qual código está no ar
+        self.assertEqual(st["versao"], main.VERSAO)
+        self.assertRegex(st["versao"], r"^\d+\.\d+\.\d+$")
+        self.assertEqual(st["codigo"], "local")   # fora do Railway não existe commit publicado
         self.assertEqual(st["entrada_automatica"], {"api": True, "email": True})
 
 

@@ -28,12 +28,17 @@ TEM_VENDAS=0
 if [ -n "$PAGINA_VENDAS" ] && subir "$PORTA_VEN" "$PAGINA_VENDAS"; then TEM_VENDAS=1; fi
 
 mkdir -p veic
+# coletor das gravações que o Firebase de verdade recusaria (ver coletor.js)
+: > recusas.log
+curl -s -o /dev/null -X POST http://127.0.0.1:8779/ || (nohup node coletor.js >/dev/null 2>&1 &)
+sleep 0.5
 SUITES="${*:-$(ls t_*.js | sed 's/\.js$//')}"
 total=0; ruins=0
 for t in $SUITES; do
   case "$t" in
     t_hero|t_oferta) [ "$TEM_VENDAS" = 1 ] || { printf '%-16s pulada (defina PAGINA_VENDAS)\n' "$t"; continue; } ;;
   esac
+  echo "## $t" >> recusas.log
   saida="$(timeout 500 node "$t.js" 2>&1)"
   n=$(printf '%s' "$saida" | grep -c '^OK')
   f=$(printf '%s' "$saida" | grep -c '^FALHA')
@@ -42,6 +47,14 @@ for t in $SUITES; do
   printf '%-16s %3s ok  %s%s\n' "$t" "$n" "$([ "$f" -gt 0 ] && echo "$f FALHA ")" "$([ "$c" -gt 0 ] && echo QUEBROU)"
   [ "$f" -gt 0 ] && printf '%s\n' "$saida" | grep '^FALHA' | sed 's/^/    /'
 done
+sleep 0.6
+rec=$(grep -vc '^## ' recusas.log)
+if [ "$rec" -gt 0 ]; then
+  echo "────────────────────────"
+  echo "Gravações que o Firebase de verdade recusaria: $rec"
+  awk '/^## /{s=$2; next} {print "    [" s "] " $0}' recusas.log | cut -c1-260 | sort | uniq -c | sort -rn | head -40
+  ruins=$((ruins+rec))
+fi
 echo "────────────────────────"
 echo "$total verificações, $ruins problemas"
 [ "$ruins" -eq 0 ]
