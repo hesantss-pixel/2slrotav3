@@ -2,7 +2,10 @@
 const F = (window.__FAKE = window.__FAKE || {});
 F.accounts = F.accounts || { 'henrique@rotav3.com.br': 'senha123' };
 F.authCbs = F.authCbs || [];
-const mkUser = (email) => ({ uid: 'uid-' + email.split('@')[0], email, displayName: null, getIdToken: async () => 'token-' + email });
+// O uid de verdade do Firebase é só letras e números. Aqui ele sai do e-mail, então os
+// sinais (o ponto de "demo.abc123@…") são tirados: com ponto, o caminho acesso/<uid>
+// seria recusado pelo banco, e isso seria um defeito do simulado, não do sistema.
+const mkUser = (email) => ({ uid: 'uid-' + email.split('@')[0].replace(/[^A-Za-z0-9_-]/g, ''), email, displayName: null, getIdToken: async () => 'token-' + email });
 const AUTH = { fake: true, get currentUser() { return F.user || null; } };
 const OUTRAS = {};
 export function getAuth(app) {
