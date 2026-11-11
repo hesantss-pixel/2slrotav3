@@ -177,6 +177,12 @@ class TesteRotasEntrada(unittest.TestCase):
         self.assertRegex(st["versao"], r"^\d+\.\d+\.\d+$")
         self.assertEqual(st["codigo"], "local")   # fora do Railway não existe commit publicado
         self.assertEqual(st["entrada_automatica"], {"api": True, "email": True})
+        self.assertRegex(st["python"], r"^3\.\d+$")   # só major.minor
+
+    def test_health_responde_sem_tocar_em_nada(self):
+        # o Railway chama /health antes de trocar de deploy: não pode depender de banco
+        # nem de serviço externo, e não devolve nada da operação
+        self.assertEqual(main.health(), {"ok": True})
 
 
 if __name__ == "__main__":

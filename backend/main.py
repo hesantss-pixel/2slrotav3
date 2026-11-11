@@ -20,6 +20,7 @@ Docs:   http://localhost:8000/docs  (Swagger automático do FastAPI)
 
 import os
 import logging
+import platform
 import uuid
 from typing import Optional
 
@@ -304,9 +305,19 @@ def status():
         "status": "online",
         "versao": VERSAO,
         "codigo": (os.getenv("RAILWAY_GIT_COMMIT_SHA") or "")[:7] or "local",
+        # só major.minor: é o que decide se as bibliotecas instalam, e não ajuda ninguém
+        # a atacar o servidor
+        "python": ".".join(platform.python_version_tuple()[:2]),
         "login": "obrigatório" if auth_firebase.AUTH_REQUIRED else "desligado (teste local)",
         "entrada_automatica": {"api": BANCO.ligado(), "email": bool(entrada_email.estado["ligado"])},
     }
+
+
+@app.get("/health")
+def health():
+    """O Railway chama isto antes de pôr um deploy novo no ar (healthcheckPath).
+    Não toca em banco nem em serviço externo: se o servidor subiu, responde."""
+    return {"ok": True}
 
 
 @app.get("/pedidos")

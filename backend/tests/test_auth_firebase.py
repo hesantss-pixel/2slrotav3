@@ -166,7 +166,9 @@ class TesteRotasProtegidas(unittest.TestCase):
                     demo.append(no.name)
                 else:
                     abertas.append(no.name)
-        self.assertEqual(abertas, ["status"], f"rotas sem login: {abertas}")
+        # só duas rotas abertas, e as duas de propósito: /status (para conferir o que está no
+        # ar) e /health (o Railway chama antes de pôr um deploy novo no ar, sem login)
+        self.assertEqual(sorted(abertas), ["health", "status"], f"rotas sem login: {abertas}")
         # o que lê ou grava o banco direto é só do administrador (empresa principal)
         self.assertEqual(sorted(protegidas), sorted(["listar_pedidos", "upload_nf", "sync_totvs"]))
         # a conta de demonstração só calcula rota, mede a rota ajustada e conversa com a IA
