@@ -26,7 +26,7 @@ Banco e login: Firebase, projeto `slog-pedidos` (Realtime Database + Authenticat
    mandar ao administrador.
 3. As **regras do banco** (`firebase/database.rules.json`) só deixam ler e gravar quem está
    liberado. Ninguém consegue se liberar sozinho: `acesso/` só é alterado pelo console.
-4. O **servidor** confere o mesmo login em toda chamada (menos `/status`), perguntando ao
+4. O **servidor** confere o mesmo login em toda chamada (menos `/status` e `/health`), perguntando ao
    próprio Firebase se aquele token pode ler `acesso/<código>` (`backend/auth_firebase.py`).
 
 ## Entregas e coletas
@@ -316,12 +316,24 @@ Variáveis de ambiente usadas:
 | `ENTRADA_EMAIL_IMAP` / `ENTRADA_EMAIL_INTERVALO` | Servidor IMAP (padrão `imap.gmail.com`) e segundos entre leituras (padrão 60) | Não |
 | `FIREBASE_PROJECT_ID` / `FIREBASE_URL` | Outro projeto Firebase | Não |
 | `DOCS_PUBLICAS=1` | Mostra a documentação em `/docs` | Não |
+| `GROQ_MODEL` | Modelo do assistente (padrão `openai/gpt-oss-120b`). Quando a Groq desligar um modelo, troca-se aqui | Não |
+| `GROQ_HISTORICO` | Quantas mensagens anteriores vão em cada pergunta (padrão 6). Mais = mais tokens por pergunta | Não |
+| `OSRM_URL` / `OSRM_LIMIT` / `OSRM_TIMEOUT` | Servidor de distâncias pelas ruas (endereço completo do serviço `/table`), máximo de pontos por consulta (padrão 100) e segundos de espera (padrão 10). O padrão é o servidor público de demonstração do OSRM, que não é para uso comercial | Não, até ter servidor próprio |
+
+Python fixado em `backend/.python-version` (3.12) e bibliotecas com versão exata em
+`backend/requirements.txt`. O `backend/railway.toml` manda o Railway publicar só quando algo em
+`backend/` muda e chamar `/health` antes de trocar de versão: o `/health` confere se o motor de
+rotas (OR-Tools resolvendo 3 pontos, sem internet), o SDK do assistente e a leitura de NF carregam.
+Se uma atualização de biblioteca quebrar algum deles, responde 503 e o Railway **mantém a versão
+anterior no ar**.
 
 Verificação: `https://rotainteligente2sl-production.up.railway.app/status` deve responder
 `"login": "obrigatório"`, `entrada_automatica` dizendo o que está ligado (`api` e `email`),
 a `"versao"` do servidor e, em `"codigo"`, os 7 primeiros caracteres do commit que o Railway
 publicou. **É assim que se confere se uma mudança no servidor foi mesmo para o ar**: o
-`codigo` tem de bater com o último commit do ramo `main` que mexeu em `backend/`. Enquanto o Railway não publicar a versão nova, a tela continua
+`codigo` tem de bater com o último commit do ramo `main` que mexeu em `backend/`. Em
+`"componentes"`, `motor_de_rotas`, `assistente` e `leitura_de_nf` devem dizer `"ok"`
+(`assistente: "sem chave"` = falta `GROQ_API_KEY`). Enquanto o Railway não publicar a versão nova, a tela continua
 funcionando com a importação de arquivo e o cartão de entrada automática avisa que o
 servidor ainda não foi configurado.
 
@@ -357,7 +369,15 @@ troque `BACKEND_URL` no `index.html`.
     (código no endereço, .zip, anexo que não é XML, código desconhecido, e-mail que fica
     para depois quando o banco cai) e as rotas do servidor com um substituto do FastAPI.
   - Login: token ausente, malformado, de outro projeto, vencido, recusado pelo Firebase, usuário
-    sem liberação, liberado com cache, Firebase fora do ar; toda rota, menos `/status`, exige login.
+    sem liberação, liberado com cache, Firebase fora do ar; toda rota, menos `/status` e
+    `/health`, exige login. A chave do banco (que vai na URL) não aparece em resposta de erro
+    nem no log, nem no traceback.
+  - Assistente (`tests/test_groq_agent.py`): os dados do dia vão só na pergunta atual, o histórico
+    não cresce, e cada erro da Groq (limite por minuto, pergunta grande demais, chave, fora do ar)
+    vira uma frase que diz o que fazer, sem o texto cru da API.
+  - Leitura de NF (`tests/test_nf_parser.py`): planilha e PDF de verdade (openpyxl, pdfplumber).
+    No PDF, o número sai da chave de acesso ou do "Nº 000.004.521" do DANFE.
+  - `/health`: recusa o deploy quando o motor de rotas não carrega; assistente sem chave não recusa.
   - Motor de rotas (`tests/test_vrp_coletas.py`): só entregas, só coletas, pedidos antigos sem
     tipo, viagem mista com entregas antes das coletas, capacidade, limite de paradas, plano B e
     janela de horário (ordem decidida pela janela, espera até abrir, janela que já passou,

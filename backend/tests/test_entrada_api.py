@@ -2,6 +2,7 @@
 O FastAPI não instala no ambiente de testes: um substituto mínimo faz o papel dele
 (decoradores, Depends, HTTPException). A lógica das rotas é a de verdade."""
 import asyncio
+import io
 import os
 import sys
 import types
@@ -190,6 +191,36 @@ class TesteRotasEntrada(unittest.TestCase):
             self.assertEqual(main.health(), {"ok": True})
         g.assert_not_called()
         p.assert_not_called()
+
+    def test_segredo_do_banco_nao_vaza_em_erro_nem_em_log(self):
+        segredo = "SEGREDOdoBANCO123456"
+        url = f"https://x.firebaseio.com/empresas/e/pedidos.json?auth={segredo}"
+        erro = main.req_lib.ConnectionError(f"Max retries exceeded with url: {url}")
+        with mock.patch.dict(os.environ, {"FIREBASE_SECRET": segredo}):
+            self.assertNotIn(segredo, main.sem_segredo(f"falhou: {erro}"))
+            # resposta da API
+            with mock.patch.object(main, "_carregar_pedidos_firebase", side_effect=erro):
+                with self.assertRaises(HTTPException) as c:
+                    main.listar_pedidos(uid="admin")
+            self.assertNotIn(segredo, str(c.exception.detail))
+            # log, inclusive o traceback
+            import logging
+            saida = io.StringIO()
+            h = logging.StreamHandler(saida)
+            h.addFilter(main._FiltroSegredo())
+            lg = logging.getLogger("teste_segredo")
+            lg.addHandler(h)
+            try:
+                try:
+                    raise erro
+                except Exception as e:
+                    lg.exception("Erro no /pedidos: %s", e)
+            finally:
+                lg.removeHandler(h)
+            texto = saida.getvalue()
+            self.assertIn("Max retries", texto)
+            self.assertIn("Traceback", texto)
+            self.assertNotIn(segredo, texto)
 
     def test_health_recusa_deploy_com_motor_quebrado(self):
         # biblioteca atualizada que quebra o OR-Tools: o Railway precisa ver 503 e manter o

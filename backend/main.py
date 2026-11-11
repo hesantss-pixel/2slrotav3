@@ -44,10 +44,44 @@ except Exception:
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
 
+# Segredos que podem aparecer dentro de mensagens de erro: a chave do banco vai na URL
+# (?auth=...), e o requests repete a URL inteira quando a conexão falha.
+_SEGREDOS = ("FIREBASE_SECRET", "GROQ_API_KEY", "ENTRADA_EMAIL_SENHA", "TOTVS_PASSWORD")
+
+
+def sem_segredo(texto: str) -> str:
+    """Troca por *** qualquer segredo das variáveis de ambiente que apareça no texto."""
+    texto = str(texto)
+    for nome in _SEGREDOS:
+        v = os.getenv(nome, "")
+        if len(v) >= 6 and v in texto:
+            texto = texto.replace(v, "***")
+    return texto
+
+
+class _FiltroSegredo(logging.Filter):
+    """Vale para todo log que passa pela saída principal (este arquivo e os módulos)."""
+    def filter(self, record: logging.LogRecord) -> bool:
+        msg = record.getMessage()
+        limpo = sem_segredo(msg)
+        if limpo != msg:
+            record.msg, record.args = limpo, ()
+        if record.exc_info:
+            import traceback
+            record.exc_text = sem_segredo("".join(traceback.format_exception(*record.exc_info)).rstrip())
+            record.exc_info = None
+        return True
+
+
+# saída principal e a do uvicorn (que registra os erros não tratados com traceback)
+for _nome in ("", "uvicorn", "uvicorn.error", "uvicorn.access"):
+    for _h in logging.getLogger(_nome).handlers:
+        _h.addFilter(_FiltroSegredo())
+
 # ── App ───────────────────────────────────────────────────────────────────────
 
 # Versão do servidor. Aparece em /status junto com o commit publicado.
-VERSAO = "3.9.3"
+VERSAO = "3.9.4"
 
 app = FastAPI(
     title="ROTAV3 — Servidor de rotas",
@@ -355,7 +389,8 @@ def listar_pedidos(uid: str = Depends(exigir_admin)):
         pendentes = [p for p in pedidos if p.get("status") == "pendente"]
         return {"total": len(pendentes), "pedidos": pendentes}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception("Erro no /pedidos: %s", e)
+        raise HTTPException(status_code=500, detail="não deu para ler os pedidos do banco agora")
 
 
 @app.post("/solve")
@@ -476,7 +511,7 @@ def solve(body: SolveRequest, quem: tuple = Depends(exigir_login_ou_demo)):
         raise
     except Exception as e:
         logger.exception("Erro no /solve: %s", e)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="não deu para calcular a rota agora; tente de novo")
 
 
 @app.post("/avaliar")
@@ -574,7 +609,7 @@ async def upload_nf(
         resultado = parse_many(buffers)
     except Exception as e:
         logger.exception("Falha no parse: %s", e)
-        raise HTTPException(status_code=500, detail=f"Falha ao processar arquivos: {e}")
+        raise HTTPException(status_code=500, detail=sem_segredo(f"Falha ao processar arquivos: {e}"))
 
     pedidos = resultado["pedidos"]
     erros   = resultado["erros"]
@@ -609,7 +644,7 @@ def sync_totvs(uid: str = Depends(exigir_admin)):
         return {"status": "ok", "mensagem": "Sincronização TOTVS concluída."}
     except Exception as e:
         logger.exception("Erro no /sync: %s", e)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=sem_segredo(f"Sincronização TOTVS falhou: {e}"))
 
 
 # ── Entrada automática: configuração (tela) e recebimento (sistemas) ─────────
