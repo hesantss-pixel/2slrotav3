@@ -297,6 +297,29 @@ _RE_NF     = re.compile(r"(?:N[º°o.]?\s*(?:NF|NOTA)?\s*|N[º°o.]?\s*)(\d{4,9}
 _RE_PESO_B = re.compile(r"PESO\s+BRUTO[^0-9]{0,20}([\d.,]+)", re.IGNORECASE)
 _RE_QVOL   = re.compile(r"(?:QTDE?\.?|QUANTIDADE)[\s\S]{0,10}?(?:VOL|VOLUME)[^0-9]{0,20}(\d{1,4})", re.IGNORECASE)
 _RE_MUN    = re.compile(r"MUNIC[IÍ]PIO[^A-Z0-9]{0,15}([A-ZÁÉÍÓÚÃÕÂÊÔÇ ]{3,40})", re.IGNORECASE)
+# chave de acesso: 44 dígitos, impressos em 11 blocos de 4 (ou corridos)
+_RE_CHAVE  = re.compile(r"(?<!\d)(\d{4}(?:[ .]?\d{4}){10})(?!\d)")
+# número como o DANFE imprime: "Nº 000.004.521"
+_RE_NF_DANFE = re.compile(r"N[º°o]\s*\.?\s*:?\s*(\d{3}\.\d{3}\.\d{3})(?!\d)", re.IGNORECASE)
+
+
+def _numero_nf(text: str) -> str | None:
+    """Número da NF no texto de um DANFE.
+
+    1º pela chave de acesso (o número está nos dígitos 26 a 34, e o modelo 55/65 confirma
+    que é chave de NF); 2º pelo "Nº 000.004.521" do cabeçalho; por último, o padrão antigo.
+    Os dois primeiros devolvem o número sem zeros à esquerda, igual ao XML (nNF).
+    Antes, o número com pontos não era reconhecido, e um "Nº 1500" do endereço podia
+    ser lido como número da nota."""
+    for m in _RE_CHAVE.finditer(text):
+        chave = re.sub(r"\D", "", m.group(1))
+        if len(chave) == 44 and chave[20:22] in ("55", "65"):
+            return str(int(chave[25:34]))
+    m = _RE_NF_DANFE.search(text)
+    if m:
+        return str(int(m.group(1).replace(".", "")))
+    m = _RE_NF.search(text)
+    return m.group(1) if m else None
 
 
 def parse_pdf(content: bytes, filename: str = "") -> list[dict]:
@@ -316,16 +339,16 @@ def parse_pdf(content: bytes, filename: str = "") -> list[dict]:
     if not text.strip():
         raise ValueError(f"PDF {filename}: nenhum texto extraível (possível scan/imagem).")
 
-    nf_match     = _RE_NF.search(text)
+    nf_numero    = _numero_nf(text)
     peso_match   = _RE_PESO_B.search(text)
     qvol_match   = _RE_QVOL.search(text)
     mun_match    = _RE_MUN.search(text)
 
-    if not nf_match:
+    if not nf_numero:
         raise ValueError(f"PDF {filename}: número da NF não localizado.")
 
     return [_build_pedido(
-        nf     = nf_match.group(1),
+        nf     = nf_numero,
         cidade = mun_match.group(1).title() if mun_match else "",
         peso   = peso_match.group(1) if peso_match else 0,
         itens  = qvol_match.group(1) if qvol_match else 1,

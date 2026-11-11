@@ -144,6 +144,9 @@ class RoutingModel:
         melhor = None
         for k in range(len(clientes) + 1):
             for seq in itertools.permutations(clientes, k):
+                # como no OR-Tools: nó sem AddDisjunction é obrigatório
+                if any(c not in multa and c not in seq for c in clientes):
+                    continue
                 path = [self.Start(0), *seq, self.m.end(0)]
                 if not self._viavel(path):
                     continue

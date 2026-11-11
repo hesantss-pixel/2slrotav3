@@ -29,8 +29,8 @@ from fastapi import Depends, FastAPI, HTTPException, Header, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from vrp_solver   import solve_vrp, avaliar_sequencia, MAX_PARADAS_AVALIAR
-from groq_agent import GroqChat as GeminiChat, consulta_unica, analisar_rotas_geradas
+from vrp_solver   import solve_vrp, avaliar_sequencia, MAX_PARADAS_AVALIAR, conferir_motor
+from groq_agent import GroqChat as GeminiChat, consulta_unica, analisar_rotas_geradas, conferir_assistente
 from nf_parser    import parse_many
 import auth_firebase
 import entrada
@@ -47,7 +47,7 @@ logger = logging.getLogger(__name__)
 # ── App ───────────────────────────────────────────────────────────────────────
 
 # Versão do servidor. Aparece em /status junto com o commit publicado.
-VERSAO = "3.9.2"
+VERSAO = "3.9.3"
 
 app = FastAPI(
     title="ROTAV3 — Servidor de rotas",
@@ -298,6 +298,26 @@ class AvaliarRequest(BaseModel):
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
+_componentes: dict | None = None
+
+
+def componentes() -> dict:
+    """Confere uma vez se as bibliotecas pesadas carregam de verdade nesta instalação."""
+    global _componentes
+    if _componentes is None:
+        try:
+            import openpyxl  # noqa: F401
+            import pdfplumber  # noqa: F401
+            nf = "ok"
+        except Exception:
+            logger.exception("Leitura de NF (pdfplumber/openpyxl) não carregou")
+            nf = "falhou"
+        _componentes = {"motor_de_rotas": "ok" if conferir_motor() else "falhou",
+                        "assistente": conferir_assistente(),
+                        "leitura_de_nf": nf}
+    return _componentes
+
+
 @app.get("/status")
 def status():
     """Verificação de funcionamento (pública, sem dados da operação)."""
@@ -310,13 +330,20 @@ def status():
         "python": ".".join(platform.python_version_tuple()[:2]),
         "login": "obrigatório" if auth_firebase.AUTH_REQUIRED else "desligado (teste local)",
         "entrada_automatica": {"api": BANCO.ligado(), "email": bool(entrada_email.estado["ligado"])},
+        "componentes": componentes(),
     }
 
 
 @app.get("/health")
 def health():
     """O Railway chama isto antes de pôr um deploy novo no ar (healthcheckPath).
-    Não toca em banco nem em serviço externo: se o servidor subiu, responde."""
+
+    Não toca em banco nem em serviço externo. Confere se o motor de rotas, o SDK do
+    assistente e a leitura de NF carregam nesta instalação: se uma atualização de
+    biblioteca quebrar algum, responde 503 e o Railway mantém o deploy anterior no ar."""
+    falhas = [k for k, v in componentes().items() if v == "falhou"]
+    if falhas:
+        raise HTTPException(status_code=503, detail={"falhou": falhas})
     return {"ok": True}
 
 
@@ -499,9 +526,12 @@ def chat(body: ChatRequest, quem: tuple = Depends(exigir_login_ou_demo)):
         resposta = session.enviar(body.mensagem)
         return {"resposta": resposta, "session_id": sid}
 
+    except HTTPException:
+        raise
     except Exception as e:
+        # o texto do erro fica no log; para quem usa, uma frase que diz o que fazer
         logger.exception("Erro no /chat: %s", e)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=503, detail="o assistente não está disponível agora")
 
 
 MAX_UPLOAD_BYTES  = int(os.getenv("MAX_UPLOAD_BYTES",  str(15 * 1024 * 1024)))   # 15 MB/arquivo

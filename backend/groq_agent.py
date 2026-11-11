@@ -23,7 +23,63 @@ logger = logging.getLogger(__name__)
 # ── Lazy import do SDK Groq ───────────────────────────────────────────────────
 
 _client = None
-MODEL_NAME = "openai/gpt-oss-120b"
+# Modelo em variável de ambiente: quando a Groq desligar um modelo (ela avisa na página
+# de descontinuações), troca-se GROQ_MODEL no Railway, sem mexer no código.
+MODEL_NAME = os.getenv("GROQ_MODEL", "").strip() or "openai/gpt-oss-120b"
+# Quantas mensagens anteriores (perguntas e respostas) vão junto em cada pergunta.
+# 6 = as três últimas trocas. O plano gratuito da Groq tem um teto de tokens por
+# minuto, e cada mensagem a mais custa tokens em todas as perguntas seguintes.
+def _num_env(nome: str, padrao: int) -> int:
+    try:
+        return max(0, int(os.getenv(nome, "").strip() or padrao))
+    except ValueError:
+        logger.warning("%s inválido; usando %s", nome, padrao)
+        return padrao
+
+
+HISTORICO_MAX = _num_env("GROQ_HISTORICO", 6) // 2 * 2   # sempre pares pergunta+resposta
+
+
+def _status_http(e: Exception):
+    st = getattr(e, "status_code", None)
+    if st is None:
+        st = getattr(getattr(e, "response", None), "status_code", None)
+    return st if isinstance(st, int) else None
+
+
+def _mensagem_de_erro(e: Exception) -> str:
+    """O que a pessoa lê quando a Groq falha. Nunca o texto cru do erro: ele pode trazer
+    detalhes internos da API e não diz o que fazer."""
+    st = _status_http(e)
+    if st == 429:
+        return ("O assistente chegou ao limite de uso deste minuto. "
+                "Espere um minuto e pergunte de novo.")
+    if st == 413:
+        return ("Os dados do dia ficaram grandes demais para o assistente de uma vez. "
+                "Pergunte sobre uma cidade ou uma rota por vez.")
+    if st in (401, 403):
+        return "O assistente está sem acesso à IA agora. Avise o administrador do sistema."
+    if st is not None and st >= 500:
+        return "O serviço de IA está fora do ar agora. Tente de novo em alguns minutos."
+    return "Não deu para consultar o assistente agora. Tente de novo em alguns minutos."
+
+_assistente: str | None = None
+
+
+def conferir_assistente() -> str:
+    """'ok', 'sem chave' ou 'falhou'. Cria um cliente sem chamar a API: é aí que versões
+    incompatíveis do SDK e do httpx quebram (o caso do 'proxies' no httpx 0.28)."""
+    global _assistente
+    if _assistente is None:
+        try:
+            from groq import Groq
+            Groq(api_key="conferencia-sem-uso").close()
+            _assistente = "ok" if os.getenv("GROQ_API_KEY", "").strip() else "sem chave"
+        except Exception:
+            logger.exception("SDK da Groq não carregou")
+            _assistente = "falhou"
+    return _assistente
+
 
 def _init_groq():
     global _client
@@ -145,13 +201,14 @@ class GroqChat:
     em main.py sem precisar reescrever os endpoints.
 
     Diferença interna: Groq (estilo OpenAI) não tem "start_chat(history)"
-    como o Gemini — a lista de mensagens é mantida manualmente aqui e
-    reenviada inteira a cada chamada.
+    como o Gemini — a lista de mensagens é mantida aqui, com no máximo
+    HISTORICO_MAX mensagens anteriores, e os dados do dia vão só na pergunta atual.
     """
 
     def __init__(self):
         _init_groq()
-        self._historico: list[dict] = [{"role": "system", "content": SYSTEM_PROMPT}]
+        # Só perguntas e respostas. O contexto do dia vai na pergunta atual, não aqui.
+        self._historico: list[dict] = []
         self._ctx: str = ""
 
     def atualizar_contexto(
@@ -164,23 +221,34 @@ class GroqChat:
         self._ctx = montar_contexto(pedidos, rotas, veiculo, cap_kg)
 
     def enviar(self, mensagem: str) -> str:
-        """Envia mensagem e retorna resposta como string."""
+        """Envia mensagem e retorna resposta como string.
+
+        Antes, cada pergunta ia para o histórico junto com uma cópia inteira dos dados do
+        dia, e o histórico nunca era cortado: a conversa crescia sem parar e estourava o
+        limite de tokens por minuto da Groq já na segunda ou terceira pergunta."""
+        anteriores = self._historico[-HISTORICO_MAX:] if HISTORICO_MAX else []
         prompt = f"Dados operacionais atuais:\n{self._ctx}\n\nPergunta: {mensagem}"
-        self._historico.append({"role": "user", "content": prompt})
+        mensagens = [{"role": "system", "content": SYSTEM_PROMPT}, *anteriores,
+                     {"role": "user", "content": prompt}]
         try:
             resp = _client.chat.completions.create(
                 model=MODEL_NAME,
-                messages=self._historico,
+                messages=mensagens,
                 temperature=0.3,
                 top_p=0.9,
                 max_tokens=1024,
             )
-            texto = resp.choices[0].message.content
-            self._historico.append({"role": "assistant", "content": texto})
-            return texto
+            texto = (resp.choices[0].message.content or "").strip()
         except Exception as e:
-            logger.error("Erro Groq: %s", e)
-            return f"Erro ao consultar a IA: {e}"
+            # a pergunta que falhou não entra no histórico
+            logger.error("Erro Groq (%s): %s", _status_http(e), e)
+            return _mensagem_de_erro(e)
+        if not texto:
+            return "O assistente não conseguiu montar uma resposta. Tente perguntar de outro jeito."
+        self._historico += [{"role": "user", "content": mensagem},
+                            {"role": "assistant", "content": texto}]
+        self._historico = self._historico[-HISTORICO_MAX:] if HISTORICO_MAX else []
+        return texto
 
 
 # ── Função utilitária para uso único (sem histórico) ──────────────────────────
@@ -207,10 +275,11 @@ def consulta_unica(
             top_p=0.9,
             max_tokens=1024,
         )
-        return resp.choices[0].message.content
+        texto = (resp.choices[0].message.content or "").strip()
+        return texto or "O assistente não conseguiu montar uma resposta agora."
     except Exception as e:
-        logger.error("Erro Groq (consulta_unica): %s", e)
-        return f"Erro ao consultar IA: {e}"
+        logger.error("Erro Groq (consulta_unica, %s): %s", _status_http(e), e)
+        return _mensagem_de_erro(e)
 
 
 # ── Análise automática pós-VRP (idêntica ao gemini_agent.py) ─────────────────

@@ -18,6 +18,7 @@ https://developers.google.com/optimization/routing/vrp
 """
 
 import math
+import os
 import requests
 import logging
 from typing import TypedDict, Optional
@@ -60,10 +61,25 @@ class RotaResultado(TypedDict):
 
 # ── Constantes ─────────────────────────────────────────────────────────────────
 
-OSRM_URL   = "https://router.project-osrm.org/table/v1/driving"
+# Servidor de rotas. O padrão é o servidor público de demonstração do OSRM, que é de uso
+# não comercial, aceita no máximo 1 consulta por segundo e não tem garantia de ficar no
+# ar. Com servidor próprio, troca-se OSRM_URL (o endereço completo do serviço /table) e
+# OSRM_LIMIT no Railway, sem mexer no código.
+OSRM_URL   = (os.getenv("OSRM_URL", "").strip() or "https://router.project-osrm.org/table/v1/driving").rstrip("/")
+
+
+def _num_env(nome: str, padrao: float) -> float:
+    try:
+        v = float(os.getenv(nome, "").strip() or padrao)
+        return v if v > 0 else padrao
+    except ValueError:
+        return padrao
+
+
+OSRM_TIMEOUT = _num_env("OSRM_TIMEOUT", 10)
 # Centro de distribuição padrão; a tela manda o da conta em "deposito".
 DEPOT      = {"lat": -23.424492, "lng": -46.387695, "nome": "Centro de distribuição"}
-OSRM_LIMIT = 100   # Máximo de pontos por chamada OSRM (servidor público)
+OSRM_LIMIT = max(2, int(_num_env("OSRM_LIMIT", 100)))   # máximo de pontos por chamada (o público aceita 100)
 
 # Velocidade média estimada para fallback Haversine: 40 km/h
 SPEED_KMH = 40
@@ -80,6 +96,48 @@ ESPERA_MAX_S = 3 * 3600
 PENALTY = 100_000
 
 # ── Distâncias ─────────────────────────────────────────────────────────────────
+
+_motor_ok: bool | None = None
+
+
+def conferir_motor() -> bool:
+    """Resolve um problema mínimo (3 pontos, sem rede) com as mesmas chamadas do motor.
+
+    Serve para o /health: se uma atualização de biblioteca quebrar o OR-Tools ou o
+    protobuf, o Railway recusa o deploy novo e mantém o anterior no ar, em vez de o
+    erro aparecer só quando alguém pedir uma rota. O resultado fica guardado."""
+    global _motor_ok
+    if _motor_ok is not None:
+        return _motor_ok
+    try:
+        from ortools.constraint_solver import routing_enums_pb2
+        from ortools.constraint_solver import pywrapcp
+        mx = [[0, 5, 9], [5, 0, 4], [9, 4, 0]]
+        manager = pywrapcp.RoutingIndexManager(3, 1, 0)
+        routing = pywrapcp.RoutingModel(manager)
+        cb = routing.RegisterTransitCallback(
+            lambda a, b: mx[manager.IndexToNode(a)][manager.IndexToNode(b)])
+        routing.SetArcCostEvaluatorOfAllVehicles(cb)
+        routing.AddDimension(cb, 0, 100, True, "Teste")
+        params = pywrapcp.DefaultRoutingSearchParameters()
+        params.first_solution_strategy = routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
+        params.local_search_metaheuristic = (
+            routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH)
+        params.time_limit.seconds = 1
+        params.log_search = False
+        sol = routing.SolveWithParameters(params)
+        visitados, idx = 0, routing.Start(0)
+        while sol and not routing.IsEnd(idx) and visitados < 10:
+            visitados += 1
+            idx = sol.Value(routing.NextVar(idx))
+        _motor_ok = bool(sol) and visitados == 3
+        if not _motor_ok:
+            logger.error("Motor de rotas: o teste de 3 pontos não montou a rota (%s paradas)", visitados)
+    except Exception:
+        logger.exception("Motor de rotas não carregou")
+        _motor_ok = False
+    return _motor_ok
+
 
 def _haversine_m(a: dict, b: dict) -> float:
     """Distância em metros entre dois pontos lat/lng."""
@@ -121,7 +179,7 @@ def build_distance_matrix(points: list[dict]) -> tuple[list[list[int]], list[lis
         resp = requests.get(
             f"{OSRM_URL}/{coords}",
             params={"annotations": "distance,duration"},
-            timeout=10,
+            timeout=OSRM_TIMEOUT,
         )
         resp.raise_for_status()
         data = resp.json()

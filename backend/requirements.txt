@@ -1,12 +1,27 @@
-fastapi==0.111.0
-uvicorn[standard]==0.29.0
+# Versões fixas: o que roda no Railway é o que foi conferido aqui.
+# Python fixado em .python-version (3.12): o ortools 9.9 não tem pacote para 3.13.
+
+# servidor
+fastapi==0.143.0
+starlette==1.7.0
+pydantic==2.13.5
+python-multipart==0.0.32
+uvicorn[standard]==0.54.0
+h11>=0.16.0
+
+# motor de rotas (OR-Tools) e distâncias pelas ruas (OSRM)
 ortools==9.9.3963
-google-generativeai==0.7.2
-requests==2.32.3
-python-dotenv==1.0.1
-pydantic==2.7.1
-python-multipart==0.0.9
+# o ortools 9.9 foi gerado com protobuf 4.25; acima de 6 não foi testado com ele
+protobuf>=4.25.3,<6
+requests==2.34.2
+
+# leitura de NF (Excel e PDF)
 openpyxl==3.1.5
-pdfplumber==0.11.4
+pdfplumber==0.11.10
+
+# assistente (Groq). O httpx fica em 0.27: o SDK 0.11 da Groq quebra com o 0.28.
 groq==0.11.0
 httpx==0.27.2
+httpcore>=1.0.9
+
+python-dotenv==1.0.1

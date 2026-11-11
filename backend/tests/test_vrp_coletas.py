@@ -259,3 +259,35 @@ class TesteAvaliarSequencia(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TesteServidorDeRotasConfiguravel(unittest.TestCase):
+    """O servidor de rotas sai de variáveis de ambiente (para trocar o público por um próprio)."""
+
+    def _carregar(self, env):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("vrp_env_teste", vs.__file__)
+        m = importlib.util.module_from_spec(spec)
+        with mock.patch.dict(os.environ, env, clear=False):
+            spec.loader.exec_module(m)
+        return m
+
+    def test_padrao_e_o_servidor_publico(self):
+        m = self._carregar({"OSRM_URL": "", "OSRM_LIMIT": "", "OSRM_TIMEOUT": ""})
+        self.assertEqual(m.OSRM_URL, "https://router.project-osrm.org/table/v1/driving")
+        self.assertEqual((m.OSRM_LIMIT, m.OSRM_TIMEOUT), (100, 10))
+
+    def test_servidor_proprio(self):
+        m = self._carregar({"OSRM_URL": "https://rotas.exemplo.com.br/table/v1/driving/",
+                            "OSRM_LIMIT": "400", "OSRM_TIMEOUT": "20"})
+        self.assertEqual(m.OSRM_URL, "https://rotas.exemplo.com.br/table/v1/driving")
+        self.assertEqual((m.OSRM_LIMIT, m.OSRM_TIMEOUT), (400, 20))
+        with mock.patch.object(m.requests, "get", side_effect=m.requests.ConnectionError("x")) as g:
+            fonte = m.build_distance_matrix([CD, {"lat": -23.5, "lng": -46.5}])[2]
+        self.assertIn("Haversine", fonte)  # servidor fora do ar: cai para linha reta, sem erro
+        self.assertTrue(g.call_args.args[0].startswith("https://rotas.exemplo.com.br/table/v1/driving/"))
+        self.assertEqual(g.call_args.kwargs["timeout"], 20)
+
+    def test_valor_errado_nao_derruba_o_servidor(self):
+        m = self._carregar({"OSRM_LIMIT": "cem", "OSRM_TIMEOUT": "-3"})
+        self.assertEqual((m.OSRM_LIMIT, m.OSRM_TIMEOUT), (100, 10))

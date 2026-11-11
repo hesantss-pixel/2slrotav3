@@ -6,6 +6,7 @@ import os
 import sys
 import types
 import unittest
+from unittest import mock
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(AQUI))
@@ -58,6 +59,7 @@ def _instalar_substitutos():
     ga = types.ModuleType("groq_agent")
     ga.GroqChat = object
     ga.consulta_unica = ga.analisar_rotas_geradas = lambda *a, **k: ""
+    ga.conferir_assistente = lambda: "ok"
     sys.modules["groq_agent"] = ga
     import fake_ortools
     fake_ortools.instalar()
@@ -178,11 +180,37 @@ class TesteRotasEntrada(unittest.TestCase):
         self.assertEqual(st["codigo"], "local")   # fora do Railway não existe commit publicado
         self.assertEqual(st["entrada_automatica"], {"api": True, "email": True})
         self.assertRegex(st["python"], r"^3\.\d+$")   # só major.minor
+        self.assertEqual(st["componentes"], {"motor_de_rotas": "ok", "assistente": "ok", "leitura_de_nf": "ok"})
 
     def test_health_responde_sem_tocar_em_nada(self):
         # o Railway chama /health antes de trocar de deploy: não pode depender de banco
         # nem de serviço externo, e não devolve nada da operação
-        self.assertEqual(main.health(), {"ok": True})
+        main._componentes = None
+        with mock.patch.object(main.req_lib, "get") as g, mock.patch.object(main.req_lib, "post") as p:
+            self.assertEqual(main.health(), {"ok": True})
+        g.assert_not_called()
+        p.assert_not_called()
+
+    def test_health_recusa_deploy_com_motor_quebrado(self):
+        # biblioteca atualizada que quebra o OR-Tools: o Railway precisa ver 503 e manter o
+        # deploy anterior, em vez de o erro aparecer só quando alguém pedir uma rota
+        main._componentes = None
+        try:
+            with mock.patch.object(main, "conferir_motor", return_value=False):
+                with self.assertRaises(main.HTTPException) as c:
+                    main.health()
+            self.assertEqual(c.exception.status_code, 503)
+            self.assertEqual(c.exception.detail, {"falhou": ["motor_de_rotas"]})
+        finally:
+            main._componentes = None
+
+    def test_assistente_sem_chave_nao_bloqueia_deploy(self):
+        main._componentes = None
+        try:
+            with mock.patch.object(main, "conferir_assistente", return_value="sem chave"):
+                self.assertEqual(main.health(), {"ok": True})
+        finally:
+            main._componentes = None
 
 
 if __name__ == "__main__":
