@@ -19,6 +19,8 @@ https://developers.google.com/optimization/routing/vrp
 
 import math
 import os
+import threading
+import time
 import requests
 import logging
 from typing import TypedDict, Optional
@@ -77,6 +79,33 @@ def _num_env(nome: str, padrao: float) -> float:
 
 
 OSRM_TIMEOUT = _num_env("OSRM_TIMEOUT", 10)
+# Traçado pelas ruas (serviço /route do mesmo servidor). Rotas com mais paradas que
+# OSRM_ROUTE_MAX vão em partes e as partes são emendadas.
+OSRM_ROUTE_URL = (os.getenv("OSRM_ROUTE_URL", "").strip()
+                  or OSRM_URL.replace("/table/", "/route/")).rstrip("/")
+OSRM_ROUTE_MAX = max(2, int(_num_env("OSRM_ROUTE_MAX", 50)))
+# O servidor público pede no máximo 1 consulta por segundo e um User-Agent que diga quem
+# consulta (https://routing.openstreetmap.de/about.html). A espera só vale para ele.
+OSRM_PUBLICO = "router.project-osrm.org"
+try:
+    OSRM_INTERVALO = max(0.0, float(os.getenv("OSRM_INTERVALO", "").strip() or 1.0))
+except ValueError:
+    OSRM_INTERVALO = 1.0
+OSRM_HEADERS = {"User-Agent": "ROTAV3/3.9 (roteirizacao de entregas; https://www.rotav3.com.br)"}
+_vez_lock = threading.Lock()
+_ultima_consulta = 0.0
+
+
+def _esperar_vez(url: str) -> None:
+    """No servidor público, garante 1 consulta por segundo somando todos os usuários."""
+    global _ultima_consulta
+    if OSRM_PUBLICO not in url or OSRM_INTERVALO <= 0:
+        return
+    with _vez_lock:
+        espera = _ultima_consulta + OSRM_INTERVALO - time.monotonic()
+        if espera > 0:
+            time.sleep(espera)
+        _ultima_consulta = time.monotonic()
 # Centro de distribuição padrão; a tela manda o da conta em "deposito".
 DEPOT      = {"lat": -23.424492, "lng": -46.387695, "nome": "Centro de distribuição"}
 OSRM_LIMIT = max(2, int(_num_env("OSRM_LIMIT", 100)))   # máximo de pontos por chamada (o público aceita 100)
@@ -176,9 +205,11 @@ def build_distance_matrix(points: list[dict]) -> tuple[list[list[int]], list[lis
 
     coords = ";".join(f"{p['lng']:.5f},{p['lat']:.5f}" for p in points)
     try:
+        _esperar_vez(OSRM_URL)
         resp = requests.get(
             f"{OSRM_URL}/{coords}",
             params={"annotations": "distance,duration"},
+            headers=OSRM_HEADERS,
             timeout=OSRM_TIMEOUT,
         )
         resp.raise_for_status()
@@ -194,6 +225,101 @@ def build_distance_matrix(points: list[dict]) -> tuple[list[list[int]], list[lis
         logger.warning("OSRM indisponível (%s) — usando Haversine", exc)
         d, t = _haversine_matrix(points)
         return d, t, "Haversine:indisponivel"
+
+
+# ── Traçado pelas ruas ─────────────────────────────────────────────────────────
+#
+# O /table só devolve números (km e tempo entre cada par de pontos). O desenho da
+# rota no mapa vem do /route: as paradas na ordem escolhida e, de volta, a linha
+# pelas ruas, codificada em polyline6 (Google Encoded Polyline com 6 casas decimais).
+
+def polyline6_decode(texto: str) -> list[tuple[float, float]]:
+    pontos, i, lat, lng = [], 0, 0, 0
+    while i < len(texto):
+        for eixo in (0, 1):
+            res, desloc = 0, 0
+            while True:
+                b = ord(texto[i]) - 63
+                i += 1
+                res |= (b & 0x1F) << desloc
+                desloc += 5
+                if b < 0x20:
+                    break
+            delta = ~(res >> 1) if res & 1 else res >> 1
+            if eixo == 0:
+                lat += delta
+            else:
+                lng += delta
+        pontos.append((lat / 1e6, lng / 1e6))
+    return pontos
+
+
+def polyline6_encode(pontos: list[tuple[float, float]]) -> str:
+    saida, ant_lat, ant_lng = [], 0, 0
+    for lat, lng in pontos:
+        ilat, ilng = int(round(lat * 1e6)), int(round(lng * 1e6))
+        for delta in (ilat - ant_lat, ilng - ant_lng):
+            v = ~(delta << 1) if delta < 0 else delta << 1
+            while v >= 0x20:
+                saida.append(chr((0x20 | (v & 0x1F)) + 63))
+                v >>= 5
+            saida.append(chr(v + 63))
+        ant_lat, ant_lng = ilat, ilng
+    return "".join(saida)
+
+
+_cache_tracado: dict[str, str] = {}
+_CACHE_MAX = 500
+
+
+def _route_osrm(pontos: list[dict]) -> str:
+    coords = ";".join(f"{p['lng']:.5f},{p['lat']:.5f}" for p in pontos)
+    _esperar_vez(OSRM_ROUTE_URL)
+    resp = requests.get(
+        f"{OSRM_ROUTE_URL}/{coords}",
+        params={"overview": "full", "geometries": "polyline6", "steps": "false"},
+        headers=OSRM_HEADERS,
+        timeout=OSRM_TIMEOUT,
+    )
+    resp.raise_for_status()
+    data = resp.json()
+    if data.get("code") != "Ok" or not data.get("routes"):
+        raise ValueError(f"OSRM code: {data.get('code')}")
+    geo = data["routes"][0].get("geometry")
+    if not isinstance(geo, str) or not geo:
+        raise ValueError("OSRM sem geometria")
+    return geo
+
+
+def tracado_rota(pontos: list[dict]) -> str | None:
+    """Linha pelas ruas passando pelos pontos NA ORDEM dada (o primeiro e o último são
+    o centro de distribuição). Devolve polyline6, ou None se o servidor de rotas não
+    responder — aí a tela desenha a linha reta tracejada, com aviso."""
+    pts = [{"lat": float(p["lat"]), "lng": float(p["lng"])} for p in pontos
+           if p is not None and p.get("lat") is not None and p.get("lng") is not None]
+    if len(pts) < 2:
+        return None
+    chave = ";".join(f"{p['lat']:.5f},{p['lng']:.5f}" for p in pts)
+    if chave in _cache_tracado:
+        return _cache_tracado[chave]
+    try:
+        if len(pts) <= OSRM_ROUTE_MAX:
+            geo = _route_osrm(pts)
+        else:
+            # em partes: o último ponto de uma parte é o primeiro da seguinte
+            linha: list[tuple[float, float]] = []
+            passo = OSRM_ROUTE_MAX - 1
+            for ini in range(0, len(pts) - 1, passo):
+                parte = polyline6_decode(_route_osrm(pts[ini:ini + OSRM_ROUTE_MAX]))
+                linha += parte[1:] if linha else parte
+            geo = polyline6_encode(linha)
+    except Exception as exc:
+        logger.warning("Traçado pelas ruas indisponível (%s)", exc)
+        return None
+    if len(_cache_tracado) >= _CACHE_MAX:
+        _cache_tracado.pop(next(iter(_cache_tracado)))
+    _cache_tracado[chave] = geo
+    return geo
 
 
 # ── Coletas e entregas ─────────────────────────────────────────────────────────

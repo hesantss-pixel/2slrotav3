@@ -29,10 +29,11 @@ from fastapi import Depends, FastAPI, HTTPException, Header, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from vrp_solver   import solve_vrp, avaliar_sequencia, MAX_PARADAS_AVALIAR, conferir_motor
+from vrp_solver   import solve_vrp, avaliar_sequencia, MAX_PARADAS_AVALIAR, conferir_motor, tracado_rota
 from groq_agent import GroqChat as GeminiChat, consulta_unica, analisar_rotas_geradas, conferir_assistente
 from nf_parser    import parse_many
 import auth_firebase
+import vrp_solver
 import entrada
 import entrada_email
 
@@ -81,7 +82,7 @@ for _nome in ("", "uvicorn", "uvicorn.error", "uvicorn.access"):
 # ── App ───────────────────────────────────────────────────────────────────────
 
 # Versão do servidor. Aparece em /status junto com o commit publicado.
-VERSAO = "3.9.4"
+VERSAO = "3.10.0"
 
 app = FastAPI(
     title="ROTAV3 — Servidor de rotas",
@@ -330,6 +331,12 @@ class AvaliarRequest(BaseModel):
     deposito:   Optional[Deposito] = None
     hora_saida: Optional[int] = None
 
+
+class TracadoRequest(BaseModel):
+    """Pontos na ordem da rota, do centro de distribuição de volta a ele."""
+    model_config = {"extra": "ignore"}
+    pontos: list[dict]
+
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
 _componentes: dict | None = None
@@ -448,6 +455,11 @@ def solve(body: SolveRequest, quem: tuple = Depends(exigir_login_ou_demo)):
         logger.info("Solver: %d rotas | %d não alocados | fonte: %s | status: %s",
                     len(routes), len(n_aloc), fonte, status_vp)
 
+        # Linha pelas ruas para o mapa. Se o /table já caiu para linha reta, o servidor
+        # de rotas está fora: não vale esperar mais um tempo limite por rota.
+        for r in routes:
+            r["tracado"] = tracado_rota(r.get("sequencia_coords") or []) if fonte == "OSRM" else None
+
         # 4. Salvar no Firebase
         veiculo_nome = frota[0].nome
         cap_kg_val   = frota[0].capKg
@@ -534,7 +546,29 @@ def avaliar(body: AvaliarRequest, quem: tuple = Depends(exigir_login_ou_demo)):
     except (KeyError, TypeError, ValueError):
         raise HTTPException(status_code=422, detail="Cada parada precisa de lat e lng.")
     deposito = body.deposito.model_dump() if body.deposito else None
-    return avaliar_sequencia(pedidos, deposito, body.hora_saida)
+    medida = avaliar_sequencia(pedidos, deposito, body.hora_saida)
+    medida["tracado"] = None
+    if medida.get("fonte_distancia") == "OSRM":
+        dep = deposito if deposito and deposito.get("lat") is not None else vrp_solver.DEPOT
+        ida_volta = [dep, *pedidos, dep]
+        medida["tracado"] = tracado_rota(ida_volta)
+    return medida
+
+
+@app.post("/tracado")
+def tracado(body: TracadoRequest, quem: tuple = Depends(exigir_login_ou_demo)):
+    """Só a linha pelas ruas de uma rota já montada (para rotas confirmadas antes de o
+    traçado existir). Não lê nem grava o banco."""
+    _limite_demo(quem, "tracado", 300)
+    if not 2 <= len(body.pontos) <= MAX_PARADAS_AVALIAR + 2:
+        raise HTTPException(status_code=422, detail=f"De 2 a {MAX_PARADAS_AVALIAR + 2} pontos.")
+    try:
+        pontos = [{"lat": float(p["lat"]), "lng": float(p["lng"])} for p in body.pontos]
+    except (KeyError, TypeError, ValueError):
+        raise HTTPException(status_code=422, detail="Cada ponto precisa de lat e lng.")
+    if any(not (-90 <= p["lat"] <= 90 and -180 <= p["lng"] <= 180) for p in pontos):
+        raise HTTPException(status_code=422, detail="Coordenada fora do mapa.")
+    return {"tracado": tracado_rota(pontos)}
 
 
 @app.post("/chat")

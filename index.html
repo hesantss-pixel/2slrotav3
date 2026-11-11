@@ -448,6 +448,7 @@ body:not(.autorizado)>.sidebar,body:not(.autorizado)>.main,body:not(.autorizado)
 .kpi-split{font-size:11.5px;font-weight:600;color:var(--text2);margin-top:6px;}
 .leaflet-container .leaflet-control-attribution{font-size:9.5px;background:rgba(255,255,255,.8);}
 .aprox{font-family:var(--body);font-size:10px;font-weight:700;color:#8a5a06;background:#fff3df;border:1px solid #f6dca6;border-radius:6px;padding:1px 6px;margin-left:7px;white-space:nowrap;}
+.mapa-legenda{background:rgba(255,255,255,.94);color:#3a4657;font-size:11.5px;line-height:1.35;padding:5px 9px;border-radius:7px;box-shadow:0 1px 4px rgba(13,27,46,.22);max-width:240px;}
 .mapa-nota{font-size:12px;line-height:1.5;color:#8a5a06;background:#fff8ea;border:1px solid #f6dca6;border-radius:10px;padding:8px 12px;margin:-6px 0 12px;}
 @media(max-width:520px){#rot-tipo{display:grid;grid-template-columns:1fr 1fr;}#rot-tipo button[data-v="todos"]{grid-column:1/-1;}.seg button{padding:8px 12px;}}
 .dup{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
@@ -1748,6 +1749,35 @@ function _fundoMapa(map){
     : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
   L.control.attribution({prefix:false}).addTo(map);
   L.tileLayer(url,{maxZoom:19, attribution: CARTO_KEY ? '© OpenStreetMap · © CARTO' : '© OpenStreetMap'}).addTo(map);
+}
+// ── Traçado pelas ruas ──────────────────────────────────────────────────────
+// O servidor devolve a linha da rota em polyline6 (OSRM /route): o caminho pelas ruas,
+// com curvas, mão única e conversões. Sem ela, a rota aparece em linha reta tracejada.
+function _decodePolyline6(s){
+  const out=[]; if(typeof s!=='string') return out;
+  let i=0, lat=0, lng=0;
+  while(i<s.length){
+    for(let eixo=0;eixo<2;eixo++){
+      let res=0, desl=0, b;
+      do{ if(i>=s.length) return out; b=s.charCodeAt(i++)-63; res|=(b&31)<<desl; desl+=5; }while(b>=32);
+      const d=(res&1)?~(res>>1):(res>>1);
+      if(eixo===0) lat+=d; else lng+=d;
+    }
+    out.push([lat/1e6,lng/1e6]);
+  }
+  return out;
+}
+const ATRIB_ROTAS='Rotas: <a href="https://project-osrm.org/" target="_blank" rel="noopener">OSRM</a>';
+// Desenha a rota: pelas ruas quando há traçado; senão, a linha reta tracejada.
+function _linhaRota(alvo, pts, tracado, estilo){
+  const linha=_decodePolyline6(tracado);
+  if(linha.length>=2) return {camada:L.polyline(linha,{...estilo,smoothFactor:1.2,attribution:ATRIB_ROTAS}).addTo(alvo), ruas:true, pontos:linha};
+  return {camada:L.polyline(pts,{...estilo,dashArray:'6,6',opacity:Math.min(estilo.opacity||.7,.6)}).addTo(alvo), ruas:false, pontos:pts};
+}
+function _legendaMapa(map, texto){
+  const c=L.control({position:'bottomleft'});
+  c.onAdd=()=>{ const d=L.DomUtil.create('div','mapa-legenda'); d.textContent=texto; return d; };
+  c.addTo(map); return c;
 }
 // Paradas no mesmo lugar (até 30 m) viram um marcador só: "1–3" ou "2·5"
 function _agruparParadas(paradas){
@@ -3383,6 +3413,7 @@ async function executarVRPD(){
       deposito: { lat:DEPOT.lat, lng:DEPOT.lng, nome:DEPOT.name },
     });
     rotaGeradaD=data.routes||data.rotas||[];
+    rotaGeradaD.forEach(r=>{ r._tracado=r.tracado||null; delete r.tracado; });
     fonteDistanciaD=data.fonte_distancia||'—';
     regraCargaD=data.regra_carga||'';
     naoAlocD=(data.nao_alocados||[]).map(String); foraJanelaD=(data.fora_da_janela||[]).map(String);
@@ -3542,13 +3573,37 @@ function _manPintar(g){
   if(el.getAttribute('title')!==t) el.setAttribute('title',t);
   mk.setZIndexOffset(rot?1000:0);
 }
+// Enquanto a pessoa toca nos pontos, a linha é reta e tracejada (rascunho). Quando ela
+// para por um instante, o servidor devolve o caminho pelas ruas e a linha vira o trajeto.
+let _manTracTimer=null, _manChave='';
+const _manTracCache=new Map();
 function _manDesenharLinha(){
   if(manLinha&&manLayer){ manLayer.removeLayer(manLinha); manLinha=null; }
+  clearTimeout(_manTracTimer);
   if(!manLayer) return;
   const pts=manSel.filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng)).map(p=>[p.lat,p.lng]);
-  if(!pts.length) return;
-  manLinha=L.polyline([[DEPOT.lat,DEPOT.lng],...pts,[DEPOT.lat,DEPOT.lng]],
+  if(!pts.length){ _manChave=''; return; }
+  const todos=[[DEPOT.lat,DEPOT.lng],...pts,[DEPOT.lat,DEPOT.lng]];
+  const chave=todos.map(p=>p[0].toFixed(5)+','+p[1].toFixed(5)).join(';');
+  _manChave=chave;
+  const pronta=_manTracCache.get(chave);
+  if(pronta){
+    manLinha=L.polyline(pronta,{color:'#0d1b2e',weight:3.5,opacity:.72,smoothFactor:1.2,interactive:false,attribution:ATRIB_ROTAS}).addTo(manLayer);
+    return;
+  }
+  manLinha=L.polyline(todos,
     {color:'#0d1b2e',weight:2.5,opacity:.55,dashArray:'6,8',interactive:false}).addTo(manLayer);
+  if(!auth.currentUser) return;
+  _manTracTimer=setTimeout(async()=>{
+    try{
+      const d=await apiPost('/tracado',{pontos:todos.map(([lat,lng])=>({lat,lng}))});
+      const linha=_decodePolyline6(d&&d.tracado);
+      if(linha.length<2) return;
+      if(_manTracCache.size>=60) _manTracCache.delete(_manTracCache.keys().next().value);
+      _manTracCache.set(chave,linha);
+      if(_manChave===chave&&manLayer) _manDesenharLinha();   // ainda é a mesma sequência
+    }catch(e){}
+  },1200);
 }
 function _manMudou(){ manGrupos.forEach(_manPintar); _manDesenharLinha(); _manAtualizar(); }
 
@@ -3785,6 +3840,7 @@ function _recalcLocalD(r){
   const est=_estimarRotaLocal(ps);
   r.km=est.km; r.mins=est.mins; ps.forEach((p,k)=>{ p.chegada_min=est.chegadas[k]; });
   r._fonte='Haversine'; r._calc=ps.length?'calculando':'ok';
+  r._tracado=null;   // a ordem mudou: o traçado antigo não vale mais
 }
 function _mudouRotaD(ri){
   const r=rotaGeradaD[ri]; if(!r) return;
@@ -3811,7 +3867,7 @@ async function _avaliarRotaD(ri,seq){
     if(seq!==_avSeq[ri]||rotaGeradaD[ri]!==r) return;   // a rota mudou de novo: vale a próxima resposta
     r.km=+d.km||0; r.mins=+d.mins||0;
     (d.chegada_min||[]).forEach((c,k)=>{ if(ps[k]) ps[k].chegada_min=c; });
-    r._fonte=d.fonte_distancia||'—'; r._calc='ok';
+    r._fonte=d.fonte_distancia||'—'; r._calc='ok'; r._tracado=d.tracado||null;
   }catch(e){
     if(seq!==_avSeq[ri]||rotaGeradaD[ri]!==r) return;
     r._calc='local';
@@ -3892,7 +3948,7 @@ async function otimizarRotaD(ri){
       _toast(`O sistema não achou lugar para ${_plural(fora.length,'parada','paradas')} (horário); ${fora.length===1?'ela ficou':'elas ficaram'} no fim da rota.`);
     } else {
       _recalcLocalD(r);
-      r.km=+nova.km||r.km; r.mins=+nova.mins||r.mins; r._fonte=d.fonte_distancia||'—'; r._calc='ok';
+      r.km=+nova.km||r.km; r.mins=+nova.mins||r.mins; r._fonte=d.fonte_distancia||'—'; r._calc='ok'; r._tracado=nova.tracado||null;
       _renderResultadoD();
       _toast('Ordem otimizada.');
     }
@@ -4011,6 +4067,7 @@ async function confirmarRotaD(){
         peso_total:r.peso_total||paradas.reduce((s,p)=>s+(p.peso||0),0),
         num_paradas:paradas.length, entregas:nP.entrega, coletas:nP.coleta, status:'em_rota', paradas,
         fonte_dist:r._fonte||fonteDistanciaD||'—',   // como o km e os horários foram medidos
+        ...(r._tracado?{tracado:r._tracado}:{}),          // linha pelas ruas (polyline6), para não pedir de novo
         ...(r._manual?{montagem:'manual'}:{}),            // montada à mão no mapa, não pelo motor
         ...(r._ajustada?{ajustada:true}:{}) };
     }).filter(r=>r.paradas.length);
@@ -4418,7 +4475,9 @@ function desenharMiniMapaRota(rota, elId, cor){
   _fundoMapa(map);
 
   const coords = [[DEPOT.lat,DEPOT.lng], ...paradas.map(p=>[p.lat,p.lng]), [DEPOT.lat,DEPOT.lng]];
-  L.polyline(coords, {color:cor, weight:3, opacity:.85}).addTo(map);
+  const linha = _linhaRota(map, coords, rota.tracado, {color:cor, weight:3.5, opacity:.85});
+  if(!linha.ruas) _pedirTracadoRota(rota, coords, elId, cor);   // rota de antes do traçado existir
+  if(linha.ruas) linha.pontos.forEach(p=>coords.push(p));   // o caminho pode sair um pouco das paradas
   L.circleMarker([DEPOT.lat,DEPOT.lng], {radius:6, color:'#fff', weight:2, fillColor:'#e09c12', fillOpacity:1})
     .addTo(map).bindTooltip(esc(DEPOT.name));
   // paradas numeradas (coleta: vazado); no mesmo ponto viram um marcador só
@@ -4431,6 +4490,23 @@ function desenharMiniMapaRota(rota, elId, cor){
   map.fitBounds(L.latLngBounds(coords), {padding:[18,18]});
 }
 window.desenharMiniMapaRota = desenharMiniMapaRota;
+// Rotas confirmadas antes do traçado existir: pede a linha pelas ruas uma vez, uma rota
+// por vez (o servidor de rotas público aceita 1 consulta por segundo), e guarda na rota.
+const _tracadoPedido=new Set(); let _filaTracado=Promise.resolve();
+function _pedirTracadoRota(rota, coords, elId, cor){
+  if(!rota||!rota.id||_tracadoPedido.has(rota.id)||coords.length<3||!auth.currentUser) return;
+  _tracadoPedido.add(rota.id);   // uma tentativa por rota enquanto a página está aberta
+  const pontos=coords.map(([lat,lng])=>({lat,lng}));
+  _filaTracado=_filaTracado.then(async()=>{
+    try{
+      const d=await apiPost('/tracado',{pontos});
+      if(!d||!d.tracado||_decodePolyline6(d.tracado).length<2) return;
+      rota.tracado=d.tracado;
+      if(!modoDemo) await update(ref(db,TP('rotas_confirmadas/'+rota.id)),{tracado:d.tracado}).catch(()=>{});
+      if(document.getElementById(elId)) desenharMiniMapaRota(rota, elId, cor);
+    }catch(e){}
+  });
+}
 
 function renderRotasConfirmadas(){
   const cont=document.getElementById('rotas-confirmadas-lista');
@@ -4719,12 +4795,12 @@ function selRotaTabD(idx){
     const el=document.querySelector(`#rot-step-results [data-foco="${CSS.escape(f)}"]`)||document.getElementById(f);
     if(el){ el.focus({preventScroll:false}); if(el.id==='add-busca'&&el.setSelectionRange){ const n=el.value.length; el.setSelectionRange(n,n); } }
   }
-  setTimeout(()=>desenharMapaRota(paradas),100);
+  setTimeout(()=>desenharMapaRota(paradas,r),100);
 }
 window.selRotaTabD=selRotaTabD;
 
 let rotaMapInst=null;
-function desenharMapaRota(paradas){
+function desenharMapaRota(paradas,r){
   if(rotaMapInst){ rotaMapInst.remove(); rotaMapInst=null; }
   rotaMapInst=L.map('rota-map',{attributionControl:false}).setView([DEPOT.lat,DEPOT.lng],10);
   _fundoMapa(rotaMapInst);
@@ -4733,12 +4809,18 @@ function desenharMapaRota(paradas){
   paradas.forEach(p=>{ if(Number.isFinite(p.lat)&&Number.isFinite(p.lng)) pts.push([p.lat,p.lng]); });
   pts.push([DEPOT.lat,DEPOT.lng]);
   if(pts.length<3) return;   // viagem sem paradas: só o CD
-  L.polyline(pts,{color:'#2f6fe4',weight:3,opacity:.7,dashArray:'6,5'}).addTo(rotaMapInst);
+  const linha=_linhaRota(rotaMapInst, pts, r&&r._tracado, {color:'#2f6fe4',weight:4,opacity:.8});
+  if(!linha.ruas){
+    const calc=(r&&r._calc)||'ok';
+    _legendaMapa(rotaMapInst, calc==='calculando'||calc==='otimizando'
+      ? 'Buscando o caminho pelas ruas…'
+      : 'Linha reta entre as paradas: o caminho pelas ruas não veio do servidor de rotas.');
+  }
   _agruparParadas(paradas).forEach(g=>{
     L.marker([g.lat,g.lng],{icon:_iconeGrupo(paradas,g,'#0d1b2e',28)}).addTo(rotaMapInst).bindTooltip(_textoGrupo(paradas,g));
   });
   // sem animação: o mapa é redesenhado a cada ajuste, e apagar um mapa no meio do zoom animado dá erro no Leaflet
-  rotaMapInst.fitBounds(pts,{padding:[40,40],maxZoom:15,animate:false});
+  rotaMapInst.fitBounds(L.latLngBounds(pts).extend(L.latLngBounds(linha.pontos)),{padding:[40,40],maxZoom:15,animate:false});
 }
 
 // ══════════════════════════════════════════════════════════════════════════

@@ -193,6 +193,35 @@ está ligado em `entrada_automatica`.
   Para mudar, use **Devolver** na página Rotas e gere de novo.
 - "Gerar outra rota" ou sair da página Roteirização descarta a rota que não foi confirmada.
 
+## Traçado pelas ruas (versão 3.10)
+
+O km e o tempo sempre foram medidos pelas ruas (OSRM `/table`), mas o desenho da rota no mapa
+ligava as paradas em linha reta. Agora o servidor pede ao OSRM o serviço `/route`, com as paradas
+**na ordem da rota** (do CD ao CD), e devolve a linha pelas ruas em `tracado` (polyline6, a mesma
+codificação do Google com 6 casas decimais). A tela desenha essa linha.
+
+- **Onde aparece:** resultado da roteirização (`/solve` devolve um `tracado` por rota), rota
+  ajustada ou otimizada (`/avaliar` devolve o da ordem nova), página Rotas e montagem no mapa.
+- **Montagem no mapa:** enquanto a pessoa toca nos pontos, a linha é um rascunho reto e tracejado.
+  Quando ela para por pouco mais de 1 segundo, a tela pede o caminho (`POST /tracado`) e a linha
+  vira o trajeto. Sequência já pedida volta da memória, sem nova consulta.
+- **Guardado na rota confirmada** (`rotas_confirmadas/<id>/tracado`): a página Rotas desenha sem
+  perguntar ao servidor. Rota confirmada antes desta versão pede o traçado uma vez, uma rota por
+  vez, e guarda.
+- **Sem traçado** (servidor de rotas fora, ou mais de 100 pontos no `/table`): linha reta
+  **tracejada**, com o aviso "Linha reta entre as paradas" no canto do mapa. Enquanto mede uma
+  ordem nova: "Buscando o caminho pelas ruas…".
+- Rota com mais de `OSRM_ROUTE_MAX` pontos (padrão 50) é pedida em partes, emendadas no servidor.
+- O servidor guarda na memória os últimos 500 traçados (mesma sequência não consulta de novo).
+- No servidor público do OSRM: no máximo 1 consulta por segundo somando todos os usuários
+  (`OSRM_INTERVALO`) e um User-Agent com o nome e o site da ROTAV3, como a política dele pede.
+  Crédito "Rotas: OSRM" no canto do mapa.
+- **Limite de uso:** o servidor público é para uso **não comercial**. Serve para desenvolvimento
+  e demonstração. No primeiro cliente pagante, subir um OSRM próprio (recorte Sudeste ou SP da
+  Geofabrik) e apontar `OSRM_URL` para ele: `/table` e `/route` saem do mesmo servidor.
+- O traçado não sabe de ZMRC, rodízio nem restrição para caminhão (o perfil é de carro). Para
+  navegar, o motorista continua usando Google Maps ou Waze pelos botões.
+
 ## Conta de demonstração e página Acessos
 
 - **Acessos** (só o administrador, `ADMIN_UID` no `index.html` e nas regras): cria acesso de
@@ -319,6 +348,7 @@ Variáveis de ambiente usadas:
 | `GROQ_MODEL` | Modelo do assistente (padrão `openai/gpt-oss-120b`). Quando a Groq desligar um modelo, troca-se aqui | Não |
 | `GROQ_HISTORICO` | Quantas mensagens anteriores vão em cada pergunta (padrão 6). Mais = mais tokens por pergunta | Não |
 | `OSRM_URL` / `OSRM_LIMIT` / `OSRM_TIMEOUT` | Servidor de distâncias pelas ruas (endereço completo do serviço `/table`), máximo de pontos por consulta (padrão 100) e segundos de espera (padrão 10). O padrão é o servidor público de demonstração do OSRM, que não é para uso comercial | Não, até ter servidor próprio |
+| `OSRM_ROUTE_URL` / `OSRM_ROUTE_MAX` / `OSRM_INTERVALO` | Serviço `/route` do traçado (padrão: o mesmo servidor do `OSRM_URL`, trocando `/table/` por `/route/`), pontos por consulta antes de dividir em partes (padrão 50) e segundos entre consultas ao servidor público (padrão 1) | Não |
 
 Python fixado em `backend/.python-version` (3.12) e bibliotecas com versão exata em
 `backend/requirements.txt`. O `backend/railway.toml` manda o Railway publicar só quando algo em
@@ -394,6 +424,10 @@ troque `BACKEND_URL` no `index.html`.
   Hoje são 482 verificações. Nenhuma chama a internet: o Firebase é simulado
   (`tests/tela/fakefb`), o Leaflet vem de `tests/tela/vendor` e ViaCEP/Nominatim/OSRM são cortados.
   `t_xss.js` é a trava de segurança: falha se alguém tirar o `esc()` de um texto que vem de fora.
+  `t_tracado.js` confere o traçado pelas ruas: o decodificador contra uma resposta real do OSRM
+  (`backend/tests/dados/osrm_route_guarulhos.json`), a linha contínua quando há traçado, tracejada
+  com aviso quando não há, o traçado guardado na rota confirmada, a rota antiga recebendo o
+  traçado uma vez e a montagem no mapa pedindo o caminho só quando a pessoa para de tocar.
 - Tela: testada com um Firebase simulado (login, senha errada, esqueci a senha, acesso
   pendente, liberação, dashboard, regiões a partir dos pedidos, importação de CSV,
   roteirização com o token, confirmação de saída, motoristas, agendamento, chat, sair; e

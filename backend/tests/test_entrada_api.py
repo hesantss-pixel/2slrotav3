@@ -246,3 +246,55 @@ class TesteRotasEntrada(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TesteTracadoNaApi(unittest.TestCase):
+    """O /avaliar e o /tracado devolvem a linha pelas ruas; o /solve, uma por rota."""
+
+    QUEM = ("u1", "completo")
+
+    def test_avaliar_pede_o_tracado_do_cd_ao_cd(self):
+        medida = {"km": 10.0, "mins": 30, "chegada_min": [None], "fonte_distancia": "OSRM", "passa_da_jornada": False}
+        with mock.patch.object(main, "avaliar_sequencia", return_value=dict(medida)), \
+                mock.patch.object(main, "tracado_rota", return_value="abc") as t:
+            r = main.avaliar(main.AvaliarRequest(pedidos=[{"lat": -23.5, "lng": -46.5}],
+                                                 deposito={"lat": -23.4, "lng": -46.3, "nome": "CD"}), self.QUEM)
+        self.assertEqual(r["tracado"], "abc")
+        pts = t.call_args.args[0]
+        self.assertEqual([(p["lat"], p["lng"]) for p in pts], [(-23.4, -46.3), (-23.5, -46.5), (-23.4, -46.3)])
+
+    def test_avaliar_sem_osrm_nao_espera_o_tracado(self):
+        medida = {"km": 10.0, "mins": 30, "chegada_min": [None], "fonte_distancia": "Haversine:indisponivel",
+                  "passa_da_jornada": False}
+        with mock.patch.object(main, "avaliar_sequencia", return_value=dict(medida)), \
+                mock.patch.object(main, "tracado_rota") as t:
+            r = main.avaliar(main.AvaliarRequest(pedidos=[{"lat": -23.5, "lng": -46.5}]), self.QUEM)
+        self.assertIsNone(r["tracado"])
+        t.assert_not_called()
+
+    def test_tracado_valida_os_pontos(self):
+        for pontos in ([{"lat": -23.4, "lng": -46.3}],
+                       [{"lat": -23.4, "lng": -46.3}, {"lat": 123, "lng": -46.3}],
+                       [{"lat": -23.4}, {"lat": -23.5, "lng": -46.5}],
+                       [{"lat": -23.4, "lng": -46.3}] * (main.MAX_PARADAS_AVALIAR + 3)):
+            with self.assertRaises(HTTPException) as c:
+                main.tracado(main.TracadoRequest(pontos=pontos), self.QUEM)
+            self.assertEqual(c.exception.status_code, 422)
+        with mock.patch.object(main, "tracado_rota", return_value=None):
+            r = main.tracado(main.TracadoRequest(pontos=[{"lat": -23.4, "lng": -46.3}, {"lat": -23.5, "lng": -46.5}]),
+                             self.QUEM)
+        self.assertEqual(r, {"tracado": None})
+
+    def test_solve_devolve_tracado_por_rota_so_com_osrm(self):
+        rota = {"veiculo": "Fiorino", "veiculo_id": "v1", "pedidos": [{"nf": "1"}], "km": 5, "mins": 20,
+                "sequencia_coords": [{"lat": -23.4, "lng": -46.3}, {"lat": -23.5, "lng": -46.5},
+                                     {"lat": -23.4, "lng": -46.3}]}
+        corpo = main.SolveRequest(veiculos=[{"id": "v1", "nome": "Fiorino", "capKg": 600, "maxPed": 10}],
+                                  pedidos=[{"nf": "1", "lat": -23.5, "lng": -46.5, "peso": 10}])
+        for fonte, esperado, chamadas in (("OSRM", "linha", 1), ("Haversine:indisponivel", None, 0)):
+            res = {"routes": [dict(rota)], "nao_alocados": [], "fonte_distancia": fonte, "solver_status": "ok"}
+            with mock.patch.object(main, "solve_vrp", return_value=res), \
+                    mock.patch.object(main, "tracado_rota", return_value="linha") as t:
+                r = main.solve(corpo, self.QUEM)
+            self.assertEqual(r["routes"][0]["tracado"], esperado, fonte)
+            self.assertEqual(t.call_count, chamadas, fonte)

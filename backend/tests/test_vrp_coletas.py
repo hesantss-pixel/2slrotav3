@@ -13,6 +13,8 @@ import fake_ortools  # noqa: E402
 fake_ortools.instalar()
 import vrp_solver as vs  # noqa: E402
 
+vs.OSRM_INTERVALO = 0   # nos testes não há servidor público para respeitar
+
 CD = {"lat": -23.4245, "lng": -46.3877, "nome": "CD teste"}
 
 
@@ -291,3 +293,94 @@ class TesteServidorDeRotasConfiguravel(unittest.TestCase):
     def test_valor_errado_nao_derruba_o_servidor(self):
         m = self._carregar({"OSRM_LIMIT": "cem", "OSRM_TIMEOUT": "-3"})
         self.assertEqual((m.OSRM_LIMIT, m.OSRM_TIMEOUT), (100, 10))
+
+
+def _resp_route(geo):
+    r = mock.Mock()
+    r.raise_for_status.return_value = None
+    r.json.return_value = {"code": "Ok", "routes": [{"geometry": geo, "distance": 1000, "duration": 100}]}
+    return r
+
+
+class TesteTracadoPelasRuas(unittest.TestCase):
+    """A linha da rota no mapa vem do /route do OSRM, pelas ruas, na ordem das paradas."""
+
+    def setUp(self):
+        vs._cache_tracado.clear()
+
+    def test_polyline6_ida_e_volta(self):
+        # mesmos inteiros do exemplo oficial do Google (precisão 5) = mesma sequência de letras
+        self.assertEqual(vs.polyline6_encode([(3.85, -12.02), (4.07, -12.095), (4.3252, -12.6453)]),
+                         "_p~iF~ps|U_ulLnnqC_mqNvxq`@")
+        pts = [(-23.424492, -46.387695), (-23.45, -46.53), (-23.4501, -46.5302), (-23.424492, -46.387695)]
+        volta = vs.polyline6_decode(vs.polyline6_encode(pts))
+        for a, b in zip(pts, volta):
+            self.assertAlmostEqual(a[0], b[0], places=6)
+            self.assertAlmostEqual(a[1], b[1], places=6)
+
+    def test_le_a_geometria_de_verdade_do_osrm(self):
+        # resposta real do router.project-osrm.org (CD → Av. Papa João XXIII → CD, 11/11/2026)
+        import json
+        with open(os.path.join(AQUI, "dados", "osrm_route_guarulhos.json"), encoding="utf-8") as f:
+            r = json.load(f)["routes"][0]
+        pts = vs.polyline6_decode(r["geometry"])
+        self.assertGreater(len(pts), 400, "linha pelas ruas tem centenas de pontos, não 3")
+        soma = sum(vs._haversine_m({"lat": a[0], "lng": a[1]}, {"lat": b[0], "lng": b[1]})
+                   for a, b in zip(pts, pts[1:]))
+        self.assertAlmostEqual(soma / r["distance"], 1.0, delta=0.01)   # mesmo comprimento que o OSRM mediu
+        self.assertEqual(vs.polyline6_encode(pts), r["geometry"])
+
+    def test_pede_o_route_na_ordem_com_geometria_completa(self):
+        linha = [(-23.4245, -46.3877), (-23.43, -46.40), (-23.44, -46.41)]
+        geo = vs.polyline6_encode(linha)
+        pts = [CD, {"lat": -23.44, "lng": -46.41}, CD]
+        with mock.patch.object(vs.requests, "get", return_value=_resp_route(geo)) as g:
+            self.assertEqual(vs.tracado_rota(pts), geo)
+            self.assertEqual(vs.tracado_rota(pts), geo)      # a segunda vem da memória
+        self.assertEqual(g.call_count, 1)
+        url, kw = g.call_args.args[0], g.call_args.kwargs
+        self.assertIn("/route/v1/driving/", url)
+        # OSRM recebe longitude,latitude, na ordem das paradas
+        self.assertTrue(url.endswith("-46.38770,-23.42450;-46.41000,-23.44000;-46.38770,-23.42450"), url)
+        self.assertEqual(kw["params"]["overview"], "full")
+        self.assertEqual(kw["params"]["geometries"], "polyline6")
+        self.assertIn("ROTAV3", kw["headers"]["User-Agent"])
+
+    def test_rota_grande_vai_em_partes_e_emenda(self):
+        pts = [{"lat": -23.40 - i / 100, "lng": -46.40} for i in range(7)]
+        # cada parte devolve a reta entre seus próprios pontos
+        def resposta(url, **kw):
+            coords = url.rsplit("/", 1)[1].split(";")
+            linha = [(float(c.split(",")[1]), float(c.split(",")[0])) for c in coords]
+            return _resp_route(vs.polyline6_encode(linha))
+        with mock.patch.object(vs, "OSRM_ROUTE_MAX", 3), \
+                mock.patch.object(vs.requests, "get", side_effect=resposta) as g:
+            geo = vs.tracado_rota(pts)
+        self.assertEqual(g.call_count, 3)                     # 0-2, 2-4, 4-6
+        linha = vs.polyline6_decode(geo)
+        self.assertEqual(len(linha), 7, "o ponto de emenda não pode aparecer duas vezes")
+        self.assertAlmostEqual(linha[-1][0], -23.46, places=5)
+
+    def test_servidor_fora_devolve_none(self):
+        with mock.patch.object(vs.requests, "get", side_effect=vs.requests.ConnectionError("x")):
+            self.assertIsNone(vs.tracado_rota([CD, {"lat": -23.5, "lng": -46.5}, CD]))
+        ruim = mock.Mock()
+        ruim.raise_for_status.return_value = None
+        ruim.json.return_value = {"code": "NoRoute", "routes": []}
+        with mock.patch.object(vs.requests, "get", return_value=ruim):
+            self.assertIsNone(vs.tracado_rota([CD, {"lat": -23.6, "lng": -46.6}, CD]))
+        self.assertEqual(vs._cache_tracado, {}, "falha não fica guardada")
+        self.assertIsNone(vs.tracado_rota([CD]))
+
+    def test_uma_consulta_por_segundo_so_no_servidor_publico(self):
+        import time
+        with mock.patch.object(vs, "OSRM_INTERVALO", 0.3), \
+                mock.patch.object(vs, "_ultima_consulta", 0.0):
+            t0 = time.monotonic()
+            vs._esperar_vez("https://router.project-osrm.org/route/v1/driving")
+            vs._esperar_vez("https://router.project-osrm.org/table/v1/driving")
+            self.assertGreaterEqual(time.monotonic() - t0, 0.29)
+            t1 = time.monotonic()
+            vs._esperar_vez("https://rotas.exemplo.com.br/route/v1/driving")
+            vs._esperar_vez("https://rotas.exemplo.com.br/route/v1/driving")
+            self.assertLess(time.monotonic() - t1, 0.05)

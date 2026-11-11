@@ -1,0 +1,57 @@
+{
+ "code": "Ok",
+ "routes": [
+  {
+   "legs": [
+    {
+     "steps": [],
+     "weight": 1219.8,
+     "summary": "",
+     "duration": 1219.8,
+     "distance": 17725.8
+    },
+    {
+     "steps": [],
+     "weight": 1093.1,
+     "summary": "",
+     "duration": 1093.1,
+     "distance": 17758.5
+    }
+   ],
+   "weight_name": "routability",
+   "geometry": "||utk@lygnwAmStEke@nJ}Gt@iF@gj@jKweCvk@if@bJ{DlA{B|@wBrAkBbB}AtBmA`C{@jCg@rCUvCAzCPxCd@rCt@hCfA~BtArBdBdBnBvAxBbA`Cp@dC^fCHfCIvGq@jDaAfPqE~I_CdFs@t@?~@TnChBrBjKlQz`AfK~j@zAjI|Gv`@PjA~FxZ`m@b{Cxp@f`DhDzO~Nro@fr@thCdCfHjI|VnPjg@vFlRdK`_@tIb`@nH|Z`{@hoCnA~DdNvd@rIrYzOxi@pEzMbLv\\jGbRzXry@tYr{@~IzWz@fChFpOlBxFhjAhiDt\\|dAx^ziA|EjO|e@vzAjIhWd`@~kAla@pqAfs@v{BdYf~@zCtJ`Pjm@xClD~[x{@pN~`@p@bBjD`CPj@ngAbjDn_FhwO`EfMjfAnhD`Nbc@pzA~wEjX`|@j^djAdn@|pBbSvm@~ZvaApyAxwE|EhOlBdG`b@vrAhIvWvO~f@zLd`@dM`a@~H~V~[fbAdMpc@vAnJdQdl@jFfT|Kp_@Nh@fJpZhHxUvCfKnAhM~e@xwAn@rB~Kl^jj@~gBluBhyG|e@`~A|ExN|Uzp@jeAtiDhl@`mB`S|o@b~@rvCb@rAlAxD|Mld@p@|Bfh@p_Bpo@txBx}@feDlPzl@zU||@dNxh@hHdYfl@v`Cn|@tfDzUtaAfEfOhb@daBzShw@xKdb@zUd_ArvAlsFfe@lsBv_@~iBQjLdInm@dCjNke@bQm@gAiAgAaAU{@FiA^{@z@g@tAbFb|@dA~JlDpQ~DbQxIrVJ\\`DlHfK`VhSjd@xCxGxBrEnPv]~LpWvY`n@lIxPdGtNzEpMvJhXtCdIyAfBcRjk@wF`POj@gFfKuKrQeOxRwBlA{Bb@_D`@oD`@eBx@yBxBc\\zm@aD|Fm@jAk@zAWlAKzAyJxQcKfU]r@mArCqAdC{K|TiPrYuKnR}_@hi@wDzEgAzAqBdCiUvYeAdBoN~NmKzK{_@ze@eMvNwVjYgClCuKpKoKnH}F|B{DdAgi@fOgBb@wEfAqEfAkBb@iHbBgHbBuCr@mPxDu]hIqBb@qj@jLyf@zLmVhJmM`HcKpHiYdXaXrW_M`MoIbImSdRkH|GcEfDaFjFekBvgB}i@fg@sDhD_u@rr@sDNaCIeB_@aBoA{AgC_AcDi@yGmB}MHnFJ`Gn@hLz@`DpAvCbAzArAjAbBlAzAR`CNdDUfVkSj^q]hEeEpBkBrg@se@hz@sx@zYwWvDqDxBuBvEiEfDeDnNsNjCkCh\\y[|XiWjYkX|UmSrCeCfO_KvS}GbKwCtVcGhG{Axg@uLzBi@vDy@|ZkHfO{CjTiEpA[rBi@xEqAvDcA`G_BpA]d_@aKfOyFbFuCbGeEfJkJpb@sh@lKoLrAkCdTyTnCuCd@q@vLwNnJgLfAcBvW}Zr@{@hAsAph@{t@lKyQxH}OfBoDbAuBdFkKzGqMzWej@nGqHx@y@fReSbDwDbJkKld@eh@xTcZh_BqxCzCqHtA_Gr@yHc@oGm@sDsB}EuAiByBqB{CaBoHwBuM{@_QoA_Do@iCaAgC}AcCyB_KgRoNcp@uFgWq@}CcZwtAmGqYSaAqCmMwKgg@sGgZaU}`Aa[{jAu`@wlBaHe\\w_@evAgpAo~EyKyb@yHi[}b@y_Bmu@_sC{[i{AkKmTml@}uBuCoDeJm^uWk~@{Um{@akAalEqB}GgyAo~Eg|Ay}Em}BsnHsbC{tHmw@mgCcw@idCiPmh@mVwx@aeBioF_[kcAoLg_@mq@uxBuzCwoJoaA{}CuDgLkw@_fCmuA}kEgNcc@yv@qeCgSop@qjEgaNmU{t@afAshD{l@qlBkk@kdBs_BokFsZgcAeo@gpBgg@c}A{W_y@aLo\\eLo^aRsl@wQ}k@aLu]aF_PwCmJwCqJoGqSoBiGsByGuPyi@yOqg@sHgVkh@gaB{Naf@aJyX{Uus@mFmP{FyRg^cjA}K_^_Nid@o[wdAut@muCqOkq@wPwv@yLch@{@_Ev@aF}Fuk@l@yGsCwQ{CwOkMq_AQaEYoD}Wu_B{Lst@{BuMm^suBi@_D_Kws@vP_EzlAs[lEm@dEI`Gt@pHfGjDnTbCxNhAlBhBnAxB?`i@wKxAsAuDmVyBmLaDuRb{@sR}AiImf@zK",
+   "weight": 2312.9,
+   "duration": 2312.9,
+   "distance": 35484.3
+  }
+ ],
+ "waypoints": [
+  {
+   "hint": "OMLShv___3-vAAAACgEAAAAAAADQAAAAnfiRQiBSF0IAAAAAy0GtQq8AAAAKAQAAAAAAANAAAADUmAAAWS48_SGSmv4MLjz9DJKa_gAAfxUAAAAA",
+   "location": [
+    -46.387623,
+    -23.424479
+   ],
+   "name": "",
+   "distance": 8.205794319
+  },
+  {
+   "hint": "f5oEgP___38LAAAAFwAAAAAAAAAcAAAAB1lEQXEgU0EAAAAANrb2QQsAAAAXAAAAAAAAABwAAADUmAAAf_Y5_Ukemv549jn90B6a_gAAvxAAAAAA",
+   "location": [
+    -46.532993,
+    -23.454135
+   ],
+   "name": "Avenida Papa João XXIII",
+   "distance": 14.96843696
+  },
+  {
+   "hint": "OMLShv___3-vAAAACgEAAAAAAADQAAAAnfiRQiBSF0IAAAAAy0GtQq8AAAAKAQAAAAAAANAAAADUmAAAWS48_SGSmv4MLjz9DJKa_gAAfxUAAAAA",
+   "location": [
+    -46.387623,
+    -23.424479
+   ],
+   "name": "",
+   "distance": 8.205794319
+  }
+ ]
+}
