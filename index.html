@@ -1259,7 +1259,9 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- SheetJS 0.20.3, da distribuição oficial: a 0.18.5 (última no cdnjs/npm) tem duas falhas
+     conhecidas ao abrir planilhas (CVE-2023-30533 e CVE-2024-22363), corrigidas só aqui. -->
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>if(window.pdfjsLib){pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';}</script>
 <script type="module">

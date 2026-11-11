@@ -7,7 +7,8 @@ let falhas = 0; const ok = (c, m) => { if (!c) falhas++; console.log((c ? 'OK   
 const hoje = new Date(); const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 const dias = n => iso(new Date(hoje.getTime() - n * 864e5));
 
-// 3 rotas: hoje (2 feitas, 1 não feita), 5 dias atrás (2 feitas), 40 dias atrás (fora de 30 dias)
+// 3 rotas: hoje (2 feitas, 1 não feita), 5 dias atrás (2 feitas), 75 dias atrás (fora de 30 dias e
+// sempre antes do mês passado; com 40 dias, a partir do dia 10 ou 11 ela caía no mês passado)
 const rota = (id, data, mot, veic, paradas, km, min, peso, extra) => Object.assign(
   { id, data, motorista: mot, veiculo: veic, num_paradas: paradas, km, tempo_min: min,
     peso_total: peso, status: 'em_rota', criada_em: new Date().toISOString(), paradas: [] }, extra || {});
@@ -15,7 +16,7 @@ const rota = (id, data, mot, veic, paradas, km, min, peso, extra) => Object.assi
 const ROTAS = {
   r_hoje:  rota('r_hoje',  iso(hoje), 'Carlos Souza', 'Truck Toco', 4, 42.5, 180, 3200, {fonte_dist:'OSRM'}),
   r_cinco: rota('r_cinco', dias(5),   'Ana Ribeiro',  'Fiorino',    2, 18.2,  95,  900, {fonte_dist:'Haversine:indisponivel'}),
-  r_velha: rota('r_velha', dias(40),  'Carlos Souza', 'VUC',        3, 30.0, 120, 1500),
+  r_velha: rota('r_velha', dias(75),  'Carlos Souza', 'VUC',        3, 30.0, 120, 1500),
 };
 // pedidos: a baixa e a ocorrência apontam a rota — é isso que o relatório soma
 const PED = {
@@ -55,7 +56,7 @@ const seed = () => { window.__FAKE = { user:{uid:'u',email:'a@b.c',getIdToken:as
     return { kpis: k, nLinhas: linhas.length, texto: document.getElementById('rel-corpo').textContent };
   });
   const kv = n => (v.kpis.find(x => x.lbl.includes(n)) || {}).val;
-  ok(kv('ROTAS') === '2', '30 dias traz 2 rotas e deixa a de 40 dias fora (achei ' + kv('ROTAS') + ')');
+  ok(kv('ROTAS') === '2', '30 dias traz 2 rotas e deixa a de 75 dias fora (achei ' + kv('ROTAS') + ')');
   ok(kv('PARADAS PLANEJADAS') === '6', 'soma as paradas planejadas: 4+2=6 (achei ' + kv('PARADAS PLANEJADAS') + ')');
   ok(kv('ENTREGUES / COLETADOS') === '4', 'conta as baixas das 2 rotas: 2+2=4 (achei ' + kv('ENTREGUES / COLETADOS') + ')');
   ok(kv('NÃO REALIZADOS') === '1', 'conta só a ocorrência dentro do período (achei ' + kv('NÃO REALIZADOS') + ')');
@@ -76,7 +77,15 @@ const seed = () => { window.__FAKE = { user:{uid:'u',email:'a@b.c',getIdToken:as
   await p2.evaluate(() => { document.querySelector('#rel-periodo button[data-p="mes-1"]').click(); });
   await p2.waitForTimeout(400);
   const vazio = await p2.evaluate(() => document.getElementById('rel-corpo').textContent);
-  ok(/Nenhuma rota confirmada/.test(vazio), 'período sem rota mostra aviso em vez de tabela vazia');
+  // do dia 1 ao 5, a rota de 5 dias atrás cai no mês passado: aí o mês passado tem 1 rota
+  const cincoNoMesPassado = new Date(hoje.getTime() - 5 * 864e5).getMonth() !== hoje.getMonth();
+  if (!cincoNoMesPassado) {
+    ok(/Nenhuma rota confirmada/.test(vazio), 'período sem rota mostra aviso em vez de tabela vazia');
+  } else {
+    const mesK = await p2.evaluate(() => [...document.querySelectorAll('#rel-corpo .kpi')]
+      .map(e => e.querySelector('.kpi-lbl').textContent.trim() + '=' + e.querySelector('.kpi-val').textContent.trim()));
+    ok(mesK.some(x => x === 'ROTAS=1'), 'mês passado traz só a rota de 5 dias atrás: ' + JSON.stringify(mesK[0]));
+  }
 
   // planilha
   await p2.evaluate(() => { document.querySelector('#rel-periodo button[data-p="30"]').click(); });

@@ -14,7 +14,7 @@ async function open(b, file, W, H, init, mob, arg) {
     const f = r.request().url().match(/leaflet\.min\.(js|css)/)[1];
     r.fulfill({ path: path.join(LEAF, f === 'js' ? 'leaflet.js' : 'leaflet.css'), contentType: f === 'js' ? 'text/javascript' : 'text/css' });
   });
-  await ctx.route(/fonts\.googleapis|fonts\.gstatic|tile\.openstreetmap|basemaps|cartocdn|arcgisonline|cdnjs\.cloudflare\.com\/ajax\/libs\/(xlsx|pdf)|railway\.app|viacep|nominatim/, (r) => r.abort());
+  await ctx.route(/fonts\.googleapis|fonts\.gstatic|tile\.openstreetmap|basemaps|cartocdn|arcgisonline|cdnjs\.cloudflare\.com\/ajax\/libs\/(xlsx|pdf)|cdn\.sheetjs\.com|railway\.app|viacep|nominatim/, (r) => r.abort());
   if (init) await ctx.addInitScript(init, arg);
   const p = await ctx.newPage();
   const errs = [];
