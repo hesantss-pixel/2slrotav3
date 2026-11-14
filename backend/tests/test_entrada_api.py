@@ -300,3 +300,26 @@ class TesteTracadoNaApi(unittest.TestCase):
                 r = main.solve(corpo, self.QUEM)
             self.assertEqual(r["routes"][0]["tracado"], esperado, fonte)
             self.assertEqual(t.call_count, chamadas, fonte)
+
+
+class TesteKmRastroNaApi(unittest.TestCase):
+    QUEM = ("u1", "completo")
+
+    def test_poucos_pontos_e_erro_de_dados(self):
+        with self.assertRaises(HTTPException) as c:
+            main.km_rastro_rota(main.KmRastroRequest(pontos=[{"lat": 1, "lng": 1, "t": 1}]), self.QUEM)
+        self.assertEqual(c.exception.status_code, 422)
+        with mock.patch.object(main.km_rastro, "calcular", side_effect=ValueError("No máximo 6000 pontos por rota.")):
+            with self.assertRaises(HTTPException) as c:
+                main.km_rastro_rota(main.KmRastroRequest(pontos=[{}, {}]), self.QUEM)
+        self.assertEqual(c.exception.status_code, 422)
+
+    def test_resultado_e_falha_sem_texto_interno(self):
+        r = {"km_total": 3.0, "km_medido": 3.0, "km_estimado": 0, "cobertura": 1.0}
+        with mock.patch.object(main.km_rastro, "calcular", return_value=r):
+            self.assertEqual(main.km_rastro_rota(main.KmRastroRequest(pontos=[{}, {}]), self.QUEM), r)
+        with mock.patch.object(main.km_rastro, "calcular", side_effect=RuntimeError("segredo interno")):
+            with self.assertRaises(HTTPException) as c:
+                main.km_rastro_rota(main.KmRastroRequest(pontos=[{}, {}]), self.QUEM)
+        self.assertEqual(c.exception.status_code, 500)
+        self.assertNotIn("segredo", c.exception.detail)

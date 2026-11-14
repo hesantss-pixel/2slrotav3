@@ -121,8 +121,40 @@ JORNADA_S = 8 * 3600
 ESPERA_MAX_S = 3 * 3600
 
 # Penalidade por pedido não atendido — valor alto para forçar atendimento
-# quando há capacidade; OR-Tools vai dropar só se realmente impossível
+# quando há capacidade; OR-Tools vai dropar só se realmente impossível.
+# Mínimo; no modelo vale também 100 vezes o trecho mais caro da matriz.
 PENALTY = 100_000
+
+# Custo de cada trecho para o motor escolher a ordem: o TEMPO (s) manda, e cada
+# metro soma CUSTO_METRO_S segundos, para não trocar 1 minuto por um desvio grande
+# (com 0,02: 5 km a mais custam 100 s). Antes o custo era só a distância.
+try:
+    CUSTO_METRO_S = max(0.0, float(os.getenv("CUSTO_METRO_S", "").strip() or 0.02))
+except ValueError:
+    CUSTO_METRO_S = 0.02
+
+# Fator de tempo: o OSRM calcula tempos de via livre, sem trânsito. A empresa
+# calibra com as próprias rotas (tempo real ÷ planejado) e o motor multiplica os
+# tempos do OSRM por esse fator. Limites para um valor errado não estragar a rota.
+FATOR_TEMPO_MIN, FATOR_TEMPO_MAX = 0.5, 3.0
+
+
+def _fator_valido(f) -> float:
+    try:
+        f = float(f)
+    except (TypeError, ValueError):
+        return 1.0
+    if f != f:   # NaN
+        return 1.0
+    return min(FATOR_TEMPO_MAX, max(FATOR_TEMPO_MIN, f))
+
+
+def _aplicar_fator(dur_mx: list[list[int]], fonte: str, fator: float) -> list[list[int]]:
+    """Multiplica os tempos do OSRM pelo fator da empresa. Na linha reta (40 km/h)
+    o fator não entra: é outra estimativa, já pessimista."""
+    if fonte != "OSRM" or fator == 1.0:
+        return dur_mx
+    return [[int(round(d * fator)) for d in linha] for linha in dur_mx]
 
 # ── Distâncias ─────────────────────────────────────────────────────────────────
 
@@ -412,6 +444,7 @@ def avaliar_sequencia(
     deposito: dict | None = None,
     saida_min: int | None = None,
     volta: bool = False,
+    fator_tempo: float = 1.0,
 ) -> dict:
     """
     Km, tempo e chegada em cada parada para uma ordem JÁ DEFINIDA (a rota que o
@@ -429,6 +462,7 @@ def avaliar_sequencia(
     for p in pedidos:
         points.append({"lat": float(p["lat"]), "lng": float(p["lng"])})
     dist_mx, dur_mx, fonte = build_distance_matrix(points)
+    dur_mx = _aplicar_fator(dur_mx, fonte, _fator_valido(fator_tempo))
     if not volta:
         _sem_volta(dist_mx, dur_mx)
     seq = list(range(1, len(points)))
@@ -473,6 +507,7 @@ def solve_vrp(
     deposito: dict | None = None,
     saida_min: int | None = None,
     volta: bool = False,
+    fator_tempo: float = 1.0,
 ) -> dict:
     """
     Resolve VRP com OR-Tools.
@@ -487,6 +522,7 @@ def solve_vrp(
                    Com ela, os pedidos com janela_ini/janela_fim respeitam o horário.
     volta        : True = a rota volta ao CD no fim (km, tempo e traçado contam a volta).
                    Padrão False: a rota termina na última parada.
+    fator_tempo  : multiplica os tempos do OSRM (calibração da empresa; 1.0 = sem ajuste).
 
     Retorna
     -------
@@ -531,6 +567,7 @@ def solve_vrp(
     # Pontos: depósito (índice 0) + pedidos
     points = [{"lat": float(dep["lat"]), "lng": float(dep["lng"])}] + [{"lat": p["lat"], "lng": p["lng"]} for p in pedidos]
     dist_mx, dur_mx, fonte = build_distance_matrix(points)
+    dur_mx = _aplicar_fator(dur_mx, fonte, _fator_valido(fator_tempo))
     if not volta:
         _sem_volta(dist_mx, dur_mx)
 
@@ -576,13 +613,17 @@ def _resolver(pywrapcp, routing_enums_pb2, pedidos, tipos, janelas, saida_min, v
     manager = pywrapcp.RoutingIndexManager(n_nodes, n_veics, 0)
     routing = pywrapcp.RoutingModel(manager)
 
-    # ── Callback de distância ─────────────────────────────────────────────────
-    def dist_cb(from_idx, to_idx):
+    # ── Custo de cada trecho: tempo + um pouco de distância ───────────────────
+    custo_mx = [[dur_mx[i][j] + int(round(CUSTO_METRO_S * dist_mx[i][j])) for j in range(n_nodes)]
+                for i in range(n_nodes)]
+    penalidade = max(PENALTY, 100 * max((max(linha) for linha in custo_mx), default=0))
+
+    def custo_cb(from_idx, to_idx):
         i = manager.IndexToNode(from_idx)
         j = manager.IndexToNode(to_idx)
-        return dist_mx[i][j]
+        return custo_mx[i][j]
 
-    transit_cb_idx = routing.RegisterTransitCallback(dist_cb)
+    transit_cb_idx = routing.RegisterTransitCallback(custo_cb)
     routing.SetArcCostEvaluatorOfAllVehicles(transit_cb_idx)
 
     # ── Callback de duração: estrada + atendimento na parada de onde sai ──────
@@ -650,7 +691,7 @@ def _resolver(pywrapcp, routing_enums_pb2, pedidos, tipos, janelas, saida_min, v
 
     # ── Penalidade por pedido não atendido ────────────────────────────────────
     for node in range(1, n_nodes):
-        routing.AddDisjunction([manager.NodeToIndex(node)], PENALTY)
+        routing.AddDisjunction([manager.NodeToIndex(node)], penalidade)
 
     # ── Parâmetros do solver ──────────────────────────────────────────────────
     params = pywrapcp.DefaultRoutingSearchParameters()

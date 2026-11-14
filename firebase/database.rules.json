@@ -141,6 +141,72 @@
           "$outro": {
             ".validate": false
           }
+        },
+        "hodometro": {
+          "$qual": {
+            ".write": "root.child('entregador').child($token).child('expira').val() > now && ($qual === 'ini' || $qual === 'fim')",
+            ".validate": "newData.hasChildren(['km', 'hora'])",
+            "km": {
+              ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() < 10000000"
+            },
+            "hora": {
+              ".validate": "newData.isNumber() && newData.val() <= now + 60000"
+            },
+            "temFoto": {
+              ".validate": "newData.isBoolean()"
+            },
+            "$outro": {
+              ".validate": false
+            }
+          }
+        },
+        "fotos_hod": {
+          "$qual": {
+            ".write": "root.child('entregador').child($token).child('expira').val() > now && ($qual === 'ini' || $qual === 'fim')",
+            ".validate": "newData.isString() && newData.val().beginsWith('data:image/jpeg;base64,') && newData.val().length < 400000"
+          }
+        },
+        "trilha": {
+          "$k": {
+            ".write": "root.child('entregador').child($token).child('expira').val() > now && !data.exists()",
+            ".validate": "newData.hasChildren(['lat', 'lng', 't'])",
+            "lat": {
+              ".validate": "newData.isNumber() && newData.val() >= -90 && newData.val() <= 90"
+            },
+            "lng": {
+              ".validate": "newData.isNumber() && newData.val() >= -180 && newData.val() <= 180"
+            },
+            "t": {
+              ".validate": "newData.isNumber() && newData.val() <= now + 600000 && newData.val() > now - 172800000"
+            },
+            "acc": {
+              ".validate": "newData.isNumber() && newData.val() >= 0"
+            },
+            "v": {
+              ".validate": "newData.isNumber()"
+            },
+            "$outro": {
+              ".validate": false
+            }
+          }
+        },
+        "gps": {
+          "$i": {
+            ".write": "root.child('entregador').child($token).child('expira').val() > now && root.child('entregador').child($token).child('paradas').child($i).exists()",
+            ".validate": "newData.hasChildren(['lat', 'lng', 'precisao'])",
+            "lat": {
+              ".validate": "newData.isNumber() && newData.val() >= -90 && newData.val() <= 90"
+            },
+            "lng": {
+              ".validate": "newData.isNumber() && newData.val() >= -180 && newData.val() <= 180"
+            },
+            "precisao": {
+              ".validate": "newData.isNumber() && newData.val() >= 0"
+            },
+            "$outro": {
+              ".validate": false
+            }
+          }
         }
       }
     },

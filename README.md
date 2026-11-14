@@ -193,6 +193,83 @@ está ligado em `entrada_automatica`.
   Para mudar, use **Devolver** na página Rotas e gere de novo.
 - "Gerar outra rota" ou sair da página Roteirização descarta a rota que não foi confirmada.
 
+## Km rodado, tempo real e pinos aprendidos (versão 3.12)
+
+O sistema passou a comparar o planejado com o que aconteceu na rua. Tudo depende do link do
+motorista; sem ele, a rota continua só com o planejado.
+
+- **Km do painel.** No link, acima das paradas, o cartão "Km do painel" pede o odômetro na saída
+  e na chegada, com foto (recomendada). Aceita "123456", "123.456" e "123.456,7"; chegada menor
+  que a saída é barrada e mais de 2.000 km pede confirmação. Grava em
+  `entregador/<código>/hodometro/{ini,fim}` (`km`, `hora`, `temFoto`) e a foto em
+  `fotos_hod/{ini,fim}` (JPEG). Com as duas leituras, o escritório copia o resultado para
+  `rotas_confirmadas/<id>/km_painel` (`ini`, `fim`, `km`, `fotos`), porque o link expira.
+  É o km de verdade, conferível pela foto ("ver fotos" na página Rotas).
+- **Caminho pelo GPS.** Com a localização ao vivo ligada, o celular grava um ponto a cada 20 s ou
+  75 m, só com precisão de até 50 m, em `entregador/<código>/trilha` (só acrescenta: `lat`, `lng`,
+  `t`, `acc`, `v`). Quando todas as paradas têm baixa, o escritório manda para `POST /km-rastro`
+  os pontos do caminho **e a posição de cada baixa** (com a hora da baixa), e guarda a resposta em
+  `rotas_confirmadas/<id>/km_gps`. O botão "calcular pelo GPS" faz o mesmo à mão.
+- **Limite que não tem como contornar numa página web:** nenhum navegador manda a posição de
+  página escondida (especificação W3C de Geolocalização). Com a tela apagada ou com o Waze/Maps na
+  frente, o caminho para; por isso a resposta separa o medido do estimado. Para diminuir o buraco:
+  com a localização ligada, a página pede para a tela ficar acesa (Screen Wake Lock; o navegador
+  solta quando a página sai da frente) e, quando o motorista volta para ela, lê a posição na hora.
+  Sem caminho nenhum, mas com a posição das baixas, o km sai **estimado entre as baixas** pelas ruas
+  (`km_gps.so_baixas: true`; não entra no "Km GPS" do relatório). Caminho contínuo só com app
+  instalado (Capacitor com plugin de localização em segundo plano, com declaração e vídeo na Play
+  Store): não feito.
+- **`POST /km-rastro`** (`backend/km_rastro.py`). Limpa o rastro (precisão pior que 50 m, salto
+  acima de ~160 km/h, ponto a menos de 15 m do anterior, que é o veículo parado tremendo), divide
+  onde o sinal sumiu (mais de 3 min ou 3 km entre dois pontos), casa cada trecho com as ruas pelo
+  OSRM `/match` em blocos de 100 pontos (**km medido**) e liga as lacunas pelo `/route` (**km
+  estimado**). O raio mandado ao `/match` é a precisão ÷ 2, entre 5 e 25 m: o navegador dá o raio
+  de 95% e o OSRM quer o desvio padrão. Quando o `/match` devolve o trecho em pedaços (parada de
+  entrega, ponto ruim), o espaço entre eles também entra: até 200 m como medido, acima disso como
+  estimado (pelo `/route` se passar de 300 m). Pedaço casado mais longo que 1,5 × o caminho dos
+  próprios pontos + 500 m é volta inventada pelo casamento e entra como estimado. Devolve
+  `km_total`, `km_medido`, `km_estimado`, `cobertura` (medido ÷ total) e `casado` (`false` =
+  servidor de rotas fora, km em linha reta entre os pontos). Até 6.000 pontos por pedido. Segue o
+  limite de 1 consulta por segundo do servidor público.
+- **Planejado × realizado.** Na página Rotas, cada rota com link mostra: km planejado, do painel
+  (alerta "confira as fotos" quando foge mais de 50% do planejado) e pelo GPS (com o % medido);
+  o tempo entre duas baixas seguidas dividido pelo previsto (tira os 15 min de atendimento dos
+  dois lados; mediana dos trechos); e quantas paradas foram feitas fora da ordem planejada. Os
+  Relatórios trazem o mesmo bloco para o período, quatro colunas novas na tabela de rotas e cinco
+  na planilha (km painel, km GPS, % casado com as ruas, tempo real ÷ planejado, fora da ordem).
+  A impressão do relatório sai em paisagem.
+- **Ajuste de tempo por empresa (`config/fator_tempo`).** O OSRM calcula o tempo sem trânsito.
+  O administrador define, em Acessos → "Tempo de viagem de cada empresa", um número de 0,5 a 3
+  que multiplica os tempos do OSRM no motor (`fator_tempo` em `/solve` e `/avaliar`). A sugestão
+  vem das baixas dos últimos 60 dias (tempo real ÷ planejado × ajuste usado na rota, mediana) e
+  só aparece com 20 trechos em 3 rotas medidas pelas ruas. A rota confirmada guarda o
+  `fator_tempo` usado. O cliente vê o ajuste na confirmação e não pode mudar; a mudança vale na
+  hora, mesmo com a página dele aberta. Demonstrações ficam de fora.
+- **Custo da rota (`CUSTO_METRO_S`).** O motor passou a escolher a ordem pelo tempo de viagem
+  mais 0,02 s por metro (antes, só a distância). Isso evita trocar uma avenida rápida por um atalho
+  lento só porque é mais curto. Muda na variável `CUSTO_METRO_S` (0 = só tempo).
+- **Pino aprendido nas entregas.** A baixa grava a posição com a precisão em
+  `entregador/<código>/gps/<n>`. Quando duas rotas diferentes dão baixa "feito" no mesmo endereço
+  com GPS de até 30 m, a menos de 50 m uma da outra, a mediana vira o ponto do endereço
+  (`config/locais/<chave>`, `p: "aprendido"`, com o ponto que estava antes em `antes`). Ponto
+  marcado à mão manda; baixa a mais de 5 km do pino (30 km se o pedido só tinha bairro ou cidade)
+  é ignorada. Os pendentes do mesmo endereço passam para o ponto aprendido e as próximas notas já
+  entram nele. O aprendizado é de cada empresa: um cliente não vê o ponto aprendido de outro.
+- **Sem o número.** Pedido que o mapa achou só na rua (sem o número) ganha a etiqueta "sem o
+  número" em Pedidos e no resultado da rota, um aviso na lista e uma linha na confirmação.
+
+**Privacidade (LGPD).** O caminho pelo GPS é dado de localização do motorista. Só é gravado com a
+localização ligada por ele, enquanto a página está aberta, e fica no nó do link. A página do
+motorista tem "O que esta página grava" (o quê, quem vê, para quê). Falta, e depende de decisão
+da ROTAV3 com orientação jurídica: o contrato de tratamento de dados com cada transportadora (ela
+é a controladora; a ROTAV3, a operadora), o aviso completo ao motorista e o prazo para apagar os
+pontos do caminho (a pesquisa de 14/11 sugere 90 a 180 dias para os pontos e o prazo do cliente
+para o resumo e as fotos).
+
+**Regras do banco:** esta versão grava nós novos no link do motorista (`hodometro`, `fotos_hod`,
+`trilha`, `gps`). Enquanto as regras novas não forem publicadas, essas gravações são recusadas e o
+resto funciona como antes (o motorista vê "Não deu para salvar o km").
+
 ## Fim da rota: na última parada (versão 3.11)
 
 A rota **não volta ao CD** por padrão: o motor escolhe a ordem sem contar a volta, e km, tempo,
@@ -296,7 +373,8 @@ codificação do Google com 6 casas decimais). A tela desenha essa linha.
 5. **Devolver** a rota volta só o que não teve baixa e encerra o link; **Apagar** também encerra.
 
 Onde fica no banco: `entregador/<código>` com `info`, `paradas` (sem as chaves internas),
-`expira`, `baixas/<n>` e `fotos/<n>`. As regras deixam ler esse nó só com o código e só até
+`expira`, `baixas/<n>` e `fotos/<n>`; desde a 3.12, também `hodometro`, `fotos_hod`, `trilha` e
+`gps/<n>` (ver "Km rodado, tempo real e pinos aprendidos"). As regras deixam ler esse nó só com o código e só até
 `expira`; o motorista só grava baixa (campos validados) e foto (JPEG até ~280 KB) enquanto o link
 vale. A foto fica no próprio banco (não precisa de plano pago); o plano gratuito do Firebase
 guarda 1 GB, o que dá alguns milhares de fotos.
@@ -345,7 +423,11 @@ dela em `acesso` (e, se quiser, desative o usuário em Authentication).
 
 Realtime Database → Regras: cole o conteúdo de `firebase/database.rules.json` e clique em
 Publicar. Depois, entre uma vez com a conta do administrador: a tela copia os dados antigos para
-`empresas/principal`. O centro de distribuição de cada empresa é definido pelo CEP em Roteirização.
+`empresas/principal`. O centro de distribuição e o ajuste de tempo de cada empresa são definidos
+pelo administrador em Acessos. **Sempre que este arquivo mudar, publique de novo** (a 3.11 tirou
+do cliente a troca do CD; a 3.12 abriu os nós novos do link do motorista).
+Os testes `tests/tela/t_regras.js` conferem a lógica das regras com um avaliador simplificado
+(`tests/tela/regras.js`); não substituem publicar e testar no Firebase de verdade.
 
 ### 3. Servidor (Railway)
 
@@ -364,6 +446,7 @@ Variáveis de ambiente usadas:
 | `GROQ_MODEL` | Modelo do assistente (padrão `openai/gpt-oss-120b`). Quando a Groq desligar um modelo, troca-se aqui | Não |
 | `GROQ_HISTORICO` | Quantas mensagens anteriores vão em cada pergunta (padrão 6). Mais = mais tokens por pergunta | Não |
 | `OSRM_URL` / `OSRM_LIMIT` / `OSRM_TIMEOUT` | Servidor de distâncias pelas ruas (endereço completo do serviço `/table`), máximo de pontos por consulta (padrão 100) e segundos de espera (padrão 10). O padrão é o servidor público de demonstração do OSRM, que não é para uso comercial | Não, até ter servidor próprio |
+| `CUSTO_METRO_S` | Quanto cada metro pesa na escolha da ordem, em segundos (padrão 0,02). 0 = o motor escolhe só pelo tempo | Não |
 | `OSRM_ROUTE_URL` / `OSRM_ROUTE_MAX` / `OSRM_INTERVALO` | Serviço `/route` do traçado (padrão: o mesmo servidor do `OSRM_URL`, trocando `/table/` por `/route/`), pontos por consulta antes de dividir em partes (padrão 50) e segundos entre consultas ao servidor público (padrão 1) | Não |
 
 Python fixado em `backend/.python-version` (3.12) e bibliotecas com versão exata em
@@ -437,13 +520,18 @@ troque `BACKEND_URL` no `index.html`.
   O script sobe o servidor local na porta 8771 e roda tudo; `./rodar.sh t_demo` roda uma só.
   As suítes `t_hero` e `t_oferta` são da página de vendas: passe o caminho dela em
   `PAGINA_VENDAS=/caminho/p-ginadevendasv3 ./rodar.sh`, senão são puladas.
-  Hoje são 482 verificações. Nenhuma chama a internet: o Firebase é simulado
+  Hoje são 714 verificações em 24 suítes (14/11/2026). Nenhuma chama a internet: o Firebase é simulado
   (`tests/tela/fakefb`), o Leaflet vem de `tests/tela/vendor` e ViaCEP/Nominatim/OSRM são cortados.
   `t_xss.js` é a trava de segurança: falha se alguém tirar o `esc()` de um texto que vem de fora.
   `t_tracado.js` confere o traçado pelas ruas: o decodificador contra uma resposta real do OSRM
   (`backend/tests/dados/osrm_route_guarulhos.json`), a linha contínua quando há traçado, tracejada
   com aviso quando não há, o traçado guardado na rota confirmada, a rota antiga recebendo o
   traçado uma vez e a montagem no mapa pedindo o caminho só quando a pessoa para de tocar.
+  `t_km_realizado.js` (3.12) faz o caminho inteiro: ajuste de tempo indo para o motor e mudando
+  com a página aberta, aviso "sem o número", km do painel com foto e validações no celular,
+  caminho pelo GPS com o celular andando, GPS da baixa, planejado × realizado na rota, relatório e
+  planilha, pino aprendido em duas rotas e a sugestão do ajuste em Acessos.
+  `t_regras.js` confere as regras do banco (nós novos do link, ajuste e CD só pelo administrador).
 - Tela: testada com um Firebase simulado (login, senha errada, esqueci a senha, acesso
   pendente, liberação, dashboard, regiões a partir dos pedidos, importação de CSV,
   roteirização com o token, confirmação de saída, motoristas, agendamento, chat, sair; e
@@ -488,6 +576,15 @@ OR-Tools rodando (não instalado aqui) e o mapa com as ruas. O formato da respos
 (com o número achado e sem ele) foi conferido ao vivo em 02/11/2026.
 
 ## Histórico
+
+- Versão 3.12 (14/11/2026): **planejado × realizado**. Km do painel com foto e caminho pelo GPS no
+  link do motorista, `POST /km-rastro` (OSRM `/match`), tempo real ÷ planejado e paradas fora da
+  ordem na página Rotas e nos Relatórios, ajuste de tempo por empresa com sugestão tirada das
+  baixas, custo da rota por tempo + distância, pino aprendido nas entregas e aviso dos pedidos sem
+  o número. Ver "Km rodado, tempo real e pinos aprendidos".
+- Versão 3.11 (14/11/2026): rota termina na última parada (volta ao CD opcional), agendado de
+  outro dia fora do mapa e o do dia em vermelho, CD de cada empresa definido só pelo administrador.
+- Versão 3.10 (11/11/2026): rota desenhada pelas ruas (OSRM `/route`), não mais em linha reta.
 
 - Versão 3.9.1 (08/11/2026): o sistema passou a **guardar como mediu a distância** de cada rota.
   O servidor já dizia (`fonte_distancia`) e a tela já avisava na Roteirização, mas o aviso morria

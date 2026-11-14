@@ -71,11 +71,21 @@ label.foto{border:1px dashed var(--line2);border-radius:12px;padding:12px;backgr
 label.foto input{font-size:14px;}
 .foto-prev img{display:block;max-width:100%;max-height:220px;border-radius:10px;}
 .rodape{font-size:12.5px;color:var(--text3);text-align:center;margin-top:22px;line-height:1.5;}
+.hod{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:14px;}
+.hod-tit{font-weight:700;font-size:15px;margin-bottom:8px;}
+.hod-linha{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:14px;padding:4px 0;}
+.hod-total{margin-top:6px;font-weight:800;color:var(--ok);}
+.hod-form{display:flex;flex-direction:column;gap:10px;margin-top:6px;}
+.hod-form label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600;color:var(--text3);}
+.hod-form input[name=km]{min-height:48px;border:1px solid var(--line2);border-radius:12px;padding:0 12px;font:700 18px Inter,sans-serif;color:var(--text);}
 .loc{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:14px;}
 .loc.on{border-color:#c9ecd9;background:#f6fcf8;}
 .loc-txt{display:flex;flex-direction:column;gap:2px;min-width:0;}
 .loc-txt b{font-size:15px;}
 .loc-txt span{font-size:13px;color:var(--text3);}
+.dados{margin:-6px 2px 14px;font-size:12.5px;color:var(--text3);}
+.dados summary{cursor:pointer;padding:6px 0;min-height:32px;}
+.dados p{margin:4px 0 0;line-height:1.5;}
 .loc-sw{flex:none;min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--line2);background:#fff;font:700 14px Inter,sans-serif;color:var(--navy);cursor:pointer;}
 .loc.on .loc-sw{background:var(--navy);color:#fff;border-color:var(--navy);}
 .demo-aviso{background:#fff3df;border:1px solid #f6dca6;color:#7a4f05;border-radius:12px;padding:10px 12px;font-size:13.5px;font-weight:600;margin-bottom:14px;}
@@ -90,7 +100,7 @@ label.foto input{font-size:14px;}
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getDatabase, ref, get, set, onValue, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { getDatabase, ref, get, set, push, onValue, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
 // Mesmo projeto do sistema. Sem login: quem tem o link vê só esta rota, e
 // as regras do banco só deixam gravar a baixa enquanto o link está válido.
@@ -112,7 +122,7 @@ const $ = (id) => document.getElementById(id);
 const app = $('app');
 const MOTIVOS = ['Cliente ausente', 'Endereço não encontrado', 'Recusado pelo cliente', 'Estabelecimento fechado', 'Mercadoria com avaria', 'Não deu tempo na rota', 'Outro'];
 
-let info = null, paradas = [], baixas = {}, aberto = null, renderPendente = false, rolou = false;
+let info = null, paradas = [], baixas = {}, hod = {}, aberto = null, renderPendente = false, rolou = false;
 const enviando = {};
 // Demonstração dentro da página de vendas (iframe): manda o estado das baixas para o painel ao lado.
 // Só no modo DEMO, com dados fictícios. Nunca rola a página de fora.
@@ -174,7 +184,24 @@ function lerLocal(k) { try { const v = localStorage.getItem(k); return v ? JSON.
 function gravarLocal(k, v) { memoria[k] = v; try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
 
 // ── Localização ao vivo (só com o motorista ligando) ─────────────────────────
-let watchId = null, ultimoEnvio = 0, ultimaPos = null, locStatus = 'Desligada. Ligue para o escritório acompanhar onde você está.';
+let watchId = null, ultimoEnvio = 0, ultimaPos = null, locStatus = 'Desligada. Ligue para o escritório acompanhar onde você está e medir o km pelo GPS.';
+// Caminho percorrido (para o km rodado pelo GPS): um ponto a cada 20 s ou 75 m,
+// só com precisão de até 50 m. Com a tela apagada ou outro app na frente, o celular
+// para de mandar: o escritório vê quanto do km foi medido e quanto foi estimado.
+let ultimaTrilha = null, trilhaFalhas = 0;
+function gravarTrilha(p) {
+  if (DEMO || trilhaFalhas >= 3) return;
+  const acc = p.coords.accuracy;
+  if (!(acc <= 50)) return;
+  // hora da leitura do GPS; se o aparelho mandar uma hora estranha (há celular que manda), usa a do relógio
+  const agora = Date.now(), ts = Number.isFinite(p.timestamp) && Math.abs(p.timestamp - agora) < 120000 ? p.timestamp : agora;
+  const pt = { lat: +p.coords.latitude.toFixed(6), lng: +p.coords.longitude.toFixed(6), t: Math.round(ts), acc: Math.round(acc) };
+  if (ultimaTrilha && pt.t - ultimaTrilha.t < 20000 && distM(ultimaTrilha, pt) < 75) return;
+  const v = p.coords.speed;
+  if (Number.isFinite(v) && v >= 0) pt.v = Math.round(v * 10) / 10;
+  ultimaTrilha = pt;
+  push(ref(db, `entregador/${token}/trilha`), pt).catch(() => { trilhaFalhas++; });
+}
 const prefLoc = () => 'rotav3_loc_' + token.slice(0, 12);
 function distM(a, b) {
   const R = 6371000, r = Math.PI / 180, dLat = (b.lat - a.lat) * r, dLng = (b.lng - a.lng) * r;
@@ -182,29 +209,51 @@ function distM(a, b) {
   return 2 * R * Math.asin(Math.sqrt(x));
 }
 function setLoc(txt) { locStatus = txt; const el = $('loc-status'); if (el) el.textContent = txt; }
+// Tela acesa enquanto a localização estiver ligada (Screen Wake Lock): com a tela apagada,
+// o navegador para de mandar o GPS. Com o Waze ou o Maps na frente também para (nenhum
+// navegador manda a posição de página escondida), e a trava sai sozinha; ela é pedida de
+// novo quando o motorista volta para esta página.
+let travaTela = null;
+async function manterTelaAcesa() {
+  if (DEMO || watchId === null || travaTela || !('wakeLock' in navigator) || document.visibilityState !== 'visible') return;
+  try {
+    travaTela = await navigator.wakeLock.request('screen');
+    travaTela.addEventListener('release', () => { travaTela = null; });
+  } catch (e) { travaTela = null; }   // economia de bateria ou navegador sem suporte: segue sem
+}
+function soltarTela() { if (travaTela) { travaTela.release().catch(() => {}); travaTela = null; } }
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible' || watchId === null || DEMO) return;
+  manterTelaAcesa();
+  // voltou para a página: lê a posição na hora (enquanto ela estava escondida, nada foi mandado)
+  navigator.geolocation.getCurrentPosition(aoMudarPosicao, () => {}, { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 });
+});
 function ligarLocalizacao() {
   if (!navigator.geolocation) { setLoc('Este celular não informa a localização.'); return; }
   if (watchId !== null) return;
   setLoc('Procurando o GPS…');
   watchId = navigator.geolocation.watchPosition(aoMudarPosicao, aoErroPosicao, { enableHighAccuracy: true, maximumAge: 15000, timeout: 30000 });
+  manterTelaAcesa();
   gravarLocal(prefLoc(), 1);
   if (!aberto) render();
 }
 function desligarLocalizacao(txt) {
   if (watchId !== null) navigator.geolocation.clearWatch(watchId);
   watchId = null;
+  soltarTela();
   gravarLocal(prefLoc(), 0);
-  locStatus = txt || 'Desligada. Ligue para o escritório acompanhar onde você está.';
+  locStatus = txt || 'Desligada. Ligue para o escritório acompanhar onde você está e medir o km pelo GPS.';
   if (!aberto) render();
 }
 function aoMudarPosicao(p) {
+  gravarTrilha(p);
   const lat = p.coords.latitude, lng = p.coords.longitude, agora = Date.now();
   const moveu = ultimaPos ? distM(ultimaPos, { lat, lng }) : Infinity;
   // manda no máximo a cada 45 s, ou antes se andou 150 m
   if (agora - ultimoEnvio < 45000 && moveu < 150) return;
   ultimoEnvio = agora; ultimaPos = { lat, lng };
   set(ref(db, `entregador/${token}/posicao`), { lat: +lat.toFixed(6), lng: +lng.toFixed(6), precisao: Math.round(p.coords.accuracy || 0), hora: serverTimestamp() })
-    .then(() => setLoc(`Ligada · enviada às ${horaTs(Date.now())}. Funciona com esta página aberta.`))
+    .then(() => setLoc(`Ligada · enviada às ${horaTs(Date.now())}. Grava o caminho para o km rodado enquanto esta página estiver na frente${travaTela ? ' (a tela fica acesa)' : ''}. Com o Waze ou o Maps na frente, o caminho fica estimado.`))
     .catch(() => desligarLocalizacao('O link foi encerrado: a localização foi desligada.'));
 }
 function aoErroPosicao(e) {
@@ -221,7 +270,14 @@ function cardLocalizacao() {
   return `<section class="loc${on ? ' on' : ''}" aria-label="Localização ao vivo">
     <div class="loc-txt"><b>📍 Localização ao vivo</b><span id="loc-status">${esc(locStatus)}</span></div>
     <button type="button" class="loc-sw" role="switch" aria-checked="${on}" data-acao="loc">${on ? 'Desligar' : 'Ligar'}</button>
-  </section>`;
+  </section>
+  <details class="dados">
+    <summary>O que esta página grava</summary>
+    <p>O km do painel e a foto dele; a posição do celular na hora de cada baixa; e, só com a
+    localização ligada, o caminho, enquanto esta página estiver aberta. Quem vê é a transportadora
+    que mandou este link. Serve para medir o km rodado, comprovar as entregas e acertar o ponto
+    dos endereços no mapa. A localização desliga sozinha quando todas as paradas têm baixa.</p>
+  </details>`;
 }
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -241,6 +297,33 @@ function linkWaze(p) {
   if (p.endereco) return 'https://waze.com/ul?q=' + encodeURIComponent([p.endereco, p.cidade, p.uf].filter(Boolean).join(', ')) + '&navigate=yes';
   if (temCoord(p)) return `https://waze.com/ul?ll=${p.lat},${p.lng}&navigate=yes`;
   return 'https://waze.com/ul?q=' + encodeURIComponent([p.cidade, p.uf].filter(Boolean).join(', ')) + '&navigate=yes';
+}
+
+// ── Km do painel (hodômetro) na saída e na chegada, com foto ────────────────
+// É o km rodado de verdade, conferível pela foto. O GPS do celular é só estimativa.
+const kmFmt = (v) => Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 1 });
+function lerKm(txt) {
+  const t = String(txt || '').trim().replace(/\s/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.');
+  if (!/^\d{1,7}(\.\d)?$/.test(t)) return null;
+  return +t;
+}
+function formHod(q) {
+  const ini = q === 'ini';
+  return `<form class="hod-form" data-q="${q}">
+    <label>${ini ? 'Km no painel agora, antes de sair' : 'Km no painel na chegada'}<input name="km" inputmode="decimal" autocomplete="off" placeholder="Ex.: 123456" required></label>
+    <label class="foto">📷 Foto do painel (recomendado)<input type="file" name="foto" accept="image/*" capture="environment"></label>
+    <div class="foto-prev" id="prev-hod-${q}"></div>
+    <div class="acoes"><button type="submit" class="btn ok">Salvar km da ${ini ? 'saída' : 'chegada'}</button>${hod[q] ? '<button type="button" class="btn sec" data-acao="hod-cancelar">Cancelar</button>' : ''}</div>
+  </form>`;
+}
+function cardHodometro() {
+  const a = hod.ini, b = hod.fim, ed = aberto && aberto.hod;
+  const linha = (x, rot, q) => `<div class="hod-linha"><span>${rot}: <b>${kmFmt(x.km)} km</b> às ${horaTs(x.hora)}${x.temFoto ? ' · 📷' : ''}</span><button type="button" class="btn-link" data-acao="hod-corrigir" data-q="${q}">Corrigir</button></div>`;
+  let corpo;
+  if (!a || ed === 'ini') corpo = formHod('ini');
+  else if (!b || ed === 'fim') corpo = linha(a, 'Saída', 'ini') + formHod('fim');
+  else corpo = linha(a, 'Saída', 'ini') + linha(b, 'Chegada', 'fim') + `<div class="hod-total">${kmFmt(Math.max(0, b.km - a.km))} km rodados</div>`;
+  return `<section class="hod" aria-label="Km do painel"><div class="hod-tit">🚗 Km do painel</div>${corpo}</section>`;
 }
 
 function erro(titulo, txt) {
@@ -270,6 +353,10 @@ async function iniciar() {
     baixas = s.val() || {};
     if (aberto) renderPendente = true; else render();
   }, () => erro('Link encerrado', 'Este link expirou ou foi encerrado pelo escritório.'));
+  onValue(ref(db, `entregador/${token}/hodometro`), (s) => {
+    hod = s.val() || {};
+    if (aberto) renderPendente = true; else render();
+  }, () => {});
   let t = null;
   onValue(ref(db, '.info/connected'), (s) => {
     clearTimeout(t);
@@ -284,7 +371,7 @@ function render() {
   renderPendente = false;
   const n = paradas.length;
   const feitas = paradas.filter((_, i) => baixas[i]).length;
-  if (!DEMO && n && feitas === n && watchId !== null) { if (watchId !== null) navigator.geolocation.clearWatch(watchId); watchId = null; gravarLocal(prefLoc(), 0); locStatus = 'Rota concluída: localização desligada.'; }
+  if (!DEMO && n && feitas === n && watchId !== null) { if (watchId !== null) navigator.geolocation.clearWatch(watchId); watchId = null; soltarTela(); gravarLocal(prefLoc(), 0); locStatus = 'Rota concluída: localização desligada.'; }
   const prox = paradas.findIndex((_, i) => !baixas[i]);
   const quando = [info.data ? dataBR(info.data) : '', info.saida != null ? 'saída ' + hhmm(info.saida) : '', info.deposito?.nome ? 'de ' + info.deposito.nome : ''].filter(Boolean).join(' · ');
   app.innerHTML = `
@@ -293,7 +380,7 @@ function render() {
       <div class="r-sub">${esc(quando)}</div>
       <div class="r-prog"><div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${feitas}"><i style="width:${n ? (feitas / n) * 100 : 0}%"></i></div><b>${feitas} de ${n}</b></div>
     </section>
-    ${DEMO ? `<div class="demo-aviso">${EMBUTIDO ? 'Rota de exemplo: marque uma parada e veja o painel do escritório mudar. Nada sai deste navegador.' : 'Rota de exemplo para demonstração: as baixas ficam só neste aparelho e não vão para nenhum escritório.'}</div>` : cardLocalizacao()}
+    ${DEMO ? `<div class="demo-aviso">${EMBUTIDO ? 'Rota de exemplo: marque uma parada e veja o painel do escritório mudar. Nada sai deste navegador.' : 'Rota de exemplo para demonstração: as baixas ficam só neste aparelho e não vão para nenhum escritório.'}</div>` : cardHodometro() + cardLocalizacao()}
     ${n && feitas === n ? '<div class="fim">✅ Todas as paradas têm baixa. Pode voltar ao centro de distribuição.</div>' : ''}
     <ol class="lista">${paradas.map((p, i) => card(p, i, i === prox)).join('')}</ol>
     <p class="rodape">Ao dar baixa, o celular pode pedir sua localização: ela fica guardada junto com a baixa.<br>Dúvidas sobre a rota: fale com o escritório.</p>`;
@@ -356,17 +443,28 @@ document.addEventListener('click', (e) => {
   else if (acao === 'corrigir') abrir(i, baixas[i]?.status === 'nao_feito' ? 'nao' : 'feito');
   else if (acao === 'cancelar') { aberto = null; render(); }
   else if (acao === 'loc') { if (watchId !== null) desligarLocalizacao(); else ligarLocalizacao(); }
+  else if (acao === 'hod-corrigir') { aberto = { hod: b.dataset.q }; render(); }
+  else if (acao === 'hod-cancelar') { aberto = null; render(); }
+});
+
+// Começou a digitar o km: segura a tela (uma atualização do banco não apaga o que foi digitado)
+document.addEventListener('input', (e) => {
+  const f = e.target.closest && e.target.closest('form.hod-form');
+  if (f && !aberto) aberto = { hod: f.dataset.q };
 });
 
 document.addEventListener('change', (e) => {
   const inp = e.target;
   if (inp.name !== 'foto') return;
-  const f = inp.closest('form.baixa'), prev = $('prev-' + f.dataset.i), arq = inp.files[0];
+  const f = inp.closest('form.baixa, form.hod-form');
+  const prev = $(f.classList.contains('hod-form') ? 'prev-hod-' + f.dataset.q : 'prev-' + f.dataset.i), arq = inp.files[0];
   prev.innerHTML = '';
   if (arq) { const img = new Image(); img.alt = 'Foto escolhida'; img.src = URL.createObjectURL(arq); prev.appendChild(img); }
 });
 
 document.addEventListener('submit', async (e) => {
+  const fh = e.target.closest('form.hod-form');
+  if (fh) { e.preventDefault(); return salvarHod(fh); }
   const f = e.target.closest('form.baixa');
   if (!f) return;
   e.preventDefault();
@@ -402,12 +500,42 @@ document.addEventListener('submit', async (e) => {
   try {
     if (foto) await set(ref(db, `entregador/${token}/fotos/${i}`), foto);
     await set(ref(db, `entregador/${token}/baixas/${i}`), baixa);
+    // posição com a precisão do GPS: o escritório usa para acertar o ponto do endereço
+    if (pos && Number.isFinite(pos.precisao)) set(ref(db, `entregador/${token}/gps/${i}`), pos).catch(() => {});
   } catch (err) {
     alert('A baixa não foi aceita. Se o link expirou, fale com o escritório.');
   }
   delete enviando[i];
   if (!aberto) render();
 });
+
+async function salvarHod(f) {
+  const q = f.dataset.q, km = lerKm(f.km.value), arq = f.foto.files[0];
+  if (km == null) { alert('Digite só os números do painel. Ex.: 123456'); return; }
+  if (q === 'fim') {
+    const ini = hod.ini && hod.ini.km;
+    if (ini != null && km < ini) { alert(`O km da chegada (${kmFmt(km)}) é menor que o da saída (${kmFmt(ini)}). Confira o painel.`); return; }
+    if (ini != null && km - ini > 2000 && !confirm(`Foram mesmo ${kmFmt(km - ini)} km rodados?`)) return;
+  }
+  const btn = f.querySelector('button[type=submit]');
+  btn.disabled = true; btn.textContent = 'Enviando…';
+  const reg = { km, hora: serverTimestamp(), temFoto: false };
+  let foto = null;
+  if (arq) {
+    try { foto = await comprimir(arq); reg.temFoto = true; }
+    catch (err) { alert('Não consegui usar essa foto. O km vai sem foto.'); }
+  }
+  try {
+    if (foto) await set(ref(db, `entregador/${token}/fotos_hod/${q}`), foto);
+    await set(ref(db, `entregador/${token}/hodometro/${q}`), reg);
+    aberto = null;
+  } catch (err) {
+    alert('Não deu para salvar o km. Se o link expirou, fale com o escritório.');
+    btn.disabled = false; btn.textContent = 'Tentar de novo';
+    return;
+  }
+  render();
+}
 
 // Foto em JPEG, no máximo ~280 KB (cabe no banco sem plano pago)
 async function comprimir(file) {
@@ -433,7 +561,7 @@ function posicao() {
     if (!navigator.geolocation) return ok(null);
     const t = setTimeout(() => ok(null), 6000);
     navigator.geolocation.getCurrentPosition(
-      (p) => { clearTimeout(t); ok({ lat: +p.coords.latitude.toFixed(6), lng: +p.coords.longitude.toFixed(6) }); },
+      (p) => { clearTimeout(t); ok({ lat: +p.coords.latitude.toFixed(6), lng: +p.coords.longitude.toFixed(6), precisao: Math.round(p.coords.accuracy || 0) }); },
       () => { clearTimeout(t); ok(null); },
       { enableHighAccuracy: true, timeout: 5500, maximumAge: 120000 });
   });

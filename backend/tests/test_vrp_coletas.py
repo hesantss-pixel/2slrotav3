@@ -424,3 +424,73 @@ class TesteSemVoltaAoCD(unittest.TestCase):
         med = avaliar(rota["pedidos"], saida=420)
         self.assertEqual(med["km"], rota["km"])
         self.assertEqual(med["mins"], rota["mins"])
+
+
+def _tabela(dist, dur):
+    r = mock.Mock()
+    r.raise_for_status.return_value = None
+    r.json.return_value = {"code": "Ok", "distances": dist, "durations": dur}
+    return r
+
+
+class TesteCustoPorTempo(unittest.TestCase):
+    """O motor escolhe a ordem pelo TEMPO, com um pouco de distância para desempatar."""
+
+    def test_prefere_o_caminho_rapido_ao_curto_e_lento(self):
+        a, b = ped("A", "entrega", 10, .03, 0), ped("B", "entrega", 10, .02, .01)
+        # CD→B e B→A são curtos (4 km) mas lentos (25 min, rua travada);
+        # CD→A e A→B são 5 km em 10 min. Pela distância: CD→B→A (8 km).
+        # Pelo tempo: CD→A→B (20 min contra 50).
+        dist = [[0, 5000, 4000], [5000, 0, 5000], [4000, 4000, 0]]
+        dur = [[0, 600, 1500], [600, 0, 600], [1500, 1500, 0]]
+        with mock.patch.object(vs.requests, "get", return_value=_tabela(dist, dur)):
+            rota = vs.solve_vrp([a, b], veic(1000, 10), 5, CD)["routes"][0]
+        self.assertEqual([p["nf"] for p in rota["pedidos"]], ["A", "B"])
+        self.assertEqual(rota["km"], 10.0)   # o km continua sendo a distância de verdade
+
+    def test_distancia_desempata_tempos_iguais(self):
+        a, b = ped("A", "entrega", 10, .03, 0), ped("B", "entrega", 10, .02, .01)
+        dist = [[0, 9000, 4000], [9000, 0, 4000], [4000, 4000, 0]]
+        dur = [[0, 600, 600], [600, 0, 600], [600, 600, 0]]
+        with mock.patch.object(vs.requests, "get", return_value=_tabela(dist, dur)):
+            rota = vs.solve_vrp([a, b], veic(1000, 10), 5, CD)["routes"][0]
+        self.assertEqual([p["nf"] for p in rota["pedidos"]], ["B", "A"])   # 8 km contra 13 km
+
+
+class TesteFatorDeTempo(unittest.TestCase):
+    """Calibração: tempo real ÷ planejado multiplica os tempos do OSRM."""
+
+    def _medir(self, fator, resposta):
+        a = ped("A", "entrega", 10, .03, 0)
+        with mock.patch.object(vs.requests, "get", **resposta):
+            return vs.avaliar_sequencia([a], CD, 420, False, fator)
+
+    def test_multiplica_o_tempo_do_osrm(self):
+        tab = {"return_value": _tabela([[0, 5000], [5000, 0]], [[0, 1200], [1200, 0]])}
+        base = self._medir(1.0, tab)
+        lento = self._medir(1.5, tab)
+        self.assertEqual(base["chegada_min"], [440])     # 07:00 + 20 min
+        self.assertEqual(lento["chegada_min"], [450])    # 07:00 + 30 min
+        self.assertEqual(lento["km"], base["km"])        # o fator mexe no tempo, não no km
+
+    def test_linha_reta_nao_leva_fator(self):
+        sem = {"side_effect": OSError("sem rede")}
+        self.assertEqual(self._medir(1.0, sem)["chegada_min"], self._medir(2.0, sem)["chegada_min"])
+
+    def test_valor_absurdo_fica_no_limite(self):
+        self.assertEqual(vs._fator_valido(10), vs.FATOR_TEMPO_MAX)
+        self.assertEqual(vs._fator_valido(0), vs.FATOR_TEMPO_MIN)
+        self.assertEqual(vs._fator_valido("x"), 1.0)
+        self.assertEqual(vs._fator_valido(float("nan")), 1.0)
+
+    def test_motor_usa_o_fator_na_jornada(self):
+        # 6 h de estrada: com fator 1,5 vira 9 h e não cabe na jornada de 8 h
+        a = ped("A", "entrega", 10, .03, 0)
+        tab = _tabela([[0, 300000], [300000, 0]], [[0, 6 * 3600], [6 * 3600, 0]])
+        with mock.patch.object(vs.requests, "get", return_value=tab):
+            ok_ = vs.solve_vrp([a], veic(1000, 10), 5, CD, 420, False, 1.0)
+        with mock.patch.object(vs.requests, "get", return_value=tab):
+            fora = vs.solve_vrp([a], veic(1000, 10), 5, CD, 420, False, 1.5)
+        self.assertEqual(len(ok_["routes"]), 1)
+        self.assertEqual(fora["routes"], [])
+        self.assertEqual(fora["nao_alocados"], ["A"])

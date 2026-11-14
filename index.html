@@ -530,6 +530,15 @@ button.nf-mini{display:block;width:100%;text-align:left;font:inherit;color:inher
 button.nf-mini:hover{border-color:var(--vv);}
 button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
 .nf-mini .aprox{margin-left:0;margin-top:4px;display:inline-block;}
+.semnum{font-family:var(--body);font-size:10px;font-weight:700;color:#475569;background:#f1f5f9;border:1px solid #dbe3ec;border-radius:6px;padding:1px 6px;margin-top:4px;display:inline-block;white-space:nowrap;}
+.semnum-bt{border:1px solid #dbe3ec;background:#f1f5f9;color:#475569;border-radius:6px;padding:1px 6px;margin-left:7px;font:700 10px var(--body);cursor:pointer;white-space:nowrap;text-decoration:underline;}
+button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font-weight:700;text-decoration:underline;cursor:pointer;}
+.realizado{background:var(--s2,#f6f8fb);border:1px solid var(--border);border-radius:11px;padding:10px 12px;margin-bottom:12px;font-size:12.5px;color:var(--text2);line-height:1.7;}
+.realizado .mot-tit{margin-bottom:2px;}
+.realizado .lk{font-size:12px;}
+.rz-sub{color:var(--text3);font-size:11.5px;}
+.rz-alerta{color:#8a5a06;background:#fff3df;border:1px solid #f6dca6;border-radius:6px;padding:0 6px;font-size:11px;font-weight:700;white-space:nowrap;}
+.mapa-nota.info{color:#3a4657;background:#f4f7fb;border-color:#dbe3ec;}
 .nf-mini-grid .nf-mini.extra{display:none;}
 .rc-card.todos .nf-mini-grid .nf-mini.extra{display:block;}
 .rc-mais{margin-top:9px;border:1px solid var(--border2);background:#fff;border-radius:9px;padding:7px 12px;font:700 12px var(--body);color:var(--text2);cursor:pointer;}
@@ -677,6 +686,7 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
 .rel-alerta{background:rgba(250,204,21,.16);border:1px solid rgba(202,138,4,.35);color:#8a5a06;border-radius:12px;padding:12px 15px;font-size:13px;line-height:1.6;margin-bottom:4px;}
 .rel-alerta.leve{background:var(--s3);border-color:var(--border2);color:var(--text2);}
 .rel-nota{font-size:11.5px;color:var(--text3);line-height:1.65;margin-top:14px;}
+.rel-real{display:grid;gap:9px;font-size:13px;line-height:1.55;color:var(--text);}
 .rel-vazio{text-align:center;color:var(--text2);padding:34px 16px;font-size:14px;}
 .rel-cab-imp{display:none;}
 @media (max-width:640px){
@@ -684,12 +694,14 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
   .rel-mot-l .rel-bar{grid-column:1 / -1;}
 }
 @media print{
+  @page{size:A4 landscape;margin:12mm;}   /* a tabela de rotas tem 14 colunas */
   .sidebar,.header,.no-print,.btn-voltar-topo,.faixa-demo{display:none!important;}
   .main{margin-left:0!important;}
   .page{padding:0!important;max-width:none!important;}
   body{background:#fff!important;}
   .card{break-inside:avoid;page-break-inside:avoid;border:1px solid #ccc!important;box-shadow:none!important;}
-  .rel-tab{min-width:0;font-size:11px;}
+  .rel-tab{min-width:0;font-size:10px;}
+  .rel-tab th,.rel-tab td{padding:5px 5px;}
   .rel-cab-imp{display:block;margin-bottom:14px;}
   .kpis{max-width:none;}
 }
@@ -1196,6 +1208,11 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
         <p class="mot-sub">De onde saem as rotas. Só você define; o cliente vê, mas não troca. Pelo CEP o ponto fica na rua; para o ponto exato, cole as coordenadas do Google Maps (toque e segure no mapa).</p>
         <div class="ac-lista" id="ac-cds"></div>
       </div>
+      <div class="ac-card">
+        <h3>Tempo de viagem de cada empresa</h3>
+        <p class="mot-sub">O servidor de rotas calcula o tempo de viagem sem trânsito. Este número multiplica esse tempo nas rotas da empresa: 1 é sem ajuste, 1,2 é 20% mais devagar. A sugestão vem das baixas dos motoristas nos últimos 60 dias e só aparece com 20 trechos ou mais, em pelo menos 3 rotas.</p>
+        <div class="ac-lista" id="ac-fatores"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -1437,6 +1454,9 @@ async function apiPost(path, body, metodo='POST'){
 
 // Centro de distribuição. Pode ser trocado no banco em config/deposito {nome, lat, lng}.
 const DEPOT = { lat: -23.424492, lng: -46.387695, name: 'Centro de distribuição' };
+// Fator de tempo da empresa (tempo real ÷ planejado, calibrado pelo administrador em
+// Acessos). O motor multiplica os tempos do OSRM por ele. 1 = sem ajuste.
+let FATOR_TEMPO = 1;
 const CITY_COORDS = {
   'Guarulhos':{lat:-23.424492,lng:-46.387695},'Santos':{lat:-23.9617,lng:-46.3322},
   'Guarujá':{lat:-23.9928,lng:-46.2569},'São Paulo':{lat:-23.5614,lng:-46.6559},
@@ -1474,9 +1494,11 @@ function calcularRegioes(pedidos){
 }
 // local aproximado: ainda sem ponto, ou achado só pelo bairro ou pela cidade
 function _aprox(o){ return !!o && ((!!o.geoStatus&&o.geoStatus!=='ok') || o.geoPrec==='bairro' || o.geoPrec==='cidade'); }
+// na rua certa, mas sem o número: em rua curta não muda nada; em avenida longa, vale corrigir
+function _semNumero(o){ return !!o && !o.geoManual && o.geoPrec==='rua' && !_aprox(o); }
 function _origemLocal(o){
   if(o.geoManual) return 'Ponto marcado à mão';
-  return ({lembrado:'Ponto que você já marcou para este endereço',numero:'Achado pelo número',rua:'Achado pela rua (sem o número)',
+  return ({lembrado:'Ponto que você já marcou para este endereço',aprendido:'Ponto aprendido nas entregas (GPS do motorista)',numero:'Achado pelo número',rua:'Achado pela rua (sem o número)',
     bairro:'Local aproximado: só o bairro',cidade:'Local aproximado: só a cidade',endereco:'Achado pelo endereço'})[o.geoPrec]||'Localização via CEP ou endereço';
 }
 function _pedidoIsolado(o){ return Number.isFinite(o.lat)&&Number.isFinite(o.lng)&&_haversineKm(o,DEPOT)>RAIO_ISOLADO_KM; }
@@ -1962,10 +1984,16 @@ function _relCalcular(){
   });
   const linhas=rotas.map(r=>{
     const c=cont[r.id], par=Number(r.num_paradas)||(r.paradas||[]).length;
+    const med=_medirRota(r,_horaDeRota(r,null)), hp=r.km_painel, g=r.km_gps;
     return { id:r.id, data:r.data||'', veiculo:r.veiculo||'', motorista:(r.motorista||'').trim()||'—',
       paradas:par, feitos:c.feitos, falhas:c.falhas, semBaixa:Math.max(0,par-c.feitos-c.falhas),
       km:Number(r.km)||0, min:Number(r.tempo_min)||0, peso:Number(r.peso_total)||0,
-      devolvida:r.status==='devolvida', fonte:r.fonte_dist||'—', reta:_eReta(r.fonte_dist) };
+      devolvida:r.status==='devolvida', fonte:r.fonte_dist||'—', reta:_eReta(r.fonte_dist),
+      // realizado: km do painel (fotos do motorista), km pelo GPS, tempo e ordem pelas baixas
+      kmPainel:hp&&Number.isFinite(+hp.km)?+hp.km:null,
+      kmGps:g&&!g.so_baixas&&Number.isFinite(+g.km_total)?+g.km_total:null,   // só com o caminho gravado
+      gpsCob:g&&!g.so_baixas&&Number.isFinite(+g.cobertura)?+g.cobertura:null,
+      razoes:med.razoes, rz:_mediana(med.razoes), fora:med.fora, feitasMed:med.feitas };
   });
   const tot=linhas.reduce((a,r)=>({rotas:a.rotas+1,paradas:a.paradas+r.paradas,feitos:a.feitos+r.feitos,
     falhas:a.falhas+r.falhas,km:a.km+r.km,peso:a.peso+r.peso,min:a.min+r.min,
@@ -1977,8 +2005,35 @@ function _relCalcular(){
     const m=mot[r.motorista]=mot[r.motorista]||{nome:r.motorista,rotas:0,paradas:0,feitos:0,falhas:0,km:0};
     m.rotas++; m.paradas+=r.paradas; m.feitos+=r.feitos; m.falhas+=r.falhas; m.km+=r.km;
   });
-  return { ini, fim, linhas, tot, motivos,
+  const real={razoes:[],fora:0,feitas:0,kmPainel:0,kmPlanPainel:0,rotasPainel:0,kmGps:0,kmPlanGps:0,rotasGps:0};
+  linhas.forEach(r=>{
+    real.razoes.push(...r.razoes); real.fora+=r.fora; real.feitas+=r.feitasMed;
+    if(r.kmPainel!=null){ real.kmPainel+=r.kmPainel; real.kmPlanPainel+=r.km; real.rotasPainel++; }
+    if(r.kmGps!=null){ real.kmGps+=r.kmGps; real.kmPlanGps+=r.km; real.rotasGps++; }
+  });
+  real.rz=_mediana(real.razoes);
+  return { ini, fim, linhas, tot, motivos, real,
     motoristas:Object.values(mot).sort((a,b)=>b.paradas-a.paradas) };
+}
+// "1,3×" e "+12%": como o relatório mostra a comparação com o planejado
+const _vezes=v=>v==null?'—':v.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'×';
+function _difPct(real,plan){
+  if(!plan) return '';
+  const d=Math.round((real/plan-1)*100);
+  return d===0?'igual ao planejado':(d>0?'+':'')+d+'% em relação ao planejado';
+}
+function _relBlocoRealizado(d){
+  const x=d.real, L=[];
+  if(x.rotasPainel) L.push(`<div>🛣️ <b>Km do painel: ${_n(x.kmPainel,1)} km</b> em ${_plural(x.rotasPainel,'rota','rotas')} com a saída e a chegada registradas.
+    O planejado para essas mesmas rotas era ${_n(x.kmPlanPainel,1)} km <span class="rz-sub">(${_difPct(x.kmPainel,x.kmPlanPainel)})</span>.</div>`);
+  if(x.rotasGps) L.push(`<div>📡 <b>Km pelo GPS: ${_n(x.kmGps,1)} km</b> em ${_plural(x.rotasGps,'rota','rotas')}.
+    O planejado para essas rotas era ${_n(x.kmPlanGps,1)} km <span class="rz-sub">(${_difPct(x.kmGps,x.kmPlanGps)})</span>.</div>`);
+  if(x.rz!=null) L.push(`<div>⏱️ <b>Tempo entre as paradas: ${_vezes(x.rz)} o planejado</b>
+    <span class="rz-sub">(mediana de ${_plural(x.razoes.length,'trecho','trechos')} entre duas baixas seguidas)</span>.</div>`);
+  if(x.feitas>=2) L.push(`<div>🔢 ${x.fora?`<b>${_plural(x.fora,'parada feita','paradas feitas')} fora da ordem planejada</b>, de ${_n(x.feitas)} com baixa.`:`Todas as ${_n(x.feitas)} paradas com baixa foram feitas na ordem planejada.`}</div>`);
+  return `<div class="card rel-sec"><h3>Planejado × realizado</h3>${L.length?`<div class="rel-real">${L.join('')}</div>`
+    :`<div class="rel-vazio" style="padding:14px">Ainda não há registro do que foi feito na rua neste período.
+      Ele chega pelo link do motorista: o km do painel na saída e na chegada (com foto), o caminho pelo GPS e a hora de cada baixa.</div>`}</div>`;
 }
 
 function renderRelatorios(){
@@ -2034,13 +2089,18 @@ function renderRelatorios(){
   const tabRotas=`<div class="card rel-sec"><h3>Rotas do período</h3><div class="rel-rola">Arraste a tabela para o lado para ver o resto.</div><div class="rel-wrap"><table class="rel-tab">
     <thead><tr><th>Data</th><th>Veículo</th><th>Motorista</th><th class="num">Paradas</th>
       <th class="num">Feitas</th><th class="num">Não feitas</th><th class="num">Sem baixa</th>
-      <th class="num">Km</th><th class="num">Tempo</th><th>Medida</th></tr></thead>
+      <th class="num">Km</th><th class="num">Tempo</th><th>Medida</th>
+      <th class="num">Km painel</th><th class="num">Km GPS</th><th class="num">Tempo real</th><th class="num">Fora da ordem</th></tr></thead>
     <tbody>${d.linhas.map(r=>`<tr><td>${esc(_dataBR(r.data))}${r.devolvida?' <span style="color:var(--text3)">(devolvida)</span>':''}</td>
       <td>${esc(r.veiculo)}</td><td>${esc(r.motorista)}</td>
       <td class="num">${r.paradas}</td><td class="num">${r.feitos}</td>
       <td class="num${r.falhas?' ruim':''}">${r.falhas}</td><td class="num">${r.semBaixa}</td>
       <td class="num">${_n(r.km,1)}</td><td class="num">${_n(r.min)} min</td>
-      <td${r.reta?' class="ruim"':''}>${esc(_rotuloFonte(r.fonte))}</td></tr>`).join('')}</tbody>
+      <td${r.reta?' class="ruim"':''}>${esc(_rotuloFonte(r.fonte))}</td>
+      <td class="num">${r.kmPainel==null?'—':_n(r.kmPainel,1)}</td>
+      <td class="num">${r.kmGps==null?'—':_n(r.kmGps,1)}</td>
+      <td class="num">${_vezes(r.rz)}</td>
+      <td class="num${r.fora?' ruim':''}">${r.feitasMed>=2?r.fora:'—'}</td></tr>`).join('')}</tbody>
   </table></div></div>`;
 
   const tabMot=`<div class="card rel-sec"><h3>Por motorista</h3><div class="rel-rola">Arraste a tabela para o lado para ver o resto.</div><div class="rel-wrap"><table class="rel-tab">
@@ -2056,7 +2116,8 @@ function renderRelatorios(){
 
   const notas=`<div class="rel-nota">
     <b>Como ler estes números.</b><br>
-    · <b>Km planejado</b> é a distância que o sistema calculou ao montar a rota, não a do odômetro do veículo.<br>
+    · <b>Km planejado</b> é a distância que o sistema calculou ao montar a rota. <b>Km painel</b> é a diferença entre as leituras do odômetro que o motorista registrou com foto; <b>Km GPS</b> é o caminho gravado pelo celular dele, casado com as ruas.<br>
+    · <b>Tempo real</b> compara o tempo entre duas baixas seguidas com o previsto, sem os 15 min de atendimento: 1,3× quer dizer 30% mais demorado. <b>Fora da ordem</b> conta as paradas feitas numa sequência diferente da planejada.<br>
     · <b>Medida</b> diz como aquele km foi obtido: "pelas ruas" é o cálculo bom; "linha reta" é a estimativa que o sistema usa quando o servidor de rotas falha ou quando passam de 100 paradas.<br>
     · <b>Sucesso</b> considera só as paradas que receberam baixa pelo link do motorista. "Sem baixa" são as paradas em que ninguém marcou nada.<br>
     · Cada pedido guarda a <b>última</b> ocorrência. Se a mesma nota falhou mais de uma vez, ela conta uma vez aqui.<br>
@@ -2064,7 +2125,7 @@ function renderRelatorios(){
     ${modoDemo?'<br>· <b>Atenção: estes são dados de demonstração</b>, não a sua operação.':''}
   </div>`;
 
-  alvo.innerHTML=cab+kpis+alertaReta+blocoMotivos+tabRotas+tabMot+notas;
+  alvo.innerHTML=cab+kpis+alertaReta+_relBlocoRealizado(d)+blocoMotivos+tabRotas+tabMot+notas;
 }
 
 function _relCSV(){
@@ -2075,11 +2136,15 @@ function _relCSV(){
   lin.push([_relTitulo(relPeriodo), _relDiaBR(d.ini)+' a '+_relDiaBR(new Date(+d.fim-864e5))]);
   if(modoDemo) lin.push(['ATENÇÃO: dados de demonstração']);
   lin.push([]);
-  lin.push(['Data','Veículo','Motorista','Paradas','Feitas','Não feitas','Sem baixa','Km planejado','Tempo (min)','Peso (kg)','Distância medida']);
+  const km1=v=>v==null?'':num(v.toFixed(1)), rz2=v=>v==null?'':num(v.toFixed(2));
+  lin.push(['Data','Veículo','Motorista','Paradas','Feitas','Não feitas','Sem baixa','Km planejado','Tempo (min)','Peso (kg)','Distância medida',
+    'Km painel','Km GPS','% do GPS casado com as ruas','Tempo real ÷ planejado','Paradas fora da ordem']);
   d.linhas.forEach(r=>lin.push([_dataBR(r.data),r.veiculo,r.motorista,r.paradas,r.feitos,r.falhas,
-    r.semBaixa,num(r.km.toFixed(1)),Math.round(r.min),Math.round(r.peso),_rotuloFonte(r.fonte)]));
+    r.semBaixa,num(r.km.toFixed(1)),Math.round(r.min),Math.round(r.peso),_rotuloFonte(r.fonte),
+    km1(r.kmPainel),km1(r.kmGps),r.gpsCob==null?'':Math.round(r.gpsCob*100),rz2(r.rz),r.feitasMed>=2?r.fora:'']));
   lin.push(['TOTAL','','',d.tot.paradas,d.tot.feitos,d.tot.falhas,
-    d.tot.paradas-d.tot.feitos-d.tot.falhas,num(d.tot.km.toFixed(1)),Math.round(d.tot.min),Math.round(d.tot.peso)]);
+    d.tot.paradas-d.tot.feitos-d.tot.falhas,num(d.tot.km.toFixed(1)),Math.round(d.tot.min),Math.round(d.tot.peso),'',
+    d.real.rotasPainel?km1(d.real.kmPainel):'',d.real.rotasGps?km1(d.real.kmGps):'','',rz2(d.real.rz),d.real.feitas>=2?d.real.fora:'']);
   lin.push([]);
   lin.push(['Não realizados por motivo','Quantidade']);
   Object.entries(d.motivos).sort((a,b)=>b[1]-a[1]).forEach(([m,q])=>lin.push([m,q]));
@@ -2272,14 +2337,16 @@ function renderPedidosPage(){
         <div class="rc-card-n">${os.length}</div><div class="rc-card-chev">›</div>
       </div>
       <div class="rc-card-body"><div class="nf-mini-grid">${os.map((o,j)=>
-        `<button type="button" class="nf-mini${j>=10?' extra':''}" onclick="abrirPedido(${esc(JSON.stringify(o.id))})" aria-label="Editar pedido NF ${esc(o.nf)}"><div class="nf-mini-code">NF ${esc(o.nf)}${_tag(o)}</div>${o.dest&&o.dest!==o.cidade?`<div class="nf-mini-end">${esc(o.dest)}</div>`:''}<div class="nf-mini-meta">${(+o.peso||0).toLocaleString('pt-BR')} kg · ${o.itens} vol.${o.urgente?' · urgente':''}</div>${_aprox(o)?'<span class="aprox">local aproximado</span>':''}</button>`
+        `<button type="button" class="nf-mini${j>=10?' extra':''}" onclick="abrirPedido(${esc(JSON.stringify(o.id))})" aria-label="Editar pedido NF ${esc(o.nf)}"><div class="nf-mini-code">NF ${esc(o.nf)}${_tag(o)}</div>${o.dest&&o.dest!==o.cidade?`<div class="nf-mini-end">${esc(o.dest)}</div>`:''}<div class="nf-mini-meta">${(+o.peso||0).toLocaleString('pt-BR')} kg · ${o.itens} vol.${o.urgente?' · urgente':''}</div>${_aprox(o)?'<span class="aprox">local aproximado</span>':_semNumero(o)?'<span class="semnum">sem o número</span>':''}</button>`
       ).join('')}</div>${os.length>10?`<button type="button" class="rc-mais" onclick="verTodosRc(${i})">${todos.has(r.nome)?'Mostrar menos':`Mostrar todos (${os.length})`}</button>`:''}</div>
     </div>`;
   }).join('') : `<div class="empty-mini">${vazio}</div>`;
   // aviso dos pedidos que ainda estão só com a cidade ou o bairro
-  const aprox=pend.filter(_aprox).length;
-  $id('ped-aprox').innerHTML = aprox
-    ? `<div class="mapa-nota" style="margin:0">⚠️ ${aprox===1?'1 pedido está sem local exato (no mapa, fica no centro do bairro ou da cidade)':`${aprox} pedidos estão sem local exato (no mapa, ficam no centro do bairro ou da cidade)`}. Toque no pedido para buscar o endereço ou marcar o ponto no mapa. O ponto que você marcar fica guardado para as próximas notas do mesmo endereço.</div>` : '';
+  const aprox=pend.filter(_aprox).length, semNum=pend.filter(_semNumero).length;
+  $id('ped-aprox').innerHTML = (aprox
+    ? `<div class="mapa-nota" style="margin:0">⚠️ ${aprox===1?'1 pedido está sem local exato (no mapa, fica no centro do bairro ou da cidade)':`${aprox} pedidos estão sem local exato (no mapa, ficam no centro do bairro ou da cidade)`}. Toque no pedido para buscar o endereço ou marcar o ponto no mapa. O ponto que você marcar fica guardado para as próximas notas do mesmo endereço.</div>` : '')
+    + (semNum
+    ? `<div class="mapa-nota info" style="margin:${aprox?'8px':'0'} 0 0">ℹ️ ${_plural(semNum,'pedido ficou','pedidos ficaram')} na rua certa, mas sem o número (o mapa não tem o número dessa rua). Em rua curta não muda nada; em avenida longa, abra o pedido e arraste o pino até a porta: o ponto fica guardado para as próximas notas.</div>` : '');
   _renderBusca();
 }
 function toggleRcCard(i){ document.getElementById('rcd-'+i).classList.toggle('exp'); }
@@ -2367,6 +2434,7 @@ function _pedGeoStatus(){
   else if(g.fonte==='salvo'&&!g.exato&&!['bairro','cidade'].includes(f)){ t='Ainda sem local exato: o pino está no centro da cidade. Busque pelo endereço ou arraste o pino.'; c='warn'; }
   else if(f==='manual'){ t=g.fonte==='salvo'?'Ponto marcado à mão. Arraste o pino para corrigir.':'Ponto marcado por você.'+(_pedChaveForm()?guarda:''); c='ok'; }
   else if(f==='lembrado'){ t='Ponto que você já tinha marcado para este endereço. Arraste o pino se precisar.'; c='ok'; }
+  else if(f==='aprendido'){ t='Ponto aprendido nas entregas: onde o motorista estava ao dar baixa, em mais de uma entrega. Arraste o pino se precisar.'; c='ok'; }
   else if(f==='numero'){ t='Achamos pelo número. Confira o pino e arraste se precisar.'; c='ok'; }
   else if(f==='endereco'){ t='Achamos pelo endereço. Confira o pino e arraste se precisar.'; c='ok'; }
   else if(f==='rua'){ t='Achamos a rua, mas não o número (o mapa não tem o número de toda rua). Arraste o pino até o ponto certo.'+(_pedChaveForm()?guarda:''); c='warn'; }
@@ -2516,6 +2584,51 @@ async function salvarPedido(){
   _toast((o?`Pedido NF ${nf} atualizado.`:`Pedido NF ${nf} cadastrado.`)+(outros?` O ponto também foi usado em ${_plural(outros,'outro pedido','outros pedidos')} do mesmo endereço.`:''));
 }
 window.salvarPedido=salvarPedido;
+// ── Pino aprendido nas entregas ─────────────────────────────────────────────
+// Na baixa, o celular do motorista manda onde estava e com que precisão. Duas
+// entregas no mesmo endereço, com precisão de até 30 m e a menos de 100 m uma da
+// outra, viram o ponto do endereço (p:'aprendido'). As próximas notas e os pedidos
+// pendentes do mesmo endereço passam a usar esse ponto. Ponto marcado à mão manda.
+const PRECISAO_APRENDER_M=30, _gpsVisto=new Set();
+function _aprenderPinos(r, gps, bx){
+  if(modoDemo||contaDemo||!EID||!r||!r.id||!gps) return;
+  const upd={};
+  (r.paradas||[]).forEach((p,i)=>{
+    const g=gps[i], b=bx&&bx[i], k=r.id+'-'+i;
+    if(!g||!b||b.status!=='feito'||_gpsVisto.has(k)) return;
+    _gpsVisto.add(k);
+    const lat=+g.lat, lng=+g.lng, prec=+g.precisao;
+    if(!(prec>0&&prec<=PRECISAO_APRENDER_M)||!Number.isFinite(lat)||!Number.isFinite(lng)) return;
+    const chave=_chaveLocal(p); if(!chave) return;
+    const atual=locaisEmp[chave]||{}, ped=pedidosCrus[_idDe(p)]||{};
+    if(atual.p==='manual'||ped.geoManual) return;
+    // muito longe do pino do pedido: a baixa foi dada em outro lugar
+    const lim=(ped.geoPrec==='bairro'||ped.geoPrec==='cidade')?30:5;
+    if(Number.isFinite(p.lat)&&Number.isFinite(p.lng)&&_haversineKm(p,{lat,lng})>lim) return;
+    // uma amostra por visita (duas notas no mesmo endereço, na mesma rota, são uma visita só)
+    const am=Object.values(atual.amostras||{}).filter(a=>a&&a.r!==r.id).concat([{lat,lng,a:Math.round(prec),r:r.id}]).slice(-5);
+    const v={...atual, amostras:am};
+    // visitas que concordam entre si (até 50 m uma da outra); o ponto é a mediana delas
+    const perto=am.filter(a=>am.some(o=>o!==a&&_haversineKm(a,o)<=0.05));
+    if(perto.length>=2){
+      // guarda o ponto que estava antes (marcar o pino à mão no pedido continua mandando)
+      if(atual.p!=='aprendido'&&!atual.antes){
+        const a0=Number.isFinite(+atual.lat)?atual:p;
+        if(Number.isFinite(+a0.lat)&&Number.isFinite(+a0.lng)) v.antes={lat:+a0.lat,lng:+a0.lng,p:String(atual.p||ped.geoPrec||'')};
+      }
+      v.lat=+_mediana(perto.map(a=>a.lat)).toFixed(6); v.lng=+_mediana(perto.map(a=>a.lng)).toFixed(6);
+      v.p='aprendido'; v.em=Date.now();
+    }
+    locaisEmp[chave]=v;
+    upd[TP('config/locais/'+chave)]=v;
+    if(v.p==='aprendido'){
+      allOrders.filter(x=>x.status==='pendente'&&!x.geoManual&&_chaveLocal(x)===chave&&!['lembrado','aprendido'].includes(x.geoPrec))
+        .forEach(x=>{ const novo={lat:v.lat,lng:v.lng,geoStatus:'ok',geoPrec:'aprendido'};
+          Object.entries(novo).forEach(([c,val])=>{ upd[TP('pedidos_rota/'+x.id+'/'+c)]=val; }); });
+    }
+  });
+  if(Object.keys(upd).length) update(ref(db),upd).catch(()=>{});
+}
 // leva o ponto marcado à mão para os outros pedidos pendentes do mesmo endereço
 async function _aplicarLocalLembrado(chave,exceto,lat,lng,soTela){
   const alvo=allOrders.filter(x=>x.id!==exceto&&x.status==='pendente'&&!x.geoManual&&_chaveLocal(x)===chave
@@ -3050,6 +3163,8 @@ async function _localizarPedido(o, persistir=true){
   if(_locaisProntos) await _locaisProntos;
   const chave=_chaveLocal(o), salvo=chave?locaisEmp[chave]:null;
   if(salvo&&salvo.p==='manual') return {lat:salvo.lat,lng:salvo.lng,prec:'lembrado',bairro:'',cidade:''};
+  // aprendido nas entregas (GPS do motorista): não vence, como o ponto marcado à mão
+  if(salvo&&salvo.p==='aprendido'&&Number.isFinite(+salvo.lat)) return {lat:+salvo.lat,lng:+salvo.lng,prec:'aprendido',bairro:'',cidade:''};
   if(salvo&&Date.now()-(salvo.em||0)<LOCAL_AUTO_DIAS*864e5) return {lat:salvo.lat,lng:salvo.lng,prec:salvo.p,bairro:'',cidade:''};
   const cep=String(o.cep||'').replace(/\D/g,'');
   let base=null;
@@ -3101,7 +3216,7 @@ async function _processarFilaGeo(){
       if(agora&&agora.geoManual) continue;
       let payload = { lat:g.lat, lng:g.lng, geoStatus:'ok', geoPrec:g.prec, bairro:g.bairro||o.bairro||'', cidade:g.cidade||o.cidade };
       // já localizado antes da versão 3.7: só troca o ponto se achar o número (ou um ponto marcado à mão)
-      if(o._melhorar && !['numero','lembrado'].includes(g.prec)){
+      if(o._melhorar && !['numero','lembrado','aprendido'].includes(g.prec)){
         payload = { geoPrec: _haversineKm(g,o)<0.05 ? g.prec : 'endereco' };
       }
       if(!modoDemo){
@@ -3420,9 +3535,9 @@ function irConfirmD(){
     : rotTipoD==='entrega' ? _plural(nV.entrega,'entrega','entregas')
     : `${_plural(nV.entrega,'entrega','entregas')} e ${_plural(nV.coleta,'coleta','coletas')}`;
   const comHora=viagem.filter(o=>o.janela_ini!=null).length;
-  const semLocal=viagem.filter(_aprox).length;
+  const semLocal=viagem.filter(_aprox).length, semNumV=viagem.filter(_semNumero).length;
   document.getElementById('confirm-veh-name').textContent=vehSel.nome;
-  document.getElementById('confirm-details-d').innerHTML=`Capacidade: <b style="color:var(--ac)">${kg.toLocaleString('pt-BR')} kg</b><br>Máx. de paradas: <b>${maxPedD}</b><br>Nesta viagem: <b>${oque} pendentes</b>${rotTipoD==='todos'?' <span style="color:var(--text3)">(entregas primeiro, coletas depois)</span>':''}<br>Saída: <b>${esc(DEPOT.name)}</b> às <b>${_hhmm(rotaCtxD.saida)}</b> de <b>${_dataBR(rotaCtxD.data)}</b><br>Fim: <b>${rotaCtxD.volta?'volta ao CD':'na última parada'}</b>${comHora?`<br>Com horário marcado: <b>${comHora}</b>`:''}${outroDia?`<br><span style="color:var(--text3)">${_plural(outroDia,'agendado para outro dia fica','agendados para outro dia ficam')} de fora.</span>`:''}${semLocal?`<br><span style="color:#8a5a06">⚠️ ${_plural(semLocal,'pedido ainda está','pedidos ainda estão')} sem localização exata (só o bairro ou a cidade). A ordem e os km desses pedidos são aproximados.</span>`:''}`;
+  document.getElementById('confirm-details-d').innerHTML=`Capacidade: <b style="color:var(--ac)">${kg.toLocaleString('pt-BR')} kg</b><br>Máx. de paradas: <b>${maxPedD}</b><br>Nesta viagem: <b>${oque} pendentes</b>${rotTipoD==='todos'?' <span style="color:var(--text3)">(entregas primeiro, coletas depois)</span>':''}<br>Saída: <b>${esc(DEPOT.name)}</b> às <b>${_hhmm(rotaCtxD.saida)}</b> de <b>${_dataBR(rotaCtxD.data)}</b><br>Fim: <b>${rotaCtxD.volta?'volta ao CD':'na última parada'}</b>${FATOR_TEMPO!==1?`<br>Tempos ajustados ao trânsito: <b>×${FATOR_TEMPO.toLocaleString('pt-BR',{maximumFractionDigits:2})}</b> <span style="color:var(--text3)">(calibrado pelas suas rotas)</span>`:''}${comHora?`<br>Com horário marcado: <b>${comHora}</b>`:''}${outroDia?`<br><span style="color:var(--text3)">${_plural(outroDia,'agendado para outro dia fica','agendados para outro dia ficam')} de fora.</span>`:''}${semLocal?`<br><span style="color:#8a5a06">⚠️ ${_plural(semLocal,'pedido ainda está','pedidos ainda estão')} sem localização exata (só o bairro ou a cidade). A ordem e os km desses pedidos são aproximados.</span>`:''}${semNumV?`<br><span style="color:var(--text3)">ℹ️ ${_plural(semNumV,'pedido está','pedidos estão')} na rua certa, sem o número: em avenida longa, a ordem pode sair pior.</span>`:''}`;
   document.getElementById('rot-step-cap').style.display='none';
   document.getElementById('rot-step-confirm').style.display='block';
 }
@@ -3437,7 +3552,7 @@ async function executarVRPD(){
   try{
     const data=await apiPost('/solve',{
       hora_saida: rotaCtxD.saida,
-      volta: !!rotaCtxD.volta,
+      volta: !!rotaCtxD.volta, fator_tempo: FATOR_TEMPO,
       veiculos: [{ id:vehSel.id, nome:vehSel.nome, capKg:capKgD, maxPed:maxPedD }],
       time_limit_s: 30,
       pedidos: pend,
@@ -3783,7 +3898,7 @@ function _manListas(carga){
     return `<div class="man-item ${col?'col':''} ${carga.pico===i?'pico':''}">
       <div class="man-num" aria-hidden="true">${i+1}</div>
       <div class="man-txt"><b>${col?'Coleta':'Entrega'} · NF ${esc(p.nf)}</b>
-        <span>${p.dest&&p.dest!==p.cidade?esc(p.dest)+' · ':''}${p.bairro?esc(p.bairro)+' — ':''}${esc(p.cidade)} · ${(+p.peso||0).toLocaleString('pt-BR')} kg${apos!=null?` · ${apos.toLocaleString('pt-BR')} kg a bordo depois daqui`:''}${_aprox(p)?' · ponto aproximado':''}</span></div>
+        <span>${p.dest&&p.dest!==p.cidade?esc(p.dest)+' · ':''}${p.bairro?esc(p.bairro)+' — ':''}${esc(p.cidade)} · ${(+p.peso||0).toLocaleString('pt-BR')} kg${apos!=null?` · ${apos.toLocaleString('pt-BR')} kg a bordo depois daqui`:''}${_aprox(p)?' · ponto aproximado':_semNumero(p)?' · sem o número':''}</span></div>
       <div class="man-bts">
         <button class="man-bt" type="button" id="man-bt-${i}-u" onclick="manMover(${i},-1)" ${i===0?'disabled':''}
           aria-label="Subir a parada ${i+1}, NF ${esc(p.nf)}">↑</button>
@@ -3895,7 +4010,7 @@ async function _avaliarRotaD(ri,seq){
   try{
     const d=await apiPost('/avaliar',{
       pedidos:ps.map(p=>({lat:p.lat,lng:p.lng,janela_ini:p.janela_ini??null,janela_fim:p.janela_fim??null})),
-      deposito:{lat:DEPOT.lat,lng:DEPOT.lng,nome:DEPOT.name}, hora_saida:rotaCtxD.saida, volta:!!rotaCtxD.volta,
+      deposito:{lat:DEPOT.lat,lng:DEPOT.lng,nome:DEPOT.name}, hora_saida:rotaCtxD.saida, volta:!!rotaCtxD.volta, fator_tempo:FATOR_TEMPO,
     });
     if(seq!==_avSeq[ri]||rotaGeradaD[ri]!==r) return;   // a rota mudou de novo: vale a próxima resposta
     r.km=+d.km||0; r.mins=+d.mins||0;
@@ -3965,7 +4080,7 @@ async function otimizarRotaD(ri){
   try{
     // todas as paradas que estão na rota continuam nela: o motor só escolhe a ordem
     const d=await apiPost('/solve',{
-      hora_saida:rotaCtxD.saida, volta:!!rotaCtxD.volta, time_limit_s:10, pedidos:ps,
+      hora_saida:rotaCtxD.saida, volta:!!rotaCtxD.volta, fator_tempo:FATOR_TEMPO, time_limit_s:10, pedidos:ps,
       veiculos:[{id:vehSel?.id||'v1', nome:vehSel?.nome||'Veículo', capKg:Math.max(capKgD||0,Math.ceil(Math.max(pesoE,pesoC))), maxPed:ps.length}],
       deposito:{lat:DEPOT.lat,lng:DEPOT.lng,nome:DEPOT.name},
     });
@@ -4102,6 +4217,7 @@ async function confirmarRotaD(){
         fonte_dist:r._fonte||fonteDistanciaD||'—',   // como o km e os horários foram medidos
         ...(r._tracado?{tracado:r._tracado}:{}),          // linha pelas ruas (polyline6), para não pedir de novo
         volta:!!rotaCtxD.volta,                           // false: termina na última parada
+        fator_tempo:FATOR_TEMPO,                          // ajuste de trânsito usado nos horários (para calibrar depois)
         ...(r._manual?{montagem:'manual'}:{}),            // montada à mão no mapa, não pelo motor
         ...(r._ajustada?{ajustada:true}:{}) };
     }).filter(r=>r.paradas.length);
@@ -4217,7 +4333,21 @@ function _sincronizarBaixas(){
     _baixasUnsub[r.id]=onValue(ref(db,'entregador/'+r.token+'/baixas'), snap=>{
       baixasPorRota[r.id]=snap.val()||{};
       _aplicarBaixas(rotasFirebase[r.id]||r, baixasPorRota[r.id]);
+      // o GPS da baixa pode ter chegado antes da própria baixa (ao abrir a página)
+      if(gpsPorRota[r.id]) _aprenderPinos(rotasFirebase[r.id]||r, gpsPorRota[r.id], baixasPorRota[r.id]);
+      // rota concluída: calcula o km pelo GPS uma vez (se o motorista gravou o caminho)
+      const rr=rotasFirebase[r.id]||r, nP=(rr.paradas||[]).length;
+      if(nP&&Object.keys(baixasPorRota[r.id]).length>=nP&&!rr.km_gps&&!_gpsTentado.has(r.id)) calcularKmGps(r.id,true);
       if(document.getElementById('page-rotas')?.style.display==='block'){ renderRotasConfirmadas(); }
+    }, ()=>{});
+    if(!_hodUnsub[r.id]) _hodUnsub[r.id]=onValue(ref(db,'entregador/'+r.token+'/hodometro'), snap=>{
+      hodPorRota[r.id]=snap.val()||{};
+      _guardarKmPainel(rotasFirebase[r.id]||r, hodPorRota[r.id]);
+      if(document.getElementById('page-rotas')?.style.display==='block'){ renderRotasConfirmadas(); }
+    }, ()=>{});
+    if(!_gpsUnsub[r.id]) _gpsUnsub[r.id]=onValue(ref(db,'entregador/'+r.token+'/gps'), snap=>{
+      gpsPorRota[r.id]=snap.val()||{};
+      _aprenderPinos(rotasFirebase[r.id]||r, gpsPorRota[r.id], baixasPorRota[r.id]||{});
     }, ()=>{});
     if(!_posUnsub[r.id]) _posUnsub[r.id]=onValue(ref(db,'entregador/'+r.token+'/posicao'), snap=>{
       const v=snap.val();
@@ -4227,6 +4357,7 @@ function _sincronizarBaixas(){
   });
   Object.keys(_baixasUnsub).forEach(id=>{ if(!vivos.has(id)){ try{ _baixasUnsub[id](); }catch(e){} delete _baixasUnsub[id]; delete baixasPorRota[id]; } });
   Object.keys(_posUnsub).forEach(id=>{ if(!vivos.has(id)){ try{ _posUnsub[id](); }catch(e){} delete _posUnsub[id]; delete posicaoPorRota[id]; } });
+  [_hodUnsub,_gpsUnsub].forEach(m=>Object.keys(m).forEach(id=>{ if(!vivos.has(id)){ try{ m[id](); }catch(e){} delete m[id]; delete gpsPorRota[id]; } }));
 }
 // Feito → entregue/coletado. Não realizado → volta para pendente com a ocorrência.
 // Só mexe no pedido se ele ainda estiver nesta rota (rota_atual).
@@ -4306,6 +4437,134 @@ async function criarLinkMotorista(rid){
   }catch(e){ alert('Não foi possível criar o link: '+e.message); }
 }
 window.criarLinkMotorista=criarLinkMotorista;
+// ── Planejado × realizado ─────────────────────────────────────────────────
+// Tempo: pares de paradas seguidas com baixa "feito". Real = intervalo entre as
+// baixas; planejado = intervalo entre as chegadas previstas; tira os 15 min de
+// atendimento dos dois. Ordem: quantas paradas feitas fogem da ordem planejada.
+let hodPorRota={}, _hodUnsub={}, _gpsUnsub={}, gpsPorRota={};
+function _mediana(a){ if(!a.length) return null; const s=a.slice().sort((x,y)=>x-y), m=s.length>>1; return s.length%2?s[m]:(s[m-1]+s[m])/2; }
+function _medirRota(r, horaDe){
+  const ps=r.paradas||[], razoes=[], feitas=[];
+  let ant=null;
+  ps.forEach((p,i)=>{
+    const h=horaDe(i); if(!h) return;
+    feitas.push({i,h});
+    if(p.chegada_min==null){ ant=null; return; }
+    if(ant){
+      const real=(h-ant.h)/60000-SERVICO_MIN, plan=(p.chegada_min-ant.c)-SERVICO_MIN;
+      if(plan>=3&&real>0&&real/plan<6) razoes.push(real/plan);
+    }
+    ant={h,c:p.chegada_min};
+  });
+  const ordem=feitas.slice().sort((a,b)=>a.h-b.h).map(x=>x.i), cresc=[];
+  ordem.forEach(v=>{ let lo=0,hi=cresc.length; while(lo<hi){ const m=(lo+hi)>>1; if(cresc[m]<v) lo=m+1; else hi=m; } cresc[lo]=v; });
+  return {feitas:feitas.length, razoes, fora:ordem.length-cresc.length};
+}
+// hora da baixa "feito" de cada parada: do link do motorista (15 dias) ou do pedido
+function _horaDeRota(r,bx,peds){
+  const P=peds||pedidosCrus||{};
+  return i=>{
+    const b=bx&&bx[i];
+    if(b) return b.status==='feito'&&Number.isFinite(+b.hora)?+b.hora:null;
+    const p=(r.paradas||[])[i], ped=p&&P[_idDe(p)];
+    return ped&&ped.baixa&&ped.baixa.rota===r.id&&Number.isFinite(+ped.baixa.hora)?+ped.baixa.hora:null;
+  };
+}
+const _x=v=>v.toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1});
+// Fator de tempo sugerido para uma empresa: mediana de (tempo real ÷ planejado × fator
+// usado na rota) nos trechos entre duas baixas seguidas, nas rotas dos últimos 60 dias
+// medidas pelas ruas. Pede 20 trechos em 3 rotas, no mínimo, para não calibrar no acaso.
+const FATOR_MIN_TRECHOS=20, FATOR_MIN_ROTAS=3;
+function _sugerirFator(rotas,peds){
+  const lim=Date.now()-60*864e5, am=[]; let nRotas=0;
+  Object.values(rotas||{}).forEach(r=>{
+    if(!r||!r.id||r.status==='apagada'||r.fonte_dist!=='OSRM') return;
+    const t=Date.parse(String(r.data||'')+'T12:00:00'); if(!(t>=lim)) return;
+    const f=Number.isFinite(+r.fator_tempo)&&+r.fator_tempo>=0.5&&+r.fator_tempo<=3?+r.fator_tempo:1;
+    const m=_medirRota(r,_horaDeRota(r,null,peds||{}));
+    if(m.razoes.length){ nRotas++; m.razoes.forEach(x=>am.push(x*f)); }
+  });
+  const ok=am.length>=FATOR_MIN_TRECHOS&&nRotas>=FATOR_MIN_ROTAS;
+  return { fator:ok?Math.min(3,Math.max(0.5,Math.round(_mediana(am)*20)/20)):null, trechos:am.length, rotas:nRotas };
+}
+function _blocoRealizado(r,bx,rid){
+  if(modoDemo&&!contaDemo) return '';
+  const med=_medirRota(r,_horaDeRota(r,bx)), kmPlan=+r.km||0, hp=r.km_painel, gps=r.km_gps, h=hodPorRota[r.id]||{};
+  const km=[`planejado <b>${_x(kmPlan)} km</b>`];
+  if(hp&&Number.isFinite(+hp.km)){
+    const rz=kmPlan?hp.km/kmPlan:null, longe=rz!=null&&(rz<0.5||rz>1.5);
+    km.push(`painel <b>${_x(+hp.km)} km</b>${longe?' <span class="rz-alerta">diferença grande: confira as fotos</span>':''}${r.token?` <button type="button" class="lk" onclick="verFotosHod('${rid}')">ver fotos</button>`:''}`);
+  } else if(h.ini) km.push(`painel: saída em ${_n(h.ini.km)} km, falta a chegada`);
+  if(gps&&Number.isFinite(+gps.km_total)){
+    km.push(gps.so_baixas
+      ?`entre as baixas <b>${_x(+gps.km_total)} km</b> <span class="rz-sub">(estimado pelas ruas; o caminho não foi gravado)</span>`
+      :`GPS <b>${_x(+gps.km_total)} km</b> <span class="rz-sub">(${Math.round((+gps.cobertura||0)*100)}% medido${gps.casado===false?', sem casar com as ruas':''})</span>`);
+  }
+  const gpsBt=r.token&&!(modoDemo||contaDemo)?` <button type="button" class="lk" id="gps-bt-${rid}" onclick="calcularKmGps('${rid}')">${gps?'recalcular pelo GPS':'calcular pelo GPS'}</button>`:'';
+  const linhas=[`<div>🛣️ Km: ${km.join(' · ')}${gpsBt}</div>`];
+  const rz=_mediana(med.razoes);
+  if(rz!=null) linhas.push(`<div>⏱️ Tempo entre as paradas: <b>${_vezes(rz)}</b> o planejado <span class="rz-sub">(${_plural(med.razoes.length,'trecho','trechos')})</span></div>`);
+  if(med.feitas>=2) linhas.push(`<div>🔢 ${med.fora?`<b>${_plural(med.fora,'parada feita','paradas feitas')} fora da ordem</b>`:'Paradas feitas na ordem planejada'}</div>`);
+  return `<div class="realizado"><div class="mot-tit">Planejado × realizado</div>${linhas.join('')}</div>`;
+}
+// km do painel: guarda na rota (o link do motorista expira; o relatório precisa do número)
+function _guardarKmPainel(r,h){
+  if(modoDemo||contaDemo||!r||!r.id||!h||!h.ini||!h.fim) return;
+  const ini=+h.ini.km, fim=+h.fim.km;
+  if(!Number.isFinite(ini)||!Number.isFinite(fim)||fim<ini) return;
+  const atual=r.km_painel;
+  if(atual&&atual.ini===ini&&atual.fim===fim) return;
+  const v={ini,fim,km:Math.round((fim-ini)*10)/10,fotos:!!(h.ini.temFoto&&h.fim.temFoto),em:Date.now()};
+  r.km_painel=v;
+  update(ref(db,TP('rotas_confirmadas/'+r.id)),{km_painel:v}).catch(()=>{});
+}
+const _gpsTentado=new Set();
+async function calcularKmGps(rid,auto){
+  const r=_rotaPorId(rid); if(!r||!r.token||modoDemo||contaDemo) return;
+  const bt=$id('gps-bt-'+rid); if(bt){ bt.disabled=true; bt.textContent='calculando pelo GPS…'; }
+  _gpsTentado.add(rid);
+  try{
+    const [tSn,gSn]=await Promise.all([get(ref(db,'entregador/'+r.token+'/trilha')),get(ref(db,'entregador/'+r.token+'/gps')).catch(()=>null)]);
+    const trilha=Object.values(tSn.val()||{}).filter(p=>p&&Number.isFinite(+p.lat)&&Number.isFinite(+p.lng)&&Number.isFinite(+p.t));
+    // posição de cada baixa, na hora da baixa: amarra o caminho onde a trilha tem buraco
+    // (o motorista estava no Waze) e, sem trilha nenhuma, ainda dá o km entre as paradas
+    const bx=baixasPorRota[rid]||{}, horaFeito=_horaDeRota(r,null);
+    const nasBaixas=Object.entries((gSn&&gSn.val())||{}).map(([i,g])=>{
+      const h=bx[i]&&Number.isFinite(+bx[i].hora)?+bx[i].hora:horaFeito(+i);
+      return g&&Number.isFinite(+g.lat)&&Number.isFinite(+g.lng)&&Number.isFinite(h)
+        ?{lat:+g.lat,lng:+g.lng,t:h,acc:Number.isFinite(+g.precisao)?+g.precisao:50}:null;
+    }).filter(Boolean);
+    if(trilha.length<2&&nasBaixas.length<2){ if(!auto) _toast('O motorista não gravou o caminho nem a posição das baixas: a localização ficou desligada.'); if(bt){ bt.disabled=false; bt.textContent='calcular pelo GPS'; } return; }
+    const d=await apiPost('/km-rastro',{pontos:trilha.concat(nasBaixas)});
+    const v={km_total:+d.km_total||0,km_medido:+d.km_medido||0,km_estimado:+d.km_estimado||0,cobertura:+d.cobertura||0,casado:d.casado!==false,pontos:+d.pontos_usados||0,em:Date.now()};
+    if(trilha.length<2) v.so_baixas=true;   // sem o caminho: só a ligação entre as paradas, pelas ruas
+    r.km_gps=v;
+    await update(ref(db,TP('rotas_confirmadas/'+r.id)),{km_gps:v}).catch(()=>{});
+    if(!auto) _toast(v.so_baixas?`Km entre as baixas: ${_x(v.km_total)} km, estimado pelas ruas (o caminho não foi gravado).`
+      :`Km pelo GPS: ${_x(v.km_total)} km (${Math.round(v.cobertura*100)}% medido).`);
+  }catch(e){
+    if(!auto) _toast('Não deu para calcular o km pelo GPS agora.');
+  }
+  if(document.getElementById('page-rotas')?.style.display==='block') renderRotasConfirmadas();
+}
+window.calcularKmGps=calcularKmGps;
+async function verFotosHod(rid){
+  const r=_rotaPorId(rid); if(!r||!r.token) return;
+  const h=hodPorRota[rid]||{}, hp=r.km_painel||{};
+  document.getElementById('foto-tit').textContent='Km do painel';
+  const corpo=document.getElementById('foto-corpo');
+  corpo.innerHTML='<div class="empty-mini">Carregando as fotos…</div>';
+  document.getElementById('modal-foto').classList.add('open');
+  try{
+    const f=(await get(ref(db,'entregador/'+r.token+'/fotos_hod'))).val()||{};
+    const bloco=(q,rot)=>{ const km=h[q]?.km??(q==='ini'?hp.ini:hp.fim); const img=f[q];
+      return `<div class="foto-info"><b>${rot}: ${km!=null?_n(km)+' km':'—'}</b>${h[q]?.hora?' às '+_horaTs(h[q].hora):''}</div>`
+        + (typeof img==='string'&&img.startsWith('data:image/jpeg;base64,')?`<img src="${img}" alt="Painel na ${rot.toLowerCase()}">`:'<div class="empty-mini">Sem foto.</div>'); };
+    corpo.innerHTML=bloco('ini','Saída')+bloco('fim','Chegada');
+  }catch(e){ corpo.innerHTML='<div class="empty-mini">Não foi possível carregar as fotos (o link do motorista pode ter expirado).</div>'; }
+}
+window.verFotosHod=verFotosHod;
+
 async function verFotoCanhoto(rid,i){
   const r=_rotaPorId(rid); if(!r||!r.token) return;
   const p=(r.paradas||[])[i]||{}, b=(baixasPorRota[rid]||{})[i]||{};
@@ -4433,7 +4692,46 @@ async function renderAcessos(){
         <span class="ac-cd-msg" data-cd-msg="${k}" role="status"></span>
       </div></div>`;
   }).join('') : '<div class="empty-mini">Nenhuma empresa ainda.</div>';
+  // Tempo de viagem (fator) de cada empresa; demonstrações ficam de fora (dados fictícios)
+  const eidsF=eids.filter(eid=>!eid.startsWith('demo_'));
+  const fx=v=>'×'+v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  $id('ac-fatores').innerHTML = eidsF.length ? eidsF.map(eid=>{
+    const e=emp[eid]||{}, k=esc(eid), f0=e.config&&e.config.fator_tempo;
+    const atual=Number.isFinite(+f0)&&+f0>=0.5&&+f0<=3?+f0:1;
+    const sug=_sugerirFator(e.rotas_confirmadas,e.pedidos_rota);
+    const txtSug = sug.fator!=null
+      ? `Sugestão pelas baixas: <b>${fx(sug.fator)}</b> (${_plural(sug.trechos,'trecho','trechos')} em ${_plural(sug.rotas,'rota','rotas')})`
+      : `Sem sugestão ainda: ${_plural(sug.trechos,'trecho medido','trechos medidos')} em ${_plural(sug.rotas,'rota','rotas')}`;
+    const pre = sug.fator!=null&&sug.fator!==atual ? String(sug.fator).replace('.',',') : '';
+    return `<div class="ac-row ac-cd"><div class="ac-row-info"><b>${esc(eid==='principal'?'Sua operação (principal)':nomeEmp(eid))}</b>
+      <span>Agora: ${atual===1?'sem ajuste (×1)':fx(atual)} · ${txtSug}</span></div>
+      <div class="ac-cd-campos">
+        <input data-ft="${k}" inputmode="decimal" maxlength="4" placeholder="ex.: 1,2" value="${esc(pre)}" aria-label="Multiplicador do tempo de viagem de ${k}">
+        <button class="btn-sm" type="button" onclick="definirFatorEmpresa(${esc(JSON.stringify(eid))})">Aplicar</button>
+        ${atual!==1?`<button class="btn-sm" type="button" onclick="definirFatorEmpresa(${esc(JSON.stringify(eid))},true)">Tirar o ajuste</button>`:''}
+        <span class="ac-cd-msg" data-ft-msg="${k}" role="status"></span>
+      </div></div>`;
+  }).join('') : '<div class="empty-mini">Nenhuma empresa ainda.</div>';
 }
+async function definirFatorEmpresa(eid,tirar){
+  if(!ehAdmin) return;
+  const k=CSS.escape(eid), msg=document.querySelector(`[data-ft-msg="${k}"]`);
+  const dizer=t=>{ if(msg) msg.textContent=t; };
+  let v=1;
+  if(!tirar){
+    const t=(document.querySelector(`[data-ft="${k}"]`)?.value||'').trim().replace(',','.');
+    v=+t;
+    if(!t||!Number.isFinite(v)||v<0.5||v>3){ dizer('Use um número de 0,5 a 3 (ex.: 1,2).'); return; }
+    v=Math.round(v*100)/100;
+  }
+  try{ await set(ref(db,`empresas/${eid}/config/fator_tempo`), v===1?null:v); }
+  catch(e){ dizer('Não foi possível salvar: '+e.message); return; }
+  if(eid===EID) FATOR_TEMPO=v;
+  _toast(v===1?'Ajuste tirado: as rotas usam o tempo do servidor de rotas.'
+    :`Tempo de viagem ×${v.toLocaleString('pt-BR',{maximumFractionDigits:2})} salvo. Vale para as próximas rotas da empresa.`);
+  renderAcessos();
+}
+window.definirFatorEmpresa=definirFatorEmpresa;
 async function _acaoAcesso(upd,ok){
   try{ await update(ref(db),upd); if(ok) _toast(ok); }catch(e){ alert('Não foi possível concluir: '+e.message); }
   renderAcessos();
@@ -4622,11 +4920,12 @@ function renderRotasConfirmadas(){
       </div>
       <div style="display:flex;gap:18px;font-size:12.5px;color:var(--text2);flex-wrap:wrap;margin-bottom:12px">
         <span>📦 <b style="color:var(--text)">${(r.peso_total||0).toLocaleString('pt-BR')} kg</b></span>
-        <span>🛣️ <b style="color:var(--text)">${(+r.km||0).toFixed(1)}</b> km</span>
+        <span>🛣️ <b style="color:var(--text)">${_x(+r.km||0)}</b> km</span>
         ${r.tempo_min?`<span>⏱️ <b style="color:var(--text)">${r.tempo_min}</b> min</span>`:''}
         ${_eReta(r.fonte_dist)?`<span class="rc-reta" title="${esc(_motivoReta(r.fonte_dist))}">⚠️ km em linha reta</span>`:''}
       </div>
       ${mot}
+      ${_blocoRealizado(r,bx,ridSafe)}
       <div id="${mapId}" style="height:220px;border-radius:11px;border:1px solid var(--border);margin-bottom:12px;overflow:hidden;background:var(--s3)"></div>
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">
         ${paradas.map((p,i)=>{ const b=bx[i], col=_tipoDe(p)==='coleta';
@@ -4820,13 +5119,13 @@ function selRotaTabD(idx){
         ${outras.length?`<select data-foco="${esc(pid)}|rota" aria-label="Mover NF ${esc(p.nf)} para outra viagem" onchange="moverParaRotaD(${idx},${i},this.value)"><option value="">Viagem…</option>${outras.map(k=>`<option value="${k}">Rota ${k+1}</option>`).join('')}</select>`:''}
         <button type="button" class="tirar" data-foco="${esc(pid)}|tirar" onclick="tirarParadaD(${idx},${i})" aria-label="Tirar NF ${esc(p.nf)} desta rota" title="Tirar da rota">✕</button>
       </div>`:'';
-    return `<div class="delivery-mini${ajusteD?' ajuste':''}"><div class="delivery-mini-num${_tipoDe(p)==='coleta'?' c':''}">${i+1}</div><div class="dm-txt"><div style="font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text)">NF ${esc(p.nf)}${_tag(p)}${p.chegada_min!=null?`<span class="cheg">~${_hhmm(p.chegada_min)}</span>`:''}${tarde?'<span class="atraso">depois do horário</span>':''}${aprox?`<button type="button" class="aprox-bt" data-foco="${esc(pid)}|local" onclick="abrirPedido(${esc(JSON.stringify(pid))})">local aproximado · corrigir</button>`:''}</div><div style="font-size:11px;color:var(--text3)">${p.janela_ini!=null?`Horário ${_hhmm(p.janela_ini)}–${_hhmm(p.janela_fim)} · `:''}${p.dest&&p.dest!==p.cidade?esc(p.dest)+' · ':''}${p.endereco?esc(p.endereco)+' · ':''}${esc(p.cidade||'')} · ${(+p.peso||0).toLocaleString('pt-BR')} kg</div></div>${acoes}</div>`;
+    return `<div class="delivery-mini${ajusteD?' ajuste':''}"><div class="delivery-mini-num${_tipoDe(p)==='coleta'?' c':''}">${i+1}</div><div class="dm-txt"><div style="font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text)">NF ${esc(p.nf)}${_tag(p)}${p.chegada_min!=null?`<span class="cheg">~${_hhmm(p.chegada_min)}</span>`:''}${tarde?'<span class="atraso">depois do horário</span>':''}${aprox?`<button type="button" class="aprox-bt" data-foco="${esc(pid)}|local" onclick="abrirPedido(${esc(JSON.stringify(pid))})">local aproximado · corrigir</button>`:_semNumero(p)?`<button type="button" class="semnum-bt" data-foco="${esc(pid)}|local" onclick="abrirPedido(${esc(JSON.stringify(pid))})">sem o número · ajustar</button>`:''}</div><div style="font-size:11px;color:var(--text3)">${p.janela_ini!=null?`Horário ${_hhmm(p.janela_ini)}–${_hhmm(p.janela_fim)} · `:''}${p.dest&&p.dest!==p.cidade?esc(p.dest)+' · ':''}${p.endereco?esc(p.endereco)+' · ':''}${esc(p.cidade||'')} · ${(+p.peso||0).toLocaleString('pt-BR')} kg</div></div>${acoes}</div>`;
   };
   document.getElementById('rota-detail-d').innerHTML=`
     <div id="rota-map"></div>
     ${paradas.some(_aprox)?`<div class="mapa-nota">⚠️ ${_plural(paradas.filter(_aprox).length,'parada está','paradas estão')} sem endereço exato. No mapa, ficam no centro do bairro ou da cidade, e a ordem e os km delas são aproximados. Toque em "corrigir" para buscar o endereço ou marcar o ponto.</div>`:''}
     ${paradas.length?`<div class="nav-btns-d"><a href="${gmaps}" target="_blank" rel="noopener" class="btn-nav-d gmaps">📍 Google Maps</a>${last?`<a href="https://waze.com/ul?ll=${last.lat},${last.lng}&navigate=yes" target="_blank" rel="noopener" class="btn-nav-d waze">🚗 Waze</a>`:''}</div>`:''}
-    <div class="card" style="margin-bottom:14px"><div style="display:flex;gap:20px;font-size:13px;color:var(--text2);flex-wrap:wrap"><span>📦 <b style="color:var(--text)">${peso.toLocaleString('pt-BR')} kg</b></span><span>📍 <b style="color:var(--text)">${paradas.length}</b> paradas</span>${nT.coleta&&nT.entrega?`<span>🚚 sai com <b style="color:var(--text)">${carga.saida.toLocaleString('pt-BR')} kg</b> · no máximo <b style="color:var(--text)">${carga.max.toLocaleString('pt-BR')} kg</b> a bordo</span>`:''}<span>🛣️ <b style="color:var(--text)">${km.toFixed(1)}</b> km</span>${mins?`<span>⏱️ <b style="color:var(--text)">${mins}</b> min</span>`:''}</div>
+    <div class="card" style="margin-bottom:14px"><div style="display:flex;gap:20px;font-size:13px;color:var(--text2);flex-wrap:wrap"><span>📦 <b style="color:var(--text)">${peso.toLocaleString('pt-BR')} kg</b></span><span>📍 <b style="color:var(--text)">${paradas.length}</b> paradas</span>${nT.coleta&&nT.entrega?`<span>🚚 sai com <b style="color:var(--text)">${carga.saida.toLocaleString('pt-BR')} kg</b> · no máximo <b style="color:var(--text)">${carga.max.toLocaleString('pt-BR')} kg</b> a bordo</span>`:''}<span>🛣️ <b style="color:var(--text)">${_x(km)}</b> km</span>${mins?`<span>⏱️ <b style="color:var(--text)">${mins}</b> min</span>`:''}</div>
       ${notaFonte}
     </div>
     ${probs.length?`<div class="rota-alertas">${probs.map(t=>`<div class="import-msg show warn">⚠️ ${esc(t)}</div>`).join('')}</div>`:''}
@@ -4912,8 +5211,15 @@ async function enviarChatD(){
 window.enviarChatD=enviarChatD;
 
 // ── Início (só depois do login com acesso liberado) ─────────────────────
+let _fatorUnsub=null;
+const _fatorValido=f=>Number.isFinite(+f)&&+f>=0.5&&+f<=3 ? +f : 1;
 async function carregarConfig(){
   try{
+    const f=(await get(ref(db,TP('config/fator_tempo'))).catch(()=>null))?.val?.();
+    FATOR_TEMPO = _fatorValido(f);
+    // o administrador pode mudar o ajuste com a página aberta: segue o valor do banco
+    if(_fatorUnsub){ try{ _fatorUnsub(); }catch(e){} }
+    _fatorUnsub=onValue(ref(db,TP('config/fator_tempo')),sn=>{ FATOR_TEMPO=_fatorValido(sn.val()); },()=>{});
     const d=(await get(ref(db,TP('config/deposito')))).val();
     if(d && Number.isFinite(+d.lat) && Number.isFinite(+d.lng)){ DEPOT.lat=+d.lat; DEPOT.lng=+d.lng; if(d.nome) DEPOT.name=String(d.nome); }
     else if(EID && EID!=='principal') DEPOT.name='CD padrão (Guarulhos)';

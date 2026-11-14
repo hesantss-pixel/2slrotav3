@@ -173,7 +173,7 @@ class TesteRotasProtegidas(unittest.TestCase):
         self.assertEqual(sorted(protegidas), sorted(["listar_pedidos", "upload_nf", "sync_totvs"]))
         # a conta de demonstração só calcula rota, mede a rota ajustada, pede o traçado pelas
         # ruas e conversa com a IA
-        self.assertEqual(sorted(demo), sorted(["solve", "avaliar", "tracado", "chat"]))
+        self.assertEqual(sorted(demo), sorted(["solve", "avaliar", "tracado", "km_rastro_rota", "chat"]))
         # entrada automática: a tela (login com empresa) gera a chave; os sistemas entram com a chave
         self.assertEqual(sorted(empresa), sorted(["integracao", "integracao_gerar"]))
         self.assertEqual(sorted(chave), sorted(["entrada_xml", "entrada_pedidos"]))

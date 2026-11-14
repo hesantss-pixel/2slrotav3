@@ -164,7 +164,7 @@ async function mockServicos(ctx, reg) {
   ok(await p.evaluate(() => document.activeElement && (document.activeElement.dataset.foco || '').endsWith('|down')), 'foco continua no botão "descer" da mesma parada');
   await p.waitForTimeout(700);
   ok(reg.avaliar.length === 1 && reg.avaliar[0].pedidos.length === 3 && reg.avaliar[0].hora_saida === 420 && reg.avaliar[0].deposito.nome === 'CD Guarulhos', '/avaliar recebe a rota na ordem nova, a saída e o CD');
-  ok((await p.textContent('#rota-detail-d .card')).includes('43.0') && (await p.textContent('#rota-detail-d')).includes('~07:10'), 'km e chegadas vêm do servidor (43 km, 1ª parada ~07:10)');
+  ok((await p.textContent('#rota-detail-d .card')).includes('43,0') && (await p.textContent('#rota-detail-d')).includes('~07:10'), 'km e chegadas vêm do servidor (43 km, 1ª parada ~07:10)');
   ok((await p.textContent('#rota-tabs-d')).includes('ajustada'), 'aba mostra "ajustada"');
   // várias mudanças rápidas: uma medição só, da ordem final
   reg.avaliar.length = 0;

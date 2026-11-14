@@ -27,13 +27,14 @@ from typing import Optional
 import requests as req_lib
 from fastapi import Depends, FastAPI, HTTPException, Header, Request, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from vrp_solver   import solve_vrp, avaliar_sequencia, MAX_PARADAS_AVALIAR, conferir_motor, tracado_rota
 from groq_agent import GroqChat as GeminiChat, consulta_unica, analisar_rotas_geradas, conferir_assistente
 from nf_parser    import parse_many
 import auth_firebase
 import vrp_solver
+import km_rastro
 import entrada
 import entrada_email
 
@@ -82,7 +83,7 @@ for _nome in ("", "uvicorn", "uvicorn.error", "uvicorn.access"):
 # ── App ───────────────────────────────────────────────────────────────────────
 
 # Versão do servidor. Aparece em /status junto com o commit publicado.
-VERSAO = "3.11.0"
+VERSAO = "3.12.0"
 
 app = FastAPI(
     title="ROTAV3 — Servidor de rotas",
@@ -290,6 +291,7 @@ class SolveRequest(BaseModel):
     # Com ela, os pedidos com janela_ini/janela_fim respeitam o horário.
     hora_saida:   Optional[int] = None
     volta:        bool = False   # True = a rota volta ao CD no fim
+    fator_tempo:  float = Field(1.0, ge=0.5, le=3.0)   # calibração: tempo real ÷ planejado
 
     # Campos legado (frontend antigo)
     capacidade_kg: Optional[float] = None
@@ -332,6 +334,13 @@ class AvaliarRequest(BaseModel):
     deposito:   Optional[Deposito] = None
     hora_saida: Optional[int] = None
     volta:      bool = False
+    fator_tempo: float = Field(1.0, ge=0.5, le=3.0)
+
+
+class KmRastroRequest(BaseModel):
+    """Rastro do GPS do motorista: [{lat, lng, t (ms), acc (m)}]."""
+    model_config = {"extra": "ignore"}
+    pontos: list[dict]
 
 
 class TracadoRequest(BaseModel):
@@ -447,7 +456,8 @@ def solve(body: SolveRequest, quem: tuple = Depends(exigir_login_ou_demo)):
         # 3. Solver
         veiculos_dict = [v.model_dump() for v in frota]
         deposito = body.deposito.model_dump() if body.deposito else None
-        resultado = solve_vrp(pendentes, veiculos_dict, body.time_limit_s, deposito, body.hora_saida, body.volta)
+        resultado = solve_vrp(pendentes, veiculos_dict, body.time_limit_s, deposito, body.hora_saida, body.volta,
+                              body.fator_tempo)
 
         routes    = resultado["routes"]
         n_aloc    = resultado["nao_alocados"]
@@ -548,13 +558,29 @@ def avaliar(body: AvaliarRequest, quem: tuple = Depends(exigir_login_ou_demo)):
     except (KeyError, TypeError, ValueError):
         raise HTTPException(status_code=422, detail="Cada parada precisa de lat e lng.")
     deposito = body.deposito.model_dump() if body.deposito else None
-    medida = avaliar_sequencia(pedidos, deposito, body.hora_saida, body.volta)
+    medida = avaliar_sequencia(pedidos, deposito, body.hora_saida, body.volta, body.fator_tempo)
     medida["tracado"] = None
     if medida.get("fonte_distancia") == "OSRM":
         dep = deposito if deposito and deposito.get("lat") is not None else vrp_solver.DEPOT
         caminho = [dep, *pedidos] + ([dep] if body.volta else [])
         medida["tracado"] = tracado_rota(caminho)
     return medida
+
+
+@app.post("/km-rastro")
+def km_rastro_rota(body: KmRastroRequest, quem: tuple = Depends(exigir_login_ou_demo)):
+    """Km rodado pelo rastro do GPS: casa os pontos com as ruas (medido) e liga os
+    buracos do sinal pelo caminho mais provável (estimado). Não lê nem grava o banco."""
+    _limite_demo(quem, "km_rastro", 30)
+    if len(body.pontos) < 2:
+        raise HTTPException(status_code=422, detail="O rastro precisa de pelo menos 2 pontos.")
+    try:
+        return km_rastro.calcular(body.pontos)
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except Exception as e:
+        logger.exception("Erro no /km-rastro: %s", e)
+        raise HTTPException(status_code=500, detail="não deu para calcular o km do GPS agora")
 
 
 @app.post("/tracado")
