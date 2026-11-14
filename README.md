@@ -193,6 +193,14 @@ está ligado em `entrada_automatica`.
   Para mudar, use **Devolver** na página Rotas e gere de novo.
 - "Gerar outra rota" ou sair da página Roteirização descarta a rota que não foi confirmada.
 
+## Fim da rota: na última parada (versão 3.11)
+
+A rota **não volta ao CD** por padrão: o motor escolhe a ordem sem contar a volta, e km, tempo,
+jornada e desenho param na última parada. Em Roteirização, **"Voltar ao CD no fim da rota"** inclui
+a volta (fica lembrado no aparelho). O servidor recebe `volta` em `/solve` e `/avaliar` e devolve
+`volta` em cada rota; a rota confirmada guarda `volta`. Rota confirmada antes da 3.11 não tem o campo
+e é desenhada com a volta, como foi calculada.
+
 ## Traçado pelas ruas (versão 3.10)
 
 O km e o tempo sempre foram medidos pelas ruas (OSRM `/table`), mas o desenho da rota no mapa
@@ -245,8 +253,11 @@ codificação do Google com 6 casas decimais). A tela desenha essa linha.
   (`motorista.html#demo=…`, sem link real), veículo e baixas simulados, mapa e IA funcionam.
   "Virar cliente" leva as notas e rotas da demonstração para a empresa nova. Vencida, mostra
   "Seu acesso de demonstração terminou" com o WhatsApp.
-- **Centro de distribuição**: em Roteirização (e na faixa da demonstração), o cliente informa o
-  CEP do CD; fica em `empresas/<id>/config/deposito` e as rotas saem de lá.
+- **Centro de distribuição** (versão 3.11): definido **só pelo administrador**, na página Acessos,
+  card "Centro de distribuição de cada empresa", pelo CEP (ponto na rua) ou colando as coordenadas
+  do Google Maps (ponto exato). Fica em `empresas/<id>/config/deposito`. O cliente vê "Saída das
+  rotas: …" e não troca. Nas regras do banco, `config/locais` continua da empresa e
+  `config/deposito` só o administrador grava (precisa publicar as regras de novo no console).
 - No servidor, a demonstração só usa `/solve` e `/chat`, com limite (30 rotas e 40 perguntas por
   hora, motor com no máximo 10 s). `/pedidos`, `/upload-nf` e `/sync` leem e gravam direto em
   `empresas/principal` e são só do administrador (`ADMIN_UID`, `EMPRESA_PRINCIPAL` no Railway).
@@ -299,6 +310,11 @@ grátis (uso comercial até 1 milhão de blocos por mês); com ela, preencha `CA
 (até 30 m) aparecem num marcador só ("1–6"), e paradas sem endereço exato são avisadas.
 
 ## Janela de horário (agendados)
+
+- **No mapa** (versão 3.11): agendado para outro dia não aparece (nem no mapa do Dashboard, nem na
+  página Mapa, nem na montagem da rota). No dia marcado, ou se já passou, aparece **em vermelho**,
+  com "Agendado: sai hoje · chegar entre …" no ponto. A legenda conta os de hoje e os que ficaram
+  de fora.
 
 - Agendar pede **"Chegar entre"** início e fim (sem fim: 1 hora). Agendamentos antigos, só com
   a hora, valem 30 min antes e depois.

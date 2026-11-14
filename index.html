@@ -443,6 +443,12 @@ body:not(.autorizado)>.sidebar,body:not(.autorizado)>.main,body:not(.autorizado)
 .map-leg span{display:inline-flex;align-items:center;gap:7px;}
 .map-leg i{display:inline-block;width:12px;height:12px;border-radius:50%;box-sizing:border-box;}
 .rot-nota{font-size:11.5px;line-height:1.5;color:var(--text3);margin-top:8px;}
+.ac-cd{flex-wrap:wrap;}
+.ac-cd-campos{display:flex;flex-wrap:wrap;gap:6px;align-items:center;width:100%;margin-top:6px;}
+.ac-cd-campos input{flex:1 1 120px;min-width:0;min-height:40px;border:1px solid var(--border);border-radius:8px;padding:6px 9px;font:13px var(--body);}
+.ac-cd-msg{font-size:12px;color:var(--text3);width:100%;}
+.rot-volta{display:flex;align-items:center;gap:9px;margin-top:12px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;min-height:44px;}
+.rot-volta input{width:20px;height:20px;accent-color:var(--navy);flex:none;}
 .nf-mini-code .tipo-tag,.delivery-mini .tipo-tag,.search-item-nf .tipo-tag,.li-title .tipo-tag{margin-left:7px;}
 .delivery-mini-num.c{background:#fff;border:2px solid var(--navy);color:var(--navy);}
 .kpi-split{font-size:11.5px;font-weight:600;color:var(--text2);margin-top:6px;}
@@ -735,6 +741,7 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
 .pino-alvo{background:none;border:0;}
 .pino{display:flex;align-items:center;justify-content:center;box-sizing:border-box;width:22px;height:22px;margin:11px;border-radius:22px;font:800 11px sans-serif;color:#fff;background:var(--green);border:2px solid #fff;box-shadow:0 1px 4px rgba(13,27,46,.35);}
 .pino.coleta{background:var(--navy);border-color:var(--vv);border-radius:6px;}
+.pino.hoje{background:#d64545;}
 .pino.cd{background:var(--vv2);border-color:#fff;width:18px;height:18px;margin:13px;}
 .pino.sel{width:30px;height:30px;margin:7px;font-size:12px;background:var(--navy);border-color:var(--vv);border-width:3px;}
 .pino.coleta.sel{background:#fff;color:var(--navy);}
@@ -992,6 +999,8 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
           <div><span class="field-lbl">Saída do CD</span><input type="time" class="field-inp" id="rot-saida-d" value="07:00"></div>
         </div>
         <div class="rot-nota">Agendados de outro dia ficam de fora. Os do dia entram com o horário marcado.</div>
+        <label class="rot-volta"><input type="checkbox" id="rot-volta-d"> Voltar ao CD no fim da rota</label>
+        <div class="rot-nota" id="rot-volta-nota">Desmarcado, a rota termina na última parada: km, tempo e desenho param ali.</div>
         <span class="field-lbl">Capacidade máxima (kg)</span>
         <div><input type="number" class="field-inp" id="cap-kg-d" placeholder="0"></div>
         <div class="presets-row" id="presets-row-d"></div>
@@ -1032,7 +1041,7 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
           <button class="btn-sm" type="button" onclick="manAddVisiveis()">+ Colocar os que estão à vista</button>
           <button class="btn-sm" type="button" onclick="manLimpar()">Limpar a rota</button>
         </div>
-        <p class="man-dica">Toque num ponto para colocar na rota; toque de novo para tirar. Pedidos no mesmo endereço entram juntos, porque são a mesma parada. A linha pontilhada é o caminho na ordem que você escolheu — os quilômetros de verdade são medidos depois, quando você usar a rota.</p>
+        <p class="man-dica">Toque num ponto para colocar na rota; toque de novo para tirar. Pedidos no mesmo endereço entram juntos, porque são a mesma parada. A linha pontilhada é o rascunho na ordem que você escolheu; quando você para de tocar, ela vira o caminho pelas ruas. Ponto vermelho: agendado para o dia da viagem.</p>
         <div class="man-sec">Ordem das paradas</div>
         <div class="man-lista" id="man-ordem"></div>
         <div id="man-disponiveis"></div>
@@ -1181,6 +1190,11 @@ button.nf-mini:focus-visible{outline:2px solid var(--vv);outline-offset:1px;}
         <h3>Acesso completo</h3>
         <p class="mot-sub">Cada cliente vê só os dados da própria empresa.</p>
         <div class="ac-lista" id="ac-completos"></div>
+      </div>
+      <div class="ac-card">
+        <h3>Centro de distribuição de cada empresa</h3>
+        <p class="mot-sub">De onde saem as rotas. Só você define; o cliente vê, mas não troca. Pelo CEP o ponto fica na rua; para o ponto exato, cole as coordenadas do Google Maps (toque e segure no mapa).</p>
+        <div class="ac-lista" id="ac-cds"></div>
       </div>
     </div>
   </div>
@@ -1532,6 +1546,16 @@ function _janelaDe(o){
   const fim=_min(o.horaFim);
   return fim!=null&&fim>ini ? [ini,fim] : [Math.max(0,ini-30),Math.min(1439,ini+30)];
 }
+// Agendados no mapa: até o dia marcado o pedido não aparece; no dia (ou atrasado)
+// aparece em vermelho, para saber que ele tem que sair hoje.
+const COR_SAI_HOJE='#d64545';
+function _agendadoFuturo(o,dia){ return !!(o&&o.agendado&&o.dataAgendada&&o.dataAgendada>(dia||_hojeISO())); }
+function _saiHoje(o,dia){ return !!(o&&o.agendado&&o.dataAgendada&&o.dataAgendada<=(dia||_hojeISO())); }
+function _textoAgenda(o,dia){
+  if(!_saiHoje(o,dia)) return '';
+  const j=_janelaDe(o), h=j?` · chegar entre ${_hhmm(j[0])} e ${_hhmm(j[1])}`:'';
+  return o.dataAgendada<(dia||_hojeISO()) ? `Agendado para ${_dataBR(o.dataAgendada)} (atrasado)${h}` : `Agendado: sai hoje${h}`;
+}
 let filtroTipo='todos';      // filtro de Pedidos e Mapa: 'todos' | 'entrega' | 'coleta'
 let tipoImport='entrega';    // o que as notas importadas são
 let _statusPorId={};         // status de todas as notas do banco (para não reimportar as que já saíram)
@@ -1817,7 +1841,7 @@ function atualizarMapa(regioes){
   L.circleMarker([DEPOT.lat,DEPOT.lng],{radius:22,stroke:false,fillColor:'#f3b62b',fillOpacity:.25}).addTo(mapLayer);
   L.circleMarker([DEPOT.lat,DEPOT.lng],{radius:8,color:'#fff',weight:3,fillColor:'#e09c12',fillOpacity:1}).addTo(mapLayer).bindTooltip(DEPOT.name);
   regioes.forEach(r=>{
-    const n=r.lista.length;
+    const n=r.lista.filter(o=>!_agendadoFuturo(o)).length;   // agendado para outro dia não aparece
     if(!n) return;
     const coord={lat:r.lat,lng:r.lng};
     const radius=6+Math.min(18,n*0.7);
@@ -1833,7 +1857,9 @@ let mapInstFull=null, mapLayerFull=null;
 function atualizarMapaCompleto(){
   const el=document.getElementById('mapa-completo');
   if(!el) return;
-  const pendentes=_filtrar(allOrders.filter(o=>o.status==='pendente'),filtroTipo);
+  const todosPend=_filtrar(allOrders.filter(o=>o.status==='pendente'),filtroTipo);
+  const pendentes=todosPend.filter(o=>!_agendadoFuturo(o));   // agendado para outro dia some até o dia
+  const futuros=todosPend.length-pendentes.length, hoje=pendentes.filter(o=>_saiHoje(o)).length;
 
   // separa: geocodificados (pino individual exato) vs sem geo (bolha de cidade)
   const comGeo  = pendentes.filter(o=>o.geoStatus==='ok');
@@ -1853,8 +1879,9 @@ function atualizarMapaCompleto(){
   // ── Pinos individuais: pedidos com coordenada real via CEP ────────────
   comGeo.forEach(o=>{
     const col=_tipoDe(o)==='coleta';
-    L.circleMarker([o.lat,o.lng],{radius:col?6.5:6,color:col?'#f3b62b':'#fff',weight:col?2:1.5,fillColor:col?'#0d1b2e':'#16a36a',fillOpacity:.92}).addTo(mapLayerFull)
-      .bindTooltip(`<b>${col?'Coleta':'Entrega'} · NF ${esc(o.nf)}</b>${o.dest&&o.dest!==o.cidade?'<br>'+esc(o.dest):''}<br>${o.bairro?esc(o.bairro)+' — ':''}${esc(o.cidade)}<br>${(o.peso||0).toLocaleString('pt-BR')} kg · ${o.itens||1} volume(s)<br><span style="color:${_aprox(o)?'#8a5a06':'#1f7a4a'}">📍 ${_origemLocal(o)}</span><br><span style="color:#64748b">Toque para editar ou corrigir o ponto</span>`)
+    const sai=_saiHoje(o);
+    L.circleMarker([o.lat,o.lng],{radius:sai?7.5:(col?6.5:6),color:col?'#f3b62b':'#fff',weight:col?2:1.5,fillColor:sai?COR_SAI_HOJE:(col?'#0d1b2e':'#16a36a'),fillOpacity:.95}).addTo(mapLayerFull)
+      .bindTooltip(`${sai?`<b style="color:${COR_SAI_HOJE}">📅 ${esc(_textoAgenda(o))}</b><br>`:''}<b>${col?'Coleta':'Entrega'} · NF ${esc(o.nf)}</b>${o.dest&&o.dest!==o.cidade?'<br>'+esc(o.dest):''}<br>${o.bairro?esc(o.bairro)+' — ':''}${esc(o.cidade)}<br>${(o.peso||0).toLocaleString('pt-BR')} kg · ${o.itens||1} volume(s)<br><span style="color:${_aprox(o)?'#8a5a06':'#1f7a4a'}">📍 ${_origemLocal(o)}</span><br><span style="color:#64748b">Toque para editar ou corrigir o ponto</span>`)
       .on('click',()=>abrirPedido(o.id));
   });
 
@@ -1874,7 +1901,7 @@ function atualizarMapaCompleto(){
   // mini-mapa individual na aba Rotas (fica mais limpo, sem misturar as duas coisas).
   const legEl = document.getElementById('mapa-completo-legenda');
   _desenharVeiculosMapa();
-  if(legEl) legEl.innerHTML = `<span>🚚 Veículo em rota (localização ao vivo)</span><span><i style="background:#16a36a;border:2px solid #fff;box-shadow:0 0 0 1px #9fd8bb"></i>Entrega</span><span><i style="background:#0d1b2e;border:2px solid #f3b62b"></i>Coleta</span><span><i style="background:#e09c12;border:2px solid #fff;box-shadow:0 0 0 1px #e09c12"></i>${esc(DEPOT.name)}</span><span><i style="background:rgba(148,163,184,.35);border:2px solid #94a3b8"></i>Cidade (pedidos ainda sem endereço exato)</span>`;
+  if(legEl) legEl.innerHTML = `<span>🚚 Veículo em rota (localização ao vivo)</span><span><i style="background:#16a36a;border:2px solid #fff;box-shadow:0 0 0 1px #9fd8bb"></i>Entrega</span><span><i style="background:#0d1b2e;border:2px solid #f3b62b"></i>Coleta</span><span><i style="background:${COR_SAI_HOJE};border:2px solid #fff;box-shadow:0 0 0 1px ${COR_SAI_HOJE}"></i>Agendado: sai hoje${hoje?` (${hoje})`:''}</span><span><i style="background:#e09c12;border:2px solid #fff;box-shadow:0 0 0 1px #e09c12"></i>${esc(DEPOT.name)}</span><span><i style="background:rgba(148,163,184,.35);border:2px solid #94a3b8"></i>Cidade (pedidos ainda sem endereço exato)</span>${futuros?`<span class="leg-fut">📅 ${_plural(futuros,'agendado para outro dia não aparece','agendados para outros dias não aparecem')} até o dia</span>`:''}`;
 }
 window.atualizarMapaCompleto=atualizarMapaCompleto;
 
@@ -3265,7 +3292,7 @@ const VEICULOS=[
 let vehSel=null, capKgD=0, maxPedD=6, rotaGeradaD=[], fonteDistanciaD='—';
 let rotasConfirmadasDemo=[];
 let rotTipoD='todos', regraCargaD='';
-let rotaCtxD={data:'',saida:420}, naoAlocD=[], foraJanelaD=[];
+let rotaCtxD={data:'',saida:420,volta:false}, naoAlocD=[], foraJanelaD=[];
 // Pedidos que entram nesta viagem: tipo escolhido, sem agendados de outro dia;
 // os agendados do dia levam a janela de horário para o motor de rotas.
 function _pedidosDaViagem(){
@@ -3282,11 +3309,13 @@ function renderRotTipoD(inicial){
     const dt=document.getElementById('rot-data-d'); if(!dt.value) dt.value=_hojeISO();
     let sv=''; try{ sv=localStorage.getItem('rotav3_saida')||''; }catch(e){}
     if(_min(sv)!=null) document.getElementById('rot-saida-d').value=sv;
+    let vt=''; try{ vt=localStorage.getItem('rotav3_volta')||''; }catch(e){}
+    document.getElementById('rot-volta-d').checked = vt==='1';
   }
   const ops=[['entrega','Entregas'],['coleta','Coletas'],['todos','Entregas e coletas']];
   document.getElementById('rot-tipo').innerHTML=ops.map(([v,t])=>`<button type="button" data-v="${v}" aria-pressed="${rotTipoD===v}">${t}<span class="n">${n[v]}</span></button>`).join('');
   document.getElementById('rot-tipo-nota').textContent =
-    rotTipoD==='coleta' ? 'O veículo sai vazio e volta com as coletas para o centro de distribuição.'
+    rotTipoD==='coleta' ? 'O veículo sai vazio e recolhe as coletas. Se o km da volta ao CD deve contar, marque "Voltar ao CD" abaixo.'
     : rotTipoD==='todos' ? 'O veículo sai com as entregas, faz todas elas e só depois as coletas. Assim a carga a bordo nunca passa da capacidade.'
     : 'O veículo sai carregado com as entregas.';
 }
@@ -3378,8 +3407,9 @@ function irConfirmD(){
   if(!kg||kg<=0){ alert('Informe a capacidade em kg'); return; }
   capKgD=kg; maxPedD=Math.min(20,Math.max(1,parseInt(document.getElementById('cap-maxped-d').value)||8));
   const saidaTxt=document.getElementById('rot-saida-d').value||'07:00';
-  rotaCtxD={ data:document.getElementById('rot-data-d').value||_hojeISO(), saida:_min(saidaTxt)??420 };
-  try{ localStorage.setItem('rotav3_saida',_hhmm(rotaCtxD.saida)); }catch(e){}
+  rotaCtxD={ data:document.getElementById('rot-data-d').value||_hojeISO(), saida:_min(saidaTxt)??420,
+    volta:!!document.getElementById('rot-volta-d')?.checked };
+  try{ localStorage.setItem('rotav3_saida',_hhmm(rotaCtxD.saida)); localStorage.setItem('rotav3_volta',rotaCtxD.volta?'1':'0'); }catch(e){}
   const n=_pendPorTipo();
   if(!n[rotTipoD]){ alert(rotTipoD==='coleta'?'Não há coletas pendentes.':rotTipoD==='entrega'?'Não há entregas pendentes.':'Não há pedidos pendentes.'); return; }
   const viagem=_pedidosDaViagem();
@@ -3392,7 +3422,7 @@ function irConfirmD(){
   const comHora=viagem.filter(o=>o.janela_ini!=null).length;
   const semLocal=viagem.filter(_aprox).length;
   document.getElementById('confirm-veh-name').textContent=vehSel.nome;
-  document.getElementById('confirm-details-d').innerHTML=`Capacidade: <b style="color:var(--ac)">${kg.toLocaleString('pt-BR')} kg</b><br>Máx. de paradas: <b>${maxPedD}</b><br>Nesta viagem: <b>${oque} pendentes</b>${rotTipoD==='todos'?' <span style="color:var(--text3)">(entregas primeiro, coletas depois)</span>':''}<br>Saída: <b>${esc(DEPOT.name)}</b> às <b>${_hhmm(rotaCtxD.saida)}</b> de <b>${_dataBR(rotaCtxD.data)}</b>${comHora?`<br>Com horário marcado: <b>${comHora}</b>`:''}${outroDia?`<br><span style="color:var(--text3)">${_plural(outroDia,'agendado para outro dia fica','agendados para outro dia ficam')} de fora.</span>`:''}${semLocal?`<br><span style="color:#8a5a06">⚠️ ${_plural(semLocal,'pedido ainda está','pedidos ainda estão')} sem localização exata (só o bairro ou a cidade). A ordem e os km desses pedidos são aproximados.</span>`:''}`;
+  document.getElementById('confirm-details-d').innerHTML=`Capacidade: <b style="color:var(--ac)">${kg.toLocaleString('pt-BR')} kg</b><br>Máx. de paradas: <b>${maxPedD}</b><br>Nesta viagem: <b>${oque} pendentes</b>${rotTipoD==='todos'?' <span style="color:var(--text3)">(entregas primeiro, coletas depois)</span>':''}<br>Saída: <b>${esc(DEPOT.name)}</b> às <b>${_hhmm(rotaCtxD.saida)}</b> de <b>${_dataBR(rotaCtxD.data)}</b><br>Fim: <b>${rotaCtxD.volta?'volta ao CD':'na última parada'}</b>${comHora?`<br>Com horário marcado: <b>${comHora}</b>`:''}${outroDia?`<br><span style="color:var(--text3)">${_plural(outroDia,'agendado para outro dia fica','agendados para outro dia ficam')} de fora.</span>`:''}${semLocal?`<br><span style="color:#8a5a06">⚠️ ${_plural(semLocal,'pedido ainda está','pedidos ainda estão')} sem localização exata (só o bairro ou a cidade). A ordem e os km desses pedidos são aproximados.</span>`:''}`;
   document.getElementById('rot-step-cap').style.display='none';
   document.getElementById('rot-step-confirm').style.display='block';
 }
@@ -3407,6 +3437,7 @@ async function executarVRPD(){
   try{
     const data=await apiPost('/solve',{
       hora_saida: rotaCtxD.saida,
+      volta: !!rotaCtxD.volta,
       veiculos: [{ id:vehSel.id, nome:vehSel.nome, capKg:capKgD, maxPed:maxPedD }],
       time_limit_s: 30,
       pedidos: pend,
@@ -3497,14 +3528,15 @@ function _manTitulo(g){
   const quem=g.lista.length>1?`${g.lista.length} notas neste ponto (NF ${g.lista.map(o=>o.nf).join(', ')})`:`NF ${p.nf}`;
   const rot=_manRotulo(g);
   const fim=rot?`parada ${rot} da rota — toque para tirar`:'toque para colocar na rota';
-  return `${_manTipoGrupo(g)} · ${quem} · ${onde} · ${kg.toLocaleString('pt-BR')} kg · ${fim}`;
+  const ag=g.lista.find(o=>_saiHoje(o,rotaCtxD.data));
+  return `${_manTipoGrupo(g)} · ${quem} · ${onde} · ${kg.toLocaleString('pt-BR')} kg${ag?' · '+_textoAgenda(ag,rotaCtxD.data):''} · ${fim}`;
 }
 function _manTituloHtml(g){
   const kg=g.lista.reduce((s,o)=>s+(+o.peso||0),0), p=g.lista[0];
   const onde=[p.dest&&p.dest!==p.cidade?p.dest:'',p.bairro,p.cidade].filter(Boolean).map(esc).join(' — ');
   const quem=g.lista.length>1?`${g.lista.length} notas aqui: NF ${g.lista.map(o=>esc(o.nf)).join(', ')}`:`NF ${esc(p.nf)}`;
-  const rot=_manRotulo(g);
-  return `<b>${_manTipoGrupo(g)} · ${quem}</b><br>${onde}<br>${kg.toLocaleString('pt-BR')} kg`
+  const rot=_manRotulo(g), ag=g.lista.find(o=>_saiHoje(o,rotaCtxD.data));
+  return `${ag?`<b style="color:${COR_SAI_HOJE}">📅 ${esc(_textoAgenda(ag,rotaCtxD.data))}</b><br>`:''}<b>${_manTipoGrupo(g)} · ${quem}</b><br>${onde}<br>${kg.toLocaleString('pt-BR')} kg`
     + `<br><span style="color:#64748b">${rot?`parada ${rot} — clique para tirar da rota`:'clique para colocar na rota'}</span>`;
 }
 const _hm=m=>{ m=Math.max(0,Math.round(m)); return `${Math.floor(m/60)}h${String(m%60).padStart(2,'0')}`; };
@@ -3529,8 +3561,9 @@ function _manIcone(g){
   const col=_manTipoGrupo(g)==='Coleta';
   const rot=_manRotulo(g);
   const txt=rot || (g.lista.length>1?'×'+g.lista.length:'');
+  const hoje=g.lista.some(o=>_saiHoje(o,rotaCtxD.data));   // agendado para o dia da viagem
   return L.divIcon({className:'pino-alvo',iconSize:[44,44],iconAnchor:[22,22],
-    html:`<span class="pino${col?' coleta':''}${rot?' sel':''}">${esc(txt)}</span>`});
+    html:`<span class="pino${col?' coleta':''}${hoje?' hoje':''}${rot?' sel':''}">${esc(txt)}</span>`});
 }
 function _manCriarMapa(){
   const el=$id('mapa-manual'); if(!el||!window.L) return;
@@ -3541,7 +3574,7 @@ function _manCriarMapa(){
   if(manLayer) manMap.removeLayer(manLayer);
   manLayer=L.layerGroup().addTo(manMap);
   manMarc=new Map(); manLinha=null;
-  L.marker([DEPOT.lat,DEPOT.lng],{keyboard:false,title:`${DEPOT.name} — saída e volta da rota`,
+  L.marker([DEPOT.lat,DEPOT.lng],{keyboard:false,title:`${DEPOT.name} — saída${rotaCtxD.volta?' e volta':''} da rota`,
     icon:L.divIcon({className:'pino-alvo',iconSize:[44,44],iconAnchor:[22,22],html:'<span class="pino cd"></span>'})
   }).addTo(manLayer);
   manGrupos=_manMontarGrupos();
@@ -3583,7 +3616,7 @@ function _manDesenharLinha(){
   if(!manLayer) return;
   const pts=manSel.filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng)).map(p=>[p.lat,p.lng]);
   if(!pts.length){ _manChave=''; return; }
-  const todos=[[DEPOT.lat,DEPOT.lng],...pts,[DEPOT.lat,DEPOT.lng]];
+  const todos=[[DEPOT.lat,DEPOT.lng],...pts,...(rotaCtxD.volta?[[DEPOT.lat,DEPOT.lng]]:[])];
   const chave=todos.map(p=>p[0].toFixed(5)+','+p[1].toFixed(5)).join(';');
   _manChave=chave;
   const pronta=_manTracCache.get(chave);
@@ -3813,7 +3846,7 @@ function _estimarRotaLocal(ps){
     cheg.push(saida!=null?saida+Math.round(t):null);
     t+=SERVICO_MIN; prev=p;
   });
-  if(ps.length){ const d=_haversineKm(prev,DEPOT); km+=d; t+=d/v; }
+  if(ps.length&&rotaCtxD.volta){ const d=_haversineKm(prev,DEPOT); km+=d; t+=d/v; }   // volta só se pedida
   return {km:Math.round(km*10)/10, mins:Math.ceil(t), chegadas:cheg};
 }
 function _poolViagemD(){
@@ -3862,7 +3895,7 @@ async function _avaliarRotaD(ri,seq){
   try{
     const d=await apiPost('/avaliar',{
       pedidos:ps.map(p=>({lat:p.lat,lng:p.lng,janela_ini:p.janela_ini??null,janela_fim:p.janela_fim??null})),
-      deposito:{lat:DEPOT.lat,lng:DEPOT.lng,nome:DEPOT.name}, hora_saida:rotaCtxD.saida,
+      deposito:{lat:DEPOT.lat,lng:DEPOT.lng,nome:DEPOT.name}, hora_saida:rotaCtxD.saida, volta:!!rotaCtxD.volta,
     });
     if(seq!==_avSeq[ri]||rotaGeradaD[ri]!==r) return;   // a rota mudou de novo: vale a próxima resposta
     r.km=+d.km||0; r.mins=+d.mins||0;
@@ -3932,7 +3965,7 @@ async function otimizarRotaD(ri){
   try{
     // todas as paradas que estão na rota continuam nela: o motor só escolhe a ordem
     const d=await apiPost('/solve',{
-      hora_saida:rotaCtxD.saida, time_limit_s:10, pedidos:ps,
+      hora_saida:rotaCtxD.saida, volta:!!rotaCtxD.volta, time_limit_s:10, pedidos:ps,
       veiculos:[{id:vehSel?.id||'v1', nome:vehSel?.nome||'Veículo', capKg:Math.max(capKgD||0,Math.ceil(Math.max(pesoE,pesoC))), maxPed:ps.length}],
       deposito:{lat:DEPOT.lat,lng:DEPOT.lng,nome:DEPOT.name},
     });
@@ -4068,6 +4101,7 @@ async function confirmarRotaD(){
         num_paradas:paradas.length, entregas:nP.entrega, coletas:nP.coleta, status:'em_rota', paradas,
         fonte_dist:r._fonte||fonteDistanciaD||'—',   // como o km e os horários foram medidos
         ...(r._tracado?{tracado:r._tracado}:{}),          // linha pelas ruas (polyline6), para não pedir de novo
+        volta:!!rotaCtxD.volta,                           // false: termina na última parada
         ...(r._manual?{montagem:'manual'}:{}),            // montada à mão no mapa, não pelo motor
         ...(r._ajustada?{ajustada:true}:{}) };
     }).filter(r=>r.paradas.length);
@@ -4383,6 +4417,22 @@ async function renderAcessos(){
   $id('ac-completos').innerHTML = comp.length ? comp.map(([uid])=>{ const u=esc(uid), eu=uid===ADMIN_UID; return `<div class="ac-row"><div class="ac-row-info"><b>${esc(emailDe(uid)||uid)}${eu?'<span class="ac-tag on">você</span>':_ultimoAcesso(us,uid)}</b><span>${esc(nomeEmp(eu?'principal':mem[uid])||'sem empresa')} · ${us[uid]&&us[uid].visto?'último acesso em '+_dataCurta(us[uid].visto):'sem registro de acesso'}</span></div>
       ${eu?'':`<div class="mot-acts"><button class="btn-sm" onclick="trocarEmpresa('${u}')">${mem[uid]?'Trocar empresa':'Ligar à empresa'}</button><button class="btn-sm" onclick="tirarAcesso('${u}')">Tirar acesso</button></div>`}</div>`; }).join('')
     : '<div class="empty-mini">Ninguém com acesso completo.</div>';
+  // CD de cada empresa (a principal primeiro)
+  const eids=Object.keys(emp).sort((a,b)=>(a==='principal'?-1:b==='principal'?1:nomeEmp(a).localeCompare(nomeEmp(b))));
+  $id('ac-cds').innerHTML = eids.length ? eids.map(eid=>{
+    const d=emp[eid]&&emp[eid].config&&emp[eid].config.deposito, k=esc(eid);
+    const atual=d&&Number.isFinite(+d.lat)
+      ? `${esc(d.nome||'CD')}${d.cep?' · CEP '+esc(String(d.cep).replace(/^(\d{5})(\d{3})$/,'$1-$2')):''}${d.exato?' · ponto exato':''}`
+      : 'padrão (Guarulhos)';
+    return `<div class="ac-row ac-cd"><div class="ac-row-info"><b>${esc(eid==='principal'?'Sua operação (principal)':nomeEmp(eid))}</b><span>Agora: ${atual}</span></div>
+      <div class="ac-cd-campos">
+        <input data-cd-cep="${k}" inputmode="numeric" maxlength="9" placeholder="CEP" aria-label="CEP do CD de ${k}">
+        <input data-cd-coord="${k}" placeholder="ou -23.4245, -46.3877" aria-label="Coordenadas do CD de ${k}">
+        <input data-cd-nome="${k}" maxlength="60" placeholder="Nome (opcional)" aria-label="Nome do CD de ${k}">
+        <button class="btn-sm" type="button" onclick="definirCdEmpresa(${esc(JSON.stringify(eid))})">Definir</button>
+        <span class="ac-cd-msg" data-cd-msg="${k}" role="status"></span>
+      </div></div>`;
+  }).join('') : '<div class="empty-mini">Nenhuma empresa ainda.</div>';
 }
 async function _acaoAcesso(upd,ok){
   try{ await update(ref(db),upd); if(ok) _toast(ok); }catch(e){ alert('Não foi possível concluir: '+e.message); }
@@ -4474,7 +4524,8 @@ function desenharMiniMapaRota(rota, elId, cor){
   _miniMaps[elId] = map;
   _fundoMapa(map);
 
-  const coords = [[DEPOT.lat,DEPOT.lng], ...paradas.map(p=>[p.lat,p.lng]), [DEPOT.lat,DEPOT.lng]];
+  // rota confirmada antes da 3.11 não tem "volta" e voltava ao CD
+  const coords = [[DEPOT.lat,DEPOT.lng], ...paradas.map(p=>[p.lat,p.lng]), ...(rota.volta===false?[]:[[DEPOT.lat,DEPOT.lng]])];
   const linha = _linhaRota(map, coords, rota.tracado, {color:cor, weight:3.5, opacity:.85});
   if(!linha.ruas) _pedirTracadoRota(rota, coords, elId, cor);   // rota de antes do traçado existir
   if(linha.ruas) linha.pontos.forEach(p=>coords.push(p));   // o caminho pode sair um pouco das paradas
@@ -4494,7 +4545,7 @@ window.desenharMiniMapaRota = desenharMiniMapaRota;
 // por vez (o servidor de rotas público aceita 1 consulta por segundo), e guarda na rota.
 const _tracadoPedido=new Set(); let _filaTracado=Promise.resolve();
 function _pedirTracadoRota(rota, coords, elId, cor){
-  if(!rota||!rota.id||_tracadoPedido.has(rota.id)||coords.length<3||!auth.currentUser) return;
+  if(!rota||!rota.id||_tracadoPedido.has(rota.id)||coords.length<2||!auth.currentUser) return;
   _tracadoPedido.add(rota.id);   // uma tentativa por rota enquanto a página está aberta
   const pontos=coords.map(([lat,lng])=>({lat,lng}));
   _filaTracado=_filaTracado.then(async()=>{
@@ -4807,8 +4858,8 @@ function desenharMapaRota(paradas,r){
   L.circleMarker([DEPOT.lat,DEPOT.lng],{radius:7,color:'#fff',weight:2,fillColor:'#e09c12',fillOpacity:1}).addTo(rotaMapInst).bindTooltip('Saída — '+esc(DEPOT.name));
   const pts=[[DEPOT.lat,DEPOT.lng]];
   paradas.forEach(p=>{ if(Number.isFinite(p.lat)&&Number.isFinite(p.lng)) pts.push([p.lat,p.lng]); });
-  pts.push([DEPOT.lat,DEPOT.lng]);
-  if(pts.length<3) return;   // viagem sem paradas: só o CD
+  if(rotaCtxD.volta) pts.push([DEPOT.lat,DEPOT.lng]);   // sem volta, a linha termina na última parada
+  if(pts.length<2) return;   // viagem sem paradas: só o CD
   const linha=_linhaRota(rotaMapInst, pts, r&&r._tracado, {color:'#2f6fe4',weight:4,opacity:.8});
   if(!linha.ruas){
     const calc=(r&&r._calc)||'ok';
@@ -4906,32 +4957,53 @@ async function voltarDadosExemplo(){
 window.voltarDadosExemplo=voltarDadosExemplo;
 
 // ── Centro de distribuição (de onde as rotas saem), definido pelo CEP ──────
+// O CD de cada empresa é definido pelo administrador (página Acessos): o cliente só vê.
 function _htmlCd(onde){
-  return `<span class="cd">Saída das rotas: <b>${esc(DEPOT.name)}</b> · <label for="cd-cep-${onde}">CEP do seu CD</label><input id="cd-cep-${onde}" inputmode="numeric" maxlength="9" placeholder="00000-000"><button type="button" class="bt" id="cd-bt-${onde}" onclick="definirCd('${onde}')">Usar</button><span id="cd-msg-${onde}"></span></span>`;
+  return `<span class="cd">Saída das rotas: <b>${esc(DEPOT.name)}</b>${ehAdmin?' · <button type="button" class="lk" onclick="irParaPagina(\'acessos\')">trocar em Acessos</button>':' · para mudar, fale com a ROTAV3'}</span>`;
 }
 function _renderCdLinha(){ const el=$id('cd-linha'); if(el) el.innerHTML=_htmlCd('rot'); }
-async function definirCd(onde){
-  const cep=($id('cd-cep-'+onde)?.value||'').replace(/\D/g,'');
-  const msg=$id('cd-msg-'+onde), bt=$id('cd-bt-'+onde);
-  if(cep.length!==8){ msg.textContent='Digite os 8 números do CEP.'; return; }
-  bt.disabled=true; msg.textContent='Localizando...';
-  let g;
-  try{ g=await _geocodificarCep(cep); }
-  catch(e){ msg.textContent='Não achamos esse CEP. Confira e tente de novo.'; bt.disabled=false; return; }
-  DEPOT.lat=g.lat; DEPOT.lng=g.lng; DEPOT.name=`CD ${g.cidade||'CEP '+cep}`;
-  let aviso='As rotas agora saem daqui.';
-  if(EID){
-    try{ await set(ref(db,TP('config/deposito')),{nome:DEPOT.name,lat:DEPOT.lat,lng:DEPOT.lng,cep}); }
-    catch(e){ aviso='Vale só nesta tela: não foi possível salvar.'; }
-  } else aviso='Vale só nesta tela.';
-  _faixaDemo(); _renderCdLinha();
-  if(mapInst) mapInst.setView([DEPOT.lat,DEPOT.lng],8.4);
-  if(mapInstFull) mapInstFull.setView([DEPOT.lat,DEPOT.lng],9.2);
-  render();
-  if($id('page-mapa')?.style.display==='block') atualizarMapaCompleto();
-  const m2=$id('cd-msg-'+onde); if(m2) m2.textContent=aviso;
+// Coordenadas coladas do Google Maps: "-23.4245, -46.3877"
+function _lerCoordenadas(txt){
+  const m=String(txt||'').trim().match(/^(-?\d{1,2}(?:[.,]\d+)?)\s*[,; ]\s*(-?\d{1,3}(?:[.,]\d+)?)$/);
+  if(!m) return null;
+  const lat=+m[1].replace(',','.'), lng=+m[2].replace(',','.');
+  return (Math.abs(lat)<=90&&Math.abs(lng)<=180&&(lat||lng)) ? {lat,lng} : null;
 }
-window.definirCd=definirCd;
+async function definirCdEmpresa(eid){
+  if(!ehAdmin) return;
+  const k=CSS.escape(eid);
+  const cepTxt=(document.querySelector(`[data-cd-cep="${k}"]`)?.value||'').replace(/\D/g,'');
+  const coordTxt=document.querySelector(`[data-cd-coord="${k}"]`)?.value||'';
+  const nomeTxt=(document.querySelector(`[data-cd-nome="${k}"]`)?.value||'').trim().slice(0,60);
+  const msg=document.querySelector(`[data-cd-msg="${k}"]`);
+  const dizer=t=>{ if(msg) msg.textContent=t; };
+  let ponto=null, cidade='';
+  if(coordTxt.trim()){
+    ponto=_lerCoordenadas(coordTxt);
+    if(!ponto){ dizer('Coordenadas no formato -23.4245, -46.3877.'); return; }
+  }
+  if(cepTxt&&cepTxt.length!==8){ dizer('Digite os 8 números do CEP.'); return; }
+  if(!ponto&&!cepTxt){ dizer('Informe o CEP ou as coordenadas.'); return; }
+  if(cepTxt){
+    dizer('Localizando o CEP...');
+    try{ const g=await _geocodificarCep(cepTxt); cidade=g.cidade||''; if(!ponto) ponto={lat:g.lat,lng:g.lng}; }
+    catch(e){ if(!ponto){ dizer('Não achamos esse CEP. Confira, ou cole as coordenadas.'); return; } }
+  }
+  const dep={ nome:nomeTxt||(cidade?`CD ${cidade}`:'Centro de distribuição'), lat:ponto.lat, lng:ponto.lng,
+    ...(cepTxt?{cep:cepTxt}:{}), exato:!!coordTxt.trim(), definido_em:Date.now() };
+  try{ await set(ref(db,`empresas/${eid}/config/deposito`),dep); }
+  catch(e){ dizer('Não foi possível salvar: '+e.message); return; }
+  if(eid===EID){
+    DEPOT.lat=dep.lat; DEPOT.lng=dep.lng; DEPOT.name=dep.nome;
+    _faixaDemo(); _renderCdLinha();
+    if(mapInst) mapInst.setView([DEPOT.lat,DEPOT.lng],8.4);
+    if(mapInstFull) mapInstFull.setView([DEPOT.lat,DEPOT.lng],9.2);
+    render();
+  }
+  _toast(`CD de ${eid==='principal'?'sua operação':'empresa'} salvo: ${dep.nome}`);
+  renderAcessos();
+}
+window.definirCdEmpresa=definirCdEmpresa;
 
 // ── Separação por empresa: a primeira entrada do administrador com as regras
 // novas copia os dados que estavam na raiz para empresas/principal ──────────

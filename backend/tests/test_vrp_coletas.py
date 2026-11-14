@@ -30,10 +30,10 @@ def veic(cap, maxped=10):
     return [{"id": "vuc", "nome": "VUC", "capKg": cap, "maxPed": maxped}]
 
 
-def resolver(pedidos, cap, maxped=10, saida=None):
+def resolver(pedidos, cap, maxped=10, saida=None, volta=False):
     # sem internet nos testes: força a distância em linha reta
     with mock.patch.object(vs.requests, "get", side_effect=OSError("sem rede")):
-        return vs.solve_vrp(pedidos, veic(cap, maxped), 5, CD, saida)
+        return vs.solve_vrp(pedidos, veic(cap, maxped), 5, CD, saida, volta)
 
 
 def tipos_em_ordem(res):
@@ -123,7 +123,7 @@ class TesteMotor(unittest.TestCase):
         original = vs._resolver
 
         def quebra(*a):
-            if a[-1] == "ordem":
+            if "ordem" in a:
                 raise RuntimeError("simulado")
             return original(*a)
 
@@ -192,9 +192,9 @@ class TesteJanela(unittest.TestCase):
         self.assertEqual(r["pedidos"][0]["chegada_min"], 480)
 
 
-def avaliar(pedidos, saida=None):
+def avaliar(pedidos, saida=None, volta=False):
     with mock.patch.object(vs.requests, "get", side_effect=OSError("sem rede")):
-        return vs.avaliar_sequencia(pedidos, CD, saida)
+        return vs.avaliar_sequencia(pedidos, CD, saida, volta)
 
 
 class TesteAvaliarSequencia(unittest.TestCase):
@@ -206,10 +206,13 @@ class TesteAvaliarSequencia(unittest.TestCase):
 
     def test_mantem_a_ordem_e_mede_ida_e_volta(self):
         perto, longe = ped("P", "entrega", 10, .01, 0), ped("L", "entrega", 10, .05, 0)
+        # com volta: CD → P → L → CD e CD → L → P → CD têm o mesmo km (mesma reta)
+        self.assertAlmostEqual(avaliar([perto, longe], 420, True)["km"],
+                               avaliar([longe, perto], 420, True)["km"], places=1)
+        # sem volta (padrão): termina na última parada, então a ordem muda o km
         a = avaliar([perto, longe], saida=420)
         b = avaliar([longe, perto], saida=420)
-        # CD → P → L → CD e CD → L → P → CD têm o mesmo km (mesma reta), mas as chegadas mudam
-        self.assertAlmostEqual(a["km"], b["km"], places=1)
+        self.assertLess(a["km"], b["km"])
         self.assertLess(a["chegada_min"][0], a["chegada_min"][1])
         self.assertGreater(b["chegada_min"][1], b["chegada_min"][0])
         self.assertLess(a["chegada_min"][0], b["chegada_min"][1])
@@ -241,7 +244,11 @@ class TesteAvaliarSequencia(unittest.TestCase):
     def test_passa_da_jornada(self):
         # janela abre 7 h depois da saída e o ponto fica a ~1 h: volta depois das 8 h
         a = jan(ped("A", "entrega", 10, .3, 0), 420 + 7 * 60, 420 + 7 * 60 + 30)
-        self.assertTrue(avaliar([a], saida=420)["passa_da_jornada"])
+        self.assertTrue(avaliar([a], saida=420, volta=True)["passa_da_jornada"])
+        # sem a volta, a jornada termina na última parada: 7 h + 15 min de atendimento
+        self.assertFalse(avaliar([a], saida=420)["passa_da_jornada"])
+        tarde = jan(ped("T", "entrega", 10, .3, 0), 420 + 7 * 60 + 50, 420 + 8 * 60 + 30)
+        self.assertTrue(avaliar([tarde], saida=420)["passa_da_jornada"])
         self.assertFalse(avaliar([ped("B", "entrega", 10, .01, 0)], saida=420)["passa_da_jornada"])
 
     def test_limite_de_paradas(self):
@@ -384,3 +391,36 @@ class TesteTracadoPelasRuas(unittest.TestCase):
             vs._esperar_vez("https://rotas.exemplo.com.br/route/v1/driving")
             vs._esperar_vez("https://rotas.exemplo.com.br/route/v1/driving")
             self.assertLess(time.monotonic() - t1, 0.05)
+
+
+class TesteSemVoltaAoCD(unittest.TestCase):
+    """Padrão: a rota termina na última parada. Com volta=True, volta ao CD."""
+
+    def test_rota_termina_na_ultima_parada(self):
+        peds = [ped("1", "entrega", 10, .05, 0), ped("2", "entrega", 10, .10, 0)]
+        aberta = resolver(peds, 1000)["routes"][0]
+        fechada = resolver(peds, 1000, volta=True)["routes"][0]
+        self.assertFalse(aberta["volta"])
+        self.assertTrue(fechada["volta"])
+        # o desenho não volta ao CD
+        self.assertEqual(len(aberta["sequencia_coords"]), 3)
+        self.assertEqual(len(fechada["sequencia_coords"]), 4)
+        fim = aberta["sequencia_coords"][-1]
+        self.assertAlmostEqual(fim["lat"], CD["lat"] + .10, places=6)
+        # sem volta, os ~11 km do retorno não entram no km
+        self.assertAlmostEqual(fechada["km"] - aberta["km"],
+                               vs._haversine_m(CD, peds[1]) / 1000, delta=0.2)
+        self.assertLess(aberta["mins"], fechada["mins"])
+
+    def test_ordem_pensa_em_terminar_longe(self):
+        # sem volta, o motor vai do mais perto ao mais longe (não precisa voltar)
+        peds = [ped("L", "entrega", 10, .10, 0), ped("P", "entrega", 10, .02, 0)]
+        aberta = resolver(peds, 1000)["routes"][0]
+        self.assertEqual([p["nf"] for p in aberta["pedidos"]], ["P", "L"])
+
+    def test_avaliar_igual_ao_motor(self):
+        peds = [ped("1", "entrega", 10, .05, 0), ped("2", "entrega", 10, .10, 0)]
+        rota = resolver(peds, 1000, saida=420)["routes"][0]
+        med = avaliar(rota["pedidos"], saida=420)
+        self.assertEqual(med["km"], rota["km"])
+        self.assertEqual(med["mins"], rota["mins"])

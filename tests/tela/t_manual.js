@@ -26,11 +26,11 @@ const PED = {
 // Para o teste de toque no celular: três pontos bem separados, que é a situação
 // normal depois de dar zoom na região.
 const PED_LONGE = { '1001': PED['1001'], '1003': PED['1003'], 'C_2001': PED['C_2001'] };
-// Uma parada a ~200 km do CD: a 40 km/h em linha reta dá mais de 8 h só de ida e volta,
-// o que é o gatilho do aviso de jornada.
+// Uma parada a ~430 km do CD: a 40 km/h em linha reta dá mais de 8 h só de ida
+// (a rota termina na última parada), o que é o gatilho do aviso de jornada.
 const PED_JORNADA = {
   '1001': PED['1001'],
-  '7777': { nf: '7777', tipo: 'entrega', cidade: 'Cruzeiro', dest: 'Cliente distante', peso: 100, itens: 1, status: 'pendente', lat: -22.57, lng: -44.96, geoStatus: 'ok' },
+  '7777': { nf: '7777', tipo: 'entrega', cidade: 'Juiz de Fora', dest: 'Cliente distante', peso: 100, itens: 1, status: 'pendente', lat: -21.0, lng: -43.0, geoStatus: 'ok' },
 };
 
 const seed = (ped) => {

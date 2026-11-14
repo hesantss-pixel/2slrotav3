@@ -123,7 +123,7 @@ const linhaDoMapa = (p, sel) => p.evaluate((s) => {
   await p.click('[data-foco="ajustar"]'); await p.waitForTimeout(200);
   await p.click('#rota-detail-d .delivery-mini >> nth=0 >> [aria-label^="Descer"]'); await p.waitForTimeout(250);
   l = await linhaDoMapa(p, ROTA);
-  ok(l && l.tracejada && l.pontos === 5, 'ordem mudou: o traçado antigo some e fica a linha reta tracejada');
+  ok(l && l.tracejada && l.pontos === 4, 'ordem mudou: o traçado antigo some e fica a linha reta tracejada (CD e 3 paradas, sem volta)');
   ok((await p.textContent('#rota-map')).includes('Buscando o caminho pelas ruas'), 'aviso "Buscando o caminho pelas ruas…" enquanto mede');
   await p.waitForTimeout(1000);
   l = await linhaDoMapa(p, ROTA);
@@ -187,10 +187,10 @@ const linhaDoMapa = (p, sel) => p.evaluate((s) => {
     await p2.click('.leaflet-marker-icon[title*="NF 1003"]'); await p2.waitForTimeout(250);
     const MAN = '#mapa-manual path[stroke="#0d1b2e"]';
     let m = await linhaDoMapa(p2, MAN);
-    ok(m && m.tracejada && m.pontos === 4 && reg2.tracado.length === 0, 'tocando: rascunho em linha reta, sem chamar o servidor a cada toque');
+    ok(m && m.tracejada && m.pontos === 3 && reg2.tracado.length === 0, 'tocando: rascunho em linha reta, sem chamar o servidor a cada toque');
     await p2.waitForTimeout(1600);
     m = await linhaDoMapa(p2, MAN);
-    ok(reg2.tracado.length === 1 && reg2.tracado[0].pontos.length === 4, 'parou de tocar: pede o caminho uma vez (CD, 2 paradas, CD)');
+    ok(reg2.tracado.length === 1 && reg2.tracado[0].pontos.length === 3, 'parou de tocar: pede o caminho uma vez (CD e 2 paradas, sem volta)');
     ok(m && !m.tracejada && m.pontos > 20, 'linha do rascunho vira o caminho pelas ruas');
     // desfazer o último toque e refazer: o caminho já conhecido volta sem nova consulta
     await p2.click('#man-desfazer'); await p2.waitForTimeout(1500);

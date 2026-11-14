@@ -378,6 +378,15 @@ def _janela_s(p: dict, saida_min: int | None):
     return ((ini - saida_min) * 60, (fim - saida_min) * 60)
 
 
+def _sem_volta(dist_mx: list[list[int]], dur_mx: list[list[int]]) -> None:
+    """Rota aberta: a viagem termina na última parada. Zera o custo de qualquer ponto
+    até o CD (índice 0), e assim o motor não escolhe a ordem pensando na volta, e km,
+    tempo e jornada param na última parada."""
+    for i in range(1, len(dist_mx)):
+        dist_mx[i][0] = 0
+        dur_mx[i][0] = 0
+
+
 def _horarios(seq: list[int], dur_mx: list[list[int]], janelas: list) -> tuple[list[int], int]:
     """Chegada em cada parada (segundos desde a saída, esperando a janela abrir
     quando preciso) e a hora de volta ao CD."""
@@ -402,6 +411,7 @@ def avaliar_sequencia(
     pedidos: list[dict],
     deposito: dict | None = None,
     saida_min: int | None = None,
+    volta: bool = False,
 ) -> dict:
     """
     Km, tempo e chegada em cada parada para uma ordem JÁ DEFINIDA (a rota que o
@@ -419,6 +429,8 @@ def avaliar_sequencia(
     for p in pedidos:
         points.append({"lat": float(p["lat"]), "lng": float(p["lng"])})
     dist_mx, dur_mx, fonte = build_distance_matrix(points)
+    if not volta:
+        _sem_volta(dist_mx, dur_mx)
     seq = list(range(1, len(points)))
     janelas = [_janela_s(p, saida_min) for p in pedidos]
     chegadas, volta_s = _horarios(seq, dur_mx, janelas)
@@ -460,6 +472,7 @@ def solve_vrp(
     time_limit_s: int = 30,
     deposito: dict | None = None,
     saida_min: int | None = None,
+    volta: bool = False,
 ) -> dict:
     """
     Resolve VRP com OR-Tools.
@@ -472,6 +485,8 @@ def solve_vrp(
     deposito     : {lat, lng, nome} de onde as rotas saem (padrão: DEPOT)
     saida_min    : hora de saída do CD em minutos desde a meia-noite (ex.: 420 = 07:00).
                    Com ela, os pedidos com janela_ini/janela_fim respeitam o horário.
+    volta        : True = a rota volta ao CD no fim (km, tempo e traçado contam a volta).
+                   Padrão False: a rota termina na última parada.
 
     Retorna
     -------
@@ -516,6 +531,8 @@ def solve_vrp(
     # Pontos: depósito (índice 0) + pedidos
     points = [{"lat": float(dep["lat"]), "lng": float(dep["lng"])}] + [{"lat": p["lat"], "lng": p["lng"]} for p in pedidos]
     dist_mx, dur_mx, fonte = build_distance_matrix(points)
+    if not volta:
+        _sem_volta(dist_mx, dur_mx)
 
     tipos = [_tipo(p) for p in pedidos]
     janelas = [_janela_s(p, saida_min) for p in pedidos]
@@ -523,7 +540,7 @@ def solve_vrp(
 
     def rodar(modo: str, limite: int) -> dict:
         return _resolver(pywrapcp, routing_enums_pb2, pedidos, tipos, janelas, saida_min,
-                         veiculos, dep, dist_mx, dur_mx, limite, modo)
+                         veiculos, dep, dist_mx, dur_mx, limite, modo, volta)
 
     if not misto:
         res = rodar("simples", time_limit_s)
@@ -549,7 +566,7 @@ def solve_vrp(
 
 
 def _resolver(pywrapcp, routing_enums_pb2, pedidos, tipos, janelas, saida_min, veiculos,
-              dep, dist_mx, dur_mx, time_limit_s, modo) -> dict:
+              dep, dist_mx, dur_mx, time_limit_s, modo, volta=False) -> dict:
     """Monta e resolve o modelo. modo: "simples" (uma soma de peso) ou
     "ordem" (entregas e coletas separadas, entregas antes das coletas)."""
     n_nodes = len(pedidos) + 1
@@ -686,7 +703,8 @@ def _resolver(pywrapcp, routing_enums_pb2, pedidos, tipos, janelas, saida_min, v
         # Coordenadas para polilinha no mapa
         coords = [{"lat": float(dep["lat"]), "lng": float(dep["lng"])}]
         coords += [{"lat": p["lat"], "lng": p["lng"]} for p in peds_rota]
-        coords += [{"lat": float(dep["lat"]), "lng": float(dep["lng"])}]
+        if volta:
+            coords += [{"lat": float(dep["lat"]), "lng": float(dep["lng"])}]
 
         routes.append({
             "veiculo": veiculo["nome"],
@@ -703,6 +721,7 @@ def _resolver(pywrapcp, routing_enums_pb2, pedidos, tipos, janelas, saida_min, v
             "carga_saida_kg": carga["saida_kg"],
             "carga_maxima_kg": carga["maxima_kg"],
             "sequencia_coords": coords,
+            "volta": bool(volta),
         })
 
     nao_alocados = [

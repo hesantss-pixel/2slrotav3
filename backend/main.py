@@ -82,7 +82,7 @@ for _nome in ("", "uvicorn", "uvicorn.error", "uvicorn.access"):
 # ── App ───────────────────────────────────────────────────────────────────────
 
 # Versão do servidor. Aparece em /status junto com o commit publicado.
-VERSAO = "3.10.0"
+VERSAO = "3.11.0"
 
 app = FastAPI(
     title="ROTAV3 — Servidor de rotas",
@@ -289,6 +289,7 @@ class SolveRequest(BaseModel):
     # Hora de saída do CD em minutos desde a meia-noite (ex.: 420 = 07:00).
     # Com ela, os pedidos com janela_ini/janela_fim respeitam o horário.
     hora_saida:   Optional[int] = None
+    volta:        bool = False   # True = a rota volta ao CD no fim
 
     # Campos legado (frontend antigo)
     capacidade_kg: Optional[float] = None
@@ -330,10 +331,11 @@ class AvaliarRequest(BaseModel):
     pedidos:    list[dict]
     deposito:   Optional[Deposito] = None
     hora_saida: Optional[int] = None
+    volta:      bool = False
 
 
 class TracadoRequest(BaseModel):
-    """Pontos na ordem da rota, do centro de distribuição de volta a ele."""
+    """Pontos na ordem da rota, saindo do centro de distribuição (e voltando, se a rota volta)."""
     model_config = {"extra": "ignore"}
     pontos: list[dict]
 
@@ -445,7 +447,7 @@ def solve(body: SolveRequest, quem: tuple = Depends(exigir_login_ou_demo)):
         # 3. Solver
         veiculos_dict = [v.model_dump() for v in frota]
         deposito = body.deposito.model_dump() if body.deposito else None
-        resultado = solve_vrp(pendentes, veiculos_dict, body.time_limit_s, deposito, body.hora_saida)
+        resultado = solve_vrp(pendentes, veiculos_dict, body.time_limit_s, deposito, body.hora_saida, body.volta)
 
         routes    = resultado["routes"]
         n_aloc    = resultado["nao_alocados"]
@@ -546,12 +548,12 @@ def avaliar(body: AvaliarRequest, quem: tuple = Depends(exigir_login_ou_demo)):
     except (KeyError, TypeError, ValueError):
         raise HTTPException(status_code=422, detail="Cada parada precisa de lat e lng.")
     deposito = body.deposito.model_dump() if body.deposito else None
-    medida = avaliar_sequencia(pedidos, deposito, body.hora_saida)
+    medida = avaliar_sequencia(pedidos, deposito, body.hora_saida, body.volta)
     medida["tracado"] = None
     if medida.get("fonte_distancia") == "OSRM":
         dep = deposito if deposito and deposito.get("lat") is not None else vrp_solver.DEPOT
-        ida_volta = [dep, *pedidos, dep]
-        medida["tracado"] = tracado_rota(ida_volta)
+        caminho = [dep, *pedidos] + ([dep] if body.volta else [])
+        medida["tracado"] = tracado_rota(caminho)
     return medida
 
 

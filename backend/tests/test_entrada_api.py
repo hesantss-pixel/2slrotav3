@@ -253,15 +253,17 @@ class TesteTracadoNaApi(unittest.TestCase):
 
     QUEM = ("u1", "completo")
 
-    def test_avaliar_pede_o_tracado_do_cd_ao_cd(self):
+    def test_avaliar_pede_o_tracado_do_cd_ate_a_ultima_parada(self):
         medida = {"km": 10.0, "mins": 30, "chegada_min": [None], "fonte_distancia": "OSRM", "passa_da_jornada": False}
-        with mock.patch.object(main, "avaliar_sequencia", return_value=dict(medida)), \
-                mock.patch.object(main, "tracado_rota", return_value="abc") as t:
-            r = main.avaliar(main.AvaliarRequest(pedidos=[{"lat": -23.5, "lng": -46.5}],
-                                                 deposito={"lat": -23.4, "lng": -46.3, "nome": "CD"}), self.QUEM)
-        self.assertEqual(r["tracado"], "abc")
-        pts = t.call_args.args[0]
-        self.assertEqual([(p["lat"], p["lng"]) for p in pts], [(-23.4, -46.3), (-23.5, -46.5), (-23.4, -46.3)])
+        for volta, fim in ((False, []), (True, [(-23.4, -46.3)])):
+            with mock.patch.object(main, "avaliar_sequencia", return_value=dict(medida)) as av, \
+                    mock.patch.object(main, "tracado_rota", return_value="abc") as t:
+                r = main.avaliar(main.AvaliarRequest(pedidos=[{"lat": -23.5, "lng": -46.5}], volta=volta,
+                                                     deposito={"lat": -23.4, "lng": -46.3, "nome": "CD"}), self.QUEM)
+            self.assertEqual(r["tracado"], "abc")
+            self.assertEqual(av.call_args.args[3], volta)
+            pts = t.call_args.args[0]
+            self.assertEqual([(p["lat"], p["lng"]) for p in pts], [(-23.4, -46.3), (-23.5, -46.5)] + fim, volta)
 
     def test_avaliar_sem_osrm_nao_espera_o_tracado(self):
         medida = {"km": 10.0, "mins": 30, "chegada_min": [None], "fonte_distancia": "Haversine:indisponivel",
