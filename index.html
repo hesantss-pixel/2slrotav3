@@ -1583,6 +1583,23 @@ let tipoImport='entrega';    // o que as notas importadas são
 let _statusPorId={};         // status de todas as notas do banco (para não reimportar as que já saíram)
 function esc(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function _tipoDe(o){ return o&&o.tipo==='coleta'?'coleta':'entrega'; }
+// Telefone do destinatário só com os dígitos (DDD + número), para o WhatsApp.
+// Aceita "(11) 99999-8888", "11999998888", "+55 11 ..." e "0xx11 ...". Fixo (10 dígitos) também vale.
+function _foneNorm(v){
+  let d=String(v||'').replace(/\D/g,'');
+  if(d.startsWith('55')&&(d.length===12||d.length===13)) d=d.slice(2);
+  if(d.startsWith('0')&&(d.length===11||d.length===12)) d=d.slice(1);
+  return /^[1-9]\d{9,10}$/.test(d)?d:'';
+}
+function _foneFmt(d){ d=String(d||''); return d.length>=10?`(${d.slice(0,2)}) ${d.slice(2,-4)}-${d.slice(-4)}`:d; }
+function _linkZap(fone,texto){ return `https://wa.me/55${fone}?text=${encodeURIComponent(texto)}`; }
+// Janela que vai para o cliente: começa na meia hora antes da previsão e dura 2 horas
+// (a previsão é uma estimativa; a janela absorve trânsito e o tempo das paradas anteriores).
+function _janelaAviso(chegada_min){
+  if(!Number.isFinite(+chegada_min)) return null;
+  const ini=Math.max(0,Math.floor((+chegada_min-15)/30)*30);
+  return {ini, fim:Math.min(1439,ini+120)};
+}
 function _tag(o){ return _tipoDe(o)==='coleta'?'<span class="tipo-tag c">Coleta</span>':'<span class="tipo-tag e">Entrega</span>'; }
 function _idDe(o){ return String(o.id||o.nf); }
 function _chaveId(base,tipo){
@@ -2828,6 +2845,7 @@ const COL_MAP={
   uf:['uf','estado'],
   cep:['cep','codigopostal','codpostal','postal','zipcode','zip'],
   tipo:['tipo','operacao','coletaentrega'],
+  fone:['telefone','celular','whatsapp','fone','tel'],
 };
 function _norm(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');}
 function _findCol(headers,keys){
@@ -2933,8 +2951,10 @@ function _lerXmlNFe(texto,tipo){
     const cep=cepRaw.length===8?cepRaw:'';
     const lgr=_txtXml(local,'xLgr'), nro=_txtXml(local,'nro'), cpl=_txtXml(local,'xCpl');
     const coord=CITY_COORDS[cidade]||DEPOT;
+    // telefone: do grupo de entrega/retirada quando a nota tem, senão o do destinatário (ou do emitente, na coleta)
+    const fone=_foneNorm(_txtXml(local,'fone'))||_foneNorm(_txtXml(coleta?_filho(emit,'enderEmit'):_filho(dest,'enderDest'),'fone'));
     return {
-      id:_chaveId(base,tipo), nf, tipo, chave:/^\d{44}$/.test(chave)?chave:'',
+      id:_chaveId(base,tipo), nf, tipo, chave:/^\d{44}$/.test(chave)?chave:'', ...(fone?{fone}:{}),
       dest:(coleta?remetente:(_txtXml(grpEntrega,'xNome')||destinatario))||cidade,
       remetente, destinatario,
       endereco:[lgr&&nro?`${lgr}, ${nro}`:lgr, cpl].filter(Boolean).join(' - '),
