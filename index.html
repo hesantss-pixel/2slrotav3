@@ -700,7 +700,7 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
   .page{padding:0!important;max-width:none!important;}
   body{background:#fff!important;}
   .card{break-inside:avoid;page-break-inside:avoid;border:1px solid #ccc!important;box-shadow:none!important;}
-  .rel-tab{min-width:0;font-size:10px;}
+  .rel-tab{min-width:0;font-size:10.5px;}
   .rel-tab th,.rel-tab td{padding:5px 5px;}
   .rel-cab-imp{display:block;margin-bottom:14px;}
   .kpis{max-width:none;}
@@ -888,9 +888,9 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
         <div class="kpi-delta" id="kpi-rotas-d">nenhuma gerada ainda</div>
       </div>
       <div class="kpi" style="--kbg:#e6f7ef">
-        <div class="kpi-top"><div class="kpi-icon"><img src="assets/em/stopwatch_3d.png" alt=""></div><div class="kpi-lbl">TEMPO ESTIMADO</div></div>
+        <div class="kpi-top"><div class="kpi-icon"><img src="assets/em/delivery_truck_3d.png" alt=""></div><div class="kpi-lbl">KM DAS ROTAS</div></div>
         <div class="kpi-val" id="kpi-tempo">—</div>
-        <div class="kpi-delta" id="kpi-tempo-d">estimativa</div>
+        <div class="kpi-delta" id="kpi-tempo-d">nenhuma gerada ainda</div>
       </div>
     </div>
 
@@ -1728,19 +1728,18 @@ function render(){
   // KPIs de rota (reais se houver /solve salvo, senão estimativa)
   if(ultimaRota && ultimaRota.rotas){
     const rotas=ultimaRota.rotas;
-    const mins=rotas.reduce((s,r)=>s+(r.mins||0),0);
+    const km=rotas.reduce((s,r)=>s+(+r.km||+r.distancia_km||0),0);
     document.getElementById('kpi-rotas').textContent=rotas.length;
     document.getElementById('kpi-rotas-d').textContent='última roteirização';
     document.getElementById('kpi-rotas-d').classList.add('up');
-    document.getElementById('kpi-tempo').textContent=`${Math.round(mins/60)}h${String(Math.round(mins%60)).padStart(2,'0')}`;
-    document.getElementById('kpi-tempo-d').textContent='tempo total das rotas';
+    document.getElementById('kpi-tempo').textContent=`${_x(km)} km`;
+    document.getElementById('kpi-tempo-d').textContent='km planejado da última roteirização';
   } else {
-    // sem rota gerada ainda -> estimativa simples a partir dos pedidos pendentes
+    // sem rota gerada ainda -> estimativa simples do número de rotas a partir dos pendentes
     const rotasEst=Math.max(1,Math.ceil(total/8));
-    const minEst=total*9;
     document.getElementById('kpi-rotas').textContent=total?`~${rotasEst}`:'0';
-    document.getElementById('kpi-tempo').textContent=total?`${Math.floor(minEst/60)}h${String(minEst%60).padStart(2,'0')}`:'—';
-    document.getElementById('kpi-tempo-d').textContent='estimativa pré-roteirização';
+    document.getElementById('kpi-tempo').textContent='—';
+    document.getElementById('kpi-tempo-d').textContent='gere uma rota para ver';
   }
 
   // Agendados (próximos, ordenados por data)
@@ -2089,13 +2088,13 @@ function renderRelatorios(){
   const tabRotas=`<div class="card rel-sec"><h3>Rotas do período</h3><div class="rel-rola">Arraste a tabela para o lado para ver o resto.</div><div class="rel-wrap"><table class="rel-tab">
     <thead><tr><th>Data</th><th>Veículo</th><th>Motorista</th><th class="num">Paradas</th>
       <th class="num">Feitas</th><th class="num">Não feitas</th><th class="num">Sem baixa</th>
-      <th class="num">Km</th><th class="num">Tempo</th><th>Medida</th>
+      <th class="num">Km</th><th>Medida</th>
       <th class="num">Km painel</th><th class="num">Km GPS</th><th class="num">Tempo real</th><th class="num">Fora da ordem</th></tr></thead>
     <tbody>${d.linhas.map(r=>`<tr><td>${esc(_dataBR(r.data))}${r.devolvida?' <span style="color:var(--text3)">(devolvida)</span>':''}</td>
       <td>${esc(r.veiculo)}</td><td>${esc(r.motorista)}</td>
       <td class="num">${r.paradas}</td><td class="num">${r.feitos}</td>
       <td class="num${r.falhas?' ruim':''}">${r.falhas}</td><td class="num">${r.semBaixa}</td>
-      <td class="num">${_n(r.km,1)}</td><td class="num">${_n(r.min)} min</td>
+      <td class="num">${_n(r.km,1)}</td>
       <td${r.reta?' class="ruim"':''}>${esc(_rotuloFonte(r.fonte))}</td>
       <td class="num">${r.kmPainel==null?'—':_n(r.kmPainel,1)}</td>
       <td class="num">${r.kmGps==null?'—':_n(r.kmGps,1)}</td>
@@ -4921,7 +4920,6 @@ function renderRotasConfirmadas(){
       <div style="display:flex;gap:18px;font-size:12.5px;color:var(--text2);flex-wrap:wrap;margin-bottom:12px">
         <span>📦 <b style="color:var(--text)">${(r.peso_total||0).toLocaleString('pt-BR')} kg</b></span>
         <span>🛣️ <b style="color:var(--text)">${_x(+r.km||0)}</b> km</span>
-        ${r.tempo_min?`<span>⏱️ <b style="color:var(--text)">${r.tempo_min}</b> min</span>`:''}
         ${_eReta(r.fonte_dist)?`<span class="rc-reta" title="${esc(_motivoReta(r.fonte_dist))}">⚠️ km em linha reta</span>`:''}
       </div>
       ${mot}
@@ -5101,7 +5099,7 @@ function selRotaTabD(idx){
   const last=paradas[paradas.length-1];
   const wp=paradas.slice(0,-1).map(p=>`${p.lat},${p.lng}`).join('|');
   const gmaps=last?`https://www.google.com/maps/dir/?api=1&origin=${DEPOT.lat},${DEPOT.lng}&destination=${last.lat},${last.lng}${wp?'&waypoints='+wp:''}&travelmode=driving`:'#';
-  const km=r.km||r.distancia_km||0, mins=r.mins||r.tempo_min||0, peso=r.peso_total||paradas.reduce((s,p)=>s+(p.peso||0),0);
+  const km=r.km||r.distancia_km||0, peso=r.peso_total||paradas.reduce((s,p)=>s+(p.peso||0),0);
   const fonte=r._fonte||fonteDistanciaD, calc=r._calc||'ok';
   const nT=_contarTipos(paradas), carga=_perfilCarga(paradas);
   const probs=_problemasRotaD(r);
@@ -5125,7 +5123,7 @@ function selRotaTabD(idx){
     <div id="rota-map"></div>
     ${paradas.some(_aprox)?`<div class="mapa-nota">⚠️ ${_plural(paradas.filter(_aprox).length,'parada está','paradas estão')} sem endereço exato. No mapa, ficam no centro do bairro ou da cidade, e a ordem e os km delas são aproximados. Toque em "corrigir" para buscar o endereço ou marcar o ponto.</div>`:''}
     ${paradas.length?`<div class="nav-btns-d"><a href="${gmaps}" target="_blank" rel="noopener" class="btn-nav-d gmaps">📍 Google Maps</a>${last?`<a href="https://waze.com/ul?ll=${last.lat},${last.lng}&navigate=yes" target="_blank" rel="noopener" class="btn-nav-d waze">🚗 Waze</a>`:''}</div>`:''}
-    <div class="card" style="margin-bottom:14px"><div style="display:flex;gap:20px;font-size:13px;color:var(--text2);flex-wrap:wrap"><span>📦 <b style="color:var(--text)">${peso.toLocaleString('pt-BR')} kg</b></span><span>📍 <b style="color:var(--text)">${paradas.length}</b> paradas</span>${nT.coleta&&nT.entrega?`<span>🚚 sai com <b style="color:var(--text)">${carga.saida.toLocaleString('pt-BR')} kg</b> · no máximo <b style="color:var(--text)">${carga.max.toLocaleString('pt-BR')} kg</b> a bordo</span>`:''}<span>🛣️ <b style="color:var(--text)">${_x(km)}</b> km</span>${mins?`<span>⏱️ <b style="color:var(--text)">${mins}</b> min</span>`:''}</div>
+    <div class="card" style="margin-bottom:14px"><div style="display:flex;gap:20px;font-size:13px;color:var(--text2);flex-wrap:wrap"><span>📦 <b style="color:var(--text)">${peso.toLocaleString('pt-BR')} kg</b></span><span>📍 <b style="color:var(--text)">${paradas.length}</b> paradas</span>${nT.coleta&&nT.entrega?`<span>🚚 sai com <b style="color:var(--text)">${carga.saida.toLocaleString('pt-BR')} kg</b> · no máximo <b style="color:var(--text)">${carga.max.toLocaleString('pt-BR')} kg</b> a bordo</span>`:''}<span>🛣️ <b style="color:var(--text)">${_x(km)}</b> km</span></div>
       ${notaFonte}
     </div>
     ${probs.length?`<div class="rota-alertas">${probs.map(t=>`<div class="import-msg show warn">⚠️ ${esc(t)}</div>`).join('')}</div>`:''}
