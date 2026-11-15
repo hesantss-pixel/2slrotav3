@@ -78,4 +78,10 @@ ok(W('empresas/emp1/config/locais/rua-a-10', { lat: -23.4, lng: -46.4, p: 'apren
 ok(W('empresas/emp1/rotas_confirmadas/r1/km_painel', { ini: 1, fim: 2, km: 1 }, ANA), 'cliente guarda o km do painel na rota');
 ok(!W('empresas/emp2/rotas_confirmadas/r1/km_painel', { ini: 1, fim: 2, km: 1 }, ANA), 'mas não na rota de outra empresa');
 
+// ── app de separação (2sl-pedidos): pasta pedidos, só para conta liberada ──
+ok(R('pedidos', ANA) && W('pedidos/123', { nf: '123' }, ANA), 'conta liberada lê e grava em pedidos (app de separação)');
+ok(!R('pedidos') && !W('pedidos/123', { nf: '123' }), 'sem login não lê nem grava em pedidos');
+ok(!R('pedidos', { uid: 'uid-demo' }), 'conta não liberada não lê pedidos');
+ok(!R('pedidos_side', ANA), 'pedidos_side continua fechada');
+
 console.log(falhas ? `${falhas} falha(s)` : 'regras ok');

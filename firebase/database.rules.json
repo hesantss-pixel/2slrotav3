@@ -2,6 +2,10 @@
   "rules": {
     ".read": false,
     ".write": false,
+    "pedidos": {
+      ".read": "auth != null && root.child('acesso').child(auth.uid).val() === true",
+      ".write": "auth != null && root.child('acesso').child(auth.uid).val() === true"
+    },
     "acesso": {
       ".read": "auth != null && auth.uid === 'PGblgW7V26SJ6W8UYPFj3dqlDGm2'",
       ".write": "auth != null && auth.uid === 'PGblgW7V26SJ6W8UYPFj3dqlDGm2'",
