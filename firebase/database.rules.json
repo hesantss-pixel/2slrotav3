@@ -3,8 +3,8 @@
     ".read": false,
     ".write": false,
     "pedidos": {
-      ".read": "auth != null && root.child('acesso').child(auth.uid).val() === true && (root.child('membros').child(auth.uid).val() === 'principal' || root.child('separacao').child(auth.uid).val() === true)",
-      ".write": "auth != null && root.child('acesso').child(auth.uid).val() === true && (root.child('membros').child(auth.uid).val() === 'principal' || root.child('separacao').child(auth.uid).val() === true)"
+      ".read": "auth != null && (root.child('separacao').child(auth.uid).val() === true || (root.child('acesso').child(auth.uid).val() === true && root.child('membros').child(auth.uid).val() === 'principal'))",
+      ".write": "auth != null && (root.child('separacao').child(auth.uid).val() === true || (root.child('acesso').child(auth.uid).val() === true && root.child('membros').child(auth.uid).val() === 'principal'))"
     },
     "acesso": {
       ".read": "auth != null && auth.uid === 'PGblgW7V26SJ6W8UYPFj3dqlDGm2'",
