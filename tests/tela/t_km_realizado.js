@@ -240,7 +240,9 @@ const seedCliente = (arg) => {
     const r4 = await p.evaluate(() => window.__FAKE.db.empresas.emp1.rotas_confirmadas.r4.km_gps);
     ok(kmPedidos.some((k) => k.pontos.length === 2) && r4 && r4.so_baixas === true && r4.km_total === 2.6, 'sem o caminho, o km sai da posição das baixas e fica marcado como só das baixas');
     const txt4 = await p.evaluate(() => [...document.querySelectorAll('#rotas-confirmadas-lista .realizado')].map((x) => x.textContent).join(' | '));
-    ok(/entre as baixas 2,6 km \(estimado pelas ruas; o caminho não foi gravado\)/.test(txt4.replace(/\s+/g, ' ')), 'e a rota diz que é estimado entre as baixas');
+    const lim4 = txt4.replace(/\s+/g, ' ');
+    ok(/Sem km pelo GPS nesta rota/.test(lim4) && /\(2,6 km\)/.test(lim4) && /sai igual por qualquer trajeto/.test(lim4),
+      'e a rota avisa que não há km pelo GPS, em vez de mostrar os 2,6 km como km rodado (16/11)');
     ok(!errs.length, 'sem erros no console (pinos): ' + JSON.stringify(errs.slice(0, 3)));
     await ctx.close();
   }

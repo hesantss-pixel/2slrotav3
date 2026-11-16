@@ -190,5 +190,67 @@ class TesteKm(unittest.TestCase):
             kr.calcular([{"lat": 0, "lng": 0, "t": i} for i in range(kr.MAX_PONTOS + 1)])
 
 
+def _pt(x, y, t, acc=8):
+    """Ponto a x metros a leste e y metros ao norte do CD, no segundo t."""
+    return {"lat": LAT0 + y / M_POR_GRAU,
+            "lng": LNG0 + x / (M_POR_GRAU * math.cos(math.radians(LAT0))),
+            "t": t * 1000, "acc": acc}
+
+
+def osrm_pelas_ruas(url, params=None, **kw):
+    """/match devolve o caminho que passa por todos os pontos (as ruas são a grade deles),
+    e não a reta entre as pontas: é o que o OSRM de verdade faz com um traço denso."""
+    pares = url.rsplit("/", 1)[1].split(";")
+    pts = [{"lng": float(c.split(",")[0]), "lat": float(c.split(",")[1])} for c in pares]
+    if "/route/" in url:
+        return resposta({"code": "Ok", "routes": [{"distance": vs._haversine_m(pts[0], pts[-1]) * 1.3}]})
+    d = sum(vs._haversine_m(a, b) for a, b in zip(pts, pts[1:]))
+    tps = [{"location": [p["lng"], p["lat"]], "matchings_index": 0, "waypoint_index": i} for i, p in enumerate(pts)]
+    return resposta({"code": "Ok", "matchings": [{"distance": d, "confidence": 0.9}], "tracepoints": tps})
+
+
+class TesteCaminhoImporta(unittest.TestCase):
+    """O km tem de mudar quando o caminho muda. Sem o caminho gravado ele NÃO muda —
+    e é por isso que o escritório não pode mostrar esse número como km rodado."""
+
+    def reto(self, n=40, passo=75, dt=12):
+        return [_pt(0, i * passo, i * dt) for i in range(n)]
+
+    def com_voltas(self, voltas=3, lado=300, passo=75, dt=12):
+        """Mesmas pontas do reto, mas dando voltas num quarteirão antes de seguir."""
+        pts, t, x, y = [], 0, 0, 0
+        passos = ([(passo, 0)] * (lado // passo) + [(0, passo)] * (lado // passo)
+                  + [(-passo, 0)] * (lado // passo) + [(0, -passo)] * (lado // passo))
+        for _ in range(voltas):
+            for dx, dy in passos:
+                x += dx; y += dy; t += dt
+                pts.append(_pt(x, y, t))
+        for _ in range(20):
+            y += passo; t += dt
+            pts.append(_pt(x, y, t))
+        return pts
+
+    def test_dar_voltas_aumenta_o_km(self):
+        with mock.patch.object(kr.requests, "get", side_effect=osrm_pelas_ruas):
+            reto = kr.calcular(self.reto())
+            voltas = kr.calcular(self.com_voltas())
+        self.assertGreater(voltas["km_total"], reto["km_total"] * 1.5,
+                           f'dar voltas tem de pesar no km (reto {reto["km_total"]}, voltas {voltas["km_total"]})')
+        self.assertEqual(reto["cobertura"], 1.0)
+        self.assertEqual(voltas["cobertura"], 1.0)
+
+    def test_so_as_baixas_da_sempre_o_mesmo_km(self):
+        """Sem trilha, sobram as posições das baixas: pontos longe no tempo viram trechos
+        de um ponto só, e o km é a ligação entre eles pelas ruas — o menor caminho.
+        Qualquer trajeto entre as mesmas paradas dá esse mesmo número."""
+        baixas = [_pt(0, 0, 0), _pt(0, 1500, 3600), _pt(0, 3000, 7200)]
+        with mock.patch.object(kr.requests, "get", side_effect=osrm_pelas_ruas):
+            r = kr.calcular(baixas)
+        self.assertEqual(r["pontos_usados"], 0)
+        self.assertEqual(r["km_medido"], 0)
+        self.assertEqual(r["cobertura"], 0.0)
+        self.assertGreater(r["km_total"], 0)
+
+
 if __name__ == "__main__":
     unittest.main()

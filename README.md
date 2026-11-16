@@ -288,6 +288,44 @@ hora marcada**, junto da janela do cliente; e o aviso de parada que chega depois
 marcado. No relatório, "Tempo real ÷ planejado" e "Tempo entre as paradas" continuam, porque
 medem o que **aconteceu** na rua, não uma previsão — e alimentam o ajuste de tempo por empresa.
 
+## Km rodado: sem caminho gravado não existe km rodado (16/11/2026)
+
+Duas rotas iguais, dirigidas por caminhos diferentes — uma dando várias voltas —, davam
+**o mesmo km**. A conta estava certa; o problema era de onde vinha o número.
+
+O km pelo GPS tem dois caminhos no `/km-rastro`:
+
+1. **com a trilha gravada** pelo celular: casa os pontos com as ruas no OSRM `/match` e soma.
+   Testado em `backend/tests/test_km_rastro.py`: 40 pontos em linha reta dão 2,9 km; os mesmos
+   extremos dando 3 voltas num quarteirão dão 5,0 km. Ou seja, **com a trilha o km enxerga as
+   voltas**;
+2. **sem trilha nenhuma**, sobram as posições das baixas. Elas ficam longe no tempo, viram
+   trechos de um ponto só e o km vira a ligação entre elas pelo `/route` — **o menor caminho
+   entre as paradas**. Esse número sai igual por qualquer trajeto: não mede nada.
+
+O caso 2 aparecia na mesma linha dos outros km, como `entre as baixas 31,2 km`, com a ressalva
+em letra pequena. Lido de relance, parecia km rodado.
+
+**Na tela do motorista** (`motorista.html`) o estado do caminho agora fica à vista durante a
+rota, embaixo de "Localização ao vivo", porque falhar calado era o pior dos mundos:
+
+- `Caminho: N pontos gravados.` — está indo;
+- `⚠️ … este link não tem permissão para gravar` — o banco recusou. Acontece quando as regras
+  do `firebase/database.rules.json` (nó `trilha`, versão 3.12) **não foram publicadas**: a
+  localização ao vivo e as baixas continuam funcionando, só o caminho é recusado. Antes, três
+  recusas e a página desistia sem avisar ninguém;
+- `⚠️ O GPS está impreciso demais (±N m)` — nenhum ponto passa do limite de 50 m;
+- `⚠️ O caminho parou de ser gravado (sem internet?)` — continua tentando e volta sozinho.
+
+**No escritório**, a estimativa entre as baixas saiu da linha de km e virou aviso: "Sem km pelo
+GPS nesta rota … esse número sai igual por qualquer trajeto — não mede o que foi rodado". O km
+pelo GPS de verdade passa a mostrar também **quantos pontos** sustentam a medida. Uma rota cujo
+km_gps ficou marcado `so_baixas` é recalculada uma vez por sessão, caso a trilha tenha chegado
+depois. O relatório já ignorava o `so_baixas` e continua ignorando.
+
+Testes: `tests/tela/t_trilha.js` e `TesteCaminhoImporta` em `backend/tests/test_km_rastro.py`.
+O `push` do Firebase simulado passou a recusar caminho sem permissão, como o SDK de verdade.
+
 ## O painel só conta rota confirmada (16/11/2026)
 
 Os cartões **ROTAS** e **KM DAS ROTAS** do painel mostravam a última roteirização *aberta na
@@ -571,7 +609,7 @@ troque `BACKEND_URL` no `index.html`.
   O script sobe o servidor local na porta 8771 e roda tudo; `./rodar.sh t_demo` roda uma só.
   As suítes `t_hero` e `t_oferta` são da página de vendas: passe o caminho dela em
   `PAGINA_VENDAS=/caminho/p-ginadevendasv3 ./rodar.sh`, senão são puladas.
-  Hoje são 768 verificações em 27 suítes (16/11/2026). Nenhuma chama a internet: o Firebase é simulado
+  Hoje são 787 verificações em 28 suítes (16/11/2026). Nenhuma chama a internet: o Firebase é simulado
   (`tests/tela/fakefb`), o Leaflet vem de `tests/tela/vendor` e ViaCEP/Nominatim/OSRM são cortados.
   `t_xss.js` é a trava de segurança: falha se alguém tirar o `esc()` de um texto que vem de fora.
   `t_tracado.js` confere o traçado pelas ruas: o decodificador contra uma resposta real do OSRM

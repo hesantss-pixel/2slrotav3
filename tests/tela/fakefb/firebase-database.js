@@ -76,4 +76,16 @@ export function update(r, obj) {
 export async function remove(r) { F.writes.push(['remove', r.path]); setAt(r.path, null); fire(); }
 export async function get(r) { if (denied(r.path)) throw Object.assign(new Error('permission_denied'), { code: 'PERMISSION_DENIED' }); return snap(r.path); }
 export function serverTimestamp() { return Date.now(); }
-export function push(r, val) { if (val !== undefined) { try { validarValor(val, 'push', r.path); } catch (e) { recusar(e); } } const id = 'k' + Date.now() + Math.floor(Math.random() * 1e4); const p = (r.path ? r.path + '/' : '') + id; if (val !== undefined) setAt(p, val); fire(); const ref_ = { path: p, key: id }; const pr = Promise.resolve({ path: p, key: id }); ref_.then = pr.then.bind(pr); ref_.catch = pr.catch.bind(pr); return ref_; }
+// Como no SDK de verdade, o push recusado pelas regras devolve uma promessa com erro
+// (antes ele sempre dava certo, e um caminho sem permissão passava batido nos testes).
+export function push(r, val) {
+  if (val !== undefined) { try { validarValor(val, 'push', r.path); } catch (e) { recusar(e); } }
+  const id = 'k' + Date.now() + Math.floor(Math.random() * 1e4);
+  const p = (r.path ? r.path + '/' : '') + id;
+  const neg = denied(p);
+  if (val !== undefined && !neg) { setAt(p, val); fire(); }
+  const ref_ = { path: p, key: id };
+  const pr = neg ? Promise.reject(Object.assign(new Error('permission_denied'), { code: 'PERMISSION_DENIED' })) : Promise.resolve({ path: p, key: id });
+  ref_.then = pr.then.bind(pr); ref_.catch = pr.catch.bind(pr);
+  return ref_;
+}

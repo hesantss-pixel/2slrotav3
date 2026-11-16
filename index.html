@@ -540,6 +540,8 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
 .realizado .lk{font-size:12px;}
 .rz-sub{color:var(--text3);font-size:11.5px;}
 .rz-alerta{color:#8a5a06;background:#fff3df;border:1px solid #f6dca6;border-radius:6px;padding:0 6px;font-size:11px;font-weight:700;white-space:nowrap;}
+.rz-aviso{color:#8a5a06;background:#fff8ea;border:1px solid #f6dca6;border-radius:9px;padding:8px 11px;margin-top:7px;font-size:12.5px;line-height:1.55;}
+.rz-aviso b{color:#7a4f05;}
 .mapa-nota.info{color:#3a4657;background:#f4f7fb;border-color:#dbe3ec;}
 .nf-mini-grid .nf-mini.extra{display:none;}
 .rc-card.todos .nf-mini-grid .nf-mini.extra{display:block;}
@@ -4383,7 +4385,8 @@ function _sincronizarBaixas(){
       if(gpsPorRota[r.id]) _aprenderPinos(rotasFirebase[r.id]||r, gpsPorRota[r.id], baixasPorRota[r.id]);
       // rota concluída: calcula o km pelo GPS uma vez (se o motorista gravou o caminho)
       const rr=rotasFirebase[r.id]||r, nP=(rr.paradas||[]).length;
-      if(nP&&Object.keys(baixasPorRota[r.id]).length>=nP&&!rr.km_gps&&!_gpsTentado.has(r.id)) calcularKmGps(r.id,true);
+      // km_gps guardado "só pelas baixas" é tentado de novo: o caminho pode ter chegado depois
+      if(nP&&Object.keys(baixasPorRota[r.id]).length>=nP&&(!rr.km_gps||rr.km_gps.so_baixas)&&!_gpsTentado.has(r.id)) calcularKmGps(r.id,true);
       if(document.getElementById('page-rotas')?.style.display==='block'){ renderRotasConfirmadas(); }
     }, ()=>{});
     if(!_hodUnsub[r.id]) _hodUnsub[r.id]=onValue(ref(db,'entregador/'+r.token+'/hodometro'), snap=>{
@@ -4547,13 +4550,15 @@ function _blocoRealizado(r,bx,rid){
     const rz=kmPlan?hp.km/kmPlan:null, longe=rz!=null&&(rz<0.5||rz>1.5);
     km.push(`painel <b>${_x(+hp.km)} km</b>${longe?' <span class="rz-alerta">diferença grande: confira as fotos</span>':''}${r.token?` <button type="button" class="lk" onclick="verFotosHod('${rid}')">ver fotos</button>`:''}`);
   } else if(h.ini) km.push(`painel: saída em ${_n(h.ini.km)} km, falta a chegada`);
-  if(gps&&Number.isFinite(+gps.km_total)){
-    km.push(gps.so_baixas
-      ?`entre as baixas <b>${_x(+gps.km_total)} km</b> <span class="rz-sub">(estimado pelas ruas; o caminho não foi gravado)</span>`
-      :`GPS <b>${_x(+gps.km_total)} km</b> <span class="rz-sub">(${Math.round((+gps.cobertura||0)*100)}% medido${gps.casado===false?', sem casar com as ruas':''})</span>`);
+  // Só entra como km rodado o que veio do caminho gravado. Sem caminho, o servidor só
+  // consegue ligar uma baixa na outra pelo menor trajeto das ruas: esse número é o mesmo
+  // por qualquer caminho que o veículo faça, então não mede nada e não fica junto dos km.
+  if(gps&&Number.isFinite(+gps.km_total)&&!gps.so_baixas){
+    km.push(`GPS <b>${_x(+gps.km_total)} km</b> <span class="rz-sub">(${Math.round((+gps.cobertura||0)*100)}% medido${gps.pontos?', '+_plural(gps.pontos,'ponto','pontos'):''}${gps.casado===false?', sem casar com as ruas':''})</span>`);
   }
   const gpsBt=r.token&&!(modoDemo||contaDemo)?` <button type="button" class="lk" id="gps-bt-${rid}" onclick="calcularKmGps('${rid}')">${gps?'recalcular pelo GPS':'calcular pelo GPS'}</button>`:'';
   const linhas=[`<div>🛣️ Km: ${km.join(' · ')}${gpsBt}</div>`];
+  if(gps&&gps.so_baixas) linhas.push(`<div class="rz-aviso"><b>Sem km pelo GPS nesta rota:</b> o celular não gravou o caminho. Dá para ligar uma baixa na outra pelas ruas (${_x(+gps.km_total||0)} km), mas esse número sai igual por qualquer trajeto — não mede o que foi rodado. Na rota seguinte, peça para o motorista ligar a localização e deixar a página das entregas na frente.</div>`);
   const rz=_mediana(med.razoes);
   if(rz!=null) linhas.push(`<div>⏱️ Tempo entre as paradas: <b>${_vezes(rz)}</b> o planejado <span class="rz-sub">(${_plural(med.razoes.length,'trecho','trechos')})</span></div>`);
   if(med.feitas>=2) linhas.push(`<div>🔢 ${med.fora?`<b>${_plural(med.fora,'parada feita','paradas feitas')} fora da ordem</b>`:'Paradas feitas na ordem planejada'}</div>`);
@@ -4592,8 +4597,8 @@ async function calcularKmGps(rid,auto){
     if(trilha.length<2) v.so_baixas=true;   // sem o caminho: só a ligação entre as paradas, pelas ruas
     r.km_gps=v;
     await update(ref(db,TP('rotas_confirmadas/'+r.id)),{km_gps:v}).catch(()=>{});
-    if(!auto) _toast(v.so_baixas?`Km entre as baixas: ${_x(v.km_total)} km, estimado pelas ruas (o caminho não foi gravado).`
-      :`Km pelo GPS: ${_x(v.km_total)} km (${Math.round(v.cobertura*100)}% medido).`);
+    if(!auto) _toast(v.so_baixas?`O caminho não foi gravado: dá só o menor trajeto entre as baixas (${_x(v.km_total)} km), que sai igual por qualquer caminho.`
+      :`Km pelo GPS: ${_x(v.km_total)} km (${Math.round(v.cobertura*100)}% medido, ${_plural(v.pontos,'ponto','pontos')}).`);
   }catch(e){
     if(!auto) _toast('Não deu para calcular o km pelo GPS agora.');
   }

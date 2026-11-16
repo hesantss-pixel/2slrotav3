@@ -83,6 +83,7 @@ label.foto input{font-size:14px;}
 .loc-txt{display:flex;flex-direction:column;gap:2px;min-width:0;}
 .loc-txt b{font-size:15px;}
 .loc-txt span{font-size:13px;color:var(--text3);}
+.loc-trilha{font-weight:600;}
 .dados{margin:-6px 2px 14px;font-size:12.5px;color:var(--text3);}
 .dados summary{cursor:pointer;padding:6px 0;min-height:32px;}
 .dados p{margin:4px 0 0;line-height:1.5;}
@@ -188,11 +189,29 @@ let watchId = null, ultimoEnvio = 0, ultimaPos = null, locStatus = 'Desligada. L
 // Caminho percorrido (para o km rodado pelo GPS): um ponto a cada 20 s ou 75 m,
 // só com precisão de até 50 m. Com a tela apagada ou outro app na frente, o celular
 // para de mandar: o escritório vê quanto do km foi medido e quanto foi estimado.
-let ultimaTrilha = null, trilhaFalhas = 0;
+//
+// Sem caminho gravado NÃO existe km rodado — o escritório só consegue ligar uma baixa
+// na outra pelo menor caminho das ruas, o que dá o mesmo número por qualquer trajeto.
+// Por isso o estado aparece na tela durante a rota, em vez de falhar calado:
+// recusado pelo banco (para de tentar e avisa), sem internet (continua tentando) e
+// GPS impreciso demais (nenhum ponto serve) são três coisas diferentes.
+let ultimaTrilha = null, trilhaN = 0, trilhaFalhas = 0, trilhaBloqueada = false, trilhaImpreciso = 0, ultimaAcc = 0;
+function trilhaTxt() {
+  if (DEMO) return '';
+  const n = trilhaN ? `${trilhaN} ${trilhaN === 1 ? 'ponto' : 'pontos'}` : 'nenhum ponto';
+  if (trilhaBloqueada) return `⚠️ O caminho não está sendo gravado: este link não tem permissão para gravar. Avise a transportadora — o km pelo GPS não sai nesta rota.`;
+  if (watchId === null) return 'Caminho: só é gravado com a localização ligada.';
+  if (trilhaFalhas >= 2) return `⚠️ O caminho parou de ser gravado (sem internet?). ${n} até agora; volta sozinho quando a conexão voltar.`;
+  if (trilhaN) return `Caminho: ${n} ${trilhaN === 1 ? 'gravado' : 'gravados'}.`;
+  if (trilhaImpreciso >= 3) return `⚠️ O GPS está impreciso demais (±${Math.round(ultimaAcc)} m) e o caminho não está sendo gravado. Em lugar aberto ele melhora.`;
+  return 'Caminho: procurando o GPS…';
+}
+function setTrilha() { const el = $('trilha-status'); if (el) el.textContent = trilhaTxt(); }
 function gravarTrilha(p) {
-  if (DEMO || trilhaFalhas >= 3) return;
+  if (DEMO || trilhaBloqueada) return;
   const acc = p.coords.accuracy;
-  if (!(acc <= 50)) return;
+  if (!(acc <= 50)) { ultimaAcc = acc || 0; trilhaImpreciso++; setTrilha(); return; }
+  trilhaImpreciso = 0;
   // hora da leitura do GPS; se o aparelho mandar uma hora estranha (há celular que manda), usa a do relógio
   const agora = Date.now(), ts = Number.isFinite(p.timestamp) && Math.abs(p.timestamp - agora) < 120000 ? p.timestamp : agora;
   const pt = { lat: +p.coords.latitude.toFixed(6), lng: +p.coords.longitude.toFixed(6), t: Math.round(ts), acc: Math.round(acc) };
@@ -200,7 +219,14 @@ function gravarTrilha(p) {
   const v = p.coords.speed;
   if (Number.isFinite(v) && v >= 0) pt.v = Math.round(v * 10) / 10;
   ultimaTrilha = pt;
-  push(ref(db, `entregador/${token}/trilha`), pt).catch(() => { trilhaFalhas++; });
+  push(ref(db, `entregador/${token}/trilha`), pt)
+    .then(() => { trilhaN++; trilhaFalhas = 0; setTrilha(); })
+    .catch((e) => {
+      // recusa do banco não melhora tentando de novo; falha de rede melhora
+      if (/permission|denied/i.test(String((e && (e.code || e.message)) || ''))) trilhaBloqueada = true;
+      else trilhaFalhas++;
+      setTrilha();
+    });
 }
 const prefLoc = () => 'rotav3_loc_' + token.slice(0, 12);
 function distM(a, b) {
@@ -234,6 +260,7 @@ function ligarLocalizacao() {
   setLoc('Procurando o GPS…');
   watchId = navigator.geolocation.watchPosition(aoMudarPosicao, aoErroPosicao, { enableHighAccuracy: true, maximumAge: 15000, timeout: 30000 });
   manterTelaAcesa();
+  setTrilha();
   gravarLocal(prefLoc(), 1);
   if (!aberto) render();
 }
@@ -243,6 +270,7 @@ function desligarLocalizacao(txt) {
   soltarTela();
   gravarLocal(prefLoc(), 0);
   locStatus = txt || 'Desligada. Ligue para o escritório acompanhar onde você está e medir o km pelo GPS.';
+  setTrilha();
   if (!aberto) render();
 }
 function aoMudarPosicao(p) {
@@ -253,7 +281,7 @@ function aoMudarPosicao(p) {
   if (agora - ultimoEnvio < 45000 && moveu < 150) return;
   ultimoEnvio = agora; ultimaPos = { lat, lng };
   set(ref(db, `entregador/${token}/posicao`), { lat: +lat.toFixed(6), lng: +lng.toFixed(6), precisao: Math.round(p.coords.accuracy || 0), hora: serverTimestamp() })
-    .then(() => setLoc(`Ligada · enviada às ${horaTs(Date.now())}. Grava o caminho para o km rodado enquanto esta página estiver na frente${travaTela ? ' (a tela fica acesa)' : ''}. Com o Waze ou o Maps na frente, o caminho fica estimado.`))
+    .then(() => setLoc(`Ligada · enviada às ${horaTs(Date.now())}. O caminho só é gravado com esta página na frente${travaTela ? ' (a tela fica acesa)' : ''}; com o Waze ou o Maps na frente ele para.`))
     .catch(() => desligarLocalizacao('O link foi encerrado: a localização foi desligada.'));
 }
 function aoErroPosicao(e) {
@@ -268,7 +296,7 @@ function cardLocalizacao() {
   if (DEMO) return '';
   const on = watchId !== null;
   return `<section class="loc${on ? ' on' : ''}" aria-label="Localização ao vivo">
-    <div class="loc-txt"><b>📍 Localização ao vivo</b><span id="loc-status">${esc(locStatus)}</span></div>
+    <div class="loc-txt"><b>📍 Localização ao vivo</b><span id="loc-status">${esc(locStatus)}</span><span id="trilha-status" class="loc-trilha">${esc(trilhaTxt())}</span></div>
     <button type="button" class="loc-sw" role="switch" aria-checked="${on}" data-acao="loc">${on ? 'Desligar' : 'Ligar'}</button>
   </section>
   <details class="dados">
