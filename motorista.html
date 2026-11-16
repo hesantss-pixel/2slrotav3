@@ -391,7 +391,9 @@ function render() {
 function card(p, i, prox) {
   const b = baixas[i], col = p.tipo === 'coleta', verbo = col ? 'Coletado' : 'Entregue';
   const cls = ['parada', b ? (b.status === 'feito' ? 'ok' : 'nok') : '', prox ? 'prox' : ''].filter(Boolean).join(' ');
-  const cheg = p.chegada_min != null ? `<span class="chip">Previsto ~${hhmm(p.chegada_min)}</span>` : '';
+  // Só mostra a previsão onde há horário marcado com o cliente: no resto da rota o
+  // número engana (atrasa com o trânsito e com a espera de quem tem hora marcada).
+  const cheg = p.chegada_min != null && p.janela_ini != null ? `<span class="chip">chega ~${hhmm(p.chegada_min)}</span>` : '';
   const jan = p.janela_ini != null && p.janela_fim != null ? `<span class="chip hora">Horário ${hhmm(p.janela_ini)}–${hhmm(p.janela_fim)}</span>` : '';
   let corpo;
   if (aberto && aberto.i === i) corpo = form(p, i);

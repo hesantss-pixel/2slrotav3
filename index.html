@@ -725,7 +725,6 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
 .man-tempo{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-top:9px;font-size:13px;color:var(--text2);}
 .man-tempo b{font-family:var(--sans);font-weight:800;font-size:15px;color:var(--text);font-variant-numeric:tabular-nums;}
 .man-tempo .est{font-size:11px;color:var(--text3);}
-.man-tempo.longa b{color:var(--red);}
 .man-sub{font-size:12.5px;color:var(--text2);margin-top:9px;line-height:1.65;}
 .man-sub b{color:var(--text);}
 .man-aviso{font-size:12.5px;color:var(--red);font-weight:700;margin-top:7px;line-height:1.5;}
@@ -3727,7 +3726,6 @@ function _manTituloHtml(g){
   return `${ag?`<b style="color:${COR_SAI_HOJE}">📅 ${esc(_textoAgenda(ag,rotaCtxD.data))}</b><br>`:''}<b>${_manTipoGrupo(g)} · ${quem}</b><br>${onde}<br>${kg.toLocaleString('pt-BR')} kg`
     + `<br><span style="color:#64748b">${rot?`parada ${rot} — clique para tirar da rota`:'clique para colocar na rota'}</span>`;
 }
-const _hm=m=>{ m=Math.max(0,Math.round(m)); return `${Math.floor(m/60)}h${String(m%60).padStart(2,'0')}`; };
 function _manAnunciar(txt){ const el=$id('man-anuncio'); if(el) el.textContent=txt; }
 
 function abrirMapaManualD(){
@@ -3945,17 +3943,13 @@ function _manAtualizar(){
   // mede (linha reta a 40 km/h + 15 min por parada). Fica marcada com ≈ de propósito:
   // o km de estrada é sempre maior, e quanto maior varia muito de região para região.
   const est=manSel.length?_estimarRotaLocal(manSel):{km:0,mins:0};
-  const longa=est.mins>JORNADA_MIN;
-  const apertada=!longa&&est.mins>JORNADA_MIN*0.9;
-  $id('man-tempo').className='man-tempo'+(longa?' longa':'');
+  $id('man-tempo').className='man-tempo';
   $id('man-tempo').innerHTML = manSel.length
-    ? `<span title="Estimativa em linha reta. Os quilômetros de estrada são medidos quando você usar a rota.">≈ <b>${Math.round(est.km).toLocaleString('pt-BR')} km</b> · <b>${_hm(est.mins)}</b> de viagem</span>`
+    ? `<span title="Estimativa em linha reta. Os quilômetros de estrada são medidos quando você usar a rota.">≈ <b>${Math.round(est.km).toLocaleString('pt-BR')} km</b></span>`
       + `<span class="est">estimativa · medido de verdade ao usar a rota</span>`
     : '';
   const avisos=[];
   if(nivel==='cheio') avisos.push(`Passa da capacidade do ${esc(vehSel?vehSel.nome:'veículo')} em ${kg(carga.max-capKgD)} kg.`);
-  if(longa) avisos.push(`A viagem passa das 8 horas de jornada (${_hm(est.mins)} estimadas).`);
-  else if(apertada) avisos.push(`A viagem já está em ${_hm(est.mins)} estimadas, perto das 8 horas de jornada.`);
   if(maxPedD&&manSel.length>maxPedD) avisos.push(`${manSel.length} paradas: mais que o limite de ${maxPedD} que você escolheu na tela anterior.`);
   $id('man-aviso').innerHTML = avisos.join('<br>') + (avisos.length&&nivel==='cheio'?'<br><span style="font-weight:400">Você pode seguir assim mesmo — na hora de confirmar a saída o sistema avisa de novo.</span>':'');
   $id('man-desfazer').disabled=!manHist.length;
@@ -4019,7 +4013,10 @@ window.manVoltar=manVoltar;
 // sem servidor, fica a estimativa em linha reta, com aviso.
 let ajusteD=false, rotaSelD=0, rotaOrigD=null, _focoD=null, _addBuscaD='';
 const _avTimer={}, _avSeq={}, _avPend={};
-const SERVICO_MIN=15, JORNADA_MIN=8*60, VEL_RETA_KMH=40;   // os mesmos números do motor de rotas
+// Os mesmos números do motor de rotas. A jornada continua valendo no servidor (ele não
+// monta viagem que não cabe no dia); o que saiu foi mostrar "a rota vai levar X horas"
+// na tela, que confundia: a espera de um pedido com hora marcada entrava como viagem.
+const SERVICO_MIN=15, VEL_RETA_KMH=40;
 function _paradasD(r){ if(!r.pedidos) r.pedidos=r.paradas||[]; return r.pedidos; }
 function _clone(x){ return JSON.parse(JSON.stringify(x)); }
 // Mesma conta do servidor quando ele não responde: distância em linha reta a 40 km/h,
@@ -4050,7 +4047,6 @@ function _problemasRotaD(r){
   if(maxPedD&&ps.length>maxPedD) out.push(`${ps.length} paradas: mais que o limite de ${maxPedD} que você escolheu.`);
   const tarde=ps.filter(p=>p.janela_fim!=null&&p.chegada_min!=null&&p.chegada_min>p.janela_fim);
   if(tarde.length) out.push(`${_plural(tarde.length,'parada chega','paradas chegam')} depois do horário marcado (NF ${tarde.map(p=>p.nf).join(', ')}).`);
-  if((r.mins||0)>JORNADA_MIN) out.push('A viagem passa de 8 horas.');
   return out;
 }
 function _recalcLocalD(r){
@@ -5191,7 +5187,7 @@ function selRotaTabD(idx){
         ${outras.length?`<select data-foco="${esc(pid)}|rota" aria-label="Mover NF ${esc(p.nf)} para outra viagem" onchange="moverParaRotaD(${idx},${i},this.value)"><option value="">Viagem…</option>${outras.map(k=>`<option value="${k}">Rota ${k+1}</option>`).join('')}</select>`:''}
         <button type="button" class="tirar" data-foco="${esc(pid)}|tirar" onclick="tirarParadaD(${idx},${i})" aria-label="Tirar NF ${esc(p.nf)} desta rota" title="Tirar da rota">✕</button>
       </div>`:'';
-    return `<div class="delivery-mini${ajusteD?' ajuste':''}"><div class="delivery-mini-num${_tipoDe(p)==='coleta'?' c':''}">${i+1}</div><div class="dm-txt"><div style="font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text)">NF ${esc(p.nf)}${_tag(p)}${p.chegada_min!=null?`<span class="cheg">~${_hhmm(p.chegada_min)}</span>`:''}${tarde?'<span class="atraso">depois do horário</span>':''}${aprox?`<button type="button" class="aprox-bt" data-foco="${esc(pid)}|local" onclick="abrirPedido(${esc(JSON.stringify(pid))})">local aproximado · corrigir</button>`:_semNumero(p)?`<button type="button" class="semnum-bt" data-foco="${esc(pid)}|local" onclick="abrirPedido(${esc(JSON.stringify(pid))})">sem o número · ajustar</button>`:''}</div><div style="font-size:11px;color:var(--text3)">${p.janela_ini!=null?`Horário ${_hhmm(p.janela_ini)}–${_hhmm(p.janela_fim)} · `:''}${p.dest&&p.dest!==p.cidade?esc(p.dest)+' · ':''}${p.endereco?esc(p.endereco)+' · ':''}${esc(p.cidade||'')} · ${(+p.peso||0).toLocaleString('pt-BR')} kg</div></div>${acoes}</div>`;
+    return `<div class="delivery-mini${ajusteD?' ajuste':''}"><div class="delivery-mini-num${_tipoDe(p)==='coleta'?' c':''}">${i+1}</div><div class="dm-txt"><div style="font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text)">NF ${esc(p.nf)}${_tag(p)}${p.chegada_min!=null&&p.janela_ini!=null?`<span class="cheg" title="Horário marcado: ${_hhmm(p.janela_ini)}–${_hhmm(p.janela_fim??p.janela_ini)}">chega ~${_hhmm(p.chegada_min)}</span>`:''}${tarde?'<span class="atraso">depois do horário</span>':''}${aprox?`<button type="button" class="aprox-bt" data-foco="${esc(pid)}|local" onclick="abrirPedido(${esc(JSON.stringify(pid))})">local aproximado · corrigir</button>`:_semNumero(p)?`<button type="button" class="semnum-bt" data-foco="${esc(pid)}|local" onclick="abrirPedido(${esc(JSON.stringify(pid))})">sem o número · ajustar</button>`:''}</div><div style="font-size:11px;color:var(--text3)">${p.janela_ini!=null?`Horário ${_hhmm(p.janela_ini)}–${_hhmm(p.janela_fim)} · `:''}${p.dest&&p.dest!==p.cidade?esc(p.dest)+' · ':''}${p.endereco?esc(p.endereco)+' · ':''}${esc(p.cidade||'')} · ${(+p.peso||0).toLocaleString('pt-BR')} kg</div></div>${acoes}</div>`;
   };
   document.getElementById('rota-detail-d').innerHTML=`
     <div id="rota-map"></div>

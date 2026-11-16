@@ -178,13 +178,13 @@ está ligado em `entrada_automatica`.
   rota e (com mais de uma viagem) mover para outra viagem. Embaixo, **Adicionar parada** lista os
   pendentes desta viagem (mesmo tipo e data), com busca. Parada tirada continua pendente.
 - A cada mudança, a tela estima na hora (linha reta) e pede ao servidor a medida da ordem nova
-  (`POST /avaliar`: km, tempo total e chegada em cada parada, pelo OSRM, com 15 min por parada e
+  (`POST /avaliar`: km e chegada em cada parada, pelo OSRM, com 15 min por parada e
   espera pela janela). Mudanças seguidas geram uma medição só. Sem resposta do servidor, fica a
   estimativa em linha reta, com aviso.
 - **Otimizar a ordem**: o motor reordena só as paradas que estão na rota (todas continuam nela).
   **Desfazer ajustes** volta todas as viagens ao que o sistema montou.
 - Avisos na rota: passa da capacidade (carga máxima a bordo), mais paradas que o limite, parada
-  que chega depois do horário marcado, viagem com mais de 8 horas. Ao confirmar com algum aviso,
+  que chega depois do horário marcado. Ao confirmar com algum aviso,
   o sistema pergunta antes.
 - Ao confirmar, espera a medição terminar e confere se todos os pedidos ainda estão pendentes
   (excluídos ou despachados em outra aba bloqueiam). A rota vai para `rotas_confirmadas` na ordem
@@ -269,6 +269,24 @@ para o resumo e as fotos).
 **Regras do banco:** esta versão grava nós novos no link do motorista (`hodometro`, `fotos_hod`,
 `trilha`, `gps`). Enquanto as regras novas não forem publicadas, essas gravações são recusadas e o
 resto funciona como antes (o motorista vê "Não deu para salvar o km").
+
+## O tempo saiu da tela (16/11/2026)
+
+A tela mostrava quanto a rota ia demorar, e o número confundia: três entregas apareciam como
+"8h" porque a **espera de um pedido com hora marcada** entra na conta (o veículo fica parado até
+abrir a janela do cliente). O motor continua calculando tempo — precisa dele para respeitar o
+horário marcado e a jornada de 8 h, e o servidor continua devolvendo `mins` —, mas a tela não
+mostra mais:
+
+- o tempo total da viagem (resultado da roteirização, montagem no mapa, página Rotas, relatório
+  e o KPI do painel, que virou "Km das rotas");
+- os avisos "a viagem passa de 8 horas" e "perto das 8 horas de jornada";
+- a previsão de chegada em paradas **sem hora marcada**, no escritório e na página do motorista.
+
+O que ficou: **km, peso e quantidade de paradas**; a previsão de chegada **só nas paradas com
+hora marcada**, junto da janela do cliente; e o aviso de parada que chega depois do horário
+marcado. No relatório, "Tempo real ÷ planejado" e "Tempo entre as paradas" continuam, porque
+medem o que **aconteceu** na rua, não uma previsão — e alimentam o ajuste de tempo por empresa.
 
 ## Fim da rota: na última parada (versão 3.11)
 
@@ -532,7 +550,7 @@ troque `BACKEND_URL` no `index.html`.
   O script sobe o servidor local na porta 8771 e roda tudo; `./rodar.sh t_demo` roda uma só.
   As suítes `t_hero` e `t_oferta` são da página de vendas: passe o caminho dela em
   `PAGINA_VENDAS=/caminho/p-ginadevendasv3 ./rodar.sh`, senão são puladas.
-  Hoje são 751 verificações em 26 suítes (16/11/2026). Nenhuma chama a internet: o Firebase é simulado
+  Hoje são 754 verificações em 26 suítes (16/11/2026). Nenhuma chama a internet: o Firebase é simulado
   (`tests/tela/fakefb`), o Leaflet vem de `tests/tela/vendor` e ViaCEP/Nominatim/OSRM são cortados.
   `t_xss.js` é a trava de segurança: falha se alguém tirar o `esc()` de um texto que vem de fora.
   `t_tracado.js` confere o traçado pelas ruas: o decodificador contra uma resposta real do OSRM

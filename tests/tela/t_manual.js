@@ -329,7 +329,7 @@ const centro = (p, nf) => p.evaluate((n) => {
   ok(tt.painelGrudado, 'o painel de peso fica grudado no topo ao rolar');
   await m.ctx.close();
 
-  // ── 11. desfazer, km e tempo ao vivo, aviso de jornada ───────────────────
+  // ── 11. desfazer e km ao vivo (o tempo da viagem saiu da tela em 16/11) ──
   const j = await open(b, 'index.html', 1440, 900, seed, false, PED_JORNADA);
   await j.p.waitForTimeout(700);
   await abrirManual(j.p, 1000);
@@ -337,7 +337,7 @@ const centro = (p, nf) => p.evaluate((n) => {
     tempo: document.getElementById('man-tempo').textContent,
     desfazerTravado: document.getElementById('man-desfazer').disabled,
   }));
-  ok(zerado.tempo === '', 'sem parada escolhida não mostra km nem tempo');
+  ok(zerado.tempo === '', 'sem parada escolhida não mostra km');
   ok(zerado.desfazerTravado, 'o botão de desfazer começa travado');
 
   await tocar(j.p, '1001');
@@ -347,12 +347,12 @@ const centro = (p, nf) => p.evaluate((n) => {
     aviso: document.getElementById('man-aviso').textContent,
     desfazerTravado: document.getElementById('man-desfazer').disabled,
   }));
-  ok(/≈ \d+ km/.test(umaSo.tempo) && /\dh\d\d de viagem/.test(umaSo.tempo),
-    'mostra km e tempo estimados enquanto a pessoa escolhe → ' + umaSo.tempo);
+  ok(/≈ \d+ km/.test(umaSo.tempo), 'mostra o km estimado enquanto a pessoa escolhe → ' + umaSo.tempo);
+  ok(!/h\d\d|hora|viagem/.test(umaSo.tempo), 'e não mostra quanto a viagem vai demorar → ' + umaSo.tempo);
   ok(/≈/.test(umaSo.tempo) && /estimativa/.test(umaSo.tempo),
     'deixa claro que é estimativa, não o km de estrada');
   ok(/linha reta/.test(umaSo.titulo || ''), 'explica no title de onde vem a estimativa');
-  ok(umaSo.aviso === '', 'rota curta não gera aviso de jornada → ' + umaSo.aviso);
+  ok(umaSo.aviso === '', 'rota curta não gera aviso → ' + umaSo.aviso);
   ok(!umaSo.desfazerTravado, 'com uma parada na rota o desfazer destrava');
 
   await tocar(j.p, '7777');
@@ -362,9 +362,9 @@ const centro = (p, nf) => p.evaluate((n) => {
     aviso: document.getElementById('man-aviso').textContent,
     travado: document.getElementById('man-usar').disabled,
   }));
-  ok(/passa das 8 horas de jornada/.test(longa.aviso), 'avisa quando a viagem passa da jornada → ' + longa.aviso);
-  ok(/longa/.test(longa.classe), 'o tempo da viagem fica em vermelho quando passa da jornada');
-  ok(!longa.travado, 'passar da jornada avisa, mas não impede de seguir');
+  ok(!/jornada|8 horas|\dh\d\d/.test(longa.aviso + longa.tempo),
+    'viagem comprida não fala mais em horas nem em jornada → ' + JSON.stringify([longa.tempo, longa.aviso]));
+  ok(!longa.travado, 'e não impede de seguir');
 
   await j.p.click('#man-desfazer');
   await j.p.waitForTimeout(300);

@@ -44,7 +44,8 @@ const amanha = (() => { const d = new Date(); d.setDate(d.getDate() + 1); return
   const ag = body && body.pedidos.find((x) => x.nf === '6002');
   ok(ag && ag.janela_ini === 600 && ag.janela_fim === 660, 'agendado de hoje vai com a janela 10:00–11:00');
   const res = await p.textContent('#rot-step-results');
-  ok(res.includes('~08:10') && res.includes('Horário 10:00–11:00'), 'resultado mostra a chegada prevista e o horário marcado');
+  ok(res.includes('chega ~10:00') && res.includes('Horário 10:00–11:00'), 'resultado mostra o horário marcado e a chegada prevista da parada agendada');
+  ok(!res.includes('~08:10'), 'parada sem hora marcada não mostra previsão de chegada no resultado');
   ok(res.includes('Esta viagem levou 3 de 4') && res.includes('continuam pendentes'), 'resultado explica quantos ficaram para a próxima viagem e por quê');
 
   // ── Confirmar: rota + link do motorista ───────────────────────────────────
@@ -79,7 +80,8 @@ const amanha = (() => { const d = new Date(); d.setDate(d.getDate() + 1); return
   await m.goto('http://127.0.0.1:8771/motorista.html#' + token); await m.waitForTimeout(700);
   const txt = await m.textContent('#app');
   ok(txt.includes('VUC') && txt.includes('0 de 3') && txt.includes('saída 07:30') && txt.includes('CD Guarulhos'), 'motorista vê o resumo da rota');
-  ok(txt.includes('Previsto ~08:10') && txt.includes('Horário 10:00–11:00') && txt.includes('Rua A, 10, Centro, Guarulhos - SP, CEP 07010-000'), 'motorista vê endereço completo, previsão e horário marcado');
+  ok(txt.includes('Horário 10:00–11:00') && txt.includes('chega ~10:00') && txt.includes('Rua A, 10, Centro, Guarulhos - SP, CEP 07010-000'), 'motorista vê endereço completo, horário marcado e a previsão da parada com hora marcada');
+  ok(!/chega ~08:10|Previsto/.test(txt), 'parada sem hora marcada não mostra previsão (o número enganava com trânsito e espera)');
   ok((await m.$$('#p-0.prox')).length === 1 && (await m.$$('.tag.c')).length === 1, 'primeira parada marcada como PRÓXIMA; coleta identificada');
   ok(txt.includes('Mercado <b>Teste</b>') && (await m.$$('.dest b')).length === 0, 'nome vindo da nota aparece como texto');
   const gm = await m.getAttribute('#p-0 a.nav >> nth=0', 'href');
