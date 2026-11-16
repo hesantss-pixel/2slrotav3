@@ -288,6 +288,27 @@ hora marcada**, junto da janela do cliente; e o aviso de parada que chega depois
 marcado. No relatório, "Tempo real ÷ planejado" e "Tempo entre as paradas" continuam, porque
 medem o que **aconteceu** na rua, não uma previsão — e alimentam o ajuste de tempo por empresa.
 
+## O painel só conta rota confirmada (16/11/2026)
+
+Os cartões **ROTAS** e **KM DAS ROTAS** do painel mostravam a última roteirização *aberta na
+tela*, confirmada ou não — e não saíam mais de lá. Quem só experimentou a roteirização via
+"1 rota · 31,2 km" no painel sem ter mandado veículo nenhum para a rua. Pior: cada clique em
+"Gerar Rota Agora" gravava essa prévia em `empresas/<eid>/rotas`, um nó que existia só para
+alimentar esse cartão.
+
+Agora:
+
+- a prévia **não é gravada**. A rota montada fica só na tela até "Confirmar saída do veículo";
+- os dois cartões contam as **rotas confirmadas que estão valendo** — exatamente a lista que a
+  página Rotas mostra (`rotas_confirmadas` sem as devolvidas e as apagadas), pela função
+  `_rotasAtivas()`;
+- sem rota confirmada: **0** e **0 km**, com "nenhuma rota confirmada" / "confirme uma rota
+  para ver". Não existe mais a estimativa "~N rotas" a partir dos pendentes, que era um chute;
+- devolver ou apagar a rota devolve o painel a zero na hora.
+
+O nó `rotas` continua sendo copiado na troca de empresa e limpo no "apagar tudo", para não
+deixar lixo nas contas antigas. Testes: `tests/tela/t_painel_rotas.js`.
+
 ## Fim da rota: na última parada (versão 3.11)
 
 A rota **não volta ao CD** por padrão: o motor escolhe a ordem sem contar a volta, e km, tempo,
@@ -550,7 +571,7 @@ troque `BACKEND_URL` no `index.html`.
   O script sobe o servidor local na porta 8771 e roda tudo; `./rodar.sh t_demo` roda uma só.
   As suítes `t_hero` e `t_oferta` são da página de vendas: passe o caminho dela em
   `PAGINA_VENDAS=/caminho/p-ginadevendasv3 ./rodar.sh`, senão são puladas.
-  Hoje são 754 verificações em 26 suítes (16/11/2026). Nenhuma chama a internet: o Firebase é simulado
+  Hoje são 768 verificações em 27 suítes (16/11/2026). Nenhuma chama a internet: o Firebase é simulado
   (`tests/tela/fakefb`), o Leaflet vem de `tests/tela/vendor` e ViaCEP/Nominatim/OSRM são cortados.
   `t_xss.js` é a trava de segurança: falha se alguém tirar o `esc()` de um texto que vem de fora.
   `t_tracado.js` confere o traçado pelas ruas: o decodificador contra uma resposta real do OSRM

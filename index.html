@@ -885,13 +885,13 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
       </div>
       <div class="kpi" style="--kbg:#ffe9e7">
         <div class="kpi-top"><div class="kpi-icon"><img src="assets/em/round_pushpin_3d.png" alt=""></div><div class="kpi-lbl">ROTAS</div></div>
-        <div class="kpi-val" id="kpi-rotas">—</div>
-        <div class="kpi-delta" id="kpi-rotas-d">nenhuma gerada ainda</div>
+        <div class="kpi-val" id="kpi-rotas">0</div>
+        <div class="kpi-delta" id="kpi-rotas-d">nenhuma rota confirmada</div>
       </div>
       <div class="kpi" style="--kbg:#e6f7ef">
         <div class="kpi-top"><div class="kpi-icon"><img src="assets/em/delivery_truck_3d.png" alt=""></div><div class="kpi-lbl">KM DAS ROTAS</div></div>
-        <div class="kpi-val" id="kpi-tempo">—</div>
-        <div class="kpi-delta" id="kpi-tempo-d">nenhuma gerada ainda</div>
+        <div class="kpi-val" id="kpi-tempo">0 km</div>
+        <div class="kpi-delta" id="kpi-tempo-d">confirme uma rota para ver</div>
       </div>
     </div>
 
@@ -1300,7 +1300,7 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
 <script>if(window.pdfjsLib){pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';}</script>
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getDatabase, ref, onValue, set, update, get, push } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { getDatabase, ref, onValue, set, update, get } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, sendPasswordResetEmail, setPersistence, browserLocalPersistence, inMemoryPersistence, createUserWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -1508,7 +1508,6 @@ function _pedidoIsolado(o){ return Number.isFinite(o.lat)&&Number.isFinite(o.lng
 let allOrders = [];
 let modoDemo  = false;
 let demoComNotasReais=false; // conta de demonstração com as notas do próprio cliente
-let ultimaRota = null; // {routes, criadoEm, ...} lido do Firebase, se existir
 
 // ── Demo orders (mesmo gerador do app original, versão resumida) ──────────
 // Sorteio com semente fixa: a demonstração mostra sempre os mesmos pedidos
@@ -1714,18 +1713,11 @@ function carregarPedidos(){
     Object.entries(baixasPorRota).forEach(([rid,b])=>_aplicarBaixas(rotasFirebase[rid],b));
   }, ()=>{ modoDemo=true; allOrders=gerarDemoOrders(); render(); });
 
-  onValue(ref(db,TP('rotas')), snap=>{
-    const data=snap.val();
-    if(!data) return;
-    const entries=Object.values(data);
-    ultimaRota = entries.sort((a,b)=>new Date(b.criadoEm)-new Date(a.criadoEm))[0];
-    render();
-  }, ()=>{});
-
   // rotas confirmadas (histórico permanente) — alimenta a página Rotas + overlay do Mapa
   onValue(ref(db,TP('rotas_confirmadas')), snap=>{
     rotasFirebase = snap.val() || {};
     _sincronizarBaixas();
+    render(); // os cartões ROTAS e KM DAS ROTAS contam as rotas confirmadas
     if(document.getElementById('page-rotas')?.style.display==='block'){ renderRotasConfirmadas(); }
     if(document.getElementById('page-mapa')?.style.display==='block'){ atualizarMapaCompleto(); }
   }, ()=>{});
@@ -1764,22 +1756,15 @@ function render(){
   }).join('') : `<div class="empty-mini">Nenhum pedido pendente</div>`;
   document.getElementById('reg-total').textContent = total?`Total de ${total} pedidos`:'—';
 
-  // KPIs de rota (reais se houver /solve salvo, senão estimativa)
-  if(ultimaRota && ultimaRota.rotas){
-    const rotas=ultimaRota.rotas;
-    const km=rotas.reduce((s,r)=>s+(+r.km||+r.distancia_km||0),0);
-    document.getElementById('kpi-rotas').textContent=rotas.length;
-    document.getElementById('kpi-rotas-d').textContent='última roteirização';
-    document.getElementById('kpi-rotas-d').classList.add('up');
-    document.getElementById('kpi-tempo').textContent=`${_x(km)} km`;
-    document.getElementById('kpi-tempo-d').textContent='km planejado da última roteirização';
-  } else {
-    // sem rota gerada ainda -> estimativa simples do número de rotas a partir dos pendentes
-    const rotasEst=Math.max(1,Math.ceil(total/8));
-    document.getElementById('kpi-rotas').textContent=total?`~${rotasEst}`:'0';
-    document.getElementById('kpi-tempo').textContent='—';
-    document.getElementById('kpi-tempo-d').textContent='gere uma rota para ver';
-  }
+  // KPIs de rota: contam só rota confirmada que está valendo (a mesma lista da página Rotas).
+  // Roteirização aberta na tela, sem confirmar, não conta: os dois cartões ficam em zero.
+  const rotasAtivas=_rotasAtivas();
+  const kmRotas=rotasAtivas.reduce((s,r)=>s+(+r.km||+r.distancia_km||0),0);
+  document.getElementById('kpi-rotas').textContent=rotasAtivas.length;
+  document.getElementById('kpi-rotas-d').textContent=rotasAtivas.length?(rotasAtivas.length===1?'rota confirmada':'rotas confirmadas'):'nenhuma rota confirmada';
+  document.getElementById('kpi-rotas-d').classList.toggle('up',rotasAtivas.length>0);
+  document.getElementById('kpi-tempo').textContent=rotasAtivas.length?`${_x(kmRotas)} km`:'0 km';
+  document.getElementById('kpi-tempo-d').textContent=rotasAtivas.length?'km planejado das rotas confirmadas':'confirme uma rota para ver';
 
   // Agendados (próximos, ordenados por data)
   const hoje=new Date(); hoje.setHours(0,0,0,0);
@@ -3635,16 +3620,8 @@ async function executarVRPD(){
     fonteDistanciaD=data.fonte_distancia||'—';
     regraCargaD=data.regra_carga||'';
     naoAlocD=(data.nao_alocados||[]).map(String); foraJanelaD=(data.fora_da_janela||[]).map(String);
-    if(!data.salvo && rotaGeradaD.length && !modoDemo){
-      // prévia da rota (alimenta o indicador "Rotas" do Dashboard); se falhar, a rota continua na tela
-      try{
-        Promise.resolve(push(ref(db,TP('rotas')),{
-          criadoEm: new Date().toISOString(), veiculo: vehSel.nome, status:'ativa',
-          total_rotas: rotaGeradaD.length, fonte_dist: fonteDistanciaD,
-          rotas: rotaGeradaD.map(r=>({veiculo:r.veiculo||vehSel.nome, km:r.km||0, mins:r.mins||0, pedidos:(r.pedidos||[]).map(p=>_idDe(p))})),
-        })).catch(()=>{});
-      }catch(e){}
-    }
+    // A rota montada fica só na tela até você clicar em "Confirmar saída do veículo".
+    // Nada é gravado aqui: o painel só conta rota confirmada.
     renderRotasResultD(rotaGeradaD);
   }catch(e){
     document.getElementById('rot-step-loading').style.display='none';
@@ -4467,6 +4444,12 @@ function enviarLinkDemoWhatsApp(rid){
   window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank','noopener');
 }
 window.enviarLinkDemoWhatsApp=enviarLinkDemoWhatsApp;
+// Rotas que estão valendo agora: confirmadas e ainda não devolvidas nem apagadas.
+// É a mesma lista que a página Rotas mostra e a que os cartões do painel contam.
+function _rotasAtivas(){
+  const todas = modoDemo ? rotasConfirmadasDemo : Object.values(rotasFirebase);
+  return todas.filter(r=>r&&r.status!=='devolvida'&&r.status!=='apagada');
+}
 function _rotaPorId(rid){ return modoDemo ? rotasConfirmadasDemo.find(r=>r.id===rid) : rotasFirebase[rid]; }
 function _toast(txt){ _geoStatusUI(txt); setTimeout(()=>_geoStatusUI(''),3500); }
 function enviarLinkWhatsApp(rid){
@@ -4932,7 +4915,7 @@ function renderRotasConfirmadas(){
     ? rotasConfirmadasDemo.slice().reverse()
     : Object.values(rotasFirebase).sort((a,b)=>(b.criada_em||'').localeCompare(a.criada_em||''));
   // esconde rotas devolvidas/apagadas da lista principal — continuam salvas no Firebase, só saem da visão ativa
-  const lista = todas.filter(r=>r.status!=='devolvida' && r.status!=='apagada');
+  const lista = todas.filter(r=>r&&r.status!=='devolvida' && r.status!=='apagada');
 
   if(!lista.length){
     cont.innerHTML=`<div class="placeholder"><svg viewBox="0 0 24 24"><path d="M3 12h4l2-7 4 14 2-7h6"/></svg><h3>Nenhuma rota confirmada ainda</h3><p>Gere uma rota em Roteirização e clique em "Confirmar saída do veículo". Ela aparece aqui, com o link para o motorista.</p></div>`;
@@ -5044,7 +5027,7 @@ async function devolverRotaD(rotaId){
       }
       _atualizarTelasPedidos();
     }
-    renderRotasConfirmadas();
+    renderRotasConfirmadas(); render();
   }catch(e){
     alert('Erro ao devolver rota: '+e.message);
   }
@@ -5066,7 +5049,7 @@ async function apagarRotaD(rotaId){
       const rota = rotasConfirmadasDemo.find(r=>r.id===rotaId);
       if(rota) rota.status='apagada';
     }
-    renderRotasConfirmadas();
+    renderRotasConfirmadas(); render();
   }catch(e){
     alert('Erro ao apagar rota: '+e.message);
   }

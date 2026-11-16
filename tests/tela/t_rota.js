@@ -1,4 +1,4 @@
-// Roteirização e chat: chamadas ao servidor levam o login; a prévia é salva; confirmar despacha
+// Roteirização e chat: chamadas ao servidor levam o login; a prévia não é gravada; confirmar despacha
 const { chromium } = require('playwright');
 const { open, seedEmpresa } = require('./harness');
 const ok = (c, m) => console.log((c ? 'OK   ' : 'FALHA ') + m);
@@ -30,7 +30,7 @@ const ok = (c, m) => console.log((c ? 'OK   ' : 'FALHA ') + m);
   ok(solveReq && solveReq.body.pedidos.length === 3, '/solve leva os 3 pedidos pendentes');
   ok(await p.isVisible('#btn-confirmar-rota'), 'resultado aparece com o botão de confirmar saída');
   const rotas = await p.evaluate(() => window.__FAKE.db.empresas.emp1.rotas);
-  ok(rotas && Object.keys(rotas).length === 1 && Object.values(rotas)[0].rotas[0].pedidos.length === 3, 'servidor sem chave: a tela salva a prévia em rotas/');
+  ok(!rotas, 'a prévia fica só na tela: nada é gravado no banco antes de confirmar a saída (16/11)');
   await p.screenshot({ path: 'rota-1440.png' });
   await p.click('#btn-confirmar-rota'); await p.waitForTimeout(1400);
   ok(await p.isVisible('#page-rotas') && (await p.textContent('#rotas-confirmadas-lista')).length > 20, 'depois de confirmar abre a página Rotas com a rota');
