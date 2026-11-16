@@ -393,6 +393,18 @@ grátis (uso comercial até 1 milhão de blocos por mês); com ela, preencha `CA
   página Mapa, nem na montagem da rota). No dia marcado, ou se já passou, aparece **em vermelho**,
   com "Agendado: sai hoje · chegar entre …" no ponto. A legenda conta os de hoje e os que ficaram
   de fora.
+- **Nas listas** (16/11/2026): cada pedido agendado leva a marca 📅 — vermelha quando sai no dia
+  ou está atrasado, cinza com a data quando está guardado para outro dia (`_chipAgenda`). Aparece
+  na página Pedidos, na busca de notas e na busca do modal de agendar; o cartão da região conta
+  "N saem hoje", e no painel "Precisa sair hoje" e "Atrasado" saem em vermelho. Sem isso, quem
+  agendava pela tela não via marca nenhuma e parecia que o agendamento não tinha pegado.
+- **Telas que se atualizam na hora** (`_atualizarTelasPedidos`): agendar, tirar o agendamento,
+  terminar a fila de localização de endereços, desfazer uma exclusão e devolver rota na
+  demonstração redesenham o painel, a lista e o mapa grande. Antes era preciso sair da página e
+  voltar — e durante uma importação os pinos ficavam no centro da cidade mesmo depois de o
+  endereço ter sido achado.
+- **Tirar o agendamento**: reabrir um pedido agendado traz a data e a hora salvas e o botão
+  "Tirar o agendamento". Antes não havia como desfazer, e o pedido ficava fora do mapa.
 
 - Agendar pede **"Chegar entre"** início e fim (sem fim: 1 hora). Agendamentos antigos, só com
   a hora, valem 30 min antes e depois.
@@ -531,6 +543,9 @@ troque `BACKEND_URL` no `index.html`.
   com a página aberta, aviso "sem o número", km do painel com foto e validações no celular,
   caminho pelo GPS com o celular andando, GPS da baixa, planejado × realizado na rota, relatório e
   planilha, pino aprendido em duas rotas e a sugestão do ajuste em Acessos.
+  `t_agendado.js` cobre o pedido agendado em todas as telas: vermelho no mapa e na lista, cinza
+  com a data para outro dia, contagem no cartão da região, marca na busca, tela que se atualiza
+  ao agendar e o botão de tirar o agendamento.
   `t_regras.js` confere as regras do banco (nós novos do link, ajuste e CD só pelo administrador).
   `t_planilha.js` importa a planilha de demonstração (`demo/pedidos-teste-sao-paulo-120.csv`) e
   confere o que a leitura precisa acertar: peso no formato brasileiro ("1.050,50" = 1050,5 kg),
