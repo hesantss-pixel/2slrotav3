@@ -520,7 +520,7 @@ troque `BACKEND_URL` no `index.html`.
   O script sobe o servidor local na porta 8771 e roda tudo; `./rodar.sh t_demo` roda uma só.
   As suítes `t_hero` e `t_oferta` são da página de vendas: passe o caminho dela em
   `PAGINA_VENDAS=/caminho/p-ginadevendasv3 ./rodar.sh`, senão são puladas.
-  Hoje são 733 verificações em 25 suítes (16/11/2026). Nenhuma chama a internet: o Firebase é simulado
+  Hoje são 751 verificações em 26 suítes (16/11/2026). Nenhuma chama a internet: o Firebase é simulado
   (`tests/tela/fakefb`), o Leaflet vem de `tests/tela/vendor` e ViaCEP/Nominatim/OSRM são cortados.
   `t_xss.js` é a trava de segurança: falha se alguém tirar o `esc()` de um texto que vem de fora.
   `t_tracado.js` confere o traçado pelas ruas: o decodificador contra uma resposta real do OSRM

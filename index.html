@@ -449,6 +449,8 @@ body:not(.autorizado)>.sidebar,body:not(.autorizado)>.main,body:not(.autorizado)
 .ac-cd-msg{font-size:12px;color:var(--text3);width:100%;}
 .rot-volta{display:flex;align-items:center;gap:9px;margin-top:12px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;min-height:44px;}
 .rot-volta input{width:20px;height:20px;accent-color:var(--navy);flex:none;}
+.ag-chip{display:inline-flex;align-items:center;gap:3px;margin-left:6px;padding:1px 6px;border-radius:20px;font:800 9.5px var(--sans);background:rgba(148,163,184,.18);color:var(--text3);border:1px solid rgba(148,163,184,.35);white-space:nowrap;vertical-align:middle;}
+.ag-chip.hoje{background:rgba(214,69,69,.16);color:#d64545;border-color:rgba(214,69,69,.45);}
 .nf-mini-code .tipo-tag,.delivery-mini .tipo-tag,.search-item-nf .tipo-tag,.li-title .tipo-tag{margin-left:7px;}
 .delivery-mini-num.c{background:#fff;border:2px solid var(--navy);color:var(--navy);}
 .kpi-split{font-size:11.5px;font-weight:600;color:var(--text2);margin-top:6px;}
@@ -1233,6 +1235,7 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
       <div class="hora-par"><input type="time" class="field-inp" id="ag-hora-d" oninput="atualizarSugestaoD()" aria-label="Das"><span>e</span><input type="time" class="field-inp" id="ag-hora-fim-d" aria-label="Até"></div>
       <div class="sugestao-box" id="ag-sugestao-d"></div>
       <button class="btn-modal-primary" onclick="salvarAgendamentoD()">Salvar Agendamento</button>
+      <button class="btn-modal-sec" id="ag-desagendar-d" style="display:none" onclick="desagendarD()">Tirar o agendamento</button>
       <button class="btn-modal-sec" onclick="voltarBuscaD()">← Voltar à busca</button>
     </div>
   </div>
@@ -1601,6 +1604,26 @@ function _janelaAviso(chegada_min){
   return {ini, fim:Math.min(1439,ini+120)};
 }
 function _tag(o){ return _tipoDe(o)==='coleta'?'<span class="tipo-tag c">Coleta</span>':'<span class="tipo-tag e">Entrega</span>'; }
+// Marca de agendamento no pedido. Vermelha quando tem de sair no dia (ou está
+// atrasado), cinza quando está guardado para outro dia — esse não aparece no mapa
+// até chegar o dia dele.
+function _chipAgenda(o,dia){
+  if(!o||!o.agendado||!o.dataAgendada) return '';
+  const h=o.horaEntrega?` ${o.horaEntrega}${o.horaFim?'–'+o.horaFim:''}`:'';
+  if(_saiHoje(o,dia)){
+    const atrasado=o.dataAgendada<(dia||_hojeISO());
+    const t=(atrasado?`Agendado para ${_dataBR(o.dataAgendada)} — atrasado`:'Agendado: sai hoje')+h;
+    return `<span class="ag-chip hoje" title="${esc(t)}">📅 ${atrasado?'atrasado':'sai hoje'}${esc(h)}</span>`;
+  }
+  return `<span class="ag-chip" title="${esc(`Agendado para ${_dataBR(o.dataAgendada)}${h}. Só entra no mapa e na roteirização no dia.`)}">📅 ${esc(_dataBR(o.dataAgendada))}${esc(h)}</span>`;
+}
+// Telas que mostram pedido: painel, página Pedidos e o mapa grande (se estiver aberto).
+// Usada depois de qualquer mudança em pedido, para a tela não ficar velha.
+function _atualizarTelasPedidos(){
+  try{ render(); }catch(e){}
+  try{ if(document.getElementById('reg-cards-grid')) renderPedidosPage(); }catch(e){}
+  try{ if(document.getElementById('page-mapa')?.style.display==='block') atualizarMapaCompleto(); }catch(e){}
+}
 function _idDe(o){ return String(o.id||o.nf); }
 function _chaveId(base,tipo){
   const b=String(base||'').trim().replace(/[^A-Za-z0-9_-]+/g,'-').replace(/^-+|-+$/g,'')||('SN-'+Date.now().toString(36));
@@ -1768,7 +1791,7 @@ function render(){
   agList.innerHTML = agendados.length ? agendados.map(o=>{
     const d=new Date(o.dataAgendada+'T00:00:00');
     const dd=String(d.getDate()).padStart(2,'0'), mm=String(d.getMonth()+1).padStart(2,'0');
-    let txt = o._diff<0?'Atrasado':o._diff===0?'Precisa sair <b>hoje</b>':o._diff===1?'Precisa sair <b>amanhã</b>':(_tipoDe(o)==='coleta'?'Coleta programada':'Entrega programada');
+    let txt = o._diff<0?`<b style="color:${COR_SAI_HOJE}">Atrasado</b>`:o._diff===0?`<b style="color:${COR_SAI_HOJE}">Precisa sair hoje</b>`:o._diff===1?'Precisa sair <b>amanhã</b>':(_tipoDe(o)==='coleta'?'Coleta programada':'Entrega programada');
     return `<div class="li-item"><div class="li-icn">${dd}/${mm}</div><div class="li-body"><div class="li-title">NF ${esc(o.nf)}${_tag(o)}</div><div class="li-sub">${txt}${o.horaEntrega?' · '+esc(o.horaEntrega)+(o.horaFim?'–'+esc(o.horaFim):''):''} · ${esc(o.cidade)}</div></div><div class="li-chev">›</div></div>`;
   }).join('') : `<div class="empty-mini">Nenhuma entrega agendada</div>`;
 
@@ -2263,7 +2286,7 @@ function buscarNFAgendarD(termo){
   const t=termo.trim().toLowerCase();
   const achados=allOrders.filter(o=>o.status==='pendente'&&String(o.nf).toLowerCase().includes(t)).slice(0,6);
   box.innerHTML = achados.length ? achados.map(o=>
-    `<div class="search-item" onclick="selecionarNFAgendarD('${esc(o.id)}')"><div class="search-item-nf">NF ${esc(o.nf)}${_tag(o)}</div><div class="search-item-meta">${o.dest&&o.dest!==o.cidade?esc(o.dest)+' · ':''}${esc(o.cidade)} · ${o.peso}kg</div></div>`
+    `<div class="search-item" onclick="selecionarNFAgendarD('${esc(o.id)}')"><div class="search-item-nf">NF ${esc(o.nf)}${_tag(o)}${_chipAgenda(o)}</div><div class="search-item-meta">${o.dest&&o.dest!==o.cidade?esc(o.dest)+' · ':''}${esc(o.cidade)} · ${o.peso}kg</div></div>`
   ).join('') : `<div class="search-item-meta" style="padding:8px">Nenhuma NF encontrada</div>`;
 }
 window.buscarNFAgendarD=buscarNFAgendarD;
@@ -2274,15 +2297,19 @@ function selecionarNFAgendarD(id){
   document.getElementById('ag-form-nf-d').textContent=`${_tipoDe(o)==='coleta'?'Coleta':'Entrega'} · NF ${o.nf} — ${o.cidade}`;
   document.getElementById('ag-search-step-d').style.display='none';
   document.getElementById('ag-form-step-d').style.display='block';
-  document.getElementById('ag-data-d').value='';
-  document.getElementById('ag-hora-d').value='';
-  document.getElementById('ag-hora-fim-d').value='';
+  const ja=!!(o&&o.agendado&&o.dataAgendada);
+  document.getElementById('ag-data-d').value=ja?o.dataAgendada:'';
+  document.getElementById('ag-hora-d').value=ja?(o.horaEntrega||''):'';
+  document.getElementById('ag-hora-fim-d').value=ja?(o.horaFim||''):'';
+  document.getElementById('ag-desagendar-d').style.display=ja?'block':'none';
   document.getElementById('ag-sugestao-d').classList.remove('show');
+  if(ja) atualizarSugestaoD();
 }
 window.selecionarNFAgendarD=selecionarNFAgendarD;
 
 function voltarBuscaD(){
   _nfSelDash=null;
+  document.getElementById('ag-desagendar-d').style.display='none';
   document.getElementById('ag-form-step-d').style.display='none';
   document.getElementById('ag-search-step-d').style.display='block';
 }
@@ -2326,9 +2353,29 @@ async function salvarAgendamentoD(){
   if(!modoDemo){ await update(ref(db,TP('pedidos_rota/'+_nfSelDash)), payload); }
   else { Object.assign(o,payload); }
   fecharModalAgendar();
-  render();
+  _atualizarTelasPedidos();
+  _toast(data===_hojeISO()
+    ? `NF ${o.nf} agendada para hoje: aparece em vermelho no mapa e na lista.`
+    : `NF ${o.nf} agendada para ${_dataBR(data)}: sai do mapa e volta, em vermelho, no dia.`);
 }
 window.salvarAgendamentoD=salvarAgendamentoD;
+
+// Tirar o agendamento: o pedido volta a ser um pendente comum, no mapa, hoje.
+async function desagendarD(){
+  if(!_nfSelDash) return;
+  const o=allOrders.find(x=>x.id===_nfSelDash);
+  if(!o||!o.agendado) return;
+  if(!confirm(`Tirar o agendamento da NF ${o.nf}? Ela volta para os pendentes de hoje.`)) return;
+  const payload={ agendado:false, dataAgendada:'', horaEntrega:'', horaFim:'', horaSaidaSugerida:'' };
+  if(!modoDemo){
+    try{ await update(ref(db,TP('pedidos_rota/'+_nfSelDash)), payload); }
+    catch(e){ alert('Não deu para tirar o agendamento: '+e.message); return; }
+  } else { Object.assign(o,payload); }
+  fecharModalAgendar();
+  _atualizarTelasPedidos();
+  _toast(`Agendamento da NF ${o.nf} removido.`);
+}
+window.desagendarD=desagendarD;
 
 // ══════════════════════════════════════════════════════════════════════════
 // PÁGINA PEDIDOS — cards de região expansíveis
@@ -2345,15 +2392,16 @@ function renderPedidosPage(){
   grid.innerHTML = ativos.length ? ativos.map((r,i)=>{
     const os=r.lista, nt=_contarTipos(os);
     const partes=_resumoTipos(nt);
+    const nHoje=os.filter(o=>_saiHoje(o)).length;
     const k=esc(r.nome);
     return `<div class="rc-card${abertos.has(r.nome)?' exp':''}${todos.has(r.nome)?' todos':''}" id="rcd-${i}" data-reg="${k}" style="--rc:${r.cor}">
       <div class="rc-card-head" onclick="toggleRcCard(${i})">
         <div class="rc-card-icon">${r.isolado?'⚠️':'📍'}</div>
-        <div class="rc-card-info"><div class="rc-card-name">${k}</div><div class="rc-card-sub">${partes}${r.isolado?` · a mais de ${RAIO_ISOLADO_KM} km do CD`:''}</div></div>
+        <div class="rc-card-info"><div class="rc-card-name">${k}</div><div class="rc-card-sub">${partes}${nHoje?` · <b style="color:${COR_SAI_HOJE}">${_plural(nHoje,'sai hoje','saem hoje')}</b>`:''}${r.isolado?` · a mais de ${RAIO_ISOLADO_KM} km do CD`:''}</div></div>
         <div class="rc-card-n">${os.length}</div><div class="rc-card-chev">›</div>
       </div>
       <div class="rc-card-body"><div class="nf-mini-grid">${os.map((o,j)=>
-        `<button type="button" class="nf-mini${j>=10?' extra':''}" onclick="abrirPedido(${esc(JSON.stringify(o.id))})" aria-label="Editar pedido NF ${esc(o.nf)}"><div class="nf-mini-code">NF ${esc(o.nf)}${_tag(o)}</div>${o.dest&&o.dest!==o.cidade?`<div class="nf-mini-end">${esc(o.dest)}</div>`:''}<div class="nf-mini-meta">${(+o.peso||0).toLocaleString('pt-BR')} kg · ${o.itens} vol.${o.urgente?' · urgente':''}</div>${_aprox(o)?'<span class="aprox">local aproximado</span>':_semNumero(o)?'<span class="semnum">sem o número</span>':''}</button>`
+        `<button type="button" class="nf-mini${j>=10?' extra':''}" onclick="abrirPedido(${esc(JSON.stringify(o.id))})" aria-label="Editar pedido NF ${esc(o.nf)}"><div class="nf-mini-code">NF ${esc(o.nf)}${_tag(o)}${_chipAgenda(o)}</div>${o.dest&&o.dest!==o.cidade?`<div class="nf-mini-end">${esc(o.dest)}</div>`:''}<div class="nf-mini-meta">${(+o.peso||0).toLocaleString('pt-BR')} kg · ${o.itens} vol.${o.urgente?' · urgente':''}</div>${_aprox(o)?'<span class="aprox">local aproximado</span>':_semNumero(o)?'<span class="semnum">sem o número</span>':''}</button>`
       ).join('')}</div>${os.length>10?`<button type="button" class="rc-mais" onclick="verTodosRc(${i})">${todos.has(r.nome)?'Mostrar menos':`Mostrar todos (${os.length})`}</button>`:''}</div>
     </div>`;
   }).join('') : `<div class="empty-mini">${vazio}</div>`;
@@ -2731,7 +2779,7 @@ function _renderBusca(){
       const ch=_chaveDe(o);
       return `<div class="busca-item${sel?' sel':''}">
         <input type="checkbox" id="${esc(cid)}" data-id="${esc(o.id)}" ${sel?'checked':''} ${pend?'':'disabled'} onchange="selBusca(this.dataset.id,this.checked)" aria-label="Selecionar NF ${esc(o.nf)}${pend?'':' (em rota, não pode ser excluída)'}">
-        <div class="bi-txt" onclick="abrirPedido(${esc(JSON.stringify(o.id))})"><div class="bi-nf">NF ${esc(o.nf)}${_tag(o)}${pend?'':`<span class="st-rota">${esc(_statusTxt(o))}</span>`}</div>
+        <div class="bi-txt" onclick="abrirPedido(${esc(JSON.stringify(o.id))})"><div class="bi-nf">NF ${esc(o.nf)}${_tag(o)}${_chipAgenda(o)}${pend?'':`<span class="st-rota">${esc(_statusTxt(o))}</span>`}</div>
           <div class="bi-sub">${o.dest&&o.dest!==o.cidade?esc(o.dest)+' · ':''}${esc(o.cidade)} · ${(+o.peso||0).toLocaleString('pt-BR')} kg${ch?` · chave …${esc(ch.slice(-8))}`:''}${pend?'':' · para excluir, devolva a rota na página Rotas'}</div></div>
         <button type="button" class="btn-sm" onclick="abrirPedido(${esc(JSON.stringify(o.id))})" aria-label="Abrir NF ${esc(o.nf)}">Abrir</button>
       </div>`;
@@ -2797,7 +2845,7 @@ async function desfazerExclusao(){
   try{
     if(u.soTela){
       Object.values(u.backup).forEach(o=>{ if(!allOrders.find(x=>x.id===o.id)) allOrders.push(o); });
-      render(); renderPedidosPage();
+      _atualizarTelasPedidos();
     } else {
       // volta só o que não foi recriado nesse meio-tempo (por uma importação, por exemplo)
       const upd={};
@@ -3270,8 +3318,7 @@ async function _processarFilaGeo(){
   _geoRodando = false; _geoAtual = null;
   const det=[n.numero&&`${n.numero} pelo número`, n.lembrado&&`${n.lembrado} pelo ponto que você já tinha marcado`, n.aprox&&`${n.aprox} só com o bairro ou a cidade`].filter(Boolean);
   _geoStatusUI(n.ok||n.falhou ? `Mapa atualizado: ${_plural(n.ok,'pedido localizado','pedidos localizados')}${det.length?' ('+det.join(', ')+')':''}${n.falhou?`, ${n.falhou} sem localização`:''}.` : '');
-  if(modoDemo) render();
-  else if(document.getElementById('page-pedidos')?.style.display==='block') renderPedidosPage();
+  _atualizarTelasPedidos();
   setTimeout(()=>_geoStatusUI(''), 9000);
 }
 
@@ -4999,7 +5046,7 @@ async function devolverRotaD(rotaId){
         (rota.paradas||[]).forEach(p=>{ const o=allOrders.find(x=>x.id===_idDe(p)); if(o) o.status='pendente'; });
         rota.status='devolvida';
       }
-      render();
+      _atualizarTelasPedidos();
     }
     renderRotasConfirmadas();
   }catch(e){
