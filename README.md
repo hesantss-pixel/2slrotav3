@@ -520,7 +520,7 @@ troque `BACKEND_URL` no `index.html`.
   O script sobe o servidor local na porta 8771 e roda tudo; `./rodar.sh t_demo` roda uma só.
   As suítes `t_hero` e `t_oferta` são da página de vendas: passe o caminho dela em
   `PAGINA_VENDAS=/caminho/p-ginadevendasv3 ./rodar.sh`, senão são puladas.
-  Hoje são 714 verificações em 24 suítes (14/11/2026). Nenhuma chama a internet: o Firebase é simulado
+  Hoje são 733 verificações em 25 suítes (16/11/2026). Nenhuma chama a internet: o Firebase é simulado
   (`tests/tela/fakefb`), o Leaflet vem de `tests/tela/vendor` e ViaCEP/Nominatim/OSRM são cortados.
   `t_xss.js` é a trava de segurança: falha se alguém tirar o `esc()` de um texto que vem de fora.
   `t_tracado.js` confere o traçado pelas ruas: o decodificador contra uma resposta real do OSRM
@@ -532,6 +532,21 @@ troque `BACKEND_URL` no `index.html`.
   caminho pelo GPS com o celular andando, GPS da baixa, planejado × realizado na rota, relatório e
   planilha, pino aprendido em duas rotas e a sugestão do ajuste em Acessos.
   `t_regras.js` confere as regras do banco (nós novos do link, ajuste e CD só pelo administrador).
+  `t_planilha.js` importa a planilha de demonstração (`demo/pedidos-teste-sao-paulo-120.csv`) e
+  confere o que a leitura precisa acertar: peso no formato brasileiro ("1.050,50" = 1050,5 kg),
+  telefone do destinatário, coluna de tipo, nome de cidade padronizado, aviso de nota sem peso,
+  endereço sem número, CEP inválido e NF repetida.
+
+## Planilha de demonstração (`demo/`)
+
+`demo/pedidos-teste-sao-paulo-120.xlsx` (e o mesmo em `.csv`): 120 notas de um dia em toda a São
+Paulo e região, para demonstrar o sistema. 35 ruas com **CEP conferido** (OpenCEP, 16/11/2026);
+clientes, pesos, volumes e telefones são fictícios — os telefones usam a faixa `(11) 90000-00xx`,
+que não existe, então o arquivo **não serve para disparar mensagem**. As linhas estão na ordem das
+notas fiscais, com a geografia embaralhada de propósito. Traz pegadinhas (3 notas na mesma porta,
+endereço sem número, CEP com 7 dígitos, nota sem peso, peso "1.050,50", nota de 2.800 kg, NF
+repetida, cidade escrita de 3 jeitos, 10 coletas). `demo/gerar.py` refaz o arquivo. O roteiro da
+demonstração está em `claude/demonstracao-120-pedidos.md`, no projeto do Claude.
 - Tela: testada com um Firebase simulado (login, senha errada, esqueci a senha, acesso
   pendente, liberação, dashboard, regiões a partir dos pedidos, importação de CSV,
   roteirização com o token, confirmação de saída, motoristas, agendamento, chat, sair; e

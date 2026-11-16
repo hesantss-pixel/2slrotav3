@@ -1,0 +1,121 @@
+﻿NF;Tipo;Cliente;Endereco;Bairro;Cidade;UF;CEP;Peso;Volumes;Telefone
+45001;entrega;Supermercado Vila Nova — Mooca;Rua da Mooca, 1700;Mooca;São Paulo;SP;03104-000;507;28;(11) 90000-0001
+45002;entrega;Clínica Bem Estar — Paraíso;Rua Coronel Oscar Porto, 100;Paraíso;São Paulo;SP;04003-000;17;3;(11) 90000-0002
+45003;entrega;Mercado Bom Preço — Santana;Praça Campo de Bagatelle, 50;Santana;São Paulo;SP;02012-000;238;20;(11) 90000-0003
+45004;entrega;Loja Casa & Cor;Avenida Paulista, 1000;Bela Vista;São Paulo;SP;01310-100;63;6;(11) 90000-0004
+45005;entrega;Papelaria Lápis Azul — Faria Lima;Avenida Brigadeiro Faria Lima, 2232;Jardim Paulistano;São Paulo;SP;01451-000;24;3;(11) 90000-0005
+45006;entrega;Supermercado Vila Nova — Osasco;Rua Dona Primitiva Vianco, 201;Centro;Osasco;SP;06010-000;438;26;(11) 90000-0006
+45007;entrega;Cantina Dona Rosa — Mooca;Rua da Mooca, 1900;Mooca;São Paulo;SP;03104-000;74;9;(11) 90000-0007
+45008;entrega;Café Grão Fino — Paraíso;Rua Coronel Oscar Porto, 180;Paraíso;São Paulo;SP;04003-000;24;4;(11) 90000-0008
+45009;entrega;Açaí do Bairro;Praça Campo de Bagatelle, 118;Santana;São Paulo;SP;02012-000;31;6;(11) 90000-0009
+45010;entrega;Loja Casa & Cor;Avenida Paulista, 1000;Bela Vista;São Paulo;SP;01310-100;33;3;(11) 90000-0010
+45011;entrega;Café Grão Fino;Avenida Brigadeiro Faria Lima, 2232;Jardim Paulistano;São Paulo;SP;01451-000;16;2;(11) 90000-0011
+45012;entrega;Farmácia Vida Plena — Osasco;Rua Dona Primitiva Vianco, 405;Centro;Osasco;SP;06010-000;13;3;(11) 90000-0012
+45013;entrega;Ferragens União — Mooca;Rua da Mooca, 2100;Mooca;São Paulo;SP;03104-000;224;7;
+45014;entrega;Livraria Página Nova — Paraíso;Rua Coronel Oscar Porto, 155;Paraíso;São Paulo;SP;04003-000;102;12;
+45015;entrega;Pizzaria Forno a Lenha;Praça Campo de Bagatelle, 230;Santana;São Paulo;SP;02012-000;52;7;
+45016;entrega;Loja Casa & Cor;Avenida Paulista, 1000;Bela Vista;São Paulo;SP;01310-100;14;2;(11) 90000-0016
+45017;entrega;Loja do Bebê Sonho;Avenida Brigadeiro Faria Lima, 2800;Jardim Paulistano;São Paulo;SP;01451-000;42;6;
+45018;entrega;Mercado Bom Preço — Guarulhos Centro;Praça Presidente Getúlio Vargas, 110;Centro;Guarulhos;SP;07010-000;203;17;(11) 90000-0018
+45019;coleta;Tapeçaria Conforto;Rua da Mooca, 1820;Mooca;São Paulo;SP;03104-000;63;4;(11) 90000-0019
+45020;entrega;Floricultura Pétala;Rua Coronel Oscar Porto, 205;Paraíso;São Paulo;SP;04003-000;12;5;(11) 90000-0020
+45021;entrega;Padaria Pão Dourado — Tucuruvi;Rua Marinheiro, 75;Tucuruvi;São Paulo;SP;02303-000;38;5;(11) 90000-0021
+45022;entrega;Óptica Visão Clara;Avenida Paulista, 1200;Bela Vista;São Paulo;SP;01310-100;5;1;
+45023;entrega;Supermercado Vila Nova;Avenida Francisco Matarazzo, 400;Água Branca;São Paulo;SP;05001-000;266;18;(11) 90000-0023
+45024;entrega;Papelaria Estrela — Guarulhos;Praça Presidente Getúlio Vargas, 260;Centro;Guarulhos;SP;07010-000;26;4;
+45025;entrega;Mercado Bom Preço — Tatuapé;Rua Itapura, 310;Vila Gomes Cardim;SAO PAULO;SP;03310-000;252;19;(11) 90000-0025
+45026;entrega;Mercado Bom Preço — Ipiranga;Rua Comandante Taylor, 70;Ipiranga;São Paulo;SP;04218-000;224;18;(11) 90000-0026
+45027;entrega;Autopeças Ferreira — Tucuruvi;Rua Marinheiro, 160;Tucuruvi;São Paulo;SP;02303-000;304;9;
+45028;entrega;Papelaria Lápis Azul;Praça da Sé, 95;Sé;São Paulo;SP;01001-000;77;9;(11) 90000-0028
+45029;entrega;Hortifruti Folha Verde;Avenida Francisco Matarazzo, 700;Água Branca;São Paulo;SP;05001-000;136;14;(11) 90000-0029
+45030;entrega;Autopeças Ferreira — Vila Hulda;Avenida Doutor Timóteo Penteado, 900;Vila Hulda;Guarulhos;SP;07094-000;287;10;(11) 90000-0030
+45031;entrega;Padaria Pão Dourado — Tatuapé;Rua Itapura, 480;Vila Gomes Cardim;São Paulo;SP;03310-000;44;6;(11) 90000-0031
+45032;entrega;Autopeças Ferreira — Ipiranga;Rua Comandante Taylor, 195;Ipiranga;São Paulo;SP;04218-000;273;9;
+45033;entrega;Papelaria Estrela;Rua Marinheiro, 240;Tucuruvi;São Paulo;SP;02303-000;19;4;(11) 90000-0033
+45034;entrega;Mercearia do Largo;Praça da Sé, 140;Sé;São Paulo;SP;01001-000;108;12;
+45035;entrega;Autopeças Ferreira;Avenida Francisco Matarazzo, 900;Água Branca;São Paulo;SP;05001-000;1.050,50;11;
+45036;coleta;Hortifruti Folha Verde — Vila Hulda;Avenida Doutor Timóteo Penteado, 1500;Vila Hulda;Guarulhos;SP;07094-000;126;13;(11) 90000-0036
+45037;entrega;Loja do Bebê Sonho — Tatuapé;Rua Itapura, 1250;Vila Gomes Cardim;São Paulo;SP;03310-000;31;5;
+45038;entrega;Padaria Pão Dourado — Ipiranga;Rua Comandante Taylor, 320;Ipiranga;São Paulo;SP;04218-000;42;6;(11) 90000-0038
+45039;entrega;Distribuidora Aurora — Casa Verde;Avenida Braz Leme, 800;Casa Verde;São Paulo;SP;02511-000;630;22;(11) 90000-0039
+45040;entrega;Ferragens União;Praça da Sé, 210;Sé;São Paulo;SP;01001-000;168;8;(11) 90000-0040
+45041;entrega;Material de Construção Rocha;Rua Guaicurus, 200;Água Branca;São Paulo;SP;05033-000;525;10;(11) 90000-0041
+45042;entrega;Eletro Center Luz — Santo André;Rua Coronel Oliveira Lima, 150;Centro;Santo André;SP;09010-000;224;8;(11) 90000-0042
+45043;entrega;Clínica Bem Estar — Tatuapé;Rua Itapura, 905;Vila Gomes Cardim;São Paulo;SP;03310-000;14;3;(11) 90000-0043
+45044;entrega;Papelaria Lápis Azul — Ipiranga;Rua Comandante Taylor, 450;Ipiranga;São Paulo;SP;04218-000;23;4;(11) 90000-0044
+45045;entrega;Hortifruti Folha Verde — Casa Verde;Avenida Braz Leme, 1200;Casa Verde;São Paulo;SP;02511-000;150;15;(11) 90000-0045
+45046;entrega;Lanchonete Ponto Certo;Rua Conselheiro Crispiniano, 120;República;São Paulo;SP;01037-000;23;4;(11) 90000-0046
+45047;coleta;Gráfica Letra Viva;Rua Guaicurus, 350;Água Branca;São Paulo;SP;05033-000;91;7;(11) 90000-0047
+45048;entrega;Restaurante Sabor Caseiro — Santo André;Rua Coronel Oliveira Lima, 380;Centro;Santo André;SP;09010-000;51;7;
+45049;entrega;Eletro Center Luz — Tatuapé;Rua Itapura, 1430;Vila Gomes Cardim;São Paulo;SP;03310-000;168;8;
+45050;entrega;Restaurante Sabor Caseiro — Monte Alegre;Avenida Affonso D'Escragnolle Taunay, 140;Vila Monte Alegre;sao paulo;SP;04306-000;54;7;
+45051;coleta;Marmoraria Pedra Clara;Avenida Braz Leme, 1500;Casa Verde;São Paulo;SP;02511-000;420;6;
+45052;entrega;Eletro Center Luz;Rua Conselheiro Crispiniano, 288;República;São Paulo;SP;01037-000;189;7;
+45053;entrega;Mercado Bom Preço — Água Branca;Rua Guaicurus, 480;Água Branca;São Paulo;SP;05033-000;182;16;
+45054;entrega;Material de Construção Rocha — São Bernardo;Rua Marechal Deodoro, 400;Centro;São Bernardo do Campo;SP;09710-000;612;12;(11) 90000-0054
+45055;entrega;Mercearia do Bairro;Rua Gonçalo Nunes, 45;Chácara Califórnia;São Paulo;SP;03407-000;91;10;(11) 90000-0055
+45056;entrega;Pet Shop Patinhas — Monte Alegre;Avenida Affonso D'Escragnolle Taunay, 290;Vila Monte Alegre;São Paulo;SP;04306-000;33;6;(11) 90000-0056
+45057;entrega;Mercearia São Jorge;Avenida Professor Celestino Bourroul, 300;Limão;São Paulo;SP;02710-000;84;10;(11) 90000-0057
+45058;coleta;Distribuidora Aurora;Rua Conselheiro Crispiniano, 350;República;São Paulo;SP;01037-000;52;5;(11) 90000-0058
+45059;entrega;Restaurante Sabor Caseiro;Rua Eugênio de Medeiros, 150;Pinheiros;São Paulo;SP;05425-000;49;6;(11) 90000-0059
+45060;entrega;Clínica Bem Estar — São Bernardo;Rua Marechal Deodoro, 600;Centro;São Bernardo do Campo;SP;09710-000;15;3;(11) 90000-0060
+45061;entrega;Restaurante Sabor Caseiro — Califórnia;Rua Gonçalo Nunes, 170;Chácara Califórnia;São Paulo;SP;03407-000;61;7;
+45062;entrega;Farmácia Vida Plena — Monte Alegre;Avenida Affonso D'Escragnolle Taunay, 410;Vila Monte Alegre;São Paulo;SP;04306-000;14;3;(11) 90000-0062
+45063;entrega;Bicicletaria Pedal Livre;Avenida Professor Celestino Bourroul, 450;Limão;São Paulo;SP;02710-000;56;8;
+45064;entrega;Confeitaria Doce Encanto;Rua Bela Cintra, 200;Consolação;São Paulo;SP;01415-000;30;5;(11) 90000-0064
+45065;entrega;Padaria Pão Dourado;Rua Eugênio de Medeiros, 300;Pinheiros;São Paulo;SP;05425-000;33;5;(11) 90000-0065
+45066;entrega;Distribuidora Aurora — Itaquaquecetuba;Rodovia João Afonso de Souza Castellano, 1200;Vila Monte Belo;Itaquaquecetuba;SP;08577-000;2800;30;(11) 90000-0066
+45067;entrega;Materiais Elétricos Fio Novo;Rua Gonçalo Nunes, 320;Chácara Califórnia;São Paulo;SP;03407-000;203;9;(11) 90000-0067
+45068;entrega;Sorveteria Gelo Bom — Monte Alegre;Avenida Affonso D'Escragnolle Taunay, 530;Vila Monte Alegre;São Paulo;SP;04306-000;28;5;
+45069;entrega;Sorveteria Gelo Bom;Avenida Professor Celestino Bourroul, 520;Limão;São Paulo;SP;02710-000;26;5;(11) 90000-0069
+45070;entrega;Clínica Bem Estar;Rua Bela Cintra, 400;Consolação;São Paulo;SP;01415-000;10;2;(11) 90000-0070
+45071;entrega;Farmácia Vida Plena;Rua Eugênio de Medeiros, 220;Pinheiros;São Paulo;SP;05425-000;12;3;
+45072;entrega;Mercearia do Bairro — Itaquaquecetuba;Rodovia João Afonso de Souza Castellano, 2450;Vila Monte Belo;Itaquaquecetuba;SP;08577-000;65;8;
+45073;entrega;Doceria Açúcar Mascavo;Rua Gonçalo Nunes, 260;Chácara Califórnia;São Paulo;SP;03407-000;21;4;(11) 90000-0073
+45074;entrega;Loja Casa & Cor — Vila Nova Conceição;Avenida Presidente Juscelino Kubitschek, 1200;Vila Nova Conceição;São Paulo;SP;04543-000;74;8;(11) 90000-0074
+45075;entrega;Lava-Rápido Brilho;Rua Cônego Vicente, 88;Vila Medeiros;São Paulo;SP;02212-000;16;3;(11) 90000-0075
+45076;entrega;Academia Corpo Ativo;Rua Bela Cintra, 520;Consolação;São Paulo;SP;01415-000;144;4;
+45077;entrega;Laboratório Alfa Análises;Avenida Professor Lineu Prestes, 580;Butantã;São Paulo;SP;05508-000;21;4;(11) 90000-0077
+45078;entrega;Material de Construção Rocha — Aricanduva;Rua Doutor Suzano Brandão, 90;Vila Aricanduva;São Paulo;SP;03502-000;735;14;(11) 90000-0078
+45079;entrega;Óptica Visão Clara — Vila Nova Conceição;Avenida Presidente Juscelino Kubitschek, 1600;Vila Nova Conceição;São Paulo;SP;04543-000;5;1;(11) 90000-0079
+45080;entrega;Loja Casa & Cor — Vila Medeiros;Rua Cônego Vicente, 340;Vila Medeiros;São Paulo;SP;02212-000;136;12;
+45081;entrega;Pet Shop Patinhas;Rua Bela Cintra, 460;Consolação;São Paulo;SP;01415-000;9;40;(11) 90000-0081
+45082;entrega;Livraria Página Nova;Avenida Professor Lineu Prestes, 1300;Butantã;São Paulo;SP;05508-000;108;13;
+45083;entrega;Pet Shop Patinhas — Aricanduva;Rua Doutor Suzano Brandão, 215;Vila Aricanduva;São Paulo;SP;03502-000;30;6;
+45084;entrega;Confeitaria Doce Encanto — V. N. Conceição;Avenida Presidente Juscelino Kubitschek, 2000;Vila Nova Conceição;São Paulo;SP;04543-000;31;5;
+45085;coleta;Oficina Motor Forte;Rua Cônego Vicente, 612;Vila Medeiros;São Paulo;SP;02212-000;182;5;(11) 90000-0085
+45086;coleta;Cantina Dona Rosa;Avenida Professor Lineu Prestes, 2242;Butantã;São Paulo;SP;05508-000;63;8;(11) 90000-0086
+45087;entrega;Academia Corpo Ativo — Aricanduva;Rua Doutor Suzano Brandão, 430;Vila Aricanduva;São Paulo;SP;03502-000;122;5;(11) 90000-0087
+45088;entrega;Academia Corpo Ativo — V. N. Conceição;Avenida Presidente Juscelino Kubitschek, 1455;Vila Nova Conceição;São Paulo;SP;04543-000;150;6;(11) 90000-0088
+45089;entrega;Armazém do Zé;Rua João Cordeiro, 125;Moinho Velho;São Paulo;SP;02960-000;98;11;(11) 90000-0089
+45090;entrega;Ótica Lentes & Cia;Avenida Professor Lineu Prestes, 760;Butantã;São Paulo;SP;05508-000;6;1;(11) 90000-0090
+45091;entrega;Sacolão Preço Bom;Rua Doutor Suzano Brandão, 560;Vila Aricanduva;São Paulo;SP;03502-000;144;16;(11) 90000-0091
+45033;entrega;Mercado Bom Preço — Santo Amaro;Avenida Washington Luís, 300;Santo Amaro;São Paulo;SP;04662-000;248;20;(11) 90000-0092
+45093;entrega;Papelaria Lápis Azul — Moinho Velho;Rua João Cordeiro, 330;Moinho Velho;São Paulo;SP;02960-000;24;4;
+45094;entrega;Autopeças Ferreira — Guaiaúna;Rua Aracati, 150;Guaiaúna;São Paulo;SP;;241;8;
+45095;entrega;Distribuidora Aurora — Santo Amaro;Avenida Washington Luís, 500;Santo Amaro;São Paulo;SP;04662-000;472;17;
+45096;entrega;Farmácia Vida Plena — Moinho Velho;Rua João Cordeiro, 455;Moinho Velho;São Paulo;SP;02960-000;10;2;(11) 90000-0096
+45097;entrega;Lanchonete Ponto Certo — Guaiaúna;Rua Aracati, 380;Guaiaúna;São Paulo;SP;03630-000;19;3;(11) 90000-0097
+45098;entrega;Materiais Elétricos Fio Novo — Sto. Amaro;Avenida Washington Luís, 420;Santo Amaro;São Paulo;SP;04662-000;196;9;(11) 90000-0098
+45099;entrega;Pet Shop Patinhas — Norte;Rua João Cordeiro, 540;Moinho Velho;São Paulo;SP;02960-000;46;9;(11) 90000-0099
+45100;entrega;Papelaria Estrela — Guaiaúna;Rua Aracati, 520;Guaiaúna;São Paulo;SP;03630-000;;6;(11) 90000-0100
+45101;coleta;Gráfica Letra Viva — Santo Amaro;Avenida Washington Luís, 180;Santo Amaro;São Paulo;SP;04662-000;84;7;(11) 90000-0101
+45102;entrega;Depósito de Bebidas Gelado;Rua João Cordeiro, 680;Moinho Velho;São Paulo;SP;02960-000;332;24;
+45103;entrega;Loja de Tintas Cor Viva;Rua Aracati, 640;Guaiaúna;São Paulo;SP;03630-000;168;12;
+45104;entrega;Sacolão Preço Bom — Vila Socorro;Avenida Guarapiranga, 455;Vila Socorro;São Paulo;SP;04762-000;168;15;(11) 90000-0104
+45105;entrega;Supermercado Vila Nova — Itaquera;Rua Campinas do Piauí, 120;Itaquera;São Paulo;SP;08210-000;560;30;(11) 90000-0105
+45106;entrega;Depósito de Bebidas Gelado — V. Socorro;Avenida Guarapiranga, 801;Vila Socorro;São Paulo;SP;04762-000;322;23;
+45107;entrega;Farmácia Vida Plena — Itaquera;Rua Campinas do Piauí, 275;Itaquera;São Paulo;SP;08210-000;11;2;(11) 90000-0107
+45108;entrega;Marmoraria Pedra Clara — V. Socorro;Avenida Guarapiranga;Vila Socorro;São Paulo;SP;04762-000;385;5;(11) 90000-0108
+45109;entrega;Padaria Pão Dourado — Itaquera;Rua Campinas do Piauí, 410;Itaquera;São Paulo;SP;08210-000;49;7;
+45110;entrega;Lanchonete Ponto Certo — V. Socorro;Avenida Guarapiranga, 655;Vila Socorro;São Paulo;SP;04762-000;21;4;(11) 90000-0110
+45111;entrega;Pizzaria Forno a Lenha — Itaquera;Rua Campinas do Piauí, 530;Itaquera;São Paulo;SP;08210-000;58;8;(11) 90000-0111
+45112;entrega;Mercearia São Jorge — Interlagos;Praça Moscou, 30;Interlagos;São Paulo;SP;0481500;88;10;
+45113;entrega;Depósito Bebidas Geladinho;Rua Campinas do Piauí, 680;Itaquera;São Paulo;SP;08210-000;308;22;
+45114;entrega;Padaria Pão Dourado — Interlagos;Praça Moscou, 85;Interlagos;São Paulo;SP;04815-000;47;6;(11) 90000-0114
+45115;entrega;Mercearia São Jorge — Jd. Moreno;Rua Emílio Lamarca, 60;Jardim Moreno;São Paulo;SP;08431-000;80;9;(11) 90000-0115
+45116;entrega;Pet Shop Patinhas — Interlagos;Praça Moscou, 160;Interlagos;São Paulo;SP;04815-000;24;5;(11) 90000-0116
+45117;entrega;Ferragens União — Jd. Moreno;Rua Emílio Lamarca, 185;Jardim Moreno;São Paulo;SP;08431-000;189;6;
+45118;coleta;Oficina Motor Forte — Interlagos;Praça Moscou, 240;Interlagos;São Paulo;SP;04815-000;136;4;
+45119;entrega;Hortifruti Folha Verde — Jd. Moreno;Rua Emílio Lamarca, 310;Jardim Moreno;São Paulo;SP;08431-000;131;14;(11) 90000-0119
+45120;coleta;Oficina Motor Forte — Jd. Moreno;Rua Emílio Lamarca, 425;Jardim Moreno;São Paulo;SP;08431-000;217;5;(11) 90000-0120

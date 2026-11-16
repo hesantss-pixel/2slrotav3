@@ -2867,17 +2867,21 @@ function _cidadeNorm(raw){
   if(conhecidas[k]) return conhecidas[k];
   return base.toLowerCase().replace(/(^|\s)(\S)/g,(m,a,b)=>a+b.toUpperCase()).replace(/ (Da|De|Do|Das|Dos|E)(?= )/g,w=>w.toLowerCase());
 }
-function _pesoNum(v){ if(!v) return 100; const n=parseFloat(String(v).replace(',','.').replace(/[^\d.]/g,'')); return isNaN(n)?100:Math.max(n,1); }
+// Peso de uma célula da planilha. Usa a mesma leitura do formulário (_numBR), que
+// entende o formato brasileiro: "1.050,50" é 1050,5 kg e não 1,05. Célula vazia ou
+// que não é número entra com 100 kg, e a tela avisa quantas notas foram assim.
+function _pesoNum(v){ const n=_numBR(v); return Number.isFinite(n)&&n>0?Math.max(n,1):100; }
 
 function _tipoCelula(v,padrao){ const t=_norm(v); if(t.includes('colet')) return 'coleta'; if(t.includes('entreg')) return 'entrega'; return padrao; }
 function _rowsToOrders(rows,headers,tipoPadrao){
   const ci={ nf:_findCol(headers,COL_MAP.nf), cidade:_findCol(headers,COL_MAP.cidade), peso:_findCol(headers,COL_MAP.peso), itens:_findCol(headers,COL_MAP.itens), dest:_findCol(headers,COL_MAP.dest), cep:_findCol(headers,COL_MAP.cep), tipo:_findCol(headers,COL_MAP.tipo),
-    endereco:_findCol(headers,COL_MAP.endereco), bairro:_findCol(headers,COL_MAP.bairro), uf:_findCol(headers,COL_MAP.uf) };
+    endereco:_findCol(headers,COL_MAP.endereco), bairro:_findCol(headers,COL_MAP.bairro), uf:_findCol(headers,COL_MAP.uf),
+    fone:_findCol(headers,COL_MAP.fone) };
   if(ci.dest===ci.endereco) ci.dest=-1;
   // coluna só com o número da casa ("Número", "Nº"), diferente da coluna da nota
   ci.numero=headers.map(h=>_semAcento(h).replace(/[^a-z0-9]/g,'')).findIndex((h,i)=>i!==ci.nf&&['numero','num','nro','no','n'].includes(h));
   const cel=(k,row)=>ci[k]>=0?String(row[ci[k]]??'').trim():'';
-  const orders=[]; let semNumero=0;
+  const orders=[]; let semNumero=0; ci.semPeso=0;
   for(const row of rows){
     if(!row||row.every(c=>!c)) continue;
     const nfLido=ci.nf>=0?String(row[ci.nf]||'').trim():'';
@@ -2885,6 +2889,9 @@ function _rowsToOrders(rows,headers,tipoPadrao){
     const tipo=ci.tipo>=0?_tipoCelula(row[ci.tipo],tipoPadrao):tipoPadrao;
     const cidade=_cidadeNorm(ci.cidade>=0?row[ci.cidade]:'');
     const coord=CITY_COORDS[cidade]||DEPOT;
+    const pesoCel=ci.peso>=0?row[ci.peso]:null;
+    if(!Number.isFinite(_numBR(pesoCel))||_numBR(pesoCel)<=0) ci.semPeso++;
+    const fone=_foneNorm(cel('fone',row));
     const cepRaw=ci.cep>=0?String(row[ci.cep]||'').replace(/\D/g,''):'';
     const cep=cepRaw.length===8?cepRaw:'';
     let endereco=cel('endereco',row).replace(/,\s*$/,'');
@@ -2893,7 +2900,7 @@ function _rowsToOrders(rows,headers,tipoPadrao){
     const uf=cel('uf',row).toUpperCase();
     orders.push({
       id:_chaveId(nfLido||('SN-'+Date.now().toString(36)+'-'+(++semNumero)),tipo), nf, tipo,
-      cidade, peso:_pesoNum(ci.peso>=0?row[ci.peso]:null),
+      cidade, peso:_pesoNum(pesoCel), ...(fone?{fone}:{}),
       itens:Math.max(1,ci.itens>=0?parseInt(row[ci.itens])||1:1),
       dest:cel('dest',row)||cidade,
       endereco, bairro:cel('bairro',row), uf:/^[A-Z]{2}$/.test(uf)?uf:'',
@@ -3344,7 +3351,7 @@ async function _lerArquivo(file,tipo){
     const headers=lines[0].split(sep).map(h=>h.trim().replace(/^"|"$/g,''));
     const rows=lines.slice(1).map(l=>l.split(sep).map(v=>v.trim().replace(/^"|"$/g,'')));
     const {orders,ci}=_rowsToOrders(rows,headers,tipo);
-    return {orders, semPeso:ci.peso<0?orders.length:0};
+    return {orders, semPeso:ci.peso<0?orders.length:ci.semPeso};
   }
   if(ext==='xlsx'||ext==='xls'){
     if(!window.XLSX) throw new Error('o leitor de Excel não carregou; recarregue a página');
@@ -3352,7 +3359,7 @@ async function _lerArquivo(file,tipo){
     const data=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
     if(data.length<2) throw new Error('planilha vazia');
     const {orders,ci}=_rowsToOrders(data.slice(1),data[0].map(h=>String(h||'').trim()),tipo);
-    return {orders, semPeso:ci.peso<0?orders.length:0};
+    return {orders, semPeso:ci.peso<0?orders.length:ci.semPeso};
   }
   throw new Error('formato não suportado (use XML, Excel, CSV ou PDF)');
 }
@@ -3382,7 +3389,7 @@ async function importarArquivo(input){
     return;
   }
   if(semPeso){
-    const ok=confirm(`⚠️ ${_plural(semPeso,'nota está','notas estão')} sem peso no arquivo.\n\nElas entram com 100 kg cada. Confira antes de roteirizar, para não passar da capacidade do veículo.\n\nImportar mesmo assim?`);
+    const ok=confirm(`⚠️ ${_plural(semPeso,'nota está','notas estão')} sem peso no arquivo.\n\n${semPeso===1?'Ela entra':'Elas entram'} com 100 kg. Confira antes de roteirizar, para não passar da capacidade do veículo.\n\nImportar mesmo assim?`);
     if(!ok){ _impMsg('err','Importação cancelada: notas sem peso.'); return; }
   }
   // Nota que já saiu para rota (despachada/entregue) não é alterada.
