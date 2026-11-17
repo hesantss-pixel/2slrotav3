@@ -1392,11 +1392,11 @@ async function resolverEmpresa(user,papel){
 async function papelAcesso(user){
   try{
     const v=(await get(ref(db,'acesso/'+user.uid))).val();
-    if(v===true) return 'completo';
-    if(v==='demo'){
-      try{ const d=(await get(ref(db,'demos/'+user.uid))).val(); if(d&&d.expira&&d.expira<Date.now()) return 'expirado'; }catch(e){}
-      return 'demo';
-    }
+    if(v!==true && v!=='demo') return null;
+    // O prazo em demos/<uid>.expira vale para os dois casos: demonstração com dados
+    // fictícios e teste com o sistema inteiro liberado. Sem prazo gravado, não vence.
+    try{ const d=(await get(ref(db,'demos/'+user.uid))).val(); if(d&&d.expira&&d.expira<Date.now()) return 'expirado'; }catch(e){}
+    return v===true?'completo':'demo';
   }catch(e){}
   return null;
 }
@@ -1408,7 +1408,7 @@ function registrarUsuario(user,papel){
 }
 function telaPendente(user,tipo){
   const exp=tipo==='expirado';
-  $id('pend-tit').textContent = exp ? 'Seu acesso de demonstração terminou' : tipo==='sem_empresa' ? 'Conta aguardando a sua empresa' : 'Acesso aguardando liberação';
+  $id('pend-tit').textContent = exp ? 'Seu acesso de teste terminou' : tipo==='sem_empresa' ? 'Conta aguardando a sua empresa' : 'Acesso aguardando liberação';
   $id('pend-p1').innerHTML = exp
     ? `Obrigado por testar o ROTAV3, <b>${esc(user.email||'')}</b>. Para continuar, fale com a gente pelo WhatsApp.`
     : tipo==='sem_empresa'
@@ -4739,13 +4739,17 @@ async function renderAcessos(){
   $id('ac-sol').innerHTML = sol.length ? sol.map(([uid,x])=>{ const u=esc(uid); return `<div class="ac-row"><div class="ac-row-info"><b>${esc(x.email||'(sem e-mail)')}</b><span>entrou em ${_dataCurta(x.em)}</span></div>
       <div class="mot-acts"><button class="btn-sm" onclick="liberarAcesso('${u}','demo')">Liberar demonstração</button><button class="btn-sm" onclick="liberarAcesso('${u}','completo')">Liberar completo</button><button class="btn-sm" onclick="ignorarSolicitacao('${u}')">Ignorar</button></div></div>`; }).join('')
     : '<div class="empty-mini">Nenhum pedido de acesso.</div>';
-  const dem=Object.entries(de).sort((a,b)=>(b[1].criado||0)-(a[1].criado||0));
+  // quem tem acesso completo aparece só na lista de baixo, mesmo tendo prazo gravado aqui
+  const dem=Object.entries(de).filter(([uid])=>ac[uid]!==true).sort((a,b)=>(b[1].criado||0)-(a[1].criado||0));
   $id('ac-demos').innerHTML = dem.length ? dem.map(([uid,x])=>{ const u=esc(uid), ativo=ac[uid]==='demo'&&(x.expira||0)>agora; return `<div class="ac-row"><div class="ac-row-info"><b>${esc(x.nome?x.nome+' · ':'')}${esc(x.email||emailDe(uid))}<span class="ac-tag ${ativo?'on':'off'}">${ativo?'ativo':'encerrado'}</span>${_ultimoAcesso(us,uid)}</b><span>criado em ${_dataCurta(x.criado)} · ${ativo?'vale até':'venceu em'} ${_dataCurta(x.expira)}</span></div>
       ${ativo?`<div class="mot-acts"><button class="btn-sm" onclick="virarCliente('${u}')">Virar cliente</button><button class="btn-sm" onclick="encerrarDemo('${u}')">Encerrar</button></div>`:''}</div>`; }).join('')
     : '<div class="empty-mini">Nenhum acesso de demonstração ainda.</div>';
   const comp=Object.entries(ac).filter(([,v])=>v===true);
-  $id('ac-completos').innerHTML = comp.length ? comp.map(([uid])=>{ const u=esc(uid), eu=uid===ADMIN_UID; return `<div class="ac-row"><div class="ac-row-info"><b>${esc(emailDe(uid)||uid)}${eu?'<span class="ac-tag on">você</span>':_ultimoAcesso(us,uid)}</b><span>${esc(nomeEmp(eu?'principal':mem[uid])||'sem empresa')} · ${us[uid]&&us[uid].visto?'último acesso em '+_dataCurta(us[uid].visto):'sem registro de acesso'}</span></div>
-      ${eu?'':`<div class="mot-acts"><button class="btn-sm" onclick="trocarEmpresa('${u}')">${mem[uid]?'Trocar empresa':'Ligar à empresa'}</button><button class="btn-sm" onclick="tirarAcesso('${u}')">Tirar acesso</button></div>`}</div>`; }).join('')
+  $id('ac-completos').innerHTML = comp.length ? comp.map(([uid])=>{ const u=esc(uid), eu=uid===ADMIN_UID;
+    const pz=(de[uid]&&de[uid].expira)||0;
+    const selo = !pz ? '' : pz>agora ? `<span class="ac-tag on">teste até ${_dataCurta(pz)}</span>` : `<span class="ac-tag alerta">venceu em ${_dataCurta(pz)}</span>`;
+    return `<div class="ac-row"><div class="ac-row-info"><b>${esc(emailDe(uid)||uid)}${eu?'<span class="ac-tag on">você</span>':selo+_ultimoAcesso(us,uid)}</b><span>${esc(nomeEmp(eu?'principal':mem[uid])||'sem empresa')} · ${us[uid]&&us[uid].visto?'último acesso em '+_dataCurta(us[uid].visto):'sem registro de acesso'}</span></div>
+      ${eu?'':`<div class="mot-acts"><button class="btn-sm" onclick="trocarEmpresa('${u}')">${mem[uid]?'Trocar empresa':'Ligar à empresa'}</button><button class="btn-sm" onclick="prazoAcesso('${u}')">${pz?'Mudar prazo':'Pôr prazo'}</button><button class="btn-sm" onclick="tirarAcesso('${u}')">Tirar acesso</button></div>`}</div>`; }).join('')
     : '<div class="empty-mini">Ninguém com acesso completo.</div>';
   // CD de cada empresa (a principal primeiro)
   const eids=Object.keys(emp).sort((a,b)=>(a==='principal'?-1:b==='principal'?1:nomeEmp(a).localeCompare(nomeEmp(b))));
@@ -4824,14 +4828,37 @@ async function _perguntarEmpresa(sugestao){
   if(emp[t]) return {id:t, nova:false};
   return {id:_idEmpresa(t), nome:t.slice(0,80), nova:true};
 }
+// Dias de teste. 0 = sem prazo (cliente pagante). null = desistiu.
+function _perguntarPrazo(padrao){
+  const r=prompt('Por quantos dias este acesso vale?\n\nDigite 0 para não ter prazo (cliente pagante).', String(padrao==null?3:padrao));
+  if(r===null) return null;
+  const n=Math.round(Number(String(r).replace(',','.')));
+  if(!Number.isFinite(n)||n<0||n>3650){ alert('Digite um número de dias entre 0 e 3650.'); return null; }
+  return n;
+}
+function _registroPrazo(dias,base){
+  return dias ? {...(base||{}), criado:(base&&base.criado)||Date.now(), expira:Date.now()+dias*864e5, tipo:'teste'} : null;
+}
+// Muda só o prazo de quem já tem acesso completo (prorrogar o teste ou tirar o prazo).
+async function prazoAcesso(uid){
+  if(!ehAdmin) return;
+  const at=(await get(ref(db,'demos/'+uid)).catch(()=>null))?.val?.()||{};
+  const d=_perguntarPrazo(at.expira?Math.max(1,Math.ceil((at.expira-Date.now())/864e5)):0);
+  if(d===null) return;
+  _acaoAcesso({['demos/'+uid]:_registroPrazo(d,at)},
+    d?`Teste até ${_dataCurta(Date.now()+d*864e5)}.`:'Prazo retirado: o acesso não vence mais.');
+}
+window.prazoAcesso=prazoAcesso;
 async function liberarAcesso(uid,tipo){
   if(!ehAdmin) return;
   const so=(await get(ref(db,'solicitacoes/'+uid)).catch(()=>null))?.val?.()||{};
   if(tipo==='completo'){
     const e=await _perguntarEmpresa(''); if(!e) return;
-    const upd={['acesso/'+uid]:true,['membros/'+uid]:e.id,['solicitacoes/'+uid]:null};
+    const dias=_perguntarPrazo(3); if(dias===null) return;
+    const upd={['acesso/'+uid]:true,['membros/'+uid]:e.id,['solicitacoes/'+uid]:null,
+      ['demos/'+uid]:_registroPrazo(dias,{nome:'',email:so.email||''})};
     if(e.nova) upd['empresas/'+e.id+'/info']={nome:e.nome,criado:Date.now()};
-    _acaoAcesso(upd,'Acesso completo liberado.');
+    _acaoAcesso(upd,dias?`Acesso completo liberado por ${dias} dias.`:'Acesso completo liberado, sem prazo.');
   } else {
     _acaoAcesso({['acesso/'+uid]:'demo',['demos/'+uid]:{nome:'',email:so.email||'',criado:Date.now(),expira:Date.now()+7*864e5},['solicitacoes/'+uid]:null},'Demonstração liberada por 7 dias.');
   }
@@ -4849,7 +4876,9 @@ async function virarCliente(uid){
   const d=(await get(ref(db,'demos/'+uid)).catch(()=>null))?.val?.()||{};
   const e=await _perguntarEmpresa(d.nome||''); if(!e) return;
   const dados=(await get(ref(db,'empresas/demo_'+uid)).catch(()=>null))?.val?.()||{};
-  const upd={['acesso/'+uid]:true,['membros/'+uid]:e.id,['demos/'+uid+'/cliente']:e.id};
+  const dias=_perguntarPrazo(0); if(dias===null) return;   // 0: vira cliente sem prazo
+  const upd={['acesso/'+uid]:true,['membros/'+uid]:e.id,
+    ['demos/'+uid]:dias?_registroPrazo(dias,{...d,cliente:e.id}):{...d,cliente:e.id,expira:null}};
   if(e.nova) upd['empresas/'+e.id+'/info']={nome:e.nome,criado:Date.now(),veio_da_demo:uid};
   ['pedidos_rota','rotas','rotas_confirmadas','motoristas','config'].forEach(n=>{ if(dados[n]) upd['empresas/'+e.id+'/'+n]=dados[n]; });
   if(!confirm(`Transformar em cliente na empresa "${e.nome||e.id}"? A pessoa passa a ter acesso completo${Object.keys(dados).length?', com as notas e rotas que importou na demonstração':''}.`)) return;

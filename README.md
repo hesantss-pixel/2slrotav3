@@ -288,6 +288,35 @@ hora marcada**, junto da janela do cliente; e o aviso de parada que chega depois
 marcado. No relatório, "Tempo real ÷ planejado" e "Tempo entre as paradas" continuam, porque
 medem o que **aconteceu** na rua, não uma previsão — e alimentam o ajuste de tempo por empresa.
 
+## Teste de N dias com o sistema inteiro (17/11/2026)
+
+Até aqui havia dois estados: **demonstração** (dados fictícios, com prazo) e **acesso
+completo** (tudo real, para sempre). Faltava o do meio, que é o que o cliente pede:
+*"me dá o sistema de verdade por três dias"*.
+
+Demonstração não serve para isso, e de propósito — na conta de demonstração o sistema
+**não cria link real de motorista** (usa o de exemplo e simula o veículo andando no mapa),
+**não calcula km por GPS** e **desliga a entrada automática por e-mail**. Um teste com
+essas três coisas fora não é teste.
+
+Agora o prazo em `demos/<uid>.expira` vale para os **dois** papéis. Com acesso completo e
+prazo gravado, a pessoa usa o sistema inteiro e a conta fecha sozinha no dia marcado; sem
+prazo gravado, não vence (cliente pagante). Nada mudou no nó nem nas regras do banco.
+
+Na tela **Acessos**:
+
+- "Liberar completo" agora pergunta a empresa **e por quantos dias** (0 = sem prazo);
+- a lista "Acesso completo" mostra `teste até 20/11` ou `venceu em 20/11`, com botão
+  **Pôr prazo / Mudar prazo** ao lado de "Trocar empresa" e "Tirar acesso";
+- "Virar cliente" pergunta o prazo novo em vez de herdar o vencimento da demonstração —
+  sem isso, promover alguém no último dia da demonstração trancaria a conta na hora;
+- quem tem acesso completo sai da lista "Acessos de demonstração", para não aparecer duas
+  vezes.
+
+A tela de vencimento passou a dizer "Seu acesso de teste terminou", que serve para os dois.
+
+Testes: `tests/tela/t_prazo.js`.
+
 ## O mapa presta contas do que não mostra (17/11/2026)
 
 "Os pedidos de coleta não aparecem no mapa." Os dois mapas desenham coleta certo — azul-
@@ -639,7 +668,7 @@ troque `BACKEND_URL` no `index.html`.
   O script sobe o servidor local na porta 8771 e roda tudo; `./rodar.sh t_demo` roda uma só.
   As suítes `t_hero` e `t_oferta` são da página de vendas: passe o caminho dela em
   `PAGINA_VENDAS=/caminho/p-ginadevendasv3 ./rodar.sh`, senão são puladas.
-  Hoje são 801 verificações em 29 suítes (17/11/2026). Nenhuma chama a internet: o Firebase é simulado
+  Hoje são 810 verificações em 30 suítes (17/11/2026). Nenhuma chama a internet: o Firebase é simulado
   (`tests/tela/fakefb`), o Leaflet vem de `tests/tela/vendor` e ViaCEP/Nominatim/OSRM são cortados.
   `t_xss.js` é a trava de segurança: falha se alguém tirar o `esc()` de um texto que vem de fora.
   `t_tracado.js` confere o traçado pelas ruas: o decodificador contra uma resposta real do OSRM
