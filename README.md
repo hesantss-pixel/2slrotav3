@@ -288,6 +288,36 @@ hora marcada**, junto da janela do cliente; e o aviso de parada que chega depois
 marcado. No relatório, "Tempo real ÷ planejado" e "Tempo entre as paradas" continuam, porque
 medem o que **aconteceu** na rua, não uma previsão — e alimentam o ajuste de tempo por empresa.
 
+## O mapa presta contas do que não mostra (17/11/2026)
+
+"Os pedidos de coleta não aparecem no mapa." Os dois mapas desenham coleta certo — azul-
+marinho com borda dourada no mapa geral, `pino coleta` no mapa de montar rota; há teste
+para os dois. O que acontecia é que o mapa **esconde duas coisas e não dizia**:
+
+- pedido **sem endereço exato** não vira pino: entra na bolha cinza da cidade;
+- pedido **agendado para outro dia** some do mapa até o dia chegar.
+
+Quem tem poucas coletas, e todas em endereço industrial sem número na rua, vê um mapa só
+com os pinos verdes das entregas e conclui que a coleta sumiu do sistema. O contador em
+cima ainda dizia "Coletas 10", o que piorava: dez existem, nenhuma aparece.
+
+Agora, embaixo do mapa, uma linha fecha a conta de todo pedido do filtro:
+
+> 94 pedidos têm pino próprio no mapa. 116 pedidos estão sem endereço exato (106 entregas
+> e 10 coletas) e aparecem na bolha da cidade, sem pino próprio — toque no pedido e use
+> **corrigir** para marcar o ponto. 7 estão agendados para outros dias e só aparecem no dia.
+
+A quebra por tipo só aparece com o filtro em "Todos" (com o filtro em Coletas seria
+repetir o que já está escrito no filtro), e a linha some quando não há nada escondido.
+
+Achado de brinde: `lista.filter(_agendadoFuturo)` passa o índice do array como segundo
+argumento, que em `_agendadoFuturo(o, dia)` é o dia — a partir do segundo item a conta
+dava errado. Vale para `_saiHoje` também. As duas são as únicas funções de dois
+argumentos usadas assim no arquivo; as outras (`_aprox`, `_semNumero`, `_idDe`,
+`_manNoMapa`) recebem um só e estão seguras.
+
+Testes: `tests/tela/t_mapa_coletas.js`.
+
 ## Km rodado: sem caminho gravado não existe km rodado (16/11/2026)
 
 Duas rotas iguais, dirigidas por caminhos diferentes — uma dando várias voltas —, davam
@@ -609,7 +639,7 @@ troque `BACKEND_URL` no `index.html`.
   O script sobe o servidor local na porta 8771 e roda tudo; `./rodar.sh t_demo` roda uma só.
   As suítes `t_hero` e `t_oferta` são da página de vendas: passe o caminho dela em
   `PAGINA_VENDAS=/caminho/p-ginadevendasv3 ./rodar.sh`, senão são puladas.
-  Hoje são 787 verificações em 28 suítes (16/11/2026). Nenhuma chama a internet: o Firebase é simulado
+  Hoje são 801 verificações em 29 suítes (17/11/2026). Nenhuma chama a internet: o Firebase é simulado
   (`tests/tela/fakefb`), o Leaflet vem de `tests/tela/vendor` e ViaCEP/Nominatim/OSRM são cortados.
   `t_xss.js` é a trava de segurança: falha se alguém tirar o `esc()` de um texto que vem de fora.
   `t_tracado.js` confere o traçado pelas ruas: o decodificador contra uma resposta real do OSRM

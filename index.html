@@ -1133,6 +1133,7 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
     </div>
     <div class="filtro-row" style="margin-top:0"><span class="field-lbl">Mostrar</span><div class="seg" data-filtro role="group" aria-label="Mostrar no mapa"></div></div>
     <div id="mapa-completo" style="width:100%;height:560px;border-radius:16px;border:1px solid var(--border2);"></div>
+    <div id="mapa-conta" class="mapa-nota info" style="margin:12px 0 0;display:none"></div>
     <div id="mapa-completo-legenda" class="map-leg"></div>
     <div class="man-acoes" style="margin-top:12px">
       <button class="btn-sm" type="button" onclick="irParaPagina('roteirizacao')">🗺️ Montar uma rota escolhendo no mapa</button>
@@ -1943,6 +1944,19 @@ function atualizarMapaCompleto(){
       .bindTooltip(`<b>${esc(r.nome)}</b><br>${n} pedido(s) sem endereço exato (${_plural(_contarTipos(lista).entrega,'entrega','entregas')}, ${_plural(_contarTipos(lista).coleta,'coleta','coletas')})<br>${lista.reduce((s,o)=>s+(o.peso||0),0).toLocaleString('pt-BR')} kg total`);
     L.polyline([[DEPOT.lat,DEPOT.lng],[coord.lat,coord.lng]],{color:r.cor,weight:1.4,opacity:.4,dashArray:'4,6'}).addTo(mapLayerFull);
   });
+
+  // O mapa esconde duas coisas, e calado isso parece defeito: pedido sem endereço exato
+  // vira bolha de cidade em vez de pino, e agendado para outro dia some até o dia. Quem
+  // tem poucas coletas e todas sem número na rua jura que "as coletas sumiram do mapa".
+  const contaEl = document.getElementById('mapa-conta');
+  if(contaEl){
+    const porTipo = l => filtroTipo==='todos' ? ` (${_resumoTipos(_contarTipos(l),' e ')})` : '';
+    const partes=[];
+    if(semGeo.length) partes.push(`<b>${_plural(semGeo.length,'pedido está sem endereço exato','pedidos estão sem endereço exato')}</b>${porTipo(semGeo)} e ${semGeo.length===1?'aparece':'aparecem'} na bolha da cidade, sem pino próprio — toque no pedido e use <b>corrigir</b> para marcar o ponto`);
+    if(futuros) partes.push(`<b>${_plural(futuros,'está agendado para outro dia','estão agendados para outros dias')}</b>${porTipo(todosPend.filter(o=>_agendadoFuturo(o)))} e só ${futuros===1?'aparece':'aparecem'} no dia`);
+    contaEl.innerHTML = partes.length ? `${_plural(comGeo.length,'pedido tem pino próprio','pedidos têm pino próprio')} no mapa. ${partes.join('. ')}.` : '';
+    contaEl.style.display = partes.length ? 'block' : 'none';
+  }
 
   // Mapa geral mostra só pedidos pendentes — rotas confirmadas têm seu próprio
   // mini-mapa individual na aba Rotas (fica mais limpo, sem misturar as duas coisas).
