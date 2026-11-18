@@ -10,7 +10,7 @@ const seed = (uid) => { window.__FAKE = { user: { uid, email: 'x@y.com', getIdTo
     await p.evaluate(() => window.irParaPagina('mapa')); await p.waitForTimeout(600);
     ok(await p.isVisible('#rastr-oferta'), `${W}px: cliente vê a oferta do rastreador no Mapa`);
     const href = await p.getAttribute('#rastr-oferta a', 'href');
-    ok(href.startsWith('https://wa.me/5511955914618?text=') && decodeURIComponent(href).includes('rastreador 4G'), 'botão abre o WhatsApp da ROTAV3 com mensagem pronta');
+    ok(href.startsWith('https://wa.me/5511918506103?text=') && decodeURIComponent(href).includes('rastreador 4G'), 'botão abre o WhatsApp da ROTAV3 com mensagem pronta');
     const sw = await p.evaluate(() => document.documentElement.scrollWidth);
     ok(sw <= W, `${W}px: sem rolagem lateral (${sw})`);
     await p.evaluate(() => document.getElementById('rastr-oferta').scrollIntoView({ block: 'center' }));
