@@ -387,6 +387,20 @@ depois. O relatório já ignorava o `so_baixas` e continua ignorando.
 Testes: `tests/tela/t_trilha.js` e `TesteCaminhoImporta` em `backend/tests/test_km_rastro.py`.
 O `push` do Firebase simulado passou a recusar caminho sem permissão, como o SDK de verdade.
 
+## O agendado voltava verde ao sair da rota (18/11/2026)
+
+Na montagem manual, o pedido agendado para o dia da viagem é vermelho. Tocando nele ele entra
+na rota; tocando de novo ele sai — e voltava **verde**, como se fosse um pedido comum. Quem
+estava montando a rota perdia de vista o que tem hora marcada.
+
+`_manIcone` desenha o pino com as classes `pino coleta hoje sel`. Mas `_manPintar`, que repinta
+**só o pino tocado** sem redesenhar o mapa inteiro, remontava a classe sem o `hoje`. O primeiro
+toque não mostrava o erro (o vermelho sai de baixo do `sel` mesmo), e o segundo deixava o
+pino verde. As duas funções agora montam a classe igual.
+
+Teste: `tests/tela/t_agendado.js` — toca, confere `sel` e `hoje` juntos, toca de novo e confere
+que o `hoje` continua lá.
+
 ## O PDF da nota passou a ser lido de verdade (18/11/2026)
 
 A leitura de PDF criava **um pedido para cada número de 5 a 9 dígitos** que achasse no texto

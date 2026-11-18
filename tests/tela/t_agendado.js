@@ -89,6 +89,38 @@ const seed = (a) => {
   ok(await p.evaluate(() => document.getElementById('ag-desagendar-d').style.display) === 'none', 'pedido sem agendamento não mostra o botão de tirar');
   await p.evaluate(() => window.fecharModalAgendar());
 
+  // ── montagem manual: entrar e sair da rota não apaga o vermelho (18/11) ───
+  // _manIcone desenhava o pino com a classe "hoje"; _manPintar, que repinta só o
+  // pino tocado, remontava a classe sem ela — tirar da rota deixava o agendado verde.
+  await p.evaluate(() => window.irParaPagina('roteirizacao'));
+  await p.waitForTimeout(500);
+  await p.evaluate(() => window.selVeicD('toco'));
+  await p.waitForTimeout(250);
+  await p.fill('#cap-kg-d', '2000');
+  await p.evaluate(() => window.irConfirmD());
+  await p.waitForTimeout(250);
+  await p.click('#rot-step-confirm .btn-modal-alt');
+  await p.waitForTimeout(900);
+  const pinoMan = () => p.evaluate(() => {
+    const a = [...document.querySelectorAll('#mapa-manual .leaflet-marker-icon')]
+      .find((x) => /NF 7002/.test(x.getAttribute('title') || ''));
+    return a && a.firstElementChild ? a.firstElementChild.className : 'não achei';
+  });
+  const tocarMan = () => p.evaluate(() => {
+    const a = [...document.querySelectorAll('#mapa-manual .leaflet-marker-icon')]
+      .find((x) => /NF 7002/.test(x.getAttribute('title') || ''));
+    if (a) a.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  });
+  ok(/\bhoje\b/.test(await pinoMan()), 'montagem manual: o agendado de hoje começa vermelho');
+  await tocarMan(); await p.waitForTimeout(350);
+  const dentro = await pinoMan();
+  ok(/\bsel\b/.test(dentro) && /\bhoje\b/.test(dentro),
+    'na rota ele fica escolhido e continua agendado: ' + dentro);
+  await tocarMan(); await p.waitForTimeout(350);
+  const fora = await pinoMan();
+  ok(/\bhoje\b/.test(fora) && !/\bsel\b/.test(fora),
+    'tirando da rota ele volta vermelho, não verde: ' + fora);
+
   ok(!errs.length, 'sem erros no console: ' + JSON.stringify(errs.slice(0, 3)));
   await p.screenshot({ path: 'agendado-1440.png', fullPage: false });
   await b.close();

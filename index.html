@@ -3949,7 +3949,10 @@ function _manPintar(g){
   const p=el.firstElementChild;
   if(p){
     const col=_manTipoGrupo(g)==='Coleta';
-    const cls=`pino${col?' coleta':''}${rot?' sel':''}`;
+    // o agendado para o dia da viagem continua vermelho depois de entrar e sair
+    // da rota: a classe tem de sair igual à de _manIcone, com o "hoje"
+    const hoje=g.lista.some(o=>_saiHoje(o,rotaCtxD.data));
+    const cls=`pino${col?' coleta':''}${hoje?' hoje':''}${rot?' sel':''}`;
     const txt=rot || (g.lista.length>1?'×'+g.lista.length:'');
     if(p.className!==cls) p.className=cls;
     if(p.textContent!==txt) p.textContent=txt;
