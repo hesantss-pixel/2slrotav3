@@ -1,8 +1,8 @@
 // Versão 3.12: o que aconteceu na rua, comparado com o planejado.
 //  1. ajuste de tempo da empresa vai para o motor e fica gravado na rota;
 //  2. aviso dos pedidos que ficaram na rua certa, sem o número;
-//  3. motorista: km do painel na saída e na chegada (com foto), caminho pelo GPS, GPS da baixa;
-//  4. escritório: planejado × realizado na rota (km do painel, km pelo GPS, tempo e ordem);
+//  3. motorista: caminho pelo GPS e GPS da baixa (o km do painel saiu da tela em 18/11);
+//  4. escritório: planejado × realizado na rota (km do painel de rotas antigas, km pelo GPS, tempo e ordem);
 //  5. relatório: as mesmas medidas, na tela e na planilha;
 //  6. pinos aprendidos: duas visitas com GPS bom no mesmo endereço viram o ponto do endereço;
 //  7. administrador: ajuste de tempo por empresa, com sugestão tirada das baixas.
@@ -89,32 +89,21 @@ const seedCliente = (arg) => {
   m.on('console', (x) => { if (x.type() === 'error' && !/net::|Failed to load resource/.test(x.text())) merrs.push(x.text()); });
   m.on('dialog', (d) => { mdialogos.push(d.message()); d.accept(); });
   await m.goto('http://127.0.0.1:8771/motorista.html#' + token); await m.waitForTimeout(800);
-  ok((await m.$$('section.hod form.hod-form[data-q="ini"]')).length === 1, 'motorista vê o pedido do km do painel antes de sair');
+  ok((await m.$$('section.hod')).length === 0 && !(await m.content()).includes('Km do painel'),
+    'o km do painel saiu da tela do motorista (18/11): ele não digita nada antes de sair');
   const ent = () => m.evaluate((t) => window.__FAKE.db.entregador[t], token);
 
-  await m.fill('form.hod-form[data-q="ini"] input[name="km"]', '123.456');
-  await m.click('form.hod-form[data-q="ini"] button[type="submit"]'); await m.waitForTimeout(600);
+  // O escritório continua lendo hodometro de rotas antigas, que já têm o dado gravado.
+  // Como não há mais tela que produza isso, o teste grava direto no banco simulado.
+  await m.evaluate((t) => {
+    window.__FAKE.db.entregador[t].hodometro = {
+      ini: { km: 123456, hora: Date.now() - 36e5, temFoto: false },
+      fim: { km: 123498.5, hora: Date.now(), temFoto: true },
+    };
+    window.__FAKE.db.entregador[t].fotos_hod = { fim: 'data:image/jpeg;base64,/9j/4AAQSkZJRg==' };
+  }, token);
   let e = await ent();
-  ok(e.hodometro && e.hodometro.ini && e.hodometro.ini.km === 123456 && e.hodometro.ini.temFoto === false && typeof e.hodometro.ini.hora === 'number',
-    'km da saída "123.456" gravado como 123456, sem foto');
-  ok((await m.$$('form.hod-form[data-q="fim"]')).length === 1 && (await m.textContent('section.hod')).includes('Saída: 123.456 km'), 'depois aparece o km da chegada, com a saída mostrada');
-
-  await m.fill('form.hod-form[data-q="fim"] input[name="km"]', '123.400');
-  await m.click('form.hod-form[data-q="fim"] button[type="submit"]'); await m.waitForTimeout(400);
-  e = await ent();
-  ok(!e.hodometro.fim && mdialogos.some((x) => x.includes('menor que o da saída')), 'chegada menor que a saída é barrada com explicação');
-  await m.fill('form.hod-form[data-q="fim"] input[name="km"]', '123.498,5');
-  await m.setInputFiles('form.hod-form[data-q="fim"] input[name="foto"]', path.join(__dirname, 'canhoto.jpg')); await m.waitForTimeout(300);
-  ok((await m.$$('#prev-hod-fim img')).length === 1, 'foto do painel aparece antes de salvar');
-  await m.click('form.hod-form[data-q="fim"] button[type="submit"]'); await m.waitForTimeout(1500);
-  e = await ent();
-  ok(e.hodometro.fim && e.hodometro.fim.km === 123498.5 && e.hodometro.fim.temFoto === true, 'km da chegada com decimal e foto');
-  ok(e.fotos_hod && /^data:image\/jpeg;base64,/.test(e.fotos_hod.fim || '') && e.fotos_hod.fim.length < 400000, 'foto do painel compactada em JPEG (' + Math.round(((e.fotos_hod || {}).fim || '').length / 1024) + ' KB)');
-  ok((await m.textContent('section.hod')).includes('42,5 km rodados'), 'motorista vê o total: 42,5 km rodados');
-  await m.click('section.hod [data-acao="hod-corrigir"][data-q="ini"]'); await m.waitForTimeout(150);
-  ok((await m.$$('form.hod-form[data-q="ini"] [data-acao="hod-cancelar"]')).length === 1, 'corrigir abre o km com a opção de cancelar');
-  await m.click('[data-acao="hod-cancelar"]'); await m.waitForTimeout(150);
-  ok(Object.keys(e.hodometro.ini).concat(Object.keys(e.hodometro.fim)).every((k) => ['km', 'hora', 'temFoto'].includes(k)), 'km do painel só tem os campos que as regras aceitam');
+  ok(e.hodometro.fim.km - e.hodometro.ini.km === 42.5, 'rota antiga com km do painel: 42,5 km rodados');
 
   // caminho pelo GPS: liga a localização e anda
   await m.click('[data-acao="loc"]'); await m.waitForTimeout(700);

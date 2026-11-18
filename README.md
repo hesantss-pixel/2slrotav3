@@ -198,13 +198,12 @@ está ligado em `entrada_automatica`.
 O sistema passou a comparar o planejado com o que aconteceu na rua. Tudo depende do link do
 motorista; sem ele, a rota continua só com o planejado.
 
-- **Km do painel.** No link, acima das paradas, o cartão "Km do painel" pede o odômetro na saída
-  e na chegada, com foto (recomendada). Aceita "123456", "123.456" e "123.456,7"; chegada menor
-  que a saída é barrada e mais de 2.000 km pede confirmação. Grava em
-  `entregador/<código>/hodometro/{ini,fim}` (`km`, `hora`, `temFoto`) e a foto em
-  `fotos_hod/{ini,fim}` (JPEG). Com as duas leituras, o escritório copia o resultado para
-  `rotas_confirmadas/<id>/km_painel` (`ini`, `fim`, `km`, `fotos`), porque o link expira.
-  É o km de verdade, conferível pela foto ("ver fotos" na página Rotas).
+- **Km do painel — saiu da tela do motorista em 18/11/2026.** O link pedia o odômetro na saída
+  e na chegada, com foto, e gravava em `entregador/<código>/hodometro/{ini,fim}` e
+  `fotos_hod/{ini,fim}`. Esse cartão foi removido: o motorista não digita mais nada. O escritório
+  continua **lendo** `hodometro` e copiando para `rotas_confirmadas/<id>/km_painel`, e as rotas
+  antigas continuam mostrando o número e as fotos; para rota nova, a coluna "Km painel" fica
+  vazia e o km rodado vem só do caminho pelo GPS, abaixo.
 - **Caminho pelo GPS.** Com a localização ao vivo ligada, o celular grava um ponto a cada 20 s ou
   75 m, só com precisão de até 50 m, em `entregador/<código>/trilha` (só acrescenta: `lat`, `lng`,
   `t`, `acc`, `v`). Quando todas as paradas têm baixa, o escritório manda para `POST /km-rastro`
@@ -385,6 +384,25 @@ depois. O relatório já ignorava o `so_baixas` e continua ignorando.
 Testes: `tests/tela/t_trilha.js` e `TesteCaminhoImporta` em `backend/tests/test_km_rastro.py`.
 O `push` do Firebase simulado passou a recusar caminho sem permissão, como o SDK de verdade.
 
+## O motorista não digita mais o km do painel (18/11/2026)
+
+O cartão **"Km do painel"** saiu da página do motorista. Era a primeira coisa que ele via no link
+e pedia duas digitações por rota (odômetro na saída e na chegada) mais duas fotos. Em rota com
+dez entregas isso é trabalho que ninguém faz direito, e o número só servia para conferir o que o
+GPS já mede sozinho.
+
+O que saiu: o cartão, as duas validações (chegada menor que a saída, mais de 2.000 km), a foto do
+painel e o `salvarHod`. O motorista agora abre o link e vê direto as paradas.
+
+O que ficou: o escritório continua **lendo** `entregador/<código>/hodometro` e `fotos_hod` e
+copiando para `rotas_confirmadas/<id>/km_painel`, então toda rota que já tem esse dado gravado
+continua mostrando o km e as fotos na página Rotas, nos Relatórios e na planilha. Para rota nova
+esses campos ficam vazios: o km rodado passa a vir só do **caminho pelo GPS**, que não depende de
+ninguém digitar nada.
+
+Testes: `tests/tela/t_km_realizado.js` (confere que o cartão sumiu da tela do motorista e que o
+escritório continua lendo o dado das rotas antigas) e `tests/tela/t_motorista.js`.
+
 ## O painel só conta rota confirmada (16/11/2026)
 
 Os cartões **ROTAS** e **KM DAS ROTAS** do painel mostravam a última roteirização *aberta na
@@ -509,8 +527,9 @@ codificação do Google com 6 casas decimais). A tela desenha essa linha.
 5. **Devolver** a rota volta só o que não teve baixa e encerra o link; **Apagar** também encerra.
 
 Onde fica no banco: `entregador/<código>` com `info`, `paradas` (sem as chaves internas),
-`expira`, `baixas/<n>` e `fotos/<n>`; desde a 3.12, também `hodometro`, `fotos_hod`, `trilha` e
-`gps/<n>` (ver "Km rodado, tempo real e pinos aprendidos"). As regras deixam ler esse nó só com o código e só até
+`expira`, `baixas/<n>` e `fotos/<n>`; desde a 3.12, também `trilha` e
+`gps/<n>` (ver "Km rodado, tempo real e pinos aprendidos"). `hodometro` e `fotos_hod` continuam
+sendo lidos nas rotas antigas, mas desde 18/11/2026 nada na tela do motorista escreve neles. As regras deixam ler esse nó só com o código e só até
 `expira`; o motorista só grava baixa (campos validados) e foto (JPEG até ~280 KB) enquanto o link
 vale. A foto fica no próprio banco (não precisa de plano pago); o plano gratuito do Firebase
 guarda 1 GB, o que dá alguns milhares de fotos.
@@ -676,7 +695,8 @@ troque `BACKEND_URL` no `index.html`.
   com aviso quando não há, o traçado guardado na rota confirmada, a rota antiga recebendo o
   traçado uma vez e a montagem no mapa pedindo o caminho só quando a pessoa para de tocar.
   `t_km_realizado.js` (3.12) faz o caminho inteiro: ajuste de tempo indo para o motor e mudando
-  com a página aberta, aviso "sem o número", km do painel com foto e validações no celular,
+  com a página aberta, aviso "sem o número", o km do painel fora da tela do motorista e ainda
+  lido nas rotas antigas,
   caminho pelo GPS com o celular andando, GPS da baixa, planejado × realizado na rota, relatório e
   planilha, pino aprendido em duas rotas e a sugestão do ajuste em Acessos.
   `t_agendado.js` cobre o pedido agendado em todas as telas: vermelho no mapa e na lista, cinza
