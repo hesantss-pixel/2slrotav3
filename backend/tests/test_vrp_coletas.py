@@ -494,3 +494,78 @@ class TesteFatorDeTempo(unittest.TestCase):
         self.assertEqual(len(ok_["routes"]), 1)
         self.assertEqual(fora["routes"], [])
         self.assertEqual(fora["nao_alocados"], ["A"])
+
+
+class TesteMatrizEmBlocos(unittest.TestCase):
+    """Acima de 100 pontos o km saía em linha reta. Agora a matriz é pedida em
+    blocos (sources/destinations do /table) e emendada, e só acima do teto de
+    consultas é que cai para a linha reta — avisando."""
+
+    @staticmethod
+    def _pontos(n):
+        return [{"lat": -23.4 - i * 0.001, "lng": -46.4 - i * 0.001} for i in range(n)]
+
+    @staticmethod
+    def _falso_osrm(chamadas):
+        """Responde como o /table: devolve o retângulo pedido, com valores que
+        identificam cada par (origem, destino) para conferir a emenda."""
+        def get(url, params=None, **kw):
+            params = params or {}
+            coords = url.rsplit("/", 1)[-1].split(";")
+            todos = list(range(len(coords)))
+            org = [int(x) for x in params["sources"].split(";")] if params.get("sources") else todos
+            dst = [int(x) for x in params["destinations"].split(";")] if params.get("destinations") else todos
+            chamadas.append((len(coords), len(org), len(dst)))
+            dist = [[(i + 1) * 1000 + j for j in dst] for i in org]
+            dur = [[(i + 1) * 10 + j for j in dst] for i in org]
+            return mock.Mock(raise_for_status=lambda: None,
+                             json=lambda: {"code": "Ok", "distances": dist, "durations": dur})
+        return get
+
+    def test_ate_o_limite_continua_numa_consulta_so(self):
+        chamadas = []
+        with mock.patch.object(vs.requests, "get", side_effect=self._falso_osrm(chamadas)):
+            d, t, fonte = vs.build_distance_matrix(self._pontos(100))
+        self.assertEqual(fonte, "OSRM")
+        self.assertEqual(len(chamadas), 1)
+        self.assertEqual(len(d), 100)
+
+    def test_acima_do_limite_monta_a_matriz_em_blocos(self):
+        chamadas = []
+        n = 200
+        with mock.patch.object(vs.requests, "get", side_effect=self._falso_osrm(chamadas)):
+            d, t, fonte = vs.build_distance_matrix(self._pontos(n))
+        self.assertEqual(fonte, "OSRM", "200 pontos passam a sair pelas ruas, não em linha reta")
+        self.assertEqual(len(chamadas), 4, f"4 consultas de 50 origens × 200 destinos: {chamadas}")
+        self.assertTrue(all(o * de <= vs.OSRM_LIMIT ** 2 for _, o, de in chamadas),
+                        f"nenhum bloco passa das 10.000 células: {chamadas}")
+        self.assertEqual((len(d), len(d[0]), len(t), len(t[0])), (n, n, n, n))
+        # a emenda põe cada valor na posição certa
+        for i, j in ((0, 0), (0, 199), (49, 50), (50, 0), (123, 7), (199, 199)):
+            self.assertEqual(d[i][j], (i + 1) * 1000 + j, f"linha {i}, coluna {j} fora do lugar")
+            self.assertEqual(t[i][j], (i + 1) * 10 + j)
+
+    def test_muitos_pontos_voltam_para_a_linha_reta_com_aviso(self):
+        chamadas = []
+        with mock.patch.object(vs.requests, "get", side_effect=self._falso_osrm(chamadas)):
+            _, _, fonte = vs.build_distance_matrix(self._pontos(3000))
+        self.assertEqual(fonte, "Haversine:limite", "acima do teto de blocos, avisa que é linha reta")
+        self.assertEqual(chamadas, [], "e nem chega a consultar o servidor")
+
+    def test_servidor_fora_do_ar_no_meio_dos_blocos_nao_quebra(self):
+        def cai(url, params=None, **kw):
+            raise vs.requests.ConnectionError("servidor fora")
+        with mock.patch.object(vs.requests, "get", side_effect=cai):
+            d, t, fonte = vs.build_distance_matrix(self._pontos(200))
+        self.assertEqual(fonte, "Haversine:indisponivel")
+        self.assertEqual(len(d), 200)
+        self.assertGreater(d[0][199], 0, "a linha reta preenche a matriz inteira")
+
+    def test_bloco_do_tamanho_errado_e_recusado(self):
+        def torto(url, params=None, **kw):
+            return mock.Mock(raise_for_status=lambda: None,
+                             json=lambda: {"code": "Ok", "distances": [[1, 2]], "durations": [[1, 2]]})
+        with mock.patch.object(vs.requests, "get", side_effect=torto):
+            _, _, fonte = vs.build_distance_matrix(self._pontos(200))
+        self.assertEqual(fonte, "Haversine:indisponivel",
+                         "resposta com tamanho inesperado não entra na matriz")

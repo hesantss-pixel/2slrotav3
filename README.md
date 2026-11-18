@@ -387,6 +387,36 @@ depois. O relatório já ignorava o `so_baixas` e continua ignorando.
 Testes: `tests/tela/t_trilha.js` e `TesteCaminhoImporta` em `backend/tests/test_km_rastro.py`.
 O `push` do Firebase simulado passou a recusar caminho sem permissão, como o SDK de verdade.
 
+## Km pelas ruas acima de 100 pedidos (18/11/2026)
+
+O servidor público do OSRM recusa matriz com mais de 100 × 100 = **10.000 células**. O motor
+desistia cedo: passou de 100 pontos, media **tudo em linha reta a 40 km/h** — não só o km da
+rota, mas a escolha de quais pedidos entram e em que ordem. Com 200 notas pendentes, *toda*
+rota saía assim, e o relatório marcava "linha reta (mais de 100 paradas)" em vermelho.
+
+Duas mudanças, uma no motor e uma na tela.
+
+**1. Matriz em blocos (`vrp_solver.py`).** Acima de `OSRM_LIMIT` pontos, a matriz passa a ser
+pedida em pedaços com os parâmetros `sources`/`destinations` do `/table`: cada consulta leva
+algumas linhas contra todos os destinos, respeitando o teto de células, e as respostas são
+emendadas aqui. Para 200 pontos são 4 consultas de 50 × 200; para 400, 16. O teto é
+`OSRM_MAX_BLOCOS` (padrão 20, ou seja ~450 pedidos): acima dele a rota demoraria demais e o km
+volta a sair em linha reta, avisado como antes. Qualquer falha no meio — servidor fora,
+resposta de tamanho inesperado — cai para a linha reta sem quebrar a rota. Num OSRM próprio não
+há espera de 1 s entre consultas, então os blocos saem quase de imediato.
+
+**2. Roteirizar por cidade (`index.html`).** Na tela de roteirização, abaixo de "O que entra
+nesta viagem", um campo **"De qual cidade"** lista as cidades com pedido pendente do tipo e do
+dia escolhidos, da que tem mais para a que tem menos, com a contagem. Escolhendo uma, só os
+pedidos dela entram no cálculo — que é como a operação planeja de verdade, e deixa a viagem
+bem abaixo do limite. A nota embaixo do campo diz quantos pedidos entram e, acima de 450,
+avisa que o km vai sair em linha reta. A cidade escolhida some da lista quando muda o tipo ou
+o dia: nesse caso a escolha volta para "todas" em vez de deixar a viagem vazia.
+
+Testes: `TesteMatrizEmBlocos` em `backend/tests/test_vrp_coletas.py` (confere o número de
+consultas, o tamanho de cada bloco, a emenda posição a posição e os três caminhos de falha) e
+`tests/tela/t_cidade_rota.js`.
+
 ## O agendado voltava verde ao sair da rota (18/11/2026)
 
 Na montagem manual, o pedido agendado para o dia da viagem é vermelho. Tocando nele ele entra

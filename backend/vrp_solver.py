@@ -109,6 +109,12 @@ def _esperar_vez(url: str) -> None:
 # Centro de distribuição padrão; a tela manda o da conta em "deposito".
 DEPOT      = {"lat": -23.424492, "lng": -46.387695, "nome": "Centro de distribuição"}
 OSRM_LIMIT = max(2, int(_num_env("OSRM_LIMIT", 100)))   # máximo de pontos por chamada (o público aceita 100)
+# O servidor público recusa matriz com mais de OSRM_LIMIT² células (100 × 100 =
+# 10.000). Acima de OSRM_LIMIT pontos a matriz é pedida em blocos, com os
+# parâmetros sources/destinations do /table, e emendada aqui. Cada bloco é uma
+# consulta, e no servidor público elas saem de uma em uma por segundo — por isso
+# o teto: acima dele a rota demoraria demais e o km sai em linha reta, avisado.
+OSRM_MAX_BLOCOS = max(1, int(_num_env("OSRM_MAX_BLOCOS", 20)))
 
 # Velocidade média estimada para fallback Haversine: 40 km/h
 SPEED_KMH = 40
@@ -230,33 +236,78 @@ def build_distance_matrix(points: list[dict]) -> tuple[list[list[int]], list[lis
     Fallback automático para Haversine se OSRM indisponível.
     Retorna (dist_matrix, duration_matrix, fonte).
     """
-    if len(points) > OSRM_LIMIT:
-        logger.warning("Mais de %d pontos — usando Haversine", OSRM_LIMIT)
+    n = len(points)
+    if n <= OSRM_LIMIT:
+        try:
+            dist, dur = _osrm_table(points)
+            return dist, dur, "OSRM"
+        except Exception as exc:
+            logger.warning("OSRM indisponível (%s) — usando Haversine", exc)
+            d, t = _haversine_matrix(points)
+            return d, t, "Haversine:indisponivel"
+
+    # Mais pontos do que cabem numa consulta: tenta em blocos.
+    plano = _plano_de_blocos(n)
+    if plano is None:
+        logger.warning("%d pontos: mais blocos do que o teto (%d) — usando Haversine",
+                       n, OSRM_MAX_BLOCOS)
         d, t = _haversine_matrix(points)
         return d, t, "Haversine:limite"
-
-    coords = ";".join(f"{p['lng']:.5f},{p['lat']:.5f}" for p in points)
     try:
-        _esperar_vez(OSRM_URL)
-        resp = requests.get(
-            f"{OSRM_URL}/{coords}",
-            params={"annotations": "distance,duration"},
-            headers=OSRM_HEADERS,
-            timeout=OSRM_TIMEOUT,
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        if data.get("code") != "Ok":
-            raise ValueError(f"OSRM code: {data.get('code')}")
-
-        dist = [[int(v) for v in row] for row in data["distances"]]
-        dur  = [[int(v) for v in row] for row in data["durations"]]
+        dist, dur = _matriz_em_blocos(points, plano)
         return dist, dur, "OSRM"
-
     except Exception as exc:
-        logger.warning("OSRM indisponível (%s) — usando Haversine", exc)
+        logger.warning("Matriz em blocos falhou (%s) — usando Haversine", exc)
         d, t = _haversine_matrix(points)
         return d, t, "Haversine:indisponivel"
+
+
+def _osrm_table(points: list[dict], origens: list[int] | None = None,
+                destinos: list[int] | None = None) -> tuple[list[list[int]], list[list[int]]]:
+    """Uma consulta ao /table. Sem origens/destinos, devolve a matriz inteira.
+    Com eles, devolve só o retângulo pedido (os índices são da lista `points`)."""
+    coords = ";".join(f"{p['lng']:.5f},{p['lat']:.5f}" for p in points)
+    params = {"annotations": "distance,duration"}
+    if origens is not None:
+        params["sources"] = ";".join(str(i) for i in origens)
+    if destinos is not None:
+        params["destinations"] = ";".join(str(i) for i in destinos)
+    _esperar_vez(OSRM_URL)
+    resp = requests.get(f"{OSRM_URL}/{coords}", params=params,
+                        headers=OSRM_HEADERS, timeout=OSRM_TIMEOUT)
+    resp.raise_for_status()
+    data = resp.json()
+    if data.get("code") != "Ok":
+        raise ValueError(f"OSRM code: {data.get('code')}")
+    dist = [[int(v or 0) for v in linha] for linha in data["distances"]]
+    dur  = [[int(v or 0) for v in linha] for linha in data["durations"]]
+    return dist, dur
+
+
+def _plano_de_blocos(n: int) -> int | None:
+    """Quantas origens por consulta, mandando todos os pontos como destino.
+    None quando daria mais consultas que o teto."""
+    celulas = OSRM_LIMIT * OSRM_LIMIT
+    por_vez = max(1, celulas // n)
+    blocos = math.ceil(n / por_vez)
+    return por_vez if blocos <= OSRM_MAX_BLOCOS else None
+
+
+def _matriz_em_blocos(points: list[dict], por_vez: int) -> tuple[list[list[int]], list[list[int]]]:
+    """Monta a matriz inteira com várias consultas, cada uma pedindo algumas
+    linhas (origens) contra todos os pontos (destinos)."""
+    n = len(points)
+    dist = [[0] * n for _ in range(n)]
+    dur  = [[0] * n for _ in range(n)]
+    for ini in range(0, n, por_vez):
+        origens = list(range(ini, min(ini + por_vez, n)))
+        d, t = _osrm_table(points, origens=origens, destinos=list(range(n)))
+        if len(d) != len(origens) or any(len(linha) != n for linha in d):
+            raise ValueError("OSRM devolveu um bloco do tamanho errado")
+        for k, i in enumerate(origens):
+            dist[i] = d[k]
+            dur[i]  = t[k]
+    return dist, dur
 
 
 # ── Traçado pelas ruas ─────────────────────────────────────────────────────────

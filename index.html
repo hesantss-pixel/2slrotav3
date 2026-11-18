@@ -1009,8 +1009,11 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
         <span class="field-lbl" style="margin-top:0">O que entra nesta viagem</span>
         <div class="seg" id="rot-tipo" role="group" aria-label="O que entra nesta viagem"></div>
         <div class="rot-nota" id="rot-tipo-nota"></div>
+        <span class="field-lbl">De qual cidade</span>
+        <select class="field-inp" id="rot-cidade-d" onchange="setRotCidadeD(this.value)" aria-label="Cidade dos pedidos desta viagem"></select>
+        <div class="rot-nota" id="rot-cidade-nota"></div>
         <div class="dup">
-          <div><span class="field-lbl">Data da viagem</span><input type="date" class="field-inp" id="rot-data-d"></div>
+          <div><span class="field-lbl">Data da viagem</span><input type="date" class="field-inp" id="rot-data-d" onchange="renderRotCidadeD(false)"></div>
           <div><span class="field-lbl">Saída do CD</span><input type="time" class="field-inp" id="rot-saida-d" value="07:00"></div>
         </div>
         <div class="rot-nota">Agendados de outro dia ficam de fora. Os do dia entram com o horário marcado.</div>
@@ -3651,14 +3654,21 @@ const VEICULOS=[
   {id:'carreta',nome:'Carreta',tag:'até 33t',desc:'Articulada — grandes volumes',presets:[20000,27000,32000],cor:'#7c5cc4',img:'assets/veic/carreta.svg'},
 ];
 let vehSel=null, capKgD=0, maxPedD=6, rotaGeradaD=[], fonteDistanciaD='—';
+// Cidade dos pedidos que entram no cálculo. Importa para o km: o servidor de
+// rotas mede pelas ruas até LIMITE_RUAS pontos de uma vez; acima disso a conta
+// sai em linha reta. Escolhendo a cidade, a viagem quase sempre fica abaixo.
+let rotCidadeD='todas';
+const LIMITE_RUAS=450;
 let rotasConfirmadasDemo=[];
 let rotTipoD='todos', regraCargaD='';
 let rotaCtxD={data:'',saida:420,volta:false}, naoAlocD=[], foraJanelaD=[];
 // Pedidos que entram nesta viagem: tipo escolhido, sem agendados de outro dia;
 // os agendados do dia levam a janela de horário para o motor de rotas.
+function _cidadeDe(o){ return String((o&&o.cidade)||'Sem cidade').trim()||'Sem cidade'; }
 function _pedidosDaViagem(){
   const d=rotaCtxD.data||_hojeISO();
   return _filtrar(allOrders.filter(o=>o.status==='pendente'),rotTipoD)
+    .filter(o=>rotCidadeD==='todas'||_cidadeDe(o)===rotCidadeD)
     .filter(o=>!(o.agendado&&o.dataAgendada&&o.dataAgendada>d))
     .map(o=>{ const j=o.agendado&&o.dataAgendada===d?_janelaDe(o):null; return j?{...o,janela_ini:j[0],janela_fim:j[1]}:o; });
 }
@@ -3679,8 +3689,38 @@ function renderRotTipoD(inicial){
     rotTipoD==='coleta' ? 'O veículo sai vazio e recolhe as coletas. Se o km da volta ao CD deve contar, marque "Voltar ao CD" abaixo.'
     : rotTipoD==='todos' ? 'O veículo sai com as entregas, faz todas elas e só depois as coletas. Assim a carga a bordo nunca passa da capacidade.'
     : 'O veículo sai carregado com as entregas.';
+  renderRotCidadeD(inicial);
 }
 function setRotTipoD(v){ rotTipoD=['entrega','coleta'].includes(v)?v:'todos'; renderRotTipoD(false); }
+function setRotCidadeD(v){ rotCidadeD=v||'todas'; renderRotCidadeD(false); }
+window.setRotCidadeD=setRotCidadeD;
+window.renderRotCidadeD=(i)=>renderRotCidadeD(!!i);
+window.__pedidosDaViagem=()=>_pedidosDaViagem();   // usado pelos testes de tela
+// Lista as cidades com pedido pendente do tipo e do dia escolhidos, da que tem
+// mais para a que tem menos, com quantos pedidos cada uma.
+function _cidadesDaViagem(){
+  const d=rotaCtxD.data||_hojeISO();
+  const base=_filtrar(allOrders.filter(o=>o.status==='pendente'),rotTipoD)
+    .filter(o=>!(o.agendado&&o.dataAgendada&&o.dataAgendada>d));
+  const por=new Map();
+  base.forEach(o=>{ const c=_cidadeDe(o); por.set(c,(por.get(c)||0)+1); });
+  return { total:base.length, cidades:[...por.entries()].sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0])) };
+}
+function renderRotCidadeD(inicial){
+  const sel=document.getElementById('rot-cidade-d'); if(!sel) return;
+  const {total,cidades}=_cidadesDaViagem();
+  // a cidade escolhida antes some quando muda o tipo ou o dia: volta para todas
+  if(rotCidadeD!=='todas'&&!cidades.some(([c])=>c===rotCidadeD)) rotCidadeD='todas';
+  if(inicial&&filtroTipo==='todos'&&cidades.length===1) rotCidadeD=cidades[0][0];
+  sel.innerHTML=[`<option value="todas"${rotCidadeD==='todas'?' selected':''}>Todas as cidades (${total})</option>`]
+    .concat(cidades.map(([c,n])=>`<option value="${esc(c)}"${rotCidadeD===c?' selected':''}>${esc(c)} (${n})</option>`)).join('');
+  const n=rotCidadeD==='todas'?total:(cidades.find(([c])=>c===rotCidadeD)||[,0])[1];
+  const nota=document.getElementById('rot-cidade-nota');
+  if(nota) nota.innerHTML = n>LIMITE_RUAS
+    ? `⚠️ <b>${_plural(n,'pedido entra','pedidos entram')} neste cálculo.</b> Acima de ${LIMITE_RUAS} o km sai em <b>linha reta</b>, não pelas ruas. Escolha uma cidade, ou confirme as primeiras rotas antes de montar as próximas.`
+    : rotCidadeD==='todas' ? `${_plural(n,'pedido entra','pedidos entram')} neste cálculo, de ${_plural(cidades.length,'cidade','cidades')}.`
+    : `Só os ${n===1?'pedidos':''}${n===1?'':_plural(n,'pedido','pedidos')} de ${esc(rotCidadeD)}. Os outros continuam pendentes para a próxima viagem.`;
+}
 let motoristasFirebase={}, motoristasDemo=[], motoristaSelecionadoD=null;
 let chatSessionId='';
 
@@ -3783,7 +3823,7 @@ function irConfirmD(){
   const comHora=viagem.filter(o=>o.janela_ini!=null).length;
   const semLocal=viagem.filter(_aprox).length, semNumV=viagem.filter(_semNumero).length;
   document.getElementById('confirm-veh-name').textContent=vehSel.nome;
-  document.getElementById('confirm-details-d').innerHTML=`Capacidade: <b style="color:var(--ac)">${kg.toLocaleString('pt-BR')} kg</b><br>Máx. de paradas: <b>${maxPedD}</b><br>Nesta viagem: <b>${oque} pendentes</b>${rotTipoD==='todos'?' <span style="color:var(--text3)">(entregas primeiro, coletas depois)</span>':''}<br>Saída: <b>${esc(DEPOT.name)}</b> às <b>${_hhmm(rotaCtxD.saida)}</b> de <b>${_dataBR(rotaCtxD.data)}</b><br>Fim: <b>${rotaCtxD.volta?'volta ao CD':'na última parada'}</b>${FATOR_TEMPO!==1?`<br>Tempos ajustados ao trânsito: <b>×${FATOR_TEMPO.toLocaleString('pt-BR',{maximumFractionDigits:2})}</b> <span style="color:var(--text3)">(calibrado pelas suas rotas)</span>`:''}${comHora?`<br>Com horário marcado: <b>${comHora}</b>`:''}${outroDia?`<br><span style="color:var(--text3)">${_plural(outroDia,'agendado para outro dia fica','agendados para outro dia ficam')} de fora.</span>`:''}${semLocal?`<br><span style="color:#8a5a06">⚠️ ${_plural(semLocal,'pedido ainda está','pedidos ainda estão')} sem localização exata (só o bairro ou a cidade). A ordem e os km desses pedidos são aproximados.</span>`:''}${semNumV?`<br><span style="color:var(--text3)">ℹ️ ${_plural(semNumV,'pedido está','pedidos estão')} na rua certa, sem o número: em avenida longa, a ordem pode sair pior.</span>`:''}`;
+  document.getElementById('confirm-details-d').innerHTML=`Capacidade: <b style="color:var(--ac)">${kg.toLocaleString('pt-BR')} kg</b><br>Máx. de paradas: <b>${maxPedD}</b>${rotCidadeD!=='todas'?`<br>Só de: <b>${esc(rotCidadeD)}</b>`:''}<br>Nesta viagem: <b>${oque} pendentes</b>${rotTipoD==='todos'?' <span style="color:var(--text3)">(entregas primeiro, coletas depois)</span>':''}<br>Saída: <b>${esc(DEPOT.name)}</b> às <b>${_hhmm(rotaCtxD.saida)}</b> de <b>${_dataBR(rotaCtxD.data)}</b><br>Fim: <b>${rotaCtxD.volta?'volta ao CD':'na última parada'}</b>${FATOR_TEMPO!==1?`<br>Tempos ajustados ao trânsito: <b>×${FATOR_TEMPO.toLocaleString('pt-BR',{maximumFractionDigits:2})}</b> <span style="color:var(--text3)">(calibrado pelas suas rotas)</span>`:''}${comHora?`<br>Com horário marcado: <b>${comHora}</b>`:''}${outroDia?`<br><span style="color:var(--text3)">${_plural(outroDia,'agendado para outro dia fica','agendados para outro dia ficam')} de fora.</span>`:''}${semLocal?`<br><span style="color:#8a5a06">⚠️ ${_plural(semLocal,'pedido ainda está','pedidos ainda estão')} sem localização exata (só o bairro ou a cidade). A ordem e os km desses pedidos são aproximados.</span>`:''}${semNumV?`<br><span style="color:var(--text3)">ℹ️ ${_plural(semNumV,'pedido está','pedidos estão')} na rua certa, sem o número: em avenida longa, a ordem pode sair pior.</span>`:''}`;
   document.getElementById('rot-step-cap').style.display='none';
   document.getElementById('rot-step-confirm').style.display='block';
 }
