@@ -40,6 +40,9 @@ Banco e login: Firebase, projeto `slog-pedidos` (Realtime Database + Authenticat
     volumes (`transp/vol/pesoB`). CT-e e eventos são recusados com aviso.
   - Excel/CSV: uma coluna `tipo` com "coleta" ou "entrega" vale linha a linha; vazia = o que foi
     escolhido na tela.
+  - PDF do DANFE: lê nome, endereço, bairro, CEP, município, UF, volumes e peso pela posição na
+    página (ver "O PDF da nota passou a ser lido de verdade"). É experimental e pede confirmação;
+    nota sem CEP e sem município não entra.
   - Nota que já saiu para rota (despachada/entregue) não é alterada se for importada de novo.
 - **Chave no banco** (`pedidos_rota/<chave>`): entrega = chave de acesso da NF-e (44 dígitos) ou o
   número da nota (planilha); coleta = `C_` + o mesmo. Assim a coleta e a entrega da mesma nota
@@ -383,6 +386,51 @@ depois. O relatório já ignorava o `so_baixas` e continua ignorando.
 
 Testes: `tests/tela/t_trilha.js` e `TesteCaminhoImporta` em `backend/tests/test_km_rastro.py`.
 O `push` do Firebase simulado passou a recusar caminho sem permissão, como o SDK de verdade.
+
+## O PDF da nota passou a ser lido de verdade (18/11/2026)
+
+A leitura de PDF criava **um pedido para cada número de 5 a 9 dígitos** que achasse no texto
+(valor, CNPJ, código de produto — qualquer um), sem endereço nenhum, com "Sem cidade" e um
+ponto **sorteado a até 1 km do CD**. No mapa o pedido caía na bolha da cidade, mas na rota
+aquele ponto inventado entrava como se fosse o endereço do cliente.
+
+Agora o DANFE é lido **pela posição na página**, não pela ordem do texto. O DANFE é desenhado
+em caixas: o rótulo em letra miúda em cima, o valor em letra maior embaixo. Cada emissor
+escreve o texto do PDF numa ordem diferente, então o leitor agrupa os pedaços em linhas pelo Y,
+acha o rótulo e pega o que está logo abaixo dele, na mesma coluna — o próximo texto miúdo da
+mesma linha fecha a coluna à direita. Sai disso:
+
+| Campo | De onde vem |
+|---|---|
+| Nome do cliente | `NOME/RAZÃO SOCIAL` da seção **DESTINATÁRIO/REMETENTE** |
+| Endereço e bairro | `ENDEREÇO` e `BAIRRO/DISTRITO` da mesma seção |
+| CEP, município, UF | `CEP`, `MUNICÍPIO`, `UF` (também separa "SÃO PAULO - SP" numa só caixa) |
+| Volumes e peso | `QUANTIDADE` e `PESO BRUTO` (ou líquido) da seção **TRANSPORTADOR / VOLUMES** |
+| Número da nota | das posições 26 a 34 da **chave de acesso**, ou do rótulo `Nº` |
+
+A seção importa: o DANFE repete `NOME`, `ENDEREÇO`, `MUNICÍPIO` e `UF` na parte do
+transportador, e sem limitar a faixa de Y o endereço da transportadora entrava no lugar do
+endereço do cliente. Na **coleta** o ponto é o do emitente, que no DANFE é um bloco de texto
+solto ao lado do título "DANFE" — daí a coluna ser cortada pelo X.
+
+O que mudou no resultado:
+
+- **ponto inventado, nunca mais.** O pedido entra como o do XML: `geoStatus: pendente` com CEP,
+  `sem_cep` sem ele, e é o geocodificador que acha o ponto. Sem pino exato até achar;
+- **nota sem CEP e sem município não é importada.** Aparece na mensagem: "1 nota do PDF ficou
+  de fora: sem CEP e sem município legíveis — use o XML dela";
+- **2ª via e 2ª folha da mesma nota** caem no mesmo pedido (a chave de acesso é o id);
+- a folha sem número e sem chave (continuação) é ignorada em vez de virar pedido;
+- o arquivo sem nenhuma nota legível é recusado com o motivo, em vez de importar lixo.
+
+O aviso de "leitura experimental" continua, porque continua sendo: cada emissor desenha o DANFE
+de um jeito. **XML segue sendo o caminho certo** — de lá sai tudo isso sem adivinhação.
+
+Testes: `tests/tela/t_pdf.js`, com DANFEs gerados por `tests/tela/pdf/gerar_danfe.py` (layout da
+SEFAZ, dados fictícios). O `pdf.js` vem de CDN e a bateria roda sem internet, então o teste usa
+o texto **com a posição de cada pedaço** (`tests/tela/pdf/*.json`, extraído dos PDFs gerados) —
+é o mesmo formato que o `pdf.js` entrega ao navegador. Para conferir a ponta a ponta, importe
+`tests/tela/pdf/danfe-exemplo.pdf` no sistema aberto no navegador.
 
 ## O motorista não digita mais o km do painel (18/11/2026)
 

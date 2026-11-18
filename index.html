@@ -969,7 +969,7 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
           </button>
         </div>
       </div>
-      <div class="imp-help" id="imp-help">XML da NF-e, Excel, CSV ou PDF. Pode escolher vários arquivos de uma vez. <b>Entrega:</b> o sistema usa o endereço do <b>destinatário</b> (ou o local de entrega, se a nota tiver). Na planilha, uma coluna <b>tipo</b> com "coleta" ou "entrega" vale linha a linha, e as colunas <b>endereço</b> e <b>número</b> ajudam a achar o ponto certo. O <b>XML de cancelamento</b> da nota tira ela dos pendentes.</div>
+      <div class="imp-help" id="imp-help">XML da NF-e, Excel, CSV ou PDF. Pode escolher vários arquivos de uma vez. <b>Entrega:</b> o sistema usa o endereço do <b>destinatário</b> (ou o local de entrega, se a nota tiver). Na planilha, uma coluna <b>tipo</b> com "coleta" ou "entrega" vale linha a linha, e as colunas <b>endereço</b> e <b>número</b> ajudam a achar o ponto certo. O <b>XML de cancelamento</b> da nota tira ela dos pendentes. No <b>PDF do DANFE</b> o sistema lê nome, endereço, bairro, CEP, município, volumes e peso — pode errar, então confira; nota sem CEP e sem município não entra.</div>
       <details class="auto-ent" id="auto-ent">
         <summary><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/></svg><span><b>Receber pedidos automaticamente</b><small>Por e-mail ou pelo sistema da sua empresa, sem subir arquivo</small></span></summary>
         <div class="auto-ent__corpo" id="auto-ent-corpo" aria-live="polite">Carregando…</div>
@@ -3352,31 +3352,202 @@ function agendarGeocodificacao(pedidos){
 }
 window.agendarGeocodificacao = agendarGeocodificacao;
 
-// leitura de PDF (experimental) — tenta achar linhas com nº de NF e peso no texto
+// ══════════════════════════════════════════════════════════════════════════
+// LEITURA DO PDF DA NOTA (DANFE)
+// ══════════════════════════════════════════════════════════════════════════
+// O DANFE é desenhado em caixas: o rótulo em letra miúda em cima e o valor
+// embaixo, em letra maior. Ler o texto na ordem em que ele sai do PDF não
+// funciona — cada programa que emite nota escreve numa ordem diferente. Então
+// a leitura é pela posição na página: agrupa os pedaços de texto em linhas
+// pelo Y, acha o rótulo e pega o que está logo abaixo dele, dentro da mesma
+// coluna (o próximo texto miúdo da mesma linha fecha a coluna à direita).
+const _SACENTO = s => String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase();
+
+// rótulos do DANFE: se o que está logo abaixo for um deles, a caixa está vazia
+const _ROTULOS_DANFE=['NOME/RAZAO','NOME / RAZAO','NOME RAZAO','CNPJ','CPF','DATA DA EMISSAO',
+  'DATA DE EMISSAO','ENDERECO','BAIRRO','DISTRITO','CEP','MUNICIPIO','FONE','UF',
+  'INSCRICAO ESTADUAL','HORA DE SAIDA','DATA DA ENTRADA','DATA DE SAIDA','QUANTIDADE','ESPECIE',
+  'MARCA','NUMERACAO','PESO BRUTO','PESO LIQUIDO','FRETE','PLACA','ANTT','VALOR','BASE DE CALCULO',
+  'NATUREZA DA OPERACAO','CHAVE DE ACESSO','PROTOCOLO','NUMERO','SERIE','FOLHA','DESTINATARIO',
+  'TRANSPORTADOR','DADOS DO PRODUTO','DADOS ADICIONAIS','CALCULO DO IMPOSTO','RECEBEMOS DE',
+  'CODIGO','DESCRICAO','NCM','CST','CFOP','UNID','ALIQ','DOCUMENTO AUXILIAR','CONSULTA DE'];
+function _ehRotuloDanfe(txt){ const t=_SACENTO(txt); return _ROTULOS_DANFE.some(r=>t.startsWith(r)); }
+
+// pedaços de texto de uma página do PDF, com posição e altura da letra
+function _itensPagina(conteudo){
+  return (conteudo.items||[])
+    .filter(i=>i&&i.str&&i.str.trim())
+    .map(i=>({ s:i.str.trim(), x:i.transform[4], y:i.transform[5],
+               h:Math.abs(i.height||i.transform[3]||8) }));
+}
+function _linhasPdf(itens, tol=2.4){
+  const linhas=[];
+  for(const it of [...itens].sort((a,b)=> b.y-a.y || a.x-b.x)){
+    const ult=linhas[linhas.length-1];
+    if(ult && Math.abs(ult.y-it.y)<=tol) ult.itens.push(it);
+    else linhas.push({y:it.y, itens:[it]});
+  }
+  linhas.forEach(l=>l.itens.sort((a,b)=>a.x-b.x));
+  return linhas;    // de cima para baixo
+}
+// Y da primeira linha (de cima para baixo) com um texto que casa, abaixo de `abaixoDe`
+function _acharY(linhas, re, abaixoDe=Infinity){
+  for(const l of linhas){ if(l.y>=abaixoDe) continue; if(l.itens.some(it=>re.test(_SACENTO(it.s)))) return l.y; }
+  return null;
+}
+// valor da caixa cujo rótulo começa com `rotulo`, dentro da faixa de Y [ate, de]
+function _valorCaixa(linhas, rotulo, de=Infinity, ate=-Infinity){
+  const alvo=_SACENTO(rotulo);
+  for(let i=0;i<linhas.length;i++){
+    const L=linhas[i];
+    if(L.y>de || L.y<ate) continue;
+    const j=L.itens.findIndex(it=>_SACENTO(it.s).startsWith(alvo));
+    if(j<0) continue;
+    const lbl=L.itens[j];
+    const direita=L.itens.slice(j+1).filter(it=>it.x>lbl.x+2);
+    // o próximo texto miúdo da mesma linha é o rótulo da caixa vizinha: fecha a coluna
+    const vizinho=direita.find(it=>it.h<=lbl.h*1.2);
+    const x1=vizinho?vizinho.x-3:Infinity;
+    // 1) o valor logo abaixo, na mesma coluna (layout normal do DANFE)
+    for(let k=i+1;k<linhas.length&&k<=i+2;k++){
+      if(L.y-linhas[k].y>26) break;
+      const txt=linhas[k].itens.filter(it=>it.x>=lbl.x-3&&it.x<x1).map(it=>it.s).join(' ').replace(/\s+/g,' ').trim();
+      if(txt&&!_ehRotuloDanfe(txt)) return txt;
+    }
+    // 2) emissor que escreve o valor ao lado do rótulo, na mesma linha
+    const naLinha=direita.filter(it=>it.x<x1&&it.h>lbl.h*1.2).map(it=>it.s).join(' ').replace(/\s+/g,' ').trim();
+    if(naLinha&&!_ehRotuloDanfe(naLinha)) return naLinha;
+    return '';
+  }
+  return '';
+}
+// número do DANFE (1.250,500) usando o conversor que o resto do sistema já usa;
+// o que não for número positivo volta 0, que aqui significa "a nota não traz"
+function _numDanfe(t){ const n=_numBR(String(t||'').replace(/[^\d.,]/g,'')); return Number.isFinite(n)&&n>0?n:0; }
+function _cepDe(t){ const m=String(t||'').match(/\b(\d{5})-?\.?(\d{3})\b/); return m?m[1]+m[2]:''; }
+
+// Campos de UMA nota (uma página do DANFE). Devolve o que conseguiu ler;
+// quem chama decide se dá para usar. Nada é inventado: campo que não saiu
+// volta vazio.
+function _camposDanfe(linhas, tipo){
+  const plano=_SACENTO(linhas.flatMap(l=>l.itens.map(i=>i.s)).join(' '));
+
+  // chave de acesso: 44 dígitos, impressa em grupos de 4
+  let chave=String(_valorCaixa(linhas,'CHAVE DE ACESSO')||'').replace(/\D/g,'');
+  if(chave.length!==44){
+    const m=plano.replace(/[^\d ]/g,' ').replace(/\s+/g,' ').match(/(?:\d{4} ){10}\d{4}/);
+    chave=m?m[0].replace(/\D/g,''):'';
+  }
+  if(chave.length!==44) chave='';
+
+  // número da nota: da chave (posições 26 a 34) ou do rótulo "Nº"
+  let nf=chave?String(+chave.slice(25,34)):'';
+  if(!nf||nf==='0'){ const m=plano.match(/N[º°O]\.?:?\s*([\d.]{1,13})/); nf=m?String(+m[1].replace(/\./g,'')):''; }
+  if(!nf||nf==='0'||nf==='NaN') nf='';
+
+  // ── quem recebe (entrega) ou de quem se coleta ──────────────────────────
+  let nome='',endereco='',bairro='',cep='',cidade='',uf='';
+  if(tipo==='coleta'){
+    // na coleta o ponto é o do emitente, que no DANFE é um bloco de texto solto
+    // (nome, rua, CEP e cidade), sem rótulo nenhum
+    // o bloco do emitente fica na coluna da esquerda da mesma caixa em que o
+    // DANFE e a chave de acesso são impressos, então a coluna é cortada pelo X
+    const yTopo=_acharY(linhas,/IDENTIFICACAO DO EMITENTE/);
+    const yFim=_acharY(linhas,/NATUREZA DA OPERACAO/, yTopo??Infinity);
+    let xLim=Infinity;
+    for(const l of linhas){
+      if(yTopo!=null&&l.y>=yTopo) continue;
+      if(yFim!=null&&l.y<=yFim) break;
+      const it=l.itens.find(i=>/^DANFE\b|^DOCUMENTO AUXILIAR/.test(_SACENTO(i.s)));
+      if(it){ xLim=it.x-3; break; }
+    }
+    const bloco=linhas.filter(l=>(yTopo==null||l.y<yTopo)&&(yFim==null||l.y>yFim))
+                      .map(l=>l.itens.filter(i=>i.x<xLim).map(i=>i.s).join(' ').replace(/\s+/g,' ').trim())
+                      .filter(t=>t);
+    // a razão social é a primeira linha do bloco que não é rótulo ("CEP:", "CNPJ:"…)
+    nome=bloco.find(t=>!_ehRotuloDanfe(t))||'';
+    for(const t of bloco){
+      if(!cep) cep=_cepDe(t);
+      if(!endereco&&/^(r\.?|rua|av\.?|avenida|rod\.?|rodovia|trav\.?|travessa|al\.?|alameda|pra[cç]a|estrada|via)\b/i.test(t)) endereco=t;
+      const mc=t.match(/(?:^|[-,]\s*)([A-Z][A-Za-zÀ-ÿ'´`.\s]{2,40})\s*[-\/]\s*([A-Z]{2})\b/);
+      if(!cidade&&mc){ cidade=mc[1].trim(); uf=mc[2]; }
+    }
+  } else {
+    const yDest=_acharY(linhas,/DESTINAT/);
+    const de=yDest??Infinity;
+    const ate=_acharY(linhas,/CALCULO DO IMPOSTO|DUPLICATA|FATURA|TRANSPORTADOR/, de) ?? -Infinity;
+    nome=_valorCaixa(linhas,'NOME',de,ate)||_valorCaixa(linhas,'RAZAO',de,ate);
+    endereco=_valorCaixa(linhas,'ENDERECO',de,ate);
+    bairro=_valorCaixa(linhas,'BAIRRO',de,ate);
+    cep=_cepDe(_valorCaixa(linhas,'CEP',de,ate));
+    cidade=_valorCaixa(linhas,'MUNICIPIO',de,ate);
+    uf=_valorCaixa(linhas,'UF',de,ate);
+    // "GUARULHOS - SP" numa só caixa
+    const mc=cidade.match(/^(.*?)\s*[-\/]\s*([A-Za-z]{2})$/);
+    if(mc){ cidade=mc[1].trim(); if(!/^[A-Za-z]{2}$/.test(uf)) uf=mc[2]; }
+  }
+  if(!/^[A-Za-z]{2}$/.test(String(uf).trim())) uf=''; else uf=uf.trim().toUpperCase();
+
+  // ── volumes e peso: seção "TRANSPORTADOR / VOLUMES TRANSPORTADOS" ───────
+  const yTr=_acharY(linhas,/VOLUMES TRANSPORTADOS|TRANSPORTADOR/);
+  const deTr=yTr??Infinity;
+  const ateTr=_acharY(linhas,/DADOS DO PRODUTO|DADOS DOS PRODUTOS|CALCULO DO ISSQN/, deTr) ?? -Infinity;
+  const qtd=Math.round(_numDanfe(_valorCaixa(linhas,'QUANTIDADE',deTr,ateTr)));
+  const peso=_numDanfe(_valorCaixa(linhas,'PESO BRUTO',deTr,ateTr))
+          || _numDanfe(_valorCaixa(linhas,'PESO LIQUIDO',deTr,ateTr));
+
+  return { chave, nf, nome:String(nome||'').replace(/[<>"']/g,'').trim(),
+           endereco:String(endereco||'').replace(/[<>"']/g,'').trim(),
+           bairro:String(bairro||'').replace(/[<>"']/g,'').trim(),
+           cep, cidade:String(cidade||'').replace(/[<>"']/g,'').trim(), uf,
+           volumes:qtd>0?qtd:0, peso };
+}
+
+// Monta o pedido a partir dos campos lidos. Sem CEP e sem cidade não dá para
+// localizar nada: devolve null e a nota é reportada como não lida, em vez de
+// entrar na lista com um ponto inventado.
+function _pedidoDoDanfe(c, tipo){
+  if(!c.nf&&!c.chave) return null;
+  const cidade=c.cidade?_cidadeNorm(c.cidade):'';
+  if(!c.cep&&(!cidade||cidade==='Sem cidade')) return null;
+  const base=c.chave||`${c.nf}-${c.cep||cidade}`;
+  const coord=CITY_COORDS[cidade]||DEPOT;
+  return {
+    id:_chaveId(base,tipo), nf:c.nf||'S/N', tipo, chave:c.chave||'',
+    dest:c.nome||cidade||'Conferir',
+    remetente:tipo==='coleta'?c.nome:'', destinatario:tipo==='coleta'?'':c.nome,
+    endereco:c.endereco, bairro:c.bairro, uf:c.uf,
+    cidade:cidade||'Sem cidade', cep:c.cep,
+    geoStatus:c.cep?'pendente':'sem_cep',
+    peso:c.peso?Math.round(c.peso*100)/100:100, itens:c.volumes||1,
+    urgente:false, agendado:false, dataAgendada:'', status:'pendente', origem:'pdf',
+    lat:coord.lat+(Math.random()-.5)*.015, lng:coord.lng+(Math.random()-.5)*.015,
+  };
+}
+
 async function _parsePDF(file,tipo){
   if(!window.pdfjsLib) throw new Error('Leitor de PDF não carregou. Use CSV ou Excel.');
   const buf=await file.arrayBuffer();
   // isEvalSupported:false é a proteção oficial contra a CVE-2024-4367 nas versões antes da 4.2.67
   const pdf=await pdfjsLib.getDocument({data:buf,isEvalSupported:false}).promise;
-  let texto='';
+  const orders=[], vistos=new Set();
+  let paginas=0, semPeso=0, semEndereco=0;
   for(let p=1;p<=pdf.numPages;p++){
-    const page=await pdf.getPage(p);
-    const content=await page.getTextContent();
-    texto+=' '+content.items.map(i=>i.str).join(' ');
+    const linhas=_linhasPdf(_itensPagina(await (await pdf.getPage(p)).getTextContent()));
+    const c=_camposDanfe(linhas,tipo);
+    if(!c.nf&&!c.chave) continue;              // folha de continuação, sem a nota
+    paginas++;
+    const id=c.chave||c.nf;
+    if(vistos.has(id)) continue;               // 2ª via ou 2ª folha da mesma nota
+    vistos.add(id);
+    const o=_pedidoDoDanfe(c,tipo);
+    if(!o){ semEndereco++; continue; }
+    if(!c.peso) semPeso++;
+    orders.push(o);
   }
-  // heurística simples: procura números de NF (5-9 dígitos) e pesos (nº com kg)
-  const nfs=[...texto.matchAll(/\b(\d{5,9})\b/g)].map(m=>m[1]);
-  const pesos=[...texto.matchAll(/(\d+[.,]?\d*)\s*kg/gi)].map(m=>parseFloat(m[1].replace(',','.')));
-  if(!nfs.length) throw new Error('não foi possível achar números de nota neste PDF. Use o XML da nota ou uma planilha');
-  // monta 1 pedido por NF única encontrada (peso: 1º peso achado ou 100)
-  const vistas=new Set(); const orders=[]; const coord=DEPOT;
-  nfs.forEach((nf,idx)=>{
-    if(vistas.has(nf)) return; vistas.add(nf);
-    orders.push({ id:_chaveId(nf,tipo), nf, tipo, cidade:'Sem cidade', peso:pesos[idx]||100, itens:1, dest:'Importado de PDF — conferir',
-      urgente:false, agendado:false, dataAgendada:'', status:'pendente', origem:'pdf',
-      lat:coord.lat+(Math.random()-.5)*.02, lng:coord.lng+(Math.random()-.5)*.02 });
-  });
-  return orders;
+  if(!paginas) throw new Error('não achei o número nem a chave de acesso da nota neste PDF. Use o XML da nota ou uma planilha');
+  if(!orders.length) throw new Error(`${_plural(semEndereco,'a nota do PDF está','as notas do PDF estão')} sem CEP e sem município legíveis. Use o XML ${semEndereco===1?'dessa nota':'dessas notas'}`);
+  return {orders, semPeso, semEndereco};
 }
 
 // XML no encoding que ele declara (nota antiga em ISO-8859-1 não perde os acentos)
@@ -3389,7 +3560,7 @@ async function _textoXml(file){
 async function _lerArquivo(file,tipo){
   const ext=file.name.split('.').pop().toLowerCase();
   if(ext==='xml'){ const r=_lerXmlNFe(await _textoXml(file),tipo); return {orders:r.orders, semPeso:r.semPeso, cancelamentos:r.cancelamentos||[]}; }
-  if(ext==='pdf'){ return {orders:await _parsePDF(file,tipo), semPeso:0}; }
+  if(ext==='pdf'){ const r=await _parsePDF(file,tipo); return {orders:r.orders, semPeso:r.semPeso, semEndereco:r.semEndereco}; }
   if(ext==='csv'){
     const text=(await file.text()).replace(/^﻿/,'');
     const sep=text.includes(';')?';':',';
@@ -3416,16 +3587,16 @@ async function importarArquivo(input){
   if(!files.length) return;
   const tipo=tipoImport;
   if(files.some(f=>/\.pdf$/i.test(f.name))){
-    const ok=confirm('⚠️ A LEITURA DE PDF É EXPERIMENTAL.\n\nO sistema tenta achar os números das notas e os pesos no PDF, mas pode errar. Confira os dados antes de gerar a rota.\n\nPara um resultado confiável, use o XML da nota ou uma planilha (Excel/CSV).\n\nContinuar mesmo assim?');
+    const ok=confirm('⚠️ A LEITURA DE PDF É EXPERIMENTAL.\n\nDo DANFE o sistema lê a chave e o número da nota, o nome, o endereço, o bairro, o CEP, o município, os volumes e o peso. O ponto no mapa sai do CEP, como no XML.\n\nCada emissor desenha a nota de um jeito, então algum campo pode vir errado ou vazio: confira a lista antes de gerar a rota. Nota sem CEP e sem município não é importada.\n\nPara um resultado garantido, use o XML da nota ou uma planilha (Excel/CSV).\n\nContinuar mesmo assim?');
     if(!ok){ _impMsg('err','Importação cancelada.'); return; }
   }
   _impMsg('info',`Lendo ${_plural(files.length,'arquivo','arquivos')}...`);
-  const lidos=[], erros=[], canc=[]; let semPeso=0;
+  const lidos=[], erros=[], canc=[]; let semPeso=0, semEndereco=0;
   for(const f of files){
     try{
       const r=await _lerArquivo(f,tipo);
       if(!r.orders.length&&!(r.cancelamentos||[]).length) throw new Error('nenhuma nota encontrada');
-      lidos.push(...r.orders); semPeso+=r.semPeso; canc.push(...(r.cancelamentos||[]));
+      lidos.push(...r.orders); semPeso+=r.semPeso; semEndereco+=(r.semEndereco||0); canc.push(...(r.cancelamentos||[]));
     }catch(e){ erros.push(`${f.name}: ${e.message}`); }
   }
   if(!lidos.length){
@@ -3459,6 +3630,7 @@ async function importarArquivo(input){
     : nT.coleta ? `✅ ${_plural(nT.coleta,'coleta importada','coletas importadas')}.`
     : `✅ ${_plural(nT.entrega,'entrega importada','entregas importadas')}.`;
   if(jaEmRota) msg+=` ${_plural(jaEmRota,'nota já estava','notas já estavam')} em rota e não ${jaEmRota===1?'foi alterada':'foram alteradas'}.`;
+  if(semEndereco) msg+=` ${_plural(semEndereco,'nota do PDF ficou de fora','notas do PDF ficaram de fora')}: sem CEP e sem município legíveis — use o XML ${semEndereco===1?'dela':'delas'}.`;
   if(erros.length) msg+=` Não deu para ler: ${erros.join(' · ')}.`;
   _impMsg(erros.length||!novos.length?'warn':'ok', msg);
   // localiza no mapa em segundo plano as que vieram com CEP
@@ -3466,6 +3638,7 @@ async function importarArquivo(input){
   if(canc.length) await _tratarCancelamentos([...new Set(canc)]);
 }
 window.importarArquivo=importarArquivo;
+window.__danfe={linhas:_linhasPdf, campos:_camposDanfe, pedido:_pedidoDoDanfe, itens:_itensPagina};
 
 // ══════════════════════════════════════════════════════════════════════════
 // ROTEIRIZAÇÃO — wizard veículo → capacidade → confirma → /solve backend
