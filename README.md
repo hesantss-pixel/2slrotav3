@@ -387,6 +387,30 @@ depois. O relatório já ignorava o `so_baixas` e continua ignorando.
 Testes: `tests/tela/t_trilha.js` e `TesteCaminhoImporta` em `backend/tests/test_km_rastro.py`.
 O `push` do Firebase simulado passou a recusar caminho sem permissão, como o SDK de verdade.
 
+## Km pelas ruas já na montagem (18/11/2026)
+
+Na montagem no mapa, o km era a soma em **linha reta** entre as paradas, e o km pelas ruas só
+aparecia depois de "Usar esta rota". Em Guarulhos a diferença passa do dobro (10 km na montagem
+viravam 25 km). Agora:
+
+- Quando a pessoa para de tocar por 1,2 s, a tela chama o **`POST /avaliar`** com as paradas na
+  ordem dos toques — a **mesma conta** que mede a rota depois de "Usar esta rota". Volta o km pelas
+  ruas e o traçado de uma vez. A tela mostra "**24,8 km** pelas ruas, na ordem escolhida".
+- **Enquanto mede**, mostra "Medindo o km pelas ruas…" e **nenhum número**: o de linha reta
+  enganava justamente nesse momento.
+- **Sem resposta do servidor de rotas** (fora do ar, sem login, mais de 100 paradas, OSRM só em
+  linha reta), volta a "≈ X km em linha reta", com o motivo ao lado. Nunca apresenta linha reta
+  como km de estrada.
+- Sequência já medida (desfazer e refazer) volta da memória da tela, sem nova consulta. Ao usar
+  a rota, o km medido entra direto no resultado (não pisca o de linha reta) e o `/avaliar` de
+  sempre confirma o km e calcula os horários com as janelas.
+- A medição da montagem manda as janelas como `null`: janela muda horário, não km.
+- Custo: cada pausa vira uma tabela e uma rota no OSRM (antes, só a rota). Com o servidor público
+  (1 consulta por segundo), a resposta leva uns 2 s. Mais um motivo para o OSRM próprio.
+- Testes: `t_manual` (medindo sem número, km medido igual ao de usar a rota, ordem dos toques,
+  volta à linha reta sem servidor) e `t_tracado` (uma medição por pausa, sem volta, traçado e km
+  da tela, sequência guardada).
+
 ## Ver o pedido inteiro pelo pino (18/11/2026)
 
 Na montagem da rota no mapa, o toque simples continua colocando e tirando o ponto da rota. Para
@@ -570,8 +594,10 @@ codificação do Google com 6 casas decimais). A tela desenha essa linha.
 - **Onde aparece:** resultado da roteirização (`/solve` devolve um `tracado` por rota), rota
   ajustada ou otimizada (`/avaliar` devolve o da ordem nova), página Rotas e montagem no mapa.
 - **Montagem no mapa:** enquanto a pessoa toca nos pontos, a linha é um rascunho reto e tracejado.
-  Quando ela para por pouco mais de 1 segundo, a tela pede o caminho (`POST /tracado`) e a linha
-  vira o trajeto. Sequência já pedida volta da memória, sem nova consulta.
+  Quando ela para por pouco mais de 1 segundo, a tela pede o caminho e a linha vira o trajeto.
+  Sequência já pedida volta da memória, sem nova consulta. Desde 18/11/2026 o pedido é o
+  `POST /avaliar` (km pelas ruas + traçado), não mais o `/tracado` (ver "Km pelas ruas já na
+  montagem").
 - **Guardado na rota confirmada** (`rotas_confirmadas/<id>/tracado`): a página Rotas desenha sem
   perguntar ao servidor. Rota confirmada antes desta versão pede o traçado uma vez, uma rota por
   vez, e guarda.
@@ -815,7 +841,7 @@ troque `BACKEND_URL` no `index.html`.
   O script sobe o servidor local na porta 8771 e roda tudo; `./rodar.sh t_demo` roda uma só.
   As suítes `t_hero` e `t_oferta` são da página de vendas: passe o caminho dela em
   `PAGINA_VENDAS=/caminho/p-ginadevendasv3 ./rodar.sh`, senão são puladas.
-  Hoje são 903 verificações em 33 suítes do sistema (18/11/2026). Nenhuma chama a internet: o Firebase é simulado
+  Hoje são 907 verificações em 33 suítes do sistema (18/11/2026). Nenhuma chama a internet: o Firebase é simulado
   (`tests/tela/fakefb`), o Leaflet vem de `tests/tela/vendor` e ViaCEP/Nominatim/OSRM são cortados.
   `t_xss.js` é a trava de segurança: falha se alguém tirar o `esc()` de um texto que vem de fora.
   `t_tracado.js` confere o traçado pelas ruas: o decodificador contra uma resposta real do OSRM

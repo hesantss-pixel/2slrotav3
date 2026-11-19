@@ -264,6 +264,14 @@ const centro = (p, nf) => p.evaluate((n) => {
   await tocar(p, '1003');
   await tocar(p, '1001');
   await tocar(p, '1002');
+  const medindo = await p.evaluate(() => document.getElementById('man-tempo').textContent.replace(/\s+/g, ' ').trim());
+  ok(/Medindo o km pelas ruas/.test(medindo) && !/\d km/.test(medindo), 'enquanto mede, não mostra o km de linha reta, que engana → ' + medindo);
+  await p.waitForTimeout(1600);
+  const medido = await p.evaluate(() => document.getElementById('man-tempo').textContent.replace(/\s+/g, ' ').trim());
+  ok(/^52,4 km pelas ruas/.test(medido), 'parou de tocar: o km da montagem é o medido pelas ruas, o mesmo de usar a rota → ' + medido);
+  const pedidoMedida = reg.avaliar[reg.avaliar.length - 1];
+  ok(pedidoMedida && pedidoMedida.pedidos.length === 3 && Math.abs(pedidoMedida.pedidos[0].lat - (-23.39)) < 1e-6,
+    'a medição da montagem vai na ordem dos toques');
   reg.avaliar.length = 0;
   await p.click('#man-usar');
   await p.waitForTimeout(1200);
@@ -341,13 +349,16 @@ const centro = (p, nf) => p.evaluate((n) => {
   ok(zerado.desfazerTravado, 'o botão de desfazer começa travado');
 
   await tocar(j.p, '1001');
+  // aqui o servidor de rotas não responde: a tela volta para a linha reta e diz isso
+  await j.p.waitForTimeout(1600);
   const umaSo = await j.p.evaluate(() => ({
     tempo: document.getElementById('man-tempo').textContent.replace(/\s+/g, ' ').trim(),
     titulo: document.querySelector('#man-tempo span[title]').getAttribute('title'),
     aviso: document.getElementById('man-aviso').textContent,
     desfazerTravado: document.getElementById('man-desfazer').disabled,
   }));
-  ok(/≈ \d+ km/.test(umaSo.tempo), 'mostra o km estimado enquanto a pessoa escolhe → ' + umaSo.tempo);
+  ok(/≈ \d+(,\d)? km em linha reta/.test(umaSo.tempo) && /servidor de rotas não mediu/.test(umaSo.tempo),
+    'sem o servidor de rotas, mostra a linha reta e diz por quê → ' + umaSo.tempo);
   ok(!/h\d\d|hora|viagem/.test(umaSo.tempo), 'e não mostra quanto a viagem vai demorar → ' + umaSo.tempo);
   ok(/≈/.test(umaSo.tempo) && /estimativa/.test(umaSo.tempo),
     'deixa claro que é estimativa, não o km de estrada');
@@ -356,6 +367,7 @@ const centro = (p, nf) => p.evaluate((n) => {
   ok(!umaSo.desfazerTravado, 'com uma parada na rota o desfazer destrava');
 
   await tocar(j.p, '7777');
+  await j.p.waitForTimeout(1600);
   const longa = await j.p.evaluate(() => ({
     tempo: document.getElementById('man-tempo').textContent.replace(/\s+/g, ' ').trim(),
     classe: document.getElementById('man-tempo').className,

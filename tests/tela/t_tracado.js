@@ -171,12 +171,19 @@ const linhaDoMapa = (p, sel) => p.evaluate((s) => {
 
   // ── montagem no mapa ──────────────────────────────────────────────────────
   {
-    const reg2 = { tracado: [] };
+    // desde 18/11 a montagem mede com o /avaliar (km pelas ruas + traçado), não só o /tracado
+    const reg2 = { tracado: [], avaliar: [] };
     const { ctx: c2, p: p2, errs: e2 } = await open(b, 'index.html', 1440, 900, seed, false, { ped: PED });
     await c2.route(/railway\.app\/tracado/, (r) => {
       const body = JSON.parse(r.request().postData());
       reg2.tracado.push(body);
       r.fulfill({ contentType: 'application/json', body: JSON.stringify({ tracado: encode6(degraus(body.pontos.map((x) => [x.lat, x.lng]))) }) });
+    });
+    await c2.route(/railway\.app\/avaliar/, (r) => {
+      const body = JSON.parse(r.request().postData());
+      reg2.avaliar.push(body);
+      const pts = [body.deposito, ...body.pedidos, ...(body.volta ? [body.deposito] : [])].map((x) => [x.lat, x.lng]);
+      r.fulfill({ contentType: 'application/json', body: JSON.stringify({ km: 37.2, mins: 95, chegada_min: body.pedidos.map(() => null), fonte_distancia: 'OSRM', tracado: encode6(degraus(pts)) }) });
     });
     await p2.evaluate(() => window.irParaPagina('roteirizacao')); await p2.waitForTimeout(500);
     await p2.evaluate(() => window.selVeicD('toco')); await p2.waitForTimeout(250);
@@ -187,17 +194,20 @@ const linhaDoMapa = (p, sel) => p.evaluate((s) => {
     await p2.click('.leaflet-marker-icon[title*="NF 1003"]'); await p2.waitForTimeout(250);
     const MAN = '#mapa-manual path[stroke="#0d1b2e"]';
     let m = await linhaDoMapa(p2, MAN);
-    ok(m && m.tracejada && m.pontos === 3 && reg2.tracado.length === 0, 'tocando: rascunho em linha reta, sem chamar o servidor a cada toque');
+    ok(m && m.tracejada && m.pontos === 3 && reg2.avaliar.length === 0, 'tocando: rascunho em linha reta, sem chamar o servidor a cada toque');
     await p2.waitForTimeout(1600);
     m = await linhaDoMapa(p2, MAN);
-    ok(reg2.tracado.length === 1 && reg2.tracado[0].pontos.length === 3, 'parou de tocar: pede o caminho uma vez (CD e 2 paradas, sem volta)');
+    ok(reg2.avaliar.length === 1 && reg2.avaliar[0].pedidos.length === 2 && reg2.avaliar[0].volta === false && reg2.tracado.length === 0,
+      'parou de tocar: mede uma vez (2 paradas, sem volta), com a mesma conta de usar a rota');
     ok(m && !m.tracejada && m.pontos > 20, 'linha do rascunho vira o caminho pelas ruas');
+    const km = await p2.evaluate(() => document.getElementById('man-tempo').textContent.replace(/\s+/g, ' ').trim());
+    ok(/^37,2 km pelas ruas/.test(km), 'o km da tela é o medido pelas ruas → ' + km);
     // desfazer o último toque e refazer: o caminho já conhecido volta sem nova consulta
     await p2.click('#man-desfazer'); await p2.waitForTimeout(1500);
-    const n1 = reg2.tracado.length;
+    const n1 = reg2.avaliar.length;
     await p2.click('.leaflet-marker-icon[title*="NF 1003"]'); await p2.waitForTimeout(300);
     m = await linhaDoMapa(p2, MAN);
-    ok(m && !m.tracejada && reg2.tracado.length === n1, 'mesma sequência de antes: caminho guardado, sem nova consulta');
+    ok(m && !m.tracejada && reg2.avaliar.length === n1, 'mesma sequência de antes: caminho guardado, sem nova consulta');
     await p2.screenshot({ path: 'tracado-manual-1440.png' });
     ok(!e2.length, 'sem erros no console (montagem): ' + JSON.stringify(e2.slice(0, 3)));
     await c2.close();

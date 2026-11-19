@@ -4090,36 +4090,82 @@ function _manPintar(g){
   mk.setZIndexOffset(rot?1000:0);
 }
 // Enquanto a pessoa toca nos pontos, a linha é reta e tracejada (rascunho). Quando ela
-// para por um instante, o servidor devolve o caminho pelas ruas e a linha vira o trajeto.
-let _manTracTimer=null, _manChave='';
-const _manTracCache=new Map();
+// para por um instante, o servidor mede a rota NA ORDEM escolhida, com a mesma conta
+// (/avaliar) que mede depois de "Usar esta rota": o km da tela já é o km pelas ruas, e
+// a linha vira o trajeto. Antes era só o desenho (/tracado), e o km ficava em linha
+// reta — 10 km na montagem viravam 25 km ao usar a rota (18/11/2026).
+let _manTracTimer=null, _manChave='', _manMedida=null;
+const _manTracCache=new Map();   // chave da sequência → {linha, km, fonte}
+const MAN_MEDIR_MS=1200;
+const MAX_PARADAS_MEDIR=100;   // MAX_PARADAS_AVALIAR no backend/vrp_solver.py
+function _manPontos(){ return manSel.filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng)); }
 function _manDesenharLinha(){
   if(manLinha&&manLayer){ manLayer.removeLayer(manLinha); manLinha=null; }
   clearTimeout(_manTracTimer);
   if(!manLayer) return;
-  const pts=manSel.filter(p=>Number.isFinite(p.lat)&&Number.isFinite(p.lng)).map(p=>[p.lat,p.lng]);
-  if(!pts.length){ _manChave=''; return; }
+  const ps=_manPontos(), pts=ps.map(p=>[p.lat,p.lng]);
+  if(!pts.length){ _manChave=''; _manMedida=null; return; }
   const todos=[[DEPOT.lat,DEPOT.lng],...pts,...(rotaCtxD.volta?[[DEPOT.lat,DEPOT.lng]]:[])];
   const chave=todos.map(p=>p[0].toFixed(5)+','+p[1].toFixed(5)).join(';');
   _manChave=chave;
   const pronta=_manTracCache.get(chave);
   if(pronta){
-    manLinha=L.polyline(pronta,{color:'#0d1b2e',weight:3.5,opacity:.72,smoothFactor:1.2,interactive:false,attribution:ATRIB_ROTAS}).addTo(manLayer);
-    return;
+    _manMedida={chave, estado:'ok', km:pronta.km, fonte:pronta.fonte};
+    if(pronta.linha){
+      manLinha=L.polyline(pronta.linha,{color:'#0d1b2e',weight:3.5,opacity:.72,smoothFactor:1.2,interactive:false,attribution:ATRIB_ROTAS}).addTo(manLayer);
+      return;
+    }
   }
   manLinha=L.polyline(todos,
     {color:'#0d1b2e',weight:2.5,opacity:.55,dashArray:'6,8',interactive:false}).addTo(manLayer);
-  if(!auth.currentUser) return;
+  if(pronta) return;
+  if(!auth.currentUser||ps.length>MAX_PARADAS_MEDIR){ _manMedida={chave, estado:'reta'}; return; }
+  _manMedida={chave, estado:'medindo'};
   _manTracTimer=setTimeout(async()=>{
     try{
-      const d=await apiPost('/tracado',{pontos:todos.map(([lat,lng])=>({lat,lng}))});
+      const d=await apiPost('/avaliar',{
+        pedidos:ps.map(p=>({lat:p.lat,lng:p.lng,janela_ini:null,janela_fim:null})),   // a janela muda o horário, não o km
+        deposito:{lat:DEPOT.lat,lng:DEPOT.lng,nome:DEPOT.name}, hora_saida:rotaCtxD.saida, volta:!!rotaCtxD.volta, fator_tempo:FATOR_TEMPO,
+      });
+      const km=+(d&&d.km);
+      if(!Number.isFinite(km)) throw new Error('sem km');
       const linha=_decodePolyline6(d&&d.tracado);
-      if(linha.length<2) return;
       if(_manTracCache.size>=60) _manTracCache.delete(_manTracCache.keys().next().value);
-      _manTracCache.set(chave,linha);
-      if(_manChave===chave&&manLayer) _manDesenharLinha();   // ainda é a mesma sequência
-    }catch(e){}
-  },1200);
+      _manTracCache.set(chave,{linha:linha.length>=2?linha:null, km, fonte:String(d.fonte_distancia||'')});
+      if(_manChave===chave&&manLayer){ _manDesenharLinha(); _manKmTela(); }   // ainda é a mesma sequência
+    }catch(e){
+      if(_manChave!==chave) return;
+      _manMedida={chave, estado:'falhou'};
+      _manKmTela();
+    }
+  },MAN_MEDIR_MS);
+}
+// O km da montagem: medido pelas ruas quando o servidor responde; em linha reta, e dito
+// assim, quando não responde. Enquanto mede, não mostra número (o de linha reta engana).
+function _manKmTela(){
+  const el=$id('man-tempo'); if(!el) return;
+  el.className='man-tempo';
+  if(!manSel.length){ el.innerHTML=''; return; }
+  const m=_manMedida&&_manMedida.chave===_manChave?_manMedida:null;
+  const kmTxt=v=>(Math.round(v*10)/10).toLocaleString('pt-BR',{maximumFractionDigits:1});
+  if(m&&m.estado==='medindo'){
+    el.innerHTML='<span class="est" role="status">Medindo o km pelas ruas…</span>';
+    return;
+  }
+  if(m&&m.estado==='ok'&&m.fonte==='OSRM'){
+    el.innerHTML=`<span title="Medido pelas ruas, na ordem que você escolheu. É a mesma conta de quando você usar a rota."><b>${kmTxt(m.km)} km</b></span> `
+      + `<span class="est">pelas ruas, na ordem escolhida</span>`;
+    return;
+  }
+  const est=_estimarRotaLocal(manSel);
+  const km=m&&m.estado==='ok'?m.km:est.km;
+  const porque = m&&m.estado==='ok'&&/limite/.test(m.fonte) ? 'paradas demais para medir pelas ruas de uma vez'
+    : (m&&(m.estado==='falhou'||m.estado==='ok')) ? 'o servidor de rotas não mediu pelas ruas agora'
+    : manSel.length>MAX_PARADAS_MEDIR ? `mais de ${MAX_PARADAS_MEDIR} paradas: medido pelas ruas ao usar a rota`
+    : 'medido pelas ruas ao usar a rota';
+  el.className='man-tempo reta';
+  el.innerHTML=`<span title="Estimativa em linha reta. O km de estrada costuma ser bem maior: em Guarulhos chega a mais que o dobro.">≈ <b>${kmTxt(km)} km</b> em linha reta</span> `
+    + `<span class="est">estimativa · ${porque}</span>`;
 }
 function _manMudou(){ manGrupos.forEach(_manPintar); _manDesenharLinha(); _manAtualizar(); }
 
@@ -4402,15 +4448,7 @@ function _manAtualizar(){
       + `<br>${manSemHover?'Segure o dedo num ponto para ver o pedido inteiro.':'Clique com o botão direito num ponto para ver o pedido inteiro.'}`
     : `${_resumoTipos(n)} · ${_plural(itens,'volume','volumes')}`
       + (misto ? `<br>${frase}` : `<br>Peso total: <b>${kg(soma)} kg</b>.`);
-  // Estimativa pela mesma conta que o resto do sistema usa enquanto o servidor não
-  // mede (linha reta a 40 km/h + 15 min por parada). Fica marcada com ≈ de propósito:
-  // o km de estrada é sempre maior, e quanto maior varia muito de região para região.
-  const est=manSel.length?_estimarRotaLocal(manSel):{km:0,mins:0};
-  $id('man-tempo').className='man-tempo';
-  $id('man-tempo').innerHTML = manSel.length
-    ? `<span title="Estimativa em linha reta. Os quilômetros de estrada são medidos quando você usar a rota.">≈ <b>${Math.round(est.km).toLocaleString('pt-BR')} km</b></span>`
-      + `<span class="est">estimativa · medido de verdade ao usar a rota</span>`
-    : '';
+  _manKmTela();
   const avisos=[];
   if(nivel==='cheio') avisos.push(`Passa da capacidade do ${esc(vehSel?vehSel.nome:'veículo')} em ${kg(carga.max-capKgD)} kg.`);
   if(maxPedD&&manSel.length>maxPedD) avisos.push(`${manSel.length} paradas: mais que o limite de ${maxPedD} que você escolheu na tela anterior.`);
@@ -4459,6 +4497,10 @@ function manUsar(){
   rotaGeradaD=[{ pedidos:manSel.slice(), veiculo:vehSel?vehSel.nome:'', _manual:true }];
   fonteDistanciaD='—';
   _recalcLocalD(rotaGeradaD[0]);
+  // o km pelas ruas já medido na montagem entra direto, sem piscar o de linha reta; o
+  // /avaliar de baixo confirma o km e calcula os horários com as janelas
+  const medida=_manChave&&_manTracCache.get(_manChave);
+  if(medida&&medida.fonte==='OSRM'&&_manPontos().length===manSel.length) rotaGeradaD[0].km=medida.km;
   $id('rot-step-manual').style.display='none';
   renderRotasResultD(rotaGeradaD);
   _agendarAvaliacaoD(0);
