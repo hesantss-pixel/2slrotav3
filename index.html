@@ -5059,7 +5059,7 @@ function abrirMotoristaDemo(rid){ const r=_rotaPorId(rid); if(r) window.open(_li
 window.abrirMotoristaDemo=abrirMotoristaDemo;
 function enviarLinkDemoWhatsApp(rid){
   const r=_rotaPorId(rid); if(!r) return;
-  const msg=`Rota ${r.veiculo||''} (demonstração do ROTAV3): ${(r.paradas||[]).length} paradas.\nAbra no celular para ver o que o motorista vê:\n${_linkMotoristaDemo(r)}`;
+  const msg=`Rota ${r.veiculo||''} (exemplo do ROTAV3): ${(r.paradas||[]).length} paradas.\nAbra no celular para ver o que o motorista vê:\n${_linkMotoristaDemo(r)}`;
   window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank','noopener');
 }
 window.enviarLinkDemoWhatsApp=enviarLinkDemoWhatsApp;
@@ -5584,7 +5584,10 @@ function renderRotasConfirmadas(){
     const linkAtivo = r.token && (r.link_expira||0) > Date.now();
     const pos = posicaoPorRota[r.id];
     const linhaPos = `<div class="mot-sub" style="margin-top:6px">📍 ${pos?`Localização ao vivo: <b data-visto="${ridSafe}">${_haVisto(pos.hora)}</b>${pos.simulado?' (simulada)':''}`:'Localização ao vivo: o motorista ainda não ligou no celular.'}</div>`;
-    const mot = contaDemo
+    // conta de demonstração e conta de verdade ainda com os pedidos de exemplo: link de
+    // exemplo (abre a tela do motorista com estas paradas, sem gravar nada). Antes, a conta
+    // de verdade com os pedidos de exemplo não mostrava link nenhum (19/11/2026).
+    const mot = (contaDemo||modoDemo)
       ? `<div class="mot-box">
         <div class="mot-head">
           <div><div class="mot-tit">Motorista</div><div class="mot-sub">Exemplo: o link abre a tela do motorista com estas paradas.</div></div>
@@ -5594,8 +5597,6 @@ function renderRotasConfirmadas(){
         <div class="prog"><i style="width:${paradas.length?Math.round(feitas/paradas.length*100):0}%"></i></div>
         ${linhaPos}
       </div>`
-      : modoDemo
-      ? `<div class="mot-box"><div class="mot-sub">No modo demonstração o link do motorista não é criado. Importe as suas notas para usar.</div></div>`
       : `<div class="mot-box">
         <div class="mot-head">
           <div><div class="mot-tit">Motorista</div><div class="mot-sub">${r.token?(linkAtivo?`Link válido até ${new Date(r.link_expira).toLocaleDateString('pt-BR')}`:'Link encerrado'):'Sem link ainda'}</div></div>
