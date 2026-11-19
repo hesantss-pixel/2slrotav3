@@ -387,6 +387,15 @@ depois. O relatório já ignorava o `so_baixas` e continua ignorando.
 Testes: `tests/tela/t_trilha.js` e `TesteCaminhoImporta` em `backend/tests/test_km_rastro.py`.
 O `push` do Firebase simulado passou a recusar caminho sem permissão, como o SDK de verdade.
 
+## Faixa de demonstração retirada com os dados de exemplo (19/11/2026)
+
+A pedido do Henrique (atrapalhava a apresentação), a faixa do topo "Conta de demonstração: dados
+fictícios… Falar com a ROTAV3 · Saída das rotas…" **não aparece mais** enquanto a demonstração
+mostra os pedidos de exemplo. Ela só aparece quando a pessoa importa as próprias notas, porque aí
+diz onde elas ficam salvas e tem o botão "Voltar aos dados de exemplo". Os nomes do exemplo
+continuam fictícios (e os motoristas "(exemplo)"); **na apresentação, dizer que os pedidos são de
+demonstração**. Testes: `t_demo` (sem faixa no exemplo; com as notas, a faixa volta) e `t_prazo`.
+
 ## Ponto no mapa conferido: mesma cidade e mesma rua (19/11/2026)
 
 Henrique viu, nas rotas de teste, pedido "de Guarulhos" com o ponto em outro lugar. A leitura das
@@ -882,7 +891,7 @@ troque `BACKEND_URL` no `index.html`.
   O script sobe o servidor local na porta 8771 e roda tudo; `./rodar.sh t_demo` roda uma só.
   As suítes `t_hero` e `t_oferta` são da página de vendas: passe o caminho dela em
   `PAGINA_VENDAS=/caminho/p-ginadevendasv3 ./rodar.sh`, senão são puladas.
-  Hoje são 920 verificações em 33 suítes do sistema (19/11/2026). Nenhuma chama a internet: o Firebase é simulado
+  Hoje são 921 verificações em 33 suítes do sistema (19/11/2026). Nenhuma chama a internet: o Firebase é simulado
   (`tests/tela/fakefb`), o Leaflet vem de `tests/tela/vendor` e ViaCEP/Nominatim/OSRM são cortados.
   `t_xss.js` é a trava de segurança: falha se alguém tirar o `esc()` de um texto que vem de fora.
   `t_tracado.js` confere o traçado pelas ruas: o decodificador contra uma resposta real do OSRM

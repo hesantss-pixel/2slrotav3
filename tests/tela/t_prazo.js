@@ -76,8 +76,8 @@ const estado = async (p) => ({
   {
     const { ctx, p } = await entrar(b, 'demo', { criado: Date.now(), expira: Date.now() + 7 * DIA });
     const e = await estado(p);
-    const demo = await p.evaluate(() => !document.getElementById('faixa-demo').hidden);
-    ok(e.dentro && demo, 'demonstração no prazo entra e mostra a faixa de dados fictícios');
+    const demo = await p.evaluate(() => document.getElementById('kpi-pedidos').textContent.trim() === '86');
+    ok(e.dentro && demo, 'demonstração no prazo entra, com os 86 pedidos de exemplo');
     await ctx.close();
   }
 

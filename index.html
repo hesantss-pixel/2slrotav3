@@ -5880,11 +5880,14 @@ async function carregarConfig(){
 // (empresas/demo_<uid>), sem misturar com nenhuma outra conta.
 function _faixaDemo(){
   if(!contaDemo) return;
+  // com os dados de exemplo a faixa não aparece (retirada a pedido em 19/11/2026: atrapalhava
+  // a apresentação). Só aparece quando a demonstração mostra as notas da própria pessoa, porque
+  // aí ela diz onde ficam salvas e tem o botão de voltar ao exemplo.
+  $id('faixa-demo').hidden=!demoComNotasReais;
+  if(!demoComNotasReais){ $id('faixa-demo').innerHTML=''; return; }
   const wa='<a href="https://wa.me/5511918506103?text=Ol%C3%A1!%20Estou%20testando%20o%20ROTAV3%20e%20quero%20conversar." target="_blank" rel="noopener">Falar com a ROTAV3</a>';
   const salvo=EID?'Ficam salvas até o fim da demonstração e só você vê.':'Nada é salvo: ao recarregar ou sair, elas somem.';
-  const txt=demoComNotasReais
-    ? `Conta de demonstração: mostrando só as suas notas. ${salvo} <button type="button" class="lk" onclick="voltarDadosExemplo()">Voltar aos dados de exemplo</button>`
-    : 'Conta de demonstração: dados fictícios. Importe as suas notas em Pedidos para ver a sua operação.';
+  const txt=`Conta de demonstração: mostrando só as suas notas. ${salvo} <button type="button" class="lk" onclick="voltarDadosExemplo()">Voltar aos dados de exemplo</button>`;
   $id('faixa-demo').innerHTML=`<span>${txt} ${wa}</span>${_htmlCd('faixa')}`;
 }
 function _limparDadosExemplo(paraNotasReais){
@@ -5985,7 +5988,6 @@ function iniciarAppDemo(){
     {id:'mot_demo1',nome:'Carlos (exemplo)',veiculo_id:'vuc',veiculo_nome:'VUC',cap_kg:3000},
     {id:'mot_demo2',nome:'Ana (exemplo)',veiculo_id:'fiorino',veiculo_nome:'Fiorino',cap_kg:650},
   ];
-  $id('faixa-demo').hidden=false;
   if(EID){
     // área própria da demonstração: começa no exemplo até o cliente importar as notas dele
     modoDemo=true; allOrders=gerarDemoOrders();

@@ -76,7 +76,8 @@ async function paginaMotorista(b, hash, opts = {}, seed = {}) {
   await D.ctx.route(/railway\.app\/solve/, (r) => { solve = JSON.parse(r.request().postData()); const ps = solve.pedidos.slice(0, 5).map((x, i) => ({ ...x, chegada_min: 460 + i * 25 })); r.fulfill({ contentType: 'application/json', body: JSON.stringify({ routes: [{ veiculo: 'VUC', veiculo_id: 'vuc', pedidos: ps, km: 42, mins: 180 }], nao_alocados: [], fonte_distancia: 'OSRM', regra_carga: 'so_entregas', salvo: false }) }); });
   await D.p.evaluate(() => { window.__abertos = []; window.open = (u) => { window.__abertos.push(u); return null; }; });
   await D.p.waitForTimeout(600);
-  ok(await D.p.isVisible('#faixa-demo') && (await D.p.textContent('#faixa-demo')).includes('dados fictícios'), 'conta de demonstração mostra a faixa "dados fictícios"');
+  // 19/11/2026: a faixa "dados fictícios" saiu (atrapalhava a apresentação); volta só com as notas da pessoa
+  ok(!(await D.p.isVisible('#faixa-demo')), 'conta de demonstração com dados de exemplo não mostra a faixa no topo');
   ok((await D.p.textContent('#kpi-pedidos')) === '86', 'entra com os pedidos fictícios (86), não com os reais');
   const lidos = await D.p.evaluate(() => window.__FAKE.listeners.map((l) => l.path));
   ok(!lidos.includes('pedidos_rota') && !lidos.includes('rotas_confirmadas'), 'não fica ouvindo os dados reais do banco: ' + JSON.stringify(lidos));
@@ -85,6 +86,8 @@ async function paginaMotorista(b, hash, opts = {}, seed = {}) {
   await D.p.setInputFiles('#file-input', path.join(__dirname, 'xml', 'misto.csv')); await D.p.waitForTimeout(800);
   const escritas = await D.p.evaluate(() => window.__FAKE.writes.filter((w) => !/^(usuarios|solicitacoes)/.test(w[1])).map((w) => w[1]));
   const soDaDemo = escritas.every((p) => p.startsWith('empresas/demo_uid-visitante/'));
+  ok(await D.p.isVisible('#faixa-demo') && /mostrando só as suas notas/.test(await D.p.textContent('#faixa-demo')) && !/dados fictícios/.test(await D.p.textContent('#faixa-demo')),
+    'com as notas da pessoa, a faixa volta: diz onde ficam salvas e tem "voltar aos dados de exemplo"');
   ok((await D.p.textContent('#kpi-pedidos')) === '3' && soDaDemo, 'importar na demonstração substitui o exemplo (3 pedidos) e grava só na área da própria demo: ' + JSON.stringify(escritas));
   await D.p.click('.sb-item[data-page="roteirizacao"]'); await D.p.waitForTimeout(200);
   await D.p.click('#veh-grid .veh-card >> nth=1'); await D.p.fill('#cap-kg-d', '3000');
