@@ -370,7 +370,7 @@ function render() {
       <div class="r-sub">${esc(quando)}</div>
       <div class="r-prog"><div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="${n}" aria-valuenow="${feitas}"><i style="width:${n ? (feitas / n) * 100 : 0}%"></i></div><b>${feitas} de ${n}</b></div>
     </section>
-    ${DEMO ? `<div class="demo-aviso">${EMBUTIDO ? 'Rota de exemplo: marque uma parada e veja o painel do escritório mudar. Nada sai deste navegador.' : 'Rota de exemplo para demonstração: as baixas ficam só neste aparelho e não vão para nenhum escritório.'}</div>` : cardLocalizacao()}
+    ${DEMO ? `<div class="demo-aviso">${EMBUTIDO ? 'Rota de exemplo: marque uma parada e veja o painel do escritório mudar. Nada sai deste navegador.' : 'Rota de exemplo: as baixas ficam só neste aparelho e não vão para nenhum escritório.'}</div>` : cardLocalizacao()}
     ${n && feitas === n ? '<div class="fim">✅ Todas as paradas têm baixa. Pode voltar ao centro de distribuição.</div>' : ''}
     <ol class="lista">${paradas.map((p, i) => card(p, i, i === prox)).join('')}</ol>
     <p class="rodape">Ao dar baixa, o celular pode pedir sua localização: ela fica guardada junto com a baixa.<br>Dúvidas sobre a rota: fale com o escritório.</p>`;

@@ -28,7 +28,7 @@ const res = []; const ok = (c, m) => console.log((c ? 'OK   ' : 'FALHA ') + m);
   ok(await p.isVisible('.sidebar') && !(await p.isVisible('#pending-screen')), 'depois de liberado: abre o sistema');
   ok((await p.textContent('#user-nome')) === 'henrique@rotav3.com.br', 'mostra o e-mail de quem entrou');
   ok((await p.textContent('#kpi-pedidos')).trim() !== '—', 'dashboard carrega os pedidos');
-  ok(await p.isVisible('#hpill-demo'), 'banco vazio: aviso "Dados de demonstração" aparece');
+  ok(await p.isVisible('#hpill-demo') && (await p.textContent('#hpill-demo')) === 'Pedidos de exemplo', 'banco vazio: aviso "Pedidos de exemplo" aparece');
   await p.screenshot({ path: 'dash-1440.png' });
   // 4) sair volta para o login
   const vis = await p.isVisible('#user-sair');   await p.click('#user-sair'); await p.waitForTimeout(1200);

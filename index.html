@@ -898,7 +898,7 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
       <div><div class="page-title">Dashboard</div><div class="page-sub" id="page-date">Visão geral das operações</div></div>
       <div class="hpills">
         <div class="hpill"><div class="hdot"></div><span id="hdr-total">0</span> pendentes</div>
-        <div class="hpill demo" id="hpill-demo" hidden>Dados de demonstração</div>
+        <div class="hpill demo" id="hpill-demo" hidden>Pedidos de exemplo</div>
         <div class="hpill ia" data-page="ia"><img src="assets/em/sparkles_3d.png" alt="">IA Assistente</div>
       </div>
     </div>
@@ -1464,8 +1464,30 @@ async function verificarEEntrar(user){
   $id('sb-acessos').hidden=!ehAdmin;
   mostrarTela('app');
   if(!appIniciado){ appIniciado=true; if(contaDemo) iniciarAppDemo(); else iniciarApp(); }
+  _vigiarPrazo(user);
 }
 onAuthStateChanged(auth, verificarEEntrar);
+// O prazo era conferido só ao entrar: com a aba aberta, o teste continuava depois de
+// vencer até alguém recarregar a página. Agora confere de novo a cada 5 minutos e
+// quando a aba volta para a frente (revisão de 19/11/2026). O administrador não tem prazo.
+let _prazoTimer=null;
+function _vigiarPrazo(user){
+  clearInterval(_prazoTimer);
+  if(!user||user.uid===ADMIN_UID) return;
+  const conferir=async()=>{
+    if(auth.currentUser!==user) return;
+    try{
+      const d=(await get(ref(db,'demos/'+user.uid))).val();
+      if(d&&d.expira&&d.expira<Date.now()){ clearInterval(_prazoTimer); telaPendente(user,'expirado'); }
+    }catch(e){}
+  };
+  _prazoTimer=setInterval(conferir,5*60*1000);
+  if(!_vigiarPrazo.ligado){
+    _vigiarPrazo.ligado=true;
+    document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'&&_vigiarPrazo.conferir) _vigiarPrazo.conferir(); });
+  }
+  _vigiarPrazo.conferir=conferir;
+}
 
 // Chamada ao servidor de rotas com o login do usuário
 async function apiPost(path, body, metodo='POST'){
@@ -1773,9 +1795,11 @@ function render(){
   const nT=_contarTipos(pendentes);
   document.getElementById('kpi-split').textContent = _resumoTipos(nT);
   document.getElementById('hdr-total').textContent=total;
-  document.getElementById('kpi-pedidos-d').textContent=modoDemo?(demoComNotasReais?'suas notas (não são salvas)':'dados de demonstração'):'atualizado em tempo real';
-  document.getElementById('hpill-demo').hidden=!modoDemo;
-  document.getElementById('hpill-demo').textContent=demoComNotasReais?'Suas notas · demonstração':'Dados de demonstração';
+  document.getElementById('kpi-pedidos-d').textContent=modoDemo?(demoComNotasReais?'suas notas (não são salvas)':'pedidos de exemplo'):'atualizado em tempo real';
+  // selo do topo: só para conta de verdade com o banco vazio (cliente novo vendo o exemplo);
+  // na conta de demonstração não aparece (pedido em 19/11/2026, para a apresentação)
+  document.getElementById('hpill-demo').hidden=!modoDemo||contaDemo;
+  document.getElementById('hpill-demo').textContent='Pedidos de exemplo';
   document.getElementById('kpi-pedidos-d').classList.toggle('up',!modoDemo);
 
   // Grupos por região (a partir dos próprios pedidos)
@@ -1818,7 +1842,6 @@ function render(){
     {cor:'var(--red)',    txt:'Pedidos agendados atrasados', n:atrasados},
     {cor:'var(--yellow)', txt:'Pedidos marcados como urgentes', n:urgentes},
     {cor:'var(--vv)',   txt:`Pedidos a mais de ${RAIO_ISOLADO_KM} km do centro de distribuição`, n:isolados},
-    {cor:'var(--text3)',  txt:'Modo demonstração ativo',       n: modoDemo?1:0},
   ].filter(a=>a.n>0);
   document.getElementById('alert-list').innerHTML = alerts.length
     ? alerts.map(a=>`<div class="alert-row"><div class="alert-dot" style="background:${a.cor}"></div>${a.txt}<div class="alert-count">${a.n}</div></div>`).join('')
@@ -2189,7 +2212,7 @@ function renderRelatorios(){
     · <b>Sucesso</b> considera só as paradas que receberam baixa pelo link do motorista. "Sem baixa" são as paradas em que ninguém marcou nada.<br>
     · Cada pedido guarda a <b>última</b> ocorrência. Se a mesma nota falhou mais de uma vez, ela conta uma vez aqui.<br>
     · Rotas apagadas ficam de fora; devolvidas aparecem marcadas.
-    ${modoDemo?'<br>· <b>Atenção: estes são dados de demonstração</b>, não a sua operação.':''}
+    ${modoDemo?'<br>· <b>Atenção: estes são pedidos de exemplo</b>, não a sua operação.':''}
   </div>`;
 
   alvo.innerHTML=cab+kpis+alertaReta+_relBlocoRealizado(d)+blocoMotivos+tabRotas+tabMot+notas;
@@ -2201,7 +2224,7 @@ function _relCSV(){
   const lin=[];
   lin.push(['ROTAV3 — relatório de entregas']);
   lin.push([_relTitulo(relPeriodo), _relDiaBR(d.ini)+' a '+_relDiaBR(new Date(+d.fim-864e5))]);
-  if(modoDemo) lin.push(['ATENÇÃO: dados de demonstração']);
+  if(modoDemo) lin.push(['ATENÇÃO: pedidos de exemplo, não a sua operação']);
   lin.push([]);
   const km1=v=>v==null?'':num(v.toFixed(1)), rz2=v=>v==null?'':num(v.toFixed(2));
   lin.push(['Data','Veículo','Motorista','Paradas','Feitas','Não feitas','Sem baixa','Km planejado','Tempo (min)','Peso (kg)','Distância medida',
@@ -5256,7 +5279,7 @@ async function criarAcessoDemo(){
 }
 window.criarAcessoDemo=criarAcessoDemo;
 function _mensagemAcesso(a){
-  return `Olá${a.nome?', '+a.nome:''}! Aqui está o seu acesso de demonstração ao ROTAV3:\n\nSistema: ${_linkSistema()}\nE-mail: ${a.email}\nSenha: ${a.senha}\n\nVale até ${_dataCurta(a.expira)}. Começa com dados de exemplo. Se importar as suas notas (XML, Excel ou CSV), elas substituem o exemplo e ficam salvas só para você até o fim do teste. Em Roteirização, informe o CEP do seu centro de distribuição.`;
+  return `Olá${a.nome?', '+a.nome:''}! Aqui está o seu acesso de demonstração ao ROTAV3:\n\nSistema: ${_linkSistema()}\nE-mail: ${a.email}\nSenha: ${a.senha}\n\nVale até ${_dataCurta(a.expira)}. Começa com dados de exemplo. Se importar as suas notas (XML, Excel ou CSV), elas substituem o exemplo e ficam salvas só para você até o fim do teste. Me mande o endereço do seu centro de distribuição que eu deixo as rotas saindo de lá.`;
 }
 function _mostrarAcessoCriado(){
   const a=_acessoCriado, box=$id('ac-resultado');
@@ -5530,11 +5553,11 @@ function renderRotasConfirmadas(){
     const concluida = paradas.length && feitas===paradas.length;
     const linkAtivo = r.token && (r.link_expira||0) > Date.now();
     const pos = posicaoPorRota[r.id];
-    const linhaPos = `<div class="mot-sub" style="margin-top:6px">📍 ${pos?`Localização ao vivo: <b data-visto="${ridSafe}">${_haVisto(pos.hora)}</b>${pos.simulado?' (simulação da conta de demonstração)':''}`:'Localização ao vivo: o motorista ainda não ligou no celular.'}</div>`;
+    const linhaPos = `<div class="mot-sub" style="margin-top:6px">📍 ${pos?`Localização ao vivo: <b data-visto="${ridSafe}">${_haVisto(pos.hora)}</b>${pos.simulado?' (simulada)':''}`:'Localização ao vivo: o motorista ainda não ligou no celular.'}</div>`;
     const mot = contaDemo
       ? `<div class="mot-box">
         <div class="mot-head">
-          <div><div class="mot-tit">Motorista</div><div class="mot-sub">Conta de demonstração: o link abre a tela do motorista com estas paradas.</div></div>
+          <div><div class="mot-tit">Motorista</div><div class="mot-sub">Exemplo: o link abre a tela do motorista com estas paradas.</div></div>
           <div class="mot-acts"><button class="btn-wa" onclick="enviarLinkDemoWhatsApp('${ridSafe}')">Enviar pelo WhatsApp</button><button class="btn-sm" onclick="abrirMotoristaDemo('${ridSafe}')">Abrir a tela do motorista</button></div>
         </div>
         <div class="mot-sub">${feitas} de ${paradas.length} paradas com baixa (simulação)</div>

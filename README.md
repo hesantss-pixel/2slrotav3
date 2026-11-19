@@ -396,6 +396,27 @@ diz onde elas ficam salvas e tem o botão "Voltar aos dados de exemplo". Os nome
 continuam fictícios (e os motoristas "(exemplo)"); **na apresentação, dizer que os pedidos são de
 demonstração**. Testes: `t_demo` (sem faixa no exemplo; com as notas, a faixa volta) e `t_prazo`.
 
+## Sem a palavra "demonstração" na conta de demonstração; prazo conferido com a aba aberta (19/11/2026)
+
+- A pedido do Henrique, para a apresentação: a conta de demonstração não mostra mais "demonstração"
+  em lugar nenhum (tela, celular, link do motorista de exemplo). Onde é preciso deixar claro que os
+  dados não são reais, ficou **"exemplo"**: "pedidos de exemplo" no card de pedidos, aviso nos
+  Relatórios e na planilha, "Exemplo: o link abre a tela do motorista…" na página Rotas, posição
+  "(simulada)" e "Rota de exemplo" na tela do motorista. O selo do topo "Pedidos de exemplo"
+  continua só para conta de verdade com o banco vazio (cliente novo vendo o exemplo). O alerta
+  "Modo demonstração ativo" do painel saiu. Página Acessos (só o administrador) não mudou.
+- **Revisão dos acessos:**
+  - O prazo (demonstração e acesso completo com prazo, como o teste de 3 dias) era conferido só ao
+    entrar. Com a aba aberta, o cliente seguia usando depois de vencer. Agora a tela confere de novo
+    a cada 5 minutos e quando a aba volta para a frente, e mostra "Seu acesso de teste terminou"
+    (`_vigiarPrazo`). As regras do banco continuam barrando a gravação só da **demonstração** vencida;
+    o acesso completo vencido é barrado pela tela (para barrar no banco também, as regras teriam de
+    olhar o prazo em `demos/` — fica para quando houver mais clientes em teste).
+  - A mensagem pronta do acesso de demonstração pedia ao cliente para "informar o CEP do centro de
+    distribuição em Roteirização", o que não existe desde a 3.11 (só o administrador define o CD).
+    Agora pede o endereço para o Henrique configurar.
+- Teste: `t_prazo` (prazo vencendo com a aba aberta), `t_login` (selo "Pedidos de exemplo").
+
 ## Ponto no mapa conferido: mesma cidade e mesma rua (19/11/2026)
 
 Henrique viu, nas rotas de teste, pedido "de Guarulhos" com o ponto em outro lugar. A leitura das
@@ -891,7 +912,7 @@ troque `BACKEND_URL` no `index.html`.
   O script sobe o servidor local na porta 8771 e roda tudo; `./rodar.sh t_demo` roda uma só.
   As suítes `t_hero` e `t_oferta` são da página de vendas: passe o caminho dela em
   `PAGINA_VENDAS=/caminho/p-ginadevendasv3 ./rodar.sh`, senão são puladas.
-  Hoje são 921 verificações em 33 suítes do sistema (19/11/2026). Nenhuma chama a internet: o Firebase é simulado
+  Hoje são 922 verificações em 33 suítes do sistema (19/11/2026). Nenhuma chama a internet: o Firebase é simulado
   (`tests/tela/fakefb`), o Leaflet vem de `tests/tela/vendor` e ViaCEP/Nominatim/OSRM são cortados.
   `t_xss.js` é a trava de segurança: falha se alguém tirar o `esc()` de um texto que vem de fora.
   `t_tracado.js` confere o traçado pelas ruas: o decodificador contra uma resposta real do OSRM

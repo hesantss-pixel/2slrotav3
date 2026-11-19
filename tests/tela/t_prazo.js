@@ -36,6 +36,11 @@ const estado = async (p) => ({
     ok(e.dentro && !e.barrado, 'acesso completo com prazo em dia: entra no sistema inteiro');
     const demo = await p.evaluate(() => !document.getElementById('faixa-demo').hidden);
     ok(!demo, 'e não é demonstração: sem faixa de dados fictícios, então link de motorista e km por GPS valem');
+    // 19/11: o prazo vence com a aba aberta → ao voltar para a aba, o sistema fecha
+    await p.evaluate(() => { window.__FAKE.db.demos['uid-cliente'].expira = Date.now() - 1000; document.dispatchEvent(new Event('visibilitychange')); });
+    await p.waitForTimeout(500);
+    const e2 = await estado(p);
+    ok(!e2.dentro && e2.barrado && /terminou/.test(e2.titulo), 'prazo venceu com a aba aberta: ao voltar para a aba, mostra que o teste terminou → ' + e2.titulo);
     ok(errs.length === 0, 'sem erro de JavaScript: ' + JSON.stringify(errs.slice(0, 2)));
     await ctx.close();
   }
