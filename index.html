@@ -1749,7 +1749,7 @@ function carregarPedidos(){
         urgente:p.urgente||false, agendado:p.agendado||false, dataAgendada:p.dataAgendada||'',
         horaEntrega:p.horaEntrega||'', horaFim:p.horaFim||'', rota_atual:p.rota_atual||'', status:p.status||'pendente',
         cep:p.cep||'', geoStatus:p.geoStatus||(p.cep?'pendente':'sem_cep'), bairro:p.bairro||'',
-        geoPrec:p.geoPrec||'', geoManual:!!p.geoManual, origem:p.origem||'',
+        geoPrec:p.geoPrec||'', geoManual:!!p.geoManual, geoV:+p.geoV||0, origem:p.origem||'',
         lat:p.lat||(CITY_COORDS[p.cidade]?.lat??DEPOT.lat), lng:p.lng||(CITY_COORDS[p.cidade]?.lng??DEPOT.lng),
       })).filter(o=>o.status!=='entregue'&&o.status!=='coletado');
     } else {
@@ -2643,7 +2643,7 @@ async function salvarPedido(){
   // local salvo; endereço novo volta para o centro da cidade e é localizado pelo CEP.
   const endMudou=!o || (o.cep||'')!==cep || (o.endereco||'')!==dados.endereco || o.cidade!==cidade;
   if(_pedGeo&&_pedGeo.fonte!=='salvo'){
-    Object.assign(dados,{lat:_pedGeo.lat,lng:_pedGeo.lng,geoStatus:'ok',geoManual:_pedGeo.fonte==='manual',geoPrec:_pedGeo.fonte});
+    Object.assign(dados,{lat:_pedGeo.lat,lng:_pedGeo.lng,geoStatus:'ok',geoManual:_pedGeo.fonte==='manual',geoPrec:_pedGeo.fonte,geoV:GEO_VERSAO});
   } else if(!(o&&!endMudou)){
     const c=CITY_COORDS[cidade]||DEPOT;
     Object.assign(dados,{lat:c.lat,lng:c.lng,geoStatus:cep?'pendente':'sem_cep',geoManual:false,geoPrec:''});
@@ -3298,23 +3298,52 @@ async function _nominatimGet(params){
   const arr = await r.json();
   if(!arr.length) return null;
   const a=arr[0].address||{};
-  return { lat: parseFloat(arr[0].lat), lng: parseFloat(arr[0].lon), numero:a.house_number||'', rua:a.road||'' };
+  return { lat: parseFloat(arr[0].lat), lng: parseFloat(arr[0].lon), numero:a.house_number||'', rua:a.road||'',
+    cidades:[a.city,a.town,a.village,a.municipality,a.city_district].filter(Boolean),
+    uf:String(a['ISO3166-2-lvl4']||'').replace(/^BR-/,'') };
 }
 function _nominatim(query){ return _nominatimGet({q:query}); }
+// O Nominatim devolve o "mais parecido", não o certo: "Rua Umbuzeiro, Guarulhos" voltava a
+// "Rua São Sebastião do Umbuzeiro", a 5 km dali (conferido em 19/11/2026); e uma rua que
+// não existe na cidade pode voltar de outra cidade. Só vale o que for da MESMA cidade e,
+// quando se procurou uma rua, da MESMA rua. O que não passa cai para o passo seguinte
+// (bairro, cidade), que aparece como "local aproximado": aproximado e dito é melhor que
+// errado com cara de certo.
+const GEO_VERSAO=2;   // pontos achados antes desta conferência são procurados de novo
+function _nomeCidade(t){ return _semAcento(t).replace(/[^a-z0-9]/g,''); }
+function _mesmaCidade(g,cidade,uf){
+  if(!g) return false;
+  if(uf&&g.uf&&String(uf).toUpperCase()!==g.uf) return false;
+  if(!cidade) return true;
+  const c=_nomeCidade(cidade);
+  return (g.cidades||[]).some(x=>_nomeCidade(x)===c);
+}
+function _mesmaRua(g,rua){ const a=_ruaChave(g&&g.rua), b=_ruaChave(rua); return !!a&&a===b; }
 
 // Geocodifica UM cep: cache → ViaCEP → Nominatim (rua, depois bairro, depois cidade)
 async function _geocodificarCep(cep){
   const salvo=geoCache[cep];
-  if(salvo&&salvo.prec) return salvo;   // sem "prec" = gravado antes da versão 3.7: procura de novo para saber a precisão
+  // sem "prec" (antes da 3.7) ou sem "v" (antes da conferência de cidade e rua): procura de novo
+  if(salvo&&salvo.prec&&(+salvo.v||0)>=GEO_VERSAO) return salvo;
   let resultado;
   try{
     const end = await _viaCep(cep);
+    const lugar={city:end.localidade, ...(UF_NOME[end.uf]?{state:UF_NOME[end.uf]}:{}), country:'Brasil'};
     let coord=null, prec='';
-    if(end.logradouro){ coord=await _nominatim(`${end.logradouro}, ${end.localidade}, ${end.uf}, Brasil`); if(coord) prec=coord.rua?'rua':'bairro'; }
-    if(!coord&&end.bairro){ coord=await _nominatim(`${end.bairro}, ${end.localidade}, ${end.uf}, Brasil`); if(coord) prec='bairro'; }
-    if(!coord){ coord=await _nominatim(`${end.localidade}, ${end.uf}, Brasil`); if(coord) prec='cidade'; }
-    if(!coord) throw new Error('Nominatim não achou coordenada');
-    resultado = { lat:coord.lat, lng:coord.lng, bairro:end.bairro||'', cidade:end.localidade||'', uf:end.uf||'', rua:end.logradouro||'', prec };
+    if(end.logradouro){
+      const g=await _nominatimGet({street:end.logradouro, ...lugar});
+      if(_mesmaCidade(g,end.localidade,end.uf)&&_mesmaRua(g,end.logradouro)){ coord=g; prec='rua'; }
+    }
+    if(!coord&&end.bairro){
+      const g=await _nominatim(`${end.bairro}, ${end.localidade}, ${end.uf}, Brasil`);
+      if(_mesmaCidade(g,end.localidade,end.uf)){ coord=g; prec='bairro'; }
+    }
+    if(!coord){
+      const g=await _nominatimGet(lugar);
+      if(_mesmaCidade(g,end.localidade,end.uf)){ coord=g; prec='cidade'; }
+    }
+    if(!coord) throw new Error('Nominatim não achou coordenada na cidade do CEP');
+    resultado = { lat:coord.lat, lng:coord.lng, bairro:end.bairro||'', cidade:end.localidade||'', uf:end.uf||'', rua:end.logradouro||'', prec, v:GEO_VERSAO };
   }catch(e){ if(salvo) return salvo; throw e; }
   geoCache[cep] = resultado;
   // persiste no Firebase — próxima vez é instantâneo
@@ -3329,7 +3358,7 @@ async function _localizarPedido(o, persistir=true){
   if(salvo&&salvo.p==='manual') return {lat:salvo.lat,lng:salvo.lng,prec:'lembrado',bairro:'',cidade:''};
   // aprendido nas entregas (GPS do motorista): não vence, como o ponto marcado à mão
   if(salvo&&salvo.p==='aprendido'&&Number.isFinite(+salvo.lat)) return {lat:+salvo.lat,lng:+salvo.lng,prec:'aprendido',bairro:'',cidade:''};
-  if(salvo&&Date.now()-(salvo.em||0)<LOCAL_AUTO_DIAS*864e5) return {lat:salvo.lat,lng:salvo.lng,prec:salvo.p,bairro:'',cidade:''};
+  if(salvo&&(+salvo.v||0)>=GEO_VERSAO&&Date.now()-(salvo.em||0)<LOCAL_AUTO_DIAS*864e5) return {lat:salvo.lat,lng:salvo.lng,prec:salvo.p,bairro:'',cidade:''};
   const cep=String(o.cep||'').replace(/\D/g,'');
   let base=null;
   if(cep.length===8){ try{ base=await _geocodificarCep(cep); }catch(e){} }
@@ -3342,19 +3371,20 @@ async function _localizarPedido(o, persistir=true){
   if(numero&&cidade&&(base?.rua||rua)&&!/\bkm$/i.test(rua)){
     g=await _nominatimGet({street:`${numero} ${base?.rua||rua}`, ...lugar});
     // número achado longe demais da rua do CEP = provavelmente outra rua com o mesmo nome
-    if(g&&_mesmoNumero(g.numero,numero)&&!(base&&base.prec==='rua'&&_haversineKm(g,base)>6)) res={lat:g.lat,lng:g.lng,prec:'numero'};
+    if(g&&_mesmoNumero(g.numero,numero)&&_mesmaCidade(g,cidade,uf)&&_mesmaRua(g,base?.rua||rua)
+       &&!(base&&base.prec==='rua'&&_haversineKm(g,base)>6)) res={lat:g.lat,lng:g.lng,prec:'numero'};
   }
   // 2) o que o CEP deu (rua, bairro ou cidade)
   if(!res&&base) res={lat:base.lat,lng:base.lng,prec:base.prec||'rua'};
   // 3) sem CEP: a rua sem o número, depois só a cidade
   if(!res&&cidade){
     if(!g&&rua) g=await _nominatimGet({street:rua, ...lugar});
-    if(g&&g.rua) res={lat:g.lat,lng:g.lng,prec:'rua'};
-    else { const c=await _nominatimGet(lugar); if(c) res={lat:c.lat,lng:c.lng,prec:'cidade'}; }
+    if(g&&_mesmaCidade(g,cidade,uf)&&_mesmaRua(g,rua)) res={lat:g.lat,lng:g.lng,prec:'rua'};
+    else { const c=await _nominatimGet(lugar); if(_mesmaCidade(c,cidade,uf)) res={lat:c.lat,lng:c.lng,prec:'cidade'}; }
   }
   if(!res) throw new Error('endereço não encontrado');
   // guarda o que deu mais trabalho (número, ou endereço sem CEP) para não consultar a cada nota
-  if(chave&&(numero||!base)) _guardarLocal(chave,{lat:res.lat,lng:res.lng,p:res.prec,em:Date.now()},persistir);
+  if(chave&&(numero||!base)) _guardarLocal(chave,{lat:res.lat,lng:res.lng,p:res.prec,em:Date.now(),v:GEO_VERSAO},persistir);
   return {...res, bairro:base?.bairro||'', cidade:base?.cidade||'', uf:base?.uf||''};
 }
 
@@ -3378,10 +3408,20 @@ async function _processarFilaGeo(){
       // marcado à mão enquanto estava na fila: o ponto da pessoa vale
       const agora=allOrders.find(x=>x.id===o.id);
       if(agora&&agora.geoManual) continue;
-      let payload = { lat:g.lat, lng:g.lng, geoStatus:'ok', geoPrec:g.prec, bairro:g.bairro||o.bairro||'', cidade:g.cidade||o.cidade };
-      // já localizado antes da versão 3.7: só troca o ponto se achar o número (ou um ponto marcado à mão)
-      if(o._melhorar && !['numero','lembrado','aprendido'].includes(g.prec)){
-        payload = { geoPrec: _haversineKm(g,o)<0.05 ? g.prec : 'endereco' };
+      let payload = { lat:g.lat, lng:g.lng, geoStatus:'ok', geoPrec:g.prec, bairro:g.bairro||o.bairro||'', cidade:g.cidade||o.cidade, geoV:GEO_VERSAO };
+      // Já tinha ponto, achado antes da conferência de cidade e rua (19/11/2026):
+      // - a busca conferida achou o número: vale o novo;
+      // - achou a rua: o número antigo fica só se estiver em cima dela (até 500 m);
+      // - só achou o bairro ou a cidade: o ponto antigo fica se estiver na mesma região,
+      //   mas passa a aparecer como aproximado ("corrigir"), porque nada confirma ele;
+      //   longe disso (outra cidade), troca.
+      if(o._melhorar && Number.isFinite(+o.lat) && Number.isFinite(+o.lng) && !['numero','lembrado','aprendido'].includes(g.prec)){
+        const dist=_haversineKm(g,{lat:+o.lat,lng:+o.lng});
+        if(g.prec==='rua'){
+          if(o.geoPrec==='numero'&&dist<=0.5) payload={ geoV:GEO_VERSAO };
+        } else if(dist <= (g.prec==='bairro'?4:15)){
+          payload={ geoV:GEO_VERSAO, geoPrec:g.prec };
+        }
       }
       if(!modoDemo){
         await update(ref(db,TP('pedidos_rota/'+o.id)), payload);
@@ -3393,7 +3433,7 @@ async function _processarFilaGeo(){
       n.ok++; if(p==='numero') n.numero++; else if(p==='lembrado') n.lembrado++; else if(p==='bairro'||p==='cidade') n.aprox++;
     }catch(e){
       n.falhou++;
-      if(o._melhorar){ /* continua com o ponto que já tinha */ }
+      if(o._melhorar){ /* sem resposta: continua com o ponto que já tinha e tenta de novo depois */ }
       else if(!modoDemo && (o.id in _statusPorId)){
         update(ref(db,TP('pedidos_rota/'+o.id)), { geoStatus:'falhou' }).catch(()=>{});
       } else {
@@ -3425,14 +3465,17 @@ function _geoStatusUI(txt){
   else el.style.display='none';
 }
 
-// Quem precisa ser localizado: CEP ou endereço ainda sem ponto, e os que foram
-// localizados só pelo CEP antes da versão 3.7 e têm número (tenta o número uma vez).
+// Quem precisa ser localizado: CEP ou endereço ainda sem ponto, e os pendentes cujo ponto
+// foi achado antes da conferência de cidade e rua (19/11/2026), uma vez cada. Os pontos
+// marcados à mão, lembrados e aprendidos nas baixas não são mexidos.
 function _temEndereco(o){ return !!(o.endereco&&o.cidade&&o.cidade!=='Sem cidade'); }
 function _precisaLocalizar(o){
   if(o.geoManual) return false;
   if(o.geoStatus==='pendente') return !!o.cep||_temEndereco(o);
   if(o.geoStatus==='sem_cep') return _temEndereco(o);
-  return o.geoStatus==='ok' && !o.geoPrec && !!o.cep && !!_partesEndereco(o.endereco).numero;
+  return o.geoStatus==='ok' && !modoDemo && (o.status||'pendente')==='pendente'
+    && (+o.geoV||0)<GEO_VERSAO && !['lembrado','aprendido','manual'].includes(o.geoPrec)
+    && (!!o.cep||_temEndereco(o));
 }
 function agendarGeocodificacao(pedidos){
   const candidatos = pedidos.filter(o=>_precisaLocalizar(o) && o.id!==_geoAtual && !_geoFila.find(f=>f.id===o.id));

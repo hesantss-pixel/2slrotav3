@@ -15,9 +15,13 @@ const seed = () => { window.__FAKE = { user: { uid: 'uid-ana', email: 'ana@x.com
   await ctx.route(/nominatim/, (r) => {
     const u = new URL(r.request().url()), st = u.searchParams.get('street'), q = u.searchParams.get('q');
     k++; const d = 0.001 * (k % 7);
-    if (st && M.achados.includes(st)) return r.fulfill({ contentType: 'application/json', body: JSON.stringify([{ lat: String(-23.46 - d), lon: '-46.52', address: { road: 'x', house_number: st.split(' ')[0] } }]) });
-    if (q) return r.fulfill({ contentType: 'application/json', body: JSON.stringify([{ lat: String(-23.46 + d), lon: '-46.50', address: { road: q.split(',')[0] } }]) });
-    r.fulfill({ contentType: 'application/json', body: JSON.stringify(st && st.includes('Hunnicutt') ? [] : [{ lat: '-23.45', lon: '-46.5', address: { road: 'x' } }]) });
+    // (a Hunnicutt existe no mapa, o número 960 não)
+    // como o Nominatim de verdade: a rua procurada, na cidade procurada, com o estado
+    const lugar = { city: u.searchParams.get('city') || 'Guarulhos', 'ISO3166-2-lvl4': 'BR-SP' };
+    const rua = st ? st.replace(/^\d+\s+/, '') : '';
+    if (st && M.achados.includes(st)) return r.fulfill({ contentType: 'application/json', body: JSON.stringify([{ lat: String(-23.46 - d), lon: '-46.52', address: { road: rua, house_number: st.split(' ')[0], ...lugar } }]) });
+    if (q) return r.fulfill({ contentType: 'application/json', body: JSON.stringify([{ lat: String(-23.46 + d), lon: '-46.50', address: { road: q.split(',')[0], ...lugar } }]) });
+    r.fulfill({ contentType: 'application/json', body: JSON.stringify(st && st.includes('Hunnicutt') && /^\d/.test(st) ? [] : [{ lat: '-23.45', lon: '-46.5', address: { road: rua, ...lugar } }]) });
   });
   await p.waitForTimeout(800);
   await p.evaluate(() => window.irParaPagina('pedidos'));

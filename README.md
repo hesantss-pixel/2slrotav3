@@ -387,6 +387,41 @@ depois. O relatório já ignorava o `so_baixas` e continua ignorando.
 Testes: `tests/tela/t_trilha.js` e `TesteCaminhoImporta` em `backend/tests/test_km_rastro.py`.
 O `push` do Firebase simulado passou a recusar caminho sem permissão, como o SDK de verdade.
 
+## Ponto no mapa conferido: mesma cidade e mesma rua (19/11/2026)
+
+Henrique viu, nas rotas de teste, pedido "de Guarulhos" com o ponto em outro lugar. A leitura das
+notas estava certa (o XML é lido campo a campo); o erro vinha de **transformar o endereço em ponto**.
+O Nominatim (OpenStreetMap) devolve o resultado **mais parecido**, não o certo, e o sistema aceitava
+qualquer resposta. Conferido ao vivo: o CEP 07224-010 (Rua Umbuzeiro, Cidade Industrial Satélite)
+voltava como "Rua São Sebastião do Umbuzeiro", em Vila Rio, a ~5 km, marcado como "rua" (exato).
+
+Agora toda resposta do Nominatim é conferida (`_mesmaCidade`, `_mesmaRua`):
+
+- **Mesma cidade** (e mesmo estado) que o CEP ou a nota dizem, pelos campos `city`/`town`/
+  `municipality` do endereço que ele devolve.
+- **Mesma rua**, quando se procurou uma rua (nome comparado sem acento, sem "Rua/Av." e com as
+  abreviações por extenso). "São Sebastião do Umbuzeiro" ≠ "Umbuzeiro".
+- A rua do CEP passou a ser procurada pela busca estruturada (rua + cidade + estado), como o número.
+- O que não passa cai para o passo seguinte (bairro, depois cidade) e aparece como **"local
+  aproximado · corrigir"**. Aproximado e dito é melhor do que errado com cara de certo; o ponto
+  marcado à mão uma vez fica guardado para as próximas notas do endereço.
+- **O que já estava gravado** (`GEO_VERSAO = 2`): CEPs do cache geral, pontos automáticos guardados
+  por endereço e pedidos **pendentes** localizados antes disso são procurados de novo, uma vez. Se a
+  busca conferida acha o número, vale o novo. Se só acha o bairro ou a cidade, o ponto antigo fica
+  quando está na mesma região (até 4 km do bairro, 15 km da cidade), mas passa a aparecer como
+  aproximado; longe disso, troca. Ponto marcado à mão, lembrado, aprendido nas baixas, pedido em
+  rota e a conta de demonstração com dados de exemplo não são mexidos. O pedido conferido grava
+  `geoV: 2`.
+- Na primeira vez que uma conta com pedidos pendentes abrir depois disso, a barra "Localizando
+  pedidos no mapa" aparece por alguns minutos (1 consulta por segundo ao Nominatim).
+- **Limite que continua:** o OpenStreetMap não tem o número nem o nome de muitas ruas de Guarulhos.
+  Esses pedidos ficam aproximados até alguém marcar o pino uma vez. O servidor de rotas próprio
+  (OSRM) **não** resolve isso: ele mede o caminho entre os pontos, não acha os pontos.
+- Teste: `t_geo` (rua de outro nome recusada, rua de outra cidade recusada, ponto antigo em outra
+  cidade refeito, ponto antigo da região mantido como aproximado, lembrado e em rota intactos,
+  versão gravada no cache e no pedido). Os simuladores do Nominatim em `t_geo`, `t_ajuste` e
+  `t_notas_teste` passaram a devolver a cidade e o estado, como o de verdade.
+
 ## Km pelas ruas já na montagem (18/11/2026)
 
 Na montagem no mapa, o km era a soma em **linha reta** entre as paradas, e o km pelas ruas só
@@ -841,7 +876,7 @@ troque `BACKEND_URL` no `index.html`.
   O script sobe o servidor local na porta 8771 e roda tudo; `./rodar.sh t_demo` roda uma só.
   As suítes `t_hero` e `t_oferta` são da página de vendas: passe o caminho dela em
   `PAGINA_VENDAS=/caminho/p-ginadevendasv3 ./rodar.sh`, senão são puladas.
-  Hoje são 907 verificações em 33 suítes do sistema (18/11/2026). Nenhuma chama a internet: o Firebase é simulado
+  Hoje são 915 verificações em 33 suítes do sistema (19/11/2026). Nenhuma chama a internet: o Firebase é simulado
   (`tests/tela/fakefb`), o Leaflet vem de `tests/tela/vendor` e ViaCEP/Nominatim/OSRM são cortados.
   `t_xss.js` é a trava de segurança: falha se alguém tirar o `esc()` de um texto que vem de fora.
   `t_tracado.js` confere o traçado pelas ruas: o decodificador contra uma resposta real do OSRM

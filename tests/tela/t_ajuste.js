@@ -29,7 +29,9 @@ async function mockServicos(ctx, reg) {
     const u = new URL(r.request().url()), st = u.searchParams.get('street') || '';
     reg.nom.push(u.searchParams.get('q') || `${st}, ${u.searchParams.get('city') || ''}`);
     const casa = (st.match(/^(\d+) /) || [])[1];
-    r.fulfill({ contentType: 'application/json', body: JSON.stringify([{ lat: '-23.4612', lon: '-46.5311', address: { road: 'Rua Teste', ...(casa ? { house_number: casa } : {}) } }]) });
+    // como o Nominatim de verdade: a rua procurada, na cidade procurada, com o estado
+    const road = st.replace(/^\d+\s+/, '') || 'Rua Teste';
+    r.fulfill({ contentType: 'application/json', body: JSON.stringify([{ lat: '-23.4612', lon: '-46.5311', address: { road, city: u.searchParams.get('city') || 'Guarulhos', 'ISO3166-2-lvl4': 'BR-SP', ...(casa ? { house_number: casa } : {}) } }]) });
   });
   await ctx.route(/railway\.app\/solve/, (r) => {
     const body = JSON.parse(r.request().postData());
