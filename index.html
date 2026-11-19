@@ -3256,9 +3256,10 @@ function _mesmoNumero(achado,pedido){
   return !!d && (String(achado||'').match(/\d+/g)||[]).includes(d);
 }
 
+function _erroRede(msg){ const e=new Error(msg); e.rede=true; return e; }   // serviço fora, não "endereço não existe"
 async function _viaCep(cep){
-  const r = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
-  if(!r.ok) throw new Error('ViaCEP HTTP '+r.status);
+  let r; try{ r = await fetch(`https://viacep.com.br/ws/${cep}/json/`); }catch(e){ throw _erroRede('ViaCEP sem resposta'); }
+  if(!r.ok) throw _erroRede('ViaCEP HTTP '+r.status);
   const d = await r.json();
   if(d.erro) throw new Error('CEP não encontrado');
   return d; // {logradouro, bairro, localidade, uf, ...}
@@ -3270,8 +3271,8 @@ async function _nominatimGet(params){
   if(espera>0) await _sleep(espera);
   _nomUlt=Date.now();
   const q=new URLSearchParams({format:'jsonv2',addressdetails:'1',limit:'1',countrycodes:'br',...params});
-  const r = await fetch('https://nominatim.openstreetmap.org/search?'+q, { headers: { 'Accept-Language':'pt-BR' } });
-  if(!r.ok) throw new Error('Nominatim HTTP '+r.status);
+  let r; try{ r = await fetch('https://nominatim.openstreetmap.org/search?'+q, { headers: { 'Accept-Language':'pt-BR' } }); }catch(e){ throw _erroRede('Nominatim sem resposta'); }
+  if(!r.ok) throw _erroRede('Nominatim HTTP '+r.status);
   const arr = await r.json();
   if(!arr.length) return null;
   const a=arr[0].address||{};
@@ -3321,7 +3322,12 @@ async function _geocodificarCep(cep){
     }
     if(!coord) throw new Error('Nominatim não achou coordenada na cidade do CEP');
     resultado = { lat:coord.lat, lng:coord.lng, bairro:end.bairro||'', cidade:end.localidade||'', uf:end.uf||'', rua:end.logradouro||'', prec, v:GEO_VERSAO };
-  }catch(e){ if(salvo) return salvo; throw e; }
+  }catch(e){
+    // serviço fora: o cache antigo segue valendo, marcado como não conferido (nv);
+    // "não achou na cidade do CEP": o cache antigo pode ser justamente o errado, não usa
+    if(salvo&&e.rede) return {...salvo, nv:true};
+    throw e;
+  }
   geoCache[cep] = resultado;
   // persiste no Firebase — próxima vez é instantâneo
   if(!contaDemo) Promise.resolve(update(ref(db,'geo_cache'), { [cep]: resultado })).catch(()=>{});
@@ -3352,7 +3358,7 @@ async function _localizarPedido(o, persistir=true){
        &&!(base&&base.prec==='rua'&&_haversineKm(g,base)>6)) res={lat:g.lat,lng:g.lng,prec:'numero'};
   }
   // 2) o que o CEP deu (rua, bairro ou cidade)
-  if(!res&&base) res={lat:base.lat,lng:base.lng,prec:base.prec||'rua'};
+  if(!res&&base) res={lat:base.lat,lng:base.lng,prec:base.prec||'rua',...(base.nv?{nv:true}:{})};
   // 3) sem CEP: a rua sem o número, depois só a cidade
   if(!res&&cidade){
     if(!g&&rua) g=await _nominatimGet({street:rua, ...lugar});
@@ -3361,7 +3367,7 @@ async function _localizarPedido(o, persistir=true){
   }
   if(!res) throw new Error('endereço não encontrado');
   // guarda o que deu mais trabalho (número, ou endereço sem CEP) para não consultar a cada nota
-  if(chave&&(numero||!base)) _guardarLocal(chave,{lat:res.lat,lng:res.lng,p:res.prec,em:Date.now(),v:GEO_VERSAO},persistir);
+  if(chave&&(numero||!base)&&!res.nv) _guardarLocal(chave,{lat:res.lat,lng:res.lng,p:res.prec,em:Date.now(),v:GEO_VERSAO},persistir);
   return {...res, bairro:base?.bairro||'', cidade:base?.cidade||'', uf:base?.uf||''};
 }
 
@@ -3371,21 +3377,23 @@ function _sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
 async function _processarFilaGeo(){
   if(_geoRodando) return;
   _geoRodando = true;
-  const n={numero:0,lembrado:0,aprox:0,ok:0,falhou:0};
-  const total=_geoFila.length;
-  _geoStatusUI(`Localizando pedidos no mapa: 0/${total}...`);
+  const n={numero:0,lembrado:0,aprox:0,ok:0,falhou:0,conf:0,fora:0};
+  const feitos=()=>n.ok+n.falhou+n.conf;
+  _geoStatusUI(`Localizando pedidos no mapa: 0/${_geoFila.length}...`);
 
   while(_geoFila.length){
     const o = _geoFila.shift();
     _geoAtual = o.id;
     try{
       const g = await _localizarPedido(o, !modoDemo);
+      // só o cache antigo respondeu (ViaCEP ou Nominatim fora): não dá para conferir agora
+      if(g.nv&&o._melhorar) throw _erroRede('sem conferência agora');
       // o pedido pode ter sido excluído enquanto era localizado: não recriar
       if(!modoDemo && !(o.id in _statusPorId)) continue;
       // marcado à mão enquanto estava na fila: o ponto da pessoa vale
       const agora=allOrders.find(x=>x.id===o.id);
       if(agora&&agora.geoManual) continue;
-      let payload = { lat:g.lat, lng:g.lng, geoStatus:'ok', geoPrec:g.prec, bairro:g.bairro||o.bairro||'', cidade:g.cidade||o.cidade, geoV:GEO_VERSAO };
+      let payload = { lat:g.lat, lng:g.lng, geoStatus:'ok', geoPrec:g.prec, bairro:g.bairro||o.bairro||'', cidade:g.cidade||o.cidade, ...(g.nv?{}:{geoV:GEO_VERSAO}) };
       // Já tinha ponto, achado antes da conferência de cidade e rua (19/11/2026):
       // - a busca conferida achou o número: vale o novo;
       // - achou a rua: o número antigo fica só se estiver em cima dela (até 500 m);
@@ -3409,8 +3417,16 @@ async function _processarFilaGeo(){
       const p=payload.geoPrec;
       n.ok++; if(p==='numero') n.numero++; else if(p==='lembrado') n.lembrado++; else if(p==='bairro'||p==='cidade') n.aprox++;
     }catch(e){
-      n.falhou++;
-      if(o._melhorar){ /* sem resposta: continua com o ponto que já tinha e tenta de novo depois */ }
+      if(o._melhorar){
+        // conferência de ponto antigo sem resposta: o ponto fica como estava e não conta como
+        // "sem localização". Serviço fora: a conferência para até a tela abrir de novo (não
+        // repete consulta a cada mudança nos pedidos). Não achou nada: marca como conferido,
+        // para não procurar de novo toda vez.
+        n.conf++;
+        if(e&&e.rede){ n.fora++; _geoRevalidarPausa=true; _geoFila=_geoFila.filter(x=>!x._melhorar); }
+        else if(!modoDemo && (o.id in _statusPorId)) update(ref(db,TP('pedidos_rota/'+o.id)), { geoV:GEO_VERSAO }).catch(()=>{});
+      } else n.falhou++;
+      if(o._melhorar){ /* continua com o ponto que já tinha */ }
       else if(!modoDemo && (o.id in _statusPorId)){
         update(ref(db,TP('pedidos_rota/'+o.id)), { geoStatus:'falhou' }).catch(()=>{});
       } else {
@@ -3418,13 +3434,13 @@ async function _processarFilaGeo(){
         if(local) local.geoStatus='falhou';
       }
     }
-    _geoStatusUI(`Localizando pedidos no mapa: ${n.ok+n.falhou}/${total}...`);
+    _geoStatusUI(`Localizando pedidos no mapa: ${feitos()}/${feitos()+_geoFila.length}...`);
     // re-render ao vivo conforme os pinos chegam
     if(document.getElementById('page-mapa')?.style.display==='block'){ atualizarMapaCompleto(); }
   }
   _geoRodando = false; _geoAtual = null;
   const det=[n.numero&&`${n.numero} pelo número`, n.lembrado&&`${n.lembrado} pelo ponto que você já tinha marcado`, n.aprox&&`${n.aprox} só com o bairro ou a cidade`].filter(Boolean);
-  _geoStatusUI(n.ok||n.falhou ? `Mapa atualizado: ${_plural(n.ok,'pedido localizado','pedidos localizados')}${det.length?' ('+det.join(', ')+')':''}${n.falhou?`, ${n.falhou} sem localização`:''}.` : '');
+  _geoStatusUI(n.ok||n.falhou||n.conf ? `Mapa atualizado: ${_plural(n.ok,'pedido localizado','pedidos localizados')}${det.length?' ('+det.join(', ')+')':''}${n.falhou?`, ${n.falhou} sem localização`:''}${n.fora?`; a conferência dos pontos antigos fica para depois (serviço de endereços sem resposta)`:''}.` : '');
   _atualizarTelasPedidos();
   setTimeout(()=>_geoStatusUI(''), 9000);
 }
@@ -3446,11 +3462,12 @@ function _geoStatusUI(txt){
 // foi achado antes da conferência de cidade e rua (19/11/2026), uma vez cada. Os pontos
 // marcados à mão, lembrados e aprendidos nas baixas não são mexidos.
 function _temEndereco(o){ return !!(o.endereco&&o.cidade&&o.cidade!=='Sem cidade'); }
+let _geoRevalidarPausa=false;   // a conferência de pontos antigos falhou nesta sessão: não insiste
 function _precisaLocalizar(o){
   if(o.geoManual) return false;
   if(o.geoStatus==='pendente') return !!o.cep||_temEndereco(o);
   if(o.geoStatus==='sem_cep') return _temEndereco(o);
-  return o.geoStatus==='ok' && !modoDemo && (o.status||'pendente')==='pendente'
+  return o.geoStatus==='ok' && !modoDemo && !_geoRevalidarPausa && (o.status||'pendente')==='pendente'
     && (+o.geoV||0)<GEO_VERSAO && !['lembrado','aprendido','manual'].includes(o.geoPrec)
     && (!!o.cep||_temEndereco(o));
 }

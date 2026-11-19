@@ -414,6 +414,12 @@ Agora toda resposta do Nominatim é conferida (`_mesmaCidade`, `_mesmaRua`):
   `geoV: 2`.
 - Na primeira vez que uma conta com pedidos pendentes abrir depois disso, a barra "Localizando
   pedidos no mapa" aparece por alguns minutos (1 consulta por segundo ao Nominatim).
+- **Serviço de endereços fora do ar** (ViaCEP ou Nominatim sem resposta; erro marcado com `rede`):
+  o ponto antigo fica como estava e não é marcado como conferido; a conferência para até a tela
+  abrir de novo (não repete consulta a cada mudança nos pedidos); o aviso diz "fica para depois", e
+  não "sem localização". Pedido novo usa o CEP guardado no cache para não ficar sem ponto, marcado
+  como não conferido (`nv`), sem gravar `geoV` nem guardar o ponto por endereço. Quando a busca
+  responde mas não acha nada na cidade, o cache antigo do CEP **não** é usado (pode ser o errado).
 - **Limite que continua:** o OpenStreetMap não tem o número nem o nome de muitas ruas de Guarulhos.
   Esses pedidos ficam aproximados até alguém marcar o pino uma vez. O servidor de rotas próprio
   (OSRM) **não** resolve isso: ele mede o caminho entre os pontos, não acha os pontos.
@@ -876,7 +882,7 @@ troque `BACKEND_URL` no `index.html`.
   O script sobe o servidor local na porta 8771 e roda tudo; `./rodar.sh t_demo` roda uma só.
   As suítes `t_hero` e `t_oferta` são da página de vendas: passe o caminho dela em
   `PAGINA_VENDAS=/caminho/p-ginadevendasv3 ./rodar.sh`, senão são puladas.
-  Hoje são 915 verificações em 33 suítes do sistema (19/11/2026). Nenhuma chama a internet: o Firebase é simulado
+  Hoje são 920 verificações em 33 suítes do sistema (19/11/2026). Nenhuma chama a internet: o Firebase é simulado
   (`tests/tela/fakefb`), o Leaflet vem de `tests/tela/vendor` e ViaCEP/Nominatim/OSRM são cortados.
   `t_xss.js` é a trava de segurança: falha se alguém tirar o `esc()` de um texto que vem de fora.
   `t_tracado.js` confere o traçado pelas ruas: o decodificador contra uma resposta real do OSRM

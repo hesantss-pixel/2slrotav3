@@ -149,6 +149,34 @@ const emp = (p) => p.evaluate(() => JSON.parse(JSON.stringify(window.__FAKE.db.e
   await p.evaluate(() => window.irParaPagina('mapa')); await p.waitForTimeout(500);
   const tips = await p.evaluate(() => { const out = []; document.querySelectorAll('#mapa-completo path.leaflet-interactive'); return out; });
   ok(errs.length === 0, 'sem erros no console: ' + JSON.stringify(errs.slice(0, 3)));
+  // serviço de endereços fora do ar: ponto antigo fica, nada é marcado como conferido, e não insiste
+  {
+    const PED2 = {
+      '4001': { nf: '4001', tipo: 'entrega', cidade: 'Guarulhos', dest: 'Antigo', endereco: 'Rua X', cep: '07010030', peso: 10, itens: 1, status: 'pendente', geoStatus: 'ok', geoPrec: 'rua', lat: -23.47, lng: -46.51 },
+      '4003': { nf: '4003', tipo: 'entrega', cidade: 'Guarulhos', dest: 'Antigo 2', endereco: 'Rua Y', cep: '07010030', peso: 10, itens: 1, status: 'pendente', geoStatus: 'ok', geoPrec: 'rua', lat: -23.48, lng: -46.52 },
+      '4002': { nf: '4002', tipo: 'entrega', cidade: 'Guarulhos', dest: 'Novo', endereco: 'Rua X', cep: '07010030', peso: 10, itens: 1, status: 'pendente', geoStatus: 'pendente', lat: -23.46, lng: -46.53 },
+    };
+    const seed2 = (ped) => { window.__FAKE = { user: { uid: 'uid-ana', email: 'ana@empresa.com.br', getIdToken: async () => 'T' },
+      db: { acesso: { 'uid-ana': true }, membros: { 'uid-ana': 'emp1' }, geo_cache: { '07010030': { lat: -23.4650, lng: -46.5302, bairro: 'Centro', cidade: 'Guarulhos', uf: 'SP', rua: 'Avenida Salgado Filho', prec: 'rua' } },
+        empresas: { emp1: { info: { nome: 'Emp 1' }, config: { deposito: { nome: 'CD', lat: -23.4245, lng: -46.3877 } }, pedidos_rota: ped } } } }; };
+    const o2 = await open(b, 'index.html', 1440, 900, seed2, false, PED2);
+    let consultas = 0;
+    await o2.ctx.route(/viacep|nominatim/, (r) => { consultas++; r.fulfill({ status: 503, body: 'fora' }); });
+    await o2.p.waitForFunction(() => /Mapa atualizado/.test(document.getElementById('geo-status-bar')?.textContent || ''), null, { timeout: 30000 });
+    const barra2 = await o2.p.textContent('#geo-status-bar');
+    const d2 = await o2.p.evaluate(() => JSON.parse(JSON.stringify(window.__FAKE.db.empresas.emp1.pedidos_rota)));
+    ok(d2['4001'].lat === -23.47 && d2['4001'].geoPrec === 'rua' && !d2['4001'].geoV && !d2['4003'].geoV,
+      'serviço fora: ponto antigo fica como estava e NÃO é marcado como conferido');
+    ok(d2['4002'].geoStatus === 'ok' && d2['4002'].lat === -23.4650 && !d2['4002'].geoV,
+      'pedido novo usa o cache antigo do CEP para não ficar sem ponto, mas fica para conferir depois');
+    ok(/fica para depois/.test(barra2) && !/sem localização/.test(barra2), 'aviso diz que a conferência ficou para depois, sem chamar de "sem localização" → ' + barra2);
+    const antes2 = consultas;
+    await o2.p.evaluate(() => window.__FAKE.set && 0);   // nada: só deixa a tela parada
+    await o2.p.waitForTimeout(2500);
+    ok(consultas === antes2, `não insiste enquanto o serviço está fora (${antes2} consultas, nenhuma depois)`);
+    ok(!o2.errs.length, 'sem erros no console (serviço fora): ' + JSON.stringify(o2.errs.slice(0, 2)));
+    await o2.ctx.close();
+  }
   console.log(falhas ? `\n${falhas} FALHA(S)` : '\nTUDO OK');
   await b.close();
   process.exit(falhas ? 1 : 0);
