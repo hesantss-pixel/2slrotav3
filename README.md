@@ -693,9 +693,9 @@ codificação do Google com 6 casas decimais). A tela desenha essa linha.
 - No escritório: veículo no mapa da rota (página Rotas) e no Mapa, com "visto há N min" (cinza
   depois de 10 min sem atualizar).
 - Não é o rastreador do veículo: com a tela apagada ou em outro app, o celular pode pausar o envio.
-- Página Mapa: cartão "Sua frota ainda não tem rastreador?" (pacote sistema + rastreador 4G, valor
-  sob consulta) com botão para o WhatsApp da ROTAV3. Não aparece para o administrador. Diz que a
-  posição do rastreador no mapa está em implantação: trocar o texto quando a integração existir.
+- O cartão "Sua frota ainda não tem rastreador?" da página Mapa foi **retirado em 19/11/2026**: a
+  primeira transportadora da apresentação já tem rastreamento na frota, e a oferta de um rastreador
+  "em implantação" ficava estranha. Só volta quando a integração com rastreador existir.
 
 ## Link do motorista (baixa pelo celular)
 

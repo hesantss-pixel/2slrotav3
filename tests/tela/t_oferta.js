@@ -8,20 +8,13 @@ const seed = (uid) => { window.__FAKE = { user: { uid, email: 'x@y.com', getIdTo
   for (const [W, H, mob] of [[1440, 900, false], [390, 844, true], [320, 640, true]]) {
     const { ctx, p, errs } = await open(b, 'index.html', W, H, seed, mob, 'uid-ana');
     await p.evaluate(() => window.irParaPagina('mapa')); await p.waitForTimeout(600);
-    ok(await p.isVisible('#rastr-oferta'), `${W}px: cliente vê a oferta do rastreador no Mapa`);
-    const href = await p.getAttribute('#rastr-oferta a', 'href');
-    ok(href.startsWith('https://wa.me/5511918506103?text=') && decodeURIComponent(href).includes('rastreador 4G'), 'botão abre o WhatsApp da ROTAV3 com mensagem pronta');
+    // 19/11/2026: a oferta de rastreador saiu do sistema (cliente que já tem rastreador estranhava)
+    ok(!(await p.$('#rastr-oferta')) && !/rastreador 4G/.test(await p.textContent('#page-mapa')), `${W}px: a página Mapa não oferece rastreador`);
     const sw = await p.evaluate(() => document.documentElement.scrollWidth);
     ok(sw <= W, `${W}px: sem rolagem lateral (${sw})`);
-    await p.evaluate(() => document.getElementById('rastr-oferta').scrollIntoView({ block: 'center' }));
-    await p.screenshot({ path: `../notas/oferta-sis-${W}.png` });
     ok(!errs.length, 'sem erros: ' + JSON.stringify(errs.slice(0, 2)));
     await ctx.close();
   }
-  const { ctx, p } = await open(b, 'index.html', 1440, 900, seed, false, 'PGblgW7V26SJ6W8UYPFj3dqlDGm2');
-  await p.evaluate(() => window.irParaPagina('mapa')); await p.waitForTimeout(600);
-  ok(!(await p.isVisible('#rastr-oferta')), 'administrador (ROTAV3) não vê a oferta');
-  await ctx.close();
   // página de vendas
   for (const [W, H, mob] of [[1440, 900, false], [390, 844, true], [320, 640, true]]) {
     const ctx = await b.newContext({ viewport: { width: W, height: H }, isMobile: mob, hasTouch: mob, deviceScaleFactor: mob ? 2 : 1 });
