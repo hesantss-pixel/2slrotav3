@@ -3576,6 +3576,25 @@ function _valorCaixa(linhas, rotulo, de=Infinity, ate=-Infinity){
 function _numDanfe(t){ const n=_numBR(String(t||'').replace(/[^\d.,]/g,'')); return Number.isFinite(n)&&n>0?n:0; }
 function _cepDe(t){ const m=String(t||'').match(/\b(\d{5})-?\.?(\d{3})\b/); return m?m[1]+m[2]:''; }
 
+// Chave de acesso da NF-e conferida pelo dígito verificador (módulo 11) e pelo modelo
+// 55 (NF-e) ou 65 (NFC-e): assim um número de pedido ou de CNPJ não passa por chave.
+function _chaveValida(c){
+  if(!/^\d{44}$/.test(c)) return false;
+  const uf=+c.slice(0,2), mod=c.slice(20,22);
+  if(uf<11||uf>53||(mod!=='55'&&mod!=='65')) return false;
+  let soma=0, peso=2;
+  for(let i=42;i>=0;i--){ soma+=(+c[i])*peso; peso=peso===9?2:peso+1; }
+  const r=soma%11, dv=(r<2)?0:11-r;
+  return dv===+c[43];
+}
+function _chaveNaPagina(linhas){
+  for(const l of linhas){
+    const dig=l.itens.map(i=>i.s).join('').replace(/\D/g,'');
+    for(let k=0;k+44<=dig.length;k++){ const c=dig.slice(k,k+44); if(_chaveValida(c)) return c; }
+  }
+  return '';
+}
+
 // Campos de UMA nota (uma página do DANFE). Devolve o que conseguiu ler;
 // quem chama decide se dá para usar. Nada é inventado: campo que não saiu
 // volta vazio.
@@ -3588,11 +3607,14 @@ function _camposDanfe(linhas, tipo){
     const m=plano.replace(/[^\d ]/g,' ').replace(/\s+/g,' ').match(/(?:\d{4} ){10}\d{4}/);
     chave=m?m[0].replace(/\D/g,''):'';
   }
+  // emissores que imprimem a chave inteira sem espaço, com pontos, ou em pedaços
+  // soltos na mesma linha: procura 44 dígitos seguidos com o dígito verificador certo
+  if(chave.length!==44) chave=_chaveNaPagina(linhas);
   if(chave.length!==44) chave='';
 
-  // número da nota: da chave (posições 26 a 34) ou do rótulo "Nº"
+  // número da nota: da chave (posições 26 a 34) ou do rótulo "Nº" / "NÚMERO"
   let nf=chave?String(+chave.slice(25,34)):'';
-  if(!nf||nf==='0'){ const m=plano.match(/N[º°O]\.?:?\s*([\d.]{1,13})/); nf=m?String(+m[1].replace(/\./g,'')):''; }
+  if(!nf||nf==='0'){ const m=plano.match(/N[º°O]\.?:?\s*([\d.]{1,13})/)||plano.match(/\bNUMERO\s*(?:DA NOTA|DA NF-?E?)?\s*:?\s*([\d.]{1,13})/); nf=m?String(+m[1].replace(/\./g,'')):''; }
   if(!nf||nf==='0'||nf==='NaN') nf='';
 
   // ── quem recebe (entrega) ou de quem se coleta ──────────────────────────
@@ -3679,11 +3701,18 @@ async function _parsePDF(file,tipo){
   if(!window.pdfjsLib) throw new Error('Leitor de PDF não carregou. Use CSV ou Excel.');
   const buf=await file.arrayBuffer();
   // isEvalSupported:false é a proteção oficial contra a CVE-2024-4367 nas versões antes da 4.2.67
-  const pdf=await pdfjsLib.getDocument({data:buf,isEvalSupported:false}).promise;
+  let pdf;
+  try{ pdf=await pdfjsLib.getDocument({data:buf,isEvalSupported:false}).promise; }
+  catch(e){
+    if(e&&e.name==='PasswordException') throw new Error('este PDF tem senha. Abra no computador, salve uma cópia sem senha (Imprimir → Salvar como PDF) e importe a cópia');
+    throw new Error('não consegui abrir este PDF (arquivo danificado ou que não é PDF)');
+  }
   const orders=[], vistos=new Set();
-  let paginas=0, semPeso=0, semEndereco=0;
+  let paginas=0, semPeso=0, semEndereco=0, comTexto=0;
   for(let p=1;p<=pdf.numPages;p++){
-    const linhas=_linhasPdf(_itensPagina(await (await pdf.getPage(p)).getTextContent()));
+    const itens=_itensPagina(await (await pdf.getPage(p)).getTextContent());
+    if(itens.length) comTexto++;
+    const linhas=_linhasPdf(itens);
     const c=_camposDanfe(linhas,tipo);
     if(!c.nf&&!c.chave) continue;              // folha de continuação, sem a nota
     paginas++;
@@ -3695,7 +3724,8 @@ async function _parsePDF(file,tipo){
     if(!c.peso) semPeso++;
     orders.push(o);
   }
-  if(!paginas) throw new Error('não achei o número nem a chave de acesso da nota neste PDF. Use o XML da nota ou uma planilha');
+  if(!comTexto) throw new Error('este PDF é uma imagem (nota escaneada ou foto) e não tem texto para ler. Peça o PDF original da nota, o que sai do sistema que emite a nota, ou digite os pedidos em Pedidos → Novo pedido');
+  if(!paginas) throw new Error('não achei o número nem a chave de acesso de nota fiscal neste PDF. O sistema lê o DANFE (o PDF da nota fiscal). Se for romaneio ou manifesto, use uma planilha ou Pedidos → Novo pedido');
   if(!orders.length) throw new Error(`${_plural(semEndereco,'a nota do PDF está','as notas do PDF estão')} sem CEP e sem município legíveis. Use o XML ${semEndereco===1?'dessa nota':'dessas notas'}`);
   return {orders, semPeso, semEndereco};
 }

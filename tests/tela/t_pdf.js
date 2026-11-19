@@ -57,6 +57,20 @@ const pags = (n) => JSON.parse(fs.readFileSync(path.join(__dirname, 'pdf', n + '
     ok(o && o.origem === 'pdf' && o.tipo === 'entrega' && o.status === 'pendente', 'marca a origem do pedido');
   }
 
+  // ── 1b. chave impressa sem espaço, ou em dois pedaços, e sem o "Nº" (19/11) ──
+  {
+    const semEsp = ex[0].filter((i) => !/^Nº/.test(i.s)).map((i) => /^\d{4} \d{4}/.test(i.s) ? { ...i, s: i.s.replace(/\s/g, '') } : i);
+    const { campos: c1 } = await ler(semEsp, 'entrega');
+    ok(c1.chave.length === 44 && c1.nf === '12345', 'chave impressa sem espaço: acha a chave e o número da nota');
+    const pedacos = ex[0].filter((i) => !/^Nº/.test(i.s)).flatMap((i) => /^\d{4} \d{4}/.test(i.s)
+      ? [{ ...i, s: i.s.replace(/\s/g, '').slice(0, 20) }, { ...i, x: i.x + 90, s: i.s.replace(/\s/g, '').slice(20) }] : [i]);
+    const { campos: c2 } = await ler(pedacos, 'entrega');
+    ok(c2.chave.length === 44 && c2.nf === '12345', 'chave em dois pedaços na mesma linha: junta e confere');
+    const falsa = ex[0].filter((i) => !/^Nº/.test(i.s) && !/^\d{4} \d{4}/.test(i.s)).concat([{ s: '12345678901234567890123456789012345678901234', x: 30, y: 300, h: 7 }]);
+    const { campos: c3 } = await ler(falsa, 'entrega');
+    ok(c3.chave === '', '44 dígitos quaisquer (sem o dígito verificador certo) não viram chave');
+  }
+
   // ── 2. segunda via da mesma nota não vira dois pedidos ───────────────────
   {
     const a = await ler(ex[0], 'entrega'), d = await ler(ex[1], 'entrega');
