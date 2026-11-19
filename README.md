@@ -387,6 +387,42 @@ depois. O relatório já ignorava o `so_baixas` e continua ignorando.
 Testes: `tests/tela/t_trilha.js` e `TesteCaminhoImporta` em `backend/tests/test_km_rastro.py`.
 O `push` do Firebase simulado passou a recusar caminho sem permissão, como o SDK de verdade.
 
+## Ver o pedido inteiro pelo pino (18/11/2026)
+
+Na montagem da rota no mapa, o toque simples continua colocando e tirando o ponto da rota. Para
+**ver o pedido inteiro** sem mexer na rota:
+
+- **celular:** segurar o dedo no ponto (~0,5 s; um tremido de mais de 10 px cancela);
+- **computador:** botão direito no ponto;
+- **teclado:** Tab até o ponto e tecla **V**.
+
+Abre uma janela só de leitura (`#modal-ver`, `verPedidoGrupo`) com: peso bruto e líquido,
+volumes com a espécie (caixa, palete…), **quanto da capacidade do veículo escolhido o pedido
+ocupa** (barra verde, âmbar a partir de 90 %, vermelha acima de 100 %), cliente, remetente (ou
+onde coletar e o destinatário, na coleta), endereço, como o ponto foi achado, telefone (link de
+ligar), agendamento e horário, emissão, valor da nota, **lista de produtos** e a observação da
+nota. Pino com várias notas no mesmo endereço mostra todas e a soma. Um botão coloca ou tira da
+rota; Esc, ✕, "Fechar" ou tocar fora fecham e o foco volta ao pino. O CD não abre nada.
+
+- **De onde vêm os produtos:** do XML da NF-e (`det/prod`: `xProd`, `qCom`, `uCom`). A importação
+  pela tela (`_detalhesNota` no `index.html`) e a entrada automática (`_detalhes_nota` no
+  `backend/entrada.py`) gravam os mesmos campos no pedido: `produtos` (até 30, `{d, q, u}`),
+  `produtosTotal` (só quando a nota tem mais de 30), `volumes` (só os que têm espécie,
+  `{q, esp}`), `pesoLiq`, `valor` (`total/ICMSTot/vNF`), `obsNota` (`infAdic/infCpl`, até 500
+  letras) e `emissao` (AAAA-MM-DD). Campo sem valor não é gravado. O mesmo arquivo
+  (`backend/tests/nfe_produtos.xml`) é lido nos dois testes para os dois lados darem igual.
+- **Não tem produtos:** pedido de planilha, de PDF, digitado à mão, da conta de demonstração ou de
+  XML importado antes desta versão. A janela diz isso. **Não reimporte** para ganhar a lista: a
+  reimportação substitui o pedido pendente e perde o ponto e o agendamento já acertados.
+- **"Se é muito grande":** a NF-e não tem campo de medida (altura, largura, cubagem). O tamanho
+  aparece pelo peso, pelos volumes, pela espécie e pela parte do veículo; a janela avisa isso.
+- O que a janela lê além do que a tela carrega (telefone, produtos…) vem de `pedidosCrus`, o
+  pedido como está no banco. A rota confirmada e o link do motorista **não** levam os produtos
+  (as paradas continuam gravadas só com os campos de sempre).
+- Teste: `tests/tela/t_ver_pedido.js` (botão direito, tecla V, dedo segurado com e sem o menu
+  de contexto do Android, toque curto, notas juntas, pedido maior que o veículo, texto da nota
+  que tenta virar HTML, e a importação do XML gravando igual ao backend).
+
 ## Km pelas ruas acima de 100 pedidos (18/11/2026)
 
 O servidor público do OSRM recusa matriz com mais de 100 × 100 = **10.000 células**. O motor
@@ -779,7 +815,7 @@ troque `BACKEND_URL` no `index.html`.
   O script sobe o servidor local na porta 8771 e roda tudo; `./rodar.sh t_demo` roda uma só.
   As suítes `t_hero` e `t_oferta` são da página de vendas: passe o caminho dela em
   `PAGINA_VENDAS=/caminho/p-ginadevendasv3 ./rodar.sh`, senão são puladas.
-  Hoje são 810 verificações em 30 suítes (17/11/2026). Nenhuma chama a internet: o Firebase é simulado
+  Hoje são 903 verificações em 33 suítes do sistema (18/11/2026). Nenhuma chama a internet: o Firebase é simulado
   (`tests/tela/fakefb`), o Leaflet vem de `tests/tela/vendor` e ViaCEP/Nominatim/OSRM são cortados.
   `t_xss.js` é a trava de segurança: falha se alguém tirar o `esc()` de um texto que vem de fora.
   `t_tracado.js` confere o traçado pelas ruas: o decodificador contra uma resposta real do OSRM

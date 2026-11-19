@@ -24,6 +24,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import math
 import re
 import secrets
 import threading
@@ -159,6 +160,64 @@ def _arred2(x: float) -> float:
     return math.floor(x * 100 + 0.5) / 100
 
 
+MAX_PRODUTOS_NOTA = 30
+
+
+def _limpa(s, n: int) -> str:
+    return re.sub(r"\s+", " ", str(s or "")).strip()[:n]
+
+
+def _detalhes_nota(inf) -> dict:
+    """O que a janela "ver pedido" da tela mostra além do básico (igual a _detalhesNota do
+    index.html). A NF-e não tem medida: o tamanho da carga vem do peso, dos volumes e da
+    espécie. No máximo 30 produtos por nota; só entra campo com valor."""
+    r: dict = {}
+    prods, total = [], 0
+    for d in inf:
+        if _local(d.tag) != "det":
+            continue
+        p = _filho(d, "prod")
+        desc = _limpa(_txt(p, "xProd"), 80)
+        if not desc:
+            continue
+        total += 1
+        if len(prods) >= MAX_PRODUTOS_NOTA:
+            continue
+        it = {"d": desc, "q": math.floor(_num(_txt(p, "qCom")) * 1000 + 0.5) / 1000}
+        u = _limpa(_txt(p, "uCom"), 8)
+        if u:
+            it["u"] = u
+        prods.append(it)
+    if prods:
+        r["produtos"] = prods
+        if total > len(prods):
+            r["produtosTotal"] = total
+    vols, liq = [], 0.0
+    transp = _filho(inf, "transp")
+    for v in (list(transp) if transp is not None else []):
+        if _local(v.tag) != "vol":
+            continue
+        liq += _num(_txt(v, "pesoL"))
+        q, esp = max(0, _int(_txt(v, "qVol"))), _limpa(_txt(v, "esp"), 30)
+        if esp and len(vols) < 10:   # sem a espécie, o número já está em "itens"
+            vols.append({"q": q, "esp": esp})
+    if vols:
+        r["volumes"] = vols
+    if liq > 0:
+        r["pesoLiq"] = _arred2(liq)
+    vnf = _num(_txt(_filho(_filho(inf, "total"), "ICMSTot"), "vNF"))
+    if vnf > 0:
+        r["valor"] = _arred2(vnf)
+    obs = _limpa(_txt(_filho(inf, "infAdic"), "infCpl"), 500)
+    if obs:
+        r["obsNota"] = obs
+    ide = _filho(inf, "ide")
+    em = (_txt(ide, "dhEmi") or _txt(ide, "dEmi"))[:10]
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", em):
+        r["emissao"] = em
+    return r
+
+
 def ler_xml_nfe(conteudo, tipo: str = "entrega") -> dict:
     """XML da NF-e (layout 4.00) -> {"pedidos": [...], "sem_peso": n, "cancelamentos": [chaves]}.
     Levanta ValueError com a mesma mensagem da tela para XML que não é nota."""
@@ -230,6 +289,7 @@ def ler_xml_nfe(conteudo, tipo: str = "entrega") -> dict:
             "cidade": cidade, "cep": cep, "geoStatus": "pendente" if cep else "sem_cep",
             "peso": _arred2(peso) if peso else 100, "itens": itens,
             "urgente": False, "agendado": False, "dataAgendada": "", "status": "pendente",
+            **_detalhes_nota(inf),
         })
     return {"pedidos": pedidos, "sem_peso": sem_peso, "cancelamentos": []}
 

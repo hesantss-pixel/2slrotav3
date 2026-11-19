@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00"><NFe><infNFe Id="NFe35261111222333000100550010009200011000000027" versao="4.00"><ide><nNF>920001</nNF><serie>1</serie><dhEmi>2026-11-17T10:22:00-03:00</dhEmi></ide><emit><CNPJ>11222333000100</CNPJ><xNome>FABRICA TESTE LTDA</xNome><xFant>Fábrica Teste</xFant><enderEmit><xLgr>Rua A</xLgr><nro>10</nro><xBairro>Centro</xBairro><xMun>SAO PAULO</xMun><UF>SP</UF><CEP>01001000</CEP></enderEmit></emit><dest><CNPJ>99888777000101</CNPJ><xNome>Mercado Exemplo</xNome><enderDest><xLgr>Rua B</xLgr><nro>45</nro><xBairro>Vila Galvão</xBairro><xMun>Guarulhos</xMun><UF>SP</UF><CEP>07071000</CEP><fone>1124681357</fone></enderDest></dest><det nItem="1"><prod><cProd>P1</cProd><xProd>Produto   número 1
+  linha</xProd><uCom>CX</uCom><qCom>1.5000</qCom><vProd>10.00</vProd></prod></det><det nItem="2"><prod><cProd>P2</cProd><xProd>Produto   número 2
+  linha</xProd><uCom>CX</uCom><qCom>2.5000</qCom><vProd>10.00</vProd></prod></det><det nItem="3"><prod><cProd>P3</cProd><xProd>Produto   número 3
+  linha</xProd><uCom>CX</uCom><qCom>3.5000</qCom><vProd>10.00</vProd></prod></det><det nItem="4"><prod><cProd>P4</cProd><xProd>Produto   número 4
+  linha</xProd><uCom>CX</uCom><qCom>4.5000</qCom><vProd>10.00</vProd></prod></det><det nItem="5"><prod><cProd>P5</cProd><xProd>Produto   número 5
+  linha</xProd><uCom>CX</uCom><qCom>5.5000</qCom><vProd>10.00</vProd></prod></det><det nItem="6"><prod><cProd>P6</cProd><xProd>Produto   número 6
+  linha</xProd><uCom>CX</uCom><qCom>6.5000</qCom><vProd>10.00</vProd></prod></det><det nItem="7"><prod><cProd>P7</cProd><xProd>Produto   número 7
+  linha</xProd><uCom>CX</uCom><qCom>7.5000</qCom><vProd>10.00</vProd></prod></det><det nItem="8"><prod><cProd>P8</cProd><xProd>Produto   número 8
+  linha</xProd><uCom>CX</uCom><qCom>8.5000</qCom><vProd>10.00</vProd></prod></det><det nItem="9"><prod><cProd>P9</cProd><xProd>Produto   número 9
+  linha</xProd><uCom>CX</uCom><qCom>9.5000</qCom><vProd>10.00</vProd></prod></det><det nItem="10"><prod><cProd>P10</cProd><xProd>Produto   número 10
+  linha</xProd><uCom>CX</uCom><qCom>10.5000</qCom><vProd>10.00</vProd></prod></det><det nItem="11"><prod><cProd>P11</cProd><xProd>Produto   número 11
+  linha</xProd><uCom>CX</uCom><qCom>11.5000</qCom><vProd>10.00</vProd></prod></det><det nItem="12"><prod><cProd>P12</cProd><xProd>Produto   número 12
+  linha</xProd><uCom>CX</uCom><qCom>12.5000</qCom><vProd>10.00</vProd></prod></det><det nItem="13"><prod><cProd>P13</cProd><xProd>Produto   número 13
+  linha</xProd><uCom>CX</uCom><qCom>13.5000</qCom><vProd>10.00</vProd></prod></det><det nItem="14"><prod><cProd>P14</cProd><xProd>Produto   número 14
+  linha</xProd><uCom>CX</uCom><qCom>14.5000</qCom><vProd>10.00</vProd></prod></det><det nItem="15"><prod><cProd>P15</cProd><xProd>Produto   número 15
+  linha</xProd><uCom>CX</uCom><qCom>15.5000</qCom><vProd>10.00</vProd></prod></det><det nItem="16"><prod><cProd>P16</cProd><xProd>Produto   número 16
+  linha</xProd><uCom>CX</uCom><qCom>16.5000</qCom><vProd>10.00</vProd></prod></det><det nItem="17"><prod><cProd>P17</cProd><xProd>Produto   número 17
+  linha</xProd><uCom>CX</uCom><qCom>17.5000</qCom><vProd>10.00</vProd></prod></det><det nItem="18"><prod><cProd>P18</cProd><xProd>Produto   número 18
+  linha</xProd><uCom>CX</uCom><qCom>18.5000</qCom><vProd>10.00</vProd></prod></det><det nItem="19"><prod><cProd>P19</cProd><xProd>Produto   número 19
+  linha</xProd><uCom>CX</uCom><qCom>19.5000</qCom><vProd>10.00</vProd></prod></det><det nItem="20"><prod><cProd>P20</cProd><xProd>Produto   número 20
+  linha</xProd><uCom>CX</uCom><qCom>20.5000</qCom><vProd>10.00</vProd></prod></det><det nItem="21"><prod><cProd>P21</cProd><xProd>Produto   número 21
+  linha</xProd><uCom>CX</uCom><qCom>21.5000</qCom><vProd>10.00</vProd></prod></det><det nItem="22"><prod><cProd>P22</cProd><xProd>Produto   número 22
+  linha</xProd><uCom>CX</uCom><qCom>22.5000</qCom><vProd>10.00</vProd></prod></det><det nItem="23"><prod><cProd>P23</cProd><xProd>Produto   número 23
+  linha</xProd><uCom>CX</uCom><qCom>23.5000</qCom><vProd>10.00</vProd></prod></det><det nItem="24"><prod><cProd>P24</cProd><xProd>Produto   número 24
+  linha</xProd><uCom>CX</uCom><qCom>24.5000</qCom><vProd>10.00</vProd></prod></det><det nItem="25"><prod><cProd>P25</cProd><xProd>Produto   número 25
+  linha</xProd><uCom>CX</uCom><qCom>25.5000</qCom><vProd>10.00</vProd></prod></det><det nItem="26"><prod><cProd>P26</cProd><xProd>Produto   número 26
+  linha</xProd><uCom>CX</uCom><qCom>26.5000</qCom><vProd>10.00</vProd></prod></det><det nItem="27"><prod><cProd>P27</cProd><xProd>Produto   número 27
+  linha</xProd><uCom>CX</uCom><qCom>27.5000</qCom><vProd>10.00</vProd></prod></det><det nItem="28"><prod><cProd>P28</cProd><xProd>Produto   número 28
+  linha</xProd><uCom>CX</uCom><qCom>28.5000</qCom><vProd>10.00</vProd></prod></det><det nItem="29"><prod><cProd>P29</cProd><xProd>Produto   número 29
+  linha</xProd><uCom>CX</uCom><qCom>29.5000</qCom><vProd>10.00</vProd></prod></det><det nItem="30"><prod><cProd>P30</cProd><xProd>Produto   número 30
+  linha</xProd><uCom>CX</uCom><qCom>30.5000</qCom><vProd>10.00</vProd></prod></det><det nItem="31"><prod><cProd>P31</cProd><xProd>Produto   número 31
+  linha</xProd><uCom>CX</uCom><qCom>31.5000</qCom><vProd>10.00</vProd></prod></det><det nItem="32"><prod><cProd>P32</cProd><xProd>Produto   número 32
+  linha</xProd><uCom>CX</uCom><qCom>32.5000</qCom><vProd>10.00</vProd></prod></det><det nItem="33"><prod><cProd>P33</cProd><xProd>   </xProd><uCom>UN</uCom><qCom>1</qCom></prod></det><total><ICMSTot><vProd>320.00</vProd><vNF>1234.50</vNF></ICMSTot></total><transp><modFrete>0</modFrete><vol><qVol>2</qVol><esp>CAIXA</esp><pesoL>10,5</pesoL><pesoB>12</pesoB></vol><vol><qVol>1</qVol><esp>PALETE</esp><pesoL>300</pesoL><pesoB>320.456</pesoB></vol><vol><qVol>x</qVol></vol></transp><infAdic><infCpl>Entregar   no portão 2.
+ Pedido 4471</infCpl></infAdic></infNFe></NFe></nfeProc>

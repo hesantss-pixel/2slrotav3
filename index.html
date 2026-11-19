@@ -753,7 +753,45 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
 .man-det-in{padding-bottom:12px;}
 /* o alvo tem 44 px (WCAG 2.5.8); o desenho visível é menor e fica centrado nele */
 #mapa-manual .leaflet-tooltip{width:max-content;max-width:230px;white-space:normal;line-height:1.5;}
-.pino-alvo{background:none;border:0;}
+.pino-alvo{background:none;border:0;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;}
+/* ver o pedido inteiro (só leitura), pelo pino do mapa de montar a rota */
+.ver-modal{max-width:560px;}
+.ver-modal h2.modal-title{margin:0;}
+.ver-resumo{border:1px solid var(--border2);border-radius:14px;padding:13px 14px;background:var(--s3);}
+.ver-resumo-top{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;font-size:13px;color:var(--text2);}
+.ver-resumo-top b{font:800 20px var(--sans);color:var(--text);}
+.ver-barra{height:8px;border-radius:8px;background:var(--s4);margin:10px 0 7px;overflow:hidden;}
+.ver-barra>i{display:block;height:100%;background:var(--green);border-radius:8px;}
+.ver-barra.quase>i{background:var(--amber);}
+.ver-barra.cheio>i{background:var(--red);}
+.ver-pct{font-size:12px;color:var(--text2);line-height:1.55;}
+.ver-pct+.ver-pct{margin-top:4px;color:var(--text3);}
+.ver-pct.cheio{color:#b42323;font-weight:700;}
+.ver-nota{border-top:1px solid var(--border);padding-top:14px;margin-top:16px;}
+.ver-cab{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin-bottom:10px;}
+.ver-cab b{font:800 15px var(--sans);color:var(--text);}
+.ver-tag{font:700 11px var(--sans);padding:3px 9px;border-radius:20px;background:#e2f4eb;color:#0f6b46;}
+.ver-tag.coleta{background:var(--navy);color:var(--lime);}
+.ver-tag.urg{background:#fdeaea;color:#b42323;}
+.ver-st{margin-left:auto;font-size:12px;color:var(--text3);}
+.ver-st.na{color:var(--text);font-weight:700;}
+.ver-cab.so .ver-st{margin-left:0;}
+.ver-agenda{font-size:12.5px;font-weight:700;color:#b42323;margin:-2px 0 10px;}
+.ver-dl{display:grid;grid-template-columns:112px minmax(0,1fr);gap:7px 12px;font-size:13px;line-height:1.5;}
+.ver-dl dt{color:var(--text3);}
+.ver-dl dd{color:var(--text);overflow-wrap:anywhere;}
+.ver-dl a{color:var(--blue);font-weight:600;}
+.ver-sec{font:700 12.5px var(--sans);color:var(--text2);margin:16px 0 8px;}
+.ver-prod{width:100%;border-collapse:collapse;font-size:12.5px;}
+.ver-prod th{text-align:left;font-weight:600;color:var(--text3);padding:0 0 6px;border-bottom:1px solid var(--border);}
+.ver-prod td{padding:7px 0;border-bottom:1px solid var(--border);vertical-align:top;color:var(--text);overflow-wrap:anywhere;}
+.ver-prod td+td,.ver-prod th+th{text-align:right;padding-left:12px;white-space:nowrap;}
+.ver-mais{font-size:12px;color:var(--text3);margin-top:7px;}
+.ver-vazio{font-size:12.5px;color:var(--text2);line-height:1.6;background:var(--s3);border-radius:10px;padding:10px 12px;}
+.ver-obs{font-size:12.5px;color:var(--text2);line-height:1.6;overflow-wrap:anywhere;}
+.ver-demo{font-size:12px;color:var(--text3);margin-bottom:10px;}
+#ver-acao.tirar{background:var(--s3);border:1px solid var(--border2);}
+@media(max-width:520px){.ver-dl{grid-template-columns:96px minmax(0,1fr);}}
 .pino{display:flex;align-items:center;justify-content:center;box-sizing:border-box;width:22px;height:22px;margin:11px;border-radius:22px;font:800 11px sans-serif;color:#fff;background:var(--green);border:2px solid #fff;box-shadow:0 1px 4px rgba(13,27,46,.35);}
 .pino.coleta{background:var(--navy);border-color:var(--vv);border-radius:6px;}
 .pino.hoje{background:#d64545;}
@@ -1059,7 +1097,7 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
           <button class="btn-sm" type="button" onclick="manAddVisiveis()">+ Colocar os que estão à vista</button>
           <button class="btn-sm" type="button" onclick="manLimpar()">Limpar a rota</button>
         </div>
-        <p class="man-dica">Toque num ponto para colocar na rota; toque de novo para tirar. Pedidos no mesmo endereço entram juntos, porque são a mesma parada. A linha pontilhada é o rascunho na ordem que você escolheu; quando você para de tocar, ela vira o caminho pelas ruas. Ponto vermelho: agendado para o dia da viagem.</p>
+        <p class="man-dica">Toque num ponto para colocar na rota; toque de novo para tirar. Para ver o pedido inteiro (produtos, peso, volumes), segure o dedo no ponto; no computador, botão direito; no teclado, tecla V no ponto. Pedidos no mesmo endereço entram juntos, porque são a mesma parada. A linha pontilhada é o rascunho na ordem que você escolheu; quando você para de tocar, ela vira o caminho pelas ruas. Ponto vermelho: agendado para o dia da viagem.</p>
         <div class="man-sec">Ordem das paradas</div>
         <div class="man-lista" id="man-ordem"></div>
         <div id="man-disponiveis"></div>
@@ -1295,6 +1333,16 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
       <button type="submit" class="btn-modal-primary" id="ped-salvar">Salvar pedido</button>
       <button type="button" class="btn-modal-sec ped-excluir" id="ped-excluir" onclick="excluirPedido()" hidden>Excluir pedido</button>
     </form>
+  </div>
+</div>
+
+<!-- ── MODAL: ver o pedido inteiro (só leitura), aberto pelo pino do mapa de montar a rota ── -->
+<div class="modal-overlay" id="modal-ver" onpointerdown="_verBaixou(event,this)" onclick="_verFora(event,this)">
+  <div class="modal-box ver-modal" role="dialog" aria-modal="true" aria-labelledby="ver-tit">
+    <div class="modal-head"><h2 class="modal-title" id="ver-tit">Pedido</h2><button type="button" class="modal-close" id="ver-fechar" onclick="fecharVer()" aria-label="Fechar">✕</button></div>
+    <div id="ver-corpo"></div>
+    <button type="button" class="btn-modal-primary" id="ver-acao" onclick="verAlternar()">Colocar na rota</button>
+    <button type="button" class="btn-modal-sec" onclick="fecharVer()">Fechar</button>
   </div>
 </div>
 
@@ -2969,6 +3017,44 @@ function _rowsToOrders(rows,headers,tipoPadrao){
 function _filho(el,nome){ if(!el) return null; for(const c of el.children){ if(c.localName===nome) return c; } return null; }
 function _txtXml(el,nome){ const c=_filho(el,nome); return c?c.textContent.trim():''; }
 function _numXml(v){ const n=parseFloat(String(v||'').replace(',','.')); return Number.isFinite(n)?n:0; }
+// O que a janela "ver pedido" mostra além do básico. A NF-e não tem campo de medida
+// (altura, largura, cubagem): o tamanho da carga se vê pelo peso, pelos volumes e pela
+// espécie (caixa, palete, fardo...). No máximo 30 produtos por nota, para o banco não
+// pesar. Só entra campo com valor: o Firebase recusa undefined e NaN.
+// O mesmo está em backend/entrada.py (_detalhes_nota), para a entrada automática.
+const MAX_PRODUTOS_NOTA=30;
+function _detalhesNota(inf){
+  const r={}, prods=[];
+  const limpa=(s,n)=>String(s||'').replace(/\s+/g,' ').trim().slice(0,n);
+  let total=0;
+  for(const d of inf.children){
+    if(d.localName!=='det') continue;
+    const p=_filho(d,'prod'), desc=limpa(_txtXml(p,'xProd'),80);
+    if(!desc) continue;
+    total++;
+    if(prods.length>=MAX_PRODUTOS_NOTA) continue;
+    const it={d:desc, q:Math.floor(_numXml(_txtXml(p,'qCom'))*1000+0.5)/1000};
+    const u=limpa(_txtXml(p,'uCom'),8); if(u) it.u=u;
+    prods.push(it);
+  }
+  if(prods.length){ r.produtos=prods; if(total>prods.length) r.produtosTotal=total; }
+  const vols=[]; let liq=0;
+  for(const v of (_filho(inf,'transp')?.children||[])){
+    if(v.localName!=='vol') continue;
+    liq+=_numXml(_txtXml(v,'pesoL'));
+    const q=Math.max(0,parseInt(_txtXml(v,'qVol'))||0), esp=limpa(_txtXml(v,'esp'),30);
+    if(esp&&vols.length<10) vols.push({q,esp});   // sem a espécie, o número já está em itens
+  }
+  if(vols.length) r.volumes=vols;
+  if(liq>0) r.pesoLiq=Math.floor(liq*100+0.5)/100;
+  const vNF=_numXml(_txtXml(_filho(_filho(inf,'total'),'ICMSTot'),'vNF'));
+  if(vNF>0) r.valor=Math.floor(vNF*100+0.5)/100;
+  const obs=limpa(_txtXml(_filho(inf,'infAdic'),'infCpl'),500);
+  if(obs) r.obsNota=obs;
+  const ide=_filho(inf,'ide'), em=(_txtXml(ide,'dhEmi')||_txtXml(ide,'dEmi')).slice(0,10);
+  if(/^\d{4}-\d{2}-\d{2}$/.test(em)) r.emissao=em;
+  return r;
+}
 function _lerXmlNFe(texto,tipo){
   const doc=new DOMParser().parseFromString(String(texto).replace(/^﻿/,''),'application/xml');
   if(doc.getElementsByTagName('parsererror').length) throw new Error('XML inválido ou corrompido');
@@ -3021,6 +3107,7 @@ function _lerXmlNFe(texto,tipo){
       peso:peso?Math.round(peso*100)/100:100, itens,
       urgente:false, agendado:false, dataAgendada:'', status:'pendente', origem:'xml',
       lat:coord.lat+(Math.random()-.5)*.015, lng:coord.lng+(Math.random()-.5)*.015,
+      ..._detalhesNota(inf),
     };
   });
   return {orders, semPeso};
@@ -3922,7 +4009,7 @@ function _manTitulo(g){
   const rot=_manRotulo(g);
   const fim=rot?`parada ${rot} da rota — toque para tirar`:'toque para colocar na rota';
   const ag=g.lista.find(o=>_saiHoje(o,rotaCtxD.data));
-  return `${_manTipoGrupo(g)} · ${quem} · ${onde} · ${kg.toLocaleString('pt-BR')} kg${ag?' · '+_textoAgenda(ag,rotaCtxD.data):''} · ${fim}`;
+  return `${_manTipoGrupo(g)} · ${quem} · ${onde} · ${kg.toLocaleString('pt-BR')} kg${ag?' · '+_textoAgenda(ag,rotaCtxD.data):''} · ${fim} · tecla V: ver o pedido inteiro`;
 }
 function _manTituloHtml(g){
   const kg=g.lista.reduce((s,o)=>s+(+o.peso||0),0), p=g.lista[0];
@@ -3930,7 +4017,7 @@ function _manTituloHtml(g){
   const quem=g.lista.length>1?`${g.lista.length} notas aqui: NF ${g.lista.map(o=>esc(o.nf)).join(', ')}`:`NF ${esc(p.nf)}`;
   const rot=_manRotulo(g), ag=g.lista.find(o=>_saiHoje(o,rotaCtxD.data));
   return `${ag?`<b style="color:${COR_SAI_HOJE}">📅 ${esc(_textoAgenda(ag,rotaCtxD.data))}</b><br>`:''}<b>${_manTipoGrupo(g)} · ${quem}</b><br>${onde}<br>${kg.toLocaleString('pt-BR')} kg`
-    + `<br><span style="color:#64748b">${rot?`parada ${rot} — clique para tirar da rota`:'clique para colocar na rota'}</span>`;
+    + `<br><span style="color:#64748b">${rot?`parada ${rot} — clique para tirar da rota`:'clique para colocar na rota'}<br>botão direito: ver o pedido inteiro</span>`;
 }
 function _manAnunciar(txt){ const el=$id('man-anuncio'); if(el) el.textContent=txt; }
 
@@ -3962,6 +4049,7 @@ function _manCriarMapa(){
   if(!manMap){
     manMap=L.map('mapa-manual',{attributionControl:false}).setView([DEPOT.lat,DEPOT.lng],9.2);
     _fundoMapa(manMap);
+    _manLigarVer(manMap.getContainer());
   }
   if(manLayer) manMap.removeLayer(manLayer);
   manLayer=L.layerGroup().addTo(manMap);
@@ -4035,9 +4123,10 @@ function _manDesenharLinha(){
 }
 function _manMudou(){ manGrupos.forEach(_manPintar); _manDesenharLinha(); _manAtualizar(); }
 
-function _manTocarPonto(ev,g){
-  let alvo=g;
-  const oe=ev&&ev.originalEvent;
+// Pinos de 44 px se sobrepõem quando os pontos estão perto: vale o centro mais perto
+// do dedo, não o pino que ficou por cima. O toque e o "ver pedido" usam a mesma conta.
+function _manMaisPerto(oe,padrao){
+  let alvo=padrao;
   if(manMap&&manGrupos.length>1&&oe&&typeof oe.clientX==='number'&&(oe.clientX||oe.clientY)){
     try{
       const pt=manMap.mouseEventToContainerPoint(oe);
@@ -4046,9 +4135,14 @@ function _manTocarPonto(ev,g){
         const d=pt.distanceTo(manMap.latLngToContainerPoint([x.lat,x.lng]));
         if(d<md){ md=d; alvo=x; }
       });
-    }catch(e){ alvo=g; }
+    }catch(e){ alvo=padrao; }
   }
-  _manTocar(alvo);
+  return alvo;
+}
+function _manTocarPonto(ev,g){
+  // o dedo que acabou de segurar para ver o pedido não coloca nem tira da rota ao soltar
+  if(_manSegurou){ _manSegurou=false; return; }
+  _manTocar(_manMaisPerto(ev&&ev.originalEvent,g));
 }
 function _manTocar(g){
   _manGuardar();
@@ -4061,6 +4155,165 @@ function _manTocar(g){
     _manAnunciar(`${g.lista.length>1?g.lista.length+' notas na posição':'Parada na posição'} ${manSel.length}.`);
   }
   _manMudou();
+}
+
+// ── Ver o pedido inteiro pelo pino (só leitura) ────────────────────────────────
+// Segurar o dedo no ponto (celular), botão direito (computador) ou a tecla V no ponto
+// em foco (teclado). O toque simples continua sendo colocar e tirar da rota.
+// O banco guarda mais do que allOrders carrega (telefone, produtos...): vem de pedidosCrus.
+let _verGrupo=null, _verFoco=null, _manPress=null, _manSegurou=false;
+const SEGURAR_MS=480;
+function _verDados(o){ const cru=pedidosCrus&&pedidosCrus[_idDe(o)]; return {...(cru&&typeof cru==='object'?cru:{}), ...o}; }
+function _verKg(v){ return (+v||0).toLocaleString('pt-BR',{maximumFractionDigits:2})+' kg'; }
+function _verLista(v){ return Array.isArray(v)?v.filter(Boolean):(v&&typeof v==='object'?Object.values(v).filter(Boolean):[]); }
+function _verVolumes(d){
+  const n=Math.max(1,Math.round(+d.itens||1));
+  const esp=_verLista(d.volumes).filter(v=>v.esp).map(v=>{
+    const e=esc(String(v.esp).toLocaleLowerCase('pt-BR'));
+    return +v.q>0?`${+v.q} × ${e}`:e;
+  });
+  return _plural(n,'volume','volumes')+(esp.length?` (${esp.join(', ')})`:'');
+}
+function _verNotaHtml(o,varias){
+  const d=_verDados(o), col=_tipoDe(d)==='coleta', ordem=_manOrdem(_manId(o));
+  const linha=(rot,val)=>val?`<dt>${rot}</dt><dd>${val}</dd>`:'';
+  const cidUf=[d.cidade&&d.cidade!=='Sem cidade'?esc(d.cidade):'',d.uf?esc(d.uf):''].filter(Boolean).join('/');
+  const ende=[d.endereco?esc(d.endereco):'',d.bairro?esc(d.bairro):'',[cidUf,d.cep?'CEP '+esc(_fmtCep(d.cep)):''].filter(Boolean).join(' · ')].filter(Boolean).join('<br>');
+  const fone=_foneNorm(d.fone);
+  const jan=_janelaDe(d);
+  const em=/^(\d{4})-(\d{2})-(\d{2})$/.exec(d.emissao||'');
+  const valor=+d.valor>0?(+d.valor).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}):'';
+  const liq=+d.pesoLiq>0&&Math.abs(+d.pesoLiq-(+d.peso||0))>=0.01?` · líquido ${_verKg(d.pesoLiq)}`:'';
+  const prods=_verLista(d.produtos).filter(p=>p.d);
+  const total=Math.max(prods.length,+d.produtosTotal||0);
+  const tab=prods.length
+    ? `<div class="ver-sec">Produtos (${total})</div>
+       <table class="ver-prod"><thead><tr><th scope="col">Produto</th><th scope="col">Quantidade</th></tr></thead><tbody>${
+         prods.map(p=>`<tr><td>${esc(p.d)}</td><td>${(+p.q||0).toLocaleString('pt-BR',{maximumFractionDigits:3})}${p.u?' '+esc(p.u):''}</td></tr>`).join('')
+       }</tbody></table>${total>prods.length?`<p class="ver-mais">Mostrando ${prods.length} de ${total} produtos. A nota completa tem o resto.</p>`:''}`
+    : `<div class="ver-sec">Produtos</div><p class="ver-vazio">Este pedido não tem a lista de produtos. Ela vem do XML da nota fiscal: pedidos de planilha, de PDF, digitados à mão ou de XML importado antes de 18/11 não trazem.</p>`;
+  const ag=_saiHoje(d,rotaCtxD.data)?_textoAgenda(d,rotaCtxD.data):(d.agendado&&d.dataAgendada?`Agendado para ${_dataBR(d.dataAgendada)}`:'');
+  return `<section class="ver-nota" aria-label="${col?'Coleta':'Entrega'}, NF ${esc(d.nf)}">
+    <div class="ver-cab${varias?'':' so'}">
+      ${varias?`<span class="ver-tag${col?' coleta':''}">${col?'Coleta':'Entrega'}</span><b>NF ${esc(d.nf)}</b>`:''}${d.urgente?'<span class="ver-tag urg">Urgente</span>':''}
+      <span class="ver-st${ordem?' na':''}">${ordem?`Parada ${ordem} da rota`:'Fora da rota'}</span>
+    </div>
+    ${ag?`<p class="ver-agenda">📅 ${esc(ag)}</p>`:''}
+    <dl class="ver-dl">
+      ${linha(col?'Coletar em':'Cliente',d.dest?esc(d.dest):'')}
+      ${linha(col?'Destinatário':'Remetente',col?(d.destinatario?esc(d.destinatario):''):(d.remetente?esc(d.remetente):''))}
+      ${linha('Endereço',ende)}
+      ${linha('Ponto no mapa',esc(_origemLocal(d)))}
+      ${linha('Telefone',fone?`<a href="tel:+55${fone}">${esc(_foneFmt(fone))}</a>`:'')}
+      ${linha('Horário',jan?`chegar entre ${_hhmm(jan[0])} e ${_hhmm(jan[1])}`:'')}
+      ${linha('Carga',varias?esc(_verKg(d.peso))+liq+' · '+_verVolumes(d):'')}
+      ${linha('Emissão',em?`${em[3]}/${em[2]}/${em[1]}`:'')}
+      ${linha('Valor da nota',valor)}
+    </dl>
+    ${tab}
+    ${d.obsNota?`<div class="ver-sec">Observação da nota</div><p class="ver-obs">${esc(d.obsNota)}</p>`:''}
+  </section>`;
+}
+function verPedidoGrupo(g,foco){
+  if(!g||$id('modal-ver').classList.contains('open')) return;
+  _verGrupo=g; _verFoco=foco||document.activeElement;
+  const varias=g.lista.length>1, d0=_verDados(g.lista[0]);
+  const kg=g.lista.reduce((s,o)=>s+(+o.peso||0),0);
+  const vols=g.lista.reduce((s,o)=>s+Math.max(1,Math.round(+o.itens||1)),0);
+  const pct=capKgD>0?kg/capKgD*100:0;
+  const nivel=pct>100?'cheio':pct>=90?'quase':'';
+  const veic=esc(vehSel?vehSel.nome:'veículo'), cap=capKgD.toLocaleString('pt-BR');
+  const pctTxt=pct>0&&pct<1?'menos de 1':String(Math.round(pct));
+  const fraseCap=capKgD>0
+    ? (pct>100 ? `${varias?'Juntas, passam':'Sozinho, já passa'} da capacidade do ${veic} (${cap} kg).`
+               : `${varias?'Juntas, ocupam':'Ocupa'} ${pctTxt}% da capacidade do ${veic} (${cap} kg).`)
+    : '';
+  const liq=!varias&&+d0.pesoLiq>0&&Math.abs(+d0.pesoLiq-kg)>=0.01?`<span>líquido ${_verKg(d0.pesoLiq)}</span>`:'';
+  $id('ver-tit').textContent=varias?`${g.lista.length} notas neste endereço`:`${_tipoDe(d0)==='coleta'?'Coleta':'Entrega'} · NF ${d0.nf}`;
+  $id('ver-corpo').innerHTML=`
+    ${modoDemo?'<p class="ver-demo">Pedido fictício da demonstração.</p>':''}
+    <div class="ver-resumo">
+      <div class="ver-resumo-top"><b>${_verKg(kg)}</b>${liq}<span>${varias?_plural(vols,'volume','volumes'):_verVolumes(d0)}</span></div>
+      ${capKgD>0?`<div class="ver-barra${nivel?' '+nivel:''}" aria-hidden="true"><i style="width:${Math.min(100,pct).toFixed(1)}%"></i></div>`:''}
+      ${fraseCap?`<p class="ver-pct${nivel==='cheio'?' cheio':''}">${fraseCap}</p>`:''}
+      ${varias?'<p class="ver-pct">As notas do mesmo endereço entram e saem da rota juntas, porque são a mesma parada.</p>':''}
+      <p class="ver-pct">A nota fiscal não traz as medidas da carga: o tamanho aparece pelo peso, pelos volumes e pela espécie.</p>
+    </div>
+    ${g.lista.map(o=>_verNotaHtml(o,varias)).join('')}`;
+  _verBotao();
+  $id('modal-ver').classList.add('open');
+  const caixa=$id('modal-ver').querySelector('.modal-box'); if(caixa) caixa.scrollTop=0;
+  $id('modal-ver').scrollTop=0;
+  setTimeout(()=>{ const bt=$id('ver-fechar'); if(bt) bt.focus({preventScroll:true}); },30);
+}
+window.verPedidoGrupo=verPedidoGrupo;
+function _verBotao(){
+  const g=_verGrupo, bt=$id('ver-acao'); if(!g||!bt) return;
+  const na=g.lista.some(o=>_manTem(_manId(o))), n=g.lista.length;
+  bt.textContent = na ? (n>1?`Tirar as ${n} notas da rota`:'Tirar da rota') : (n>1?`Colocar as ${n} notas na rota`:'Colocar na rota');
+  bt.classList.toggle('tirar',na);
+}
+function verAlternar(){ const g=_verGrupo; if(!g) return; fecharVer(); _manTocar(g); }
+window.verAlternar=verAlternar;
+function fecharVer(){
+  const m=$id('modal-ver'); if(!m.classList.contains('open')) return;
+  m.classList.remove('open');
+  _verGrupo=null; _manSegurou=false;
+  if(_verFoco&&document.contains(_verFoco)&&_verFoco.focus) _verFoco.focus({preventScroll:true});
+  _verFoco=null;
+}
+window.fecharVer=fecharVer;
+// fecha ao tocar fora da caixa, mas só se o toque COMEÇOU fora dela: o dedo que segurou
+// o pino e solta em cima do fundo escuro não fecha a janela que acabou de abrir
+let _verBaixouFora=false;
+window._verBaixou=(ev,el)=>{ _verBaixouFora=ev.target===el; };
+window._verFora=(ev,el)=>{ if(ev.target===el&&_verBaixouFora) fecharVer(); _verBaixouFora=false; };
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&$id('modal-ver').classList.contains('open')) fecharVer(); });
+// o pino de pedido sob o dedo ou o mouse (o do CD não abre nada)
+function _manPinoDoEvento(e){
+  const p=e.target&&e.target.closest?e.target.closest('.pino-alvo'):null;
+  return p&&!p.querySelector('.pino.cd')?p:null;
+}
+function _manGrupoDoPino(pin){ return manGrupos.find(g=>{ const mk=manMarc.get(g.chave); return mk&&mk.getElement()===pin; })||null; }
+function _manVerNoEvento(e,pin){
+  const g=_manMaisPerto(e,_manGrupoDoPino(pin));
+  if(g) verPedidoGrupo(g,pin);
+}
+function _manCancelarPress(){ if(_manPress){ clearTimeout(_manPress.t); _manPress=null; } }
+// Um só conjunto de escutas no contêiner do mapa: o Leaflet pode trocar o elemento do pino
+function _manLigarVer(el){
+  el.addEventListener('pointerdown',e=>{
+    _manSegurou=false;
+    _manCancelarPress();
+    const pin=_manPinoDoEvento(e);
+    if(!pin||e.pointerType==='mouse') return;
+    const x=e.clientX, y=e.clientY;
+    _manPress={id:e.pointerId,x,y,t:setTimeout(()=>{
+      _manPress=null; _manSegurou=true;
+      try{ if(navigator.vibrate) navigator.vibrate(15); }catch(_){}
+      _manVerNoEvento({clientX:x,clientY:y},pin);
+    },SEGURAR_MS)};
+  },{passive:true});
+  el.addEventListener('pointermove',e=>{
+    if(_manPress&&e.pointerId===_manPress.id&&Math.hypot(e.clientX-_manPress.x,e.clientY-_manPress.y)>10) _manCancelarPress();
+  },{passive:true});
+  ['pointerup','pointercancel'].forEach(t=>el.addEventListener(t,e=>{ if(_manPress&&e.pointerId===_manPress.id) _manCancelarPress(); },{passive:true}));
+  // botão direito; no Android o toque longo também chega aqui (e o iPhone, pelo Leaflet)
+  el.addEventListener('contextmenu',e=>{
+    const pin=_manPinoDoEvento(e); if(!pin) return;
+    e.preventDefault();
+    _manCancelarPress();
+    if(e.pointerType&&e.pointerType!=='mouse') _manSegurou=true;
+    if($id('modal-ver').classList.contains('open')) return;
+    _manVerNoEvento(e,pin);
+  });
+  el.addEventListener('keydown',e=>{
+    if((e.key!=='v'&&e.key!=='V')||e.ctrlKey||e.metaKey||e.altKey) return;
+    const pin=_manPinoDoEvento(e); if(!pin) return;
+    const g=_manGrupoDoPino(pin); if(!g) return;
+    e.preventDefault();
+    verPedidoGrupo(g,pin);
+  });
 }
 function manAddUm(id){
   const o=manPool.find(x=>_manId(x)===String(id));
@@ -4146,6 +4399,7 @@ function _manAtualizar(){
     : `Sai do ${esc(DEPOT.name)} com <b>${kg(carga.saida)} kg</b>, que é o máximo a bordo nesta rota. É esse número que precisa caber no veículo${fecho}`;
   $id('man-sub').innerHTML = !manSel.length
     ? 'Toque nos pontos do mapa. A ordem dos toques é a ordem das paradas.'
+      + `<br>${manSemHover?'Segure o dedo num ponto para ver o pedido inteiro.':'Clique com o botão direito num ponto para ver o pedido inteiro.'}`
     : `${_resumoTipos(n)} · ${_plural(itens,'volume','volumes')}`
       + (misto ? `<br>${frase}` : `<br>Peso total: <b>${kg(soma)} kg</b>.`);
   // Estimativa pela mesma conta que o resto do sistema usa enquanto o servidor não

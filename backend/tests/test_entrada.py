@@ -140,6 +140,23 @@ class TesteLeituraNFe(unittest.TestCase):
                 entrada.ler_xml_nfe(xml)
             self.assertIn(msg, str(c.exception))
 
+    def test_detalhes_da_nota_para_ver_o_pedido(self):
+        # o mesmo arquivo é lido pela tela em tests/tela/t_ver_pedido.js: os dois lados têm de dar igual
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "nfe_produtos.xml"), "rb") as f:
+            p = entrada.ler_xml_nfe(f.read())["pedidos"][0]
+        self.assertEqual((p["peso"], p["itens"], p["pesoLiq"], p["valor"], p["emissao"]), (332.46, 3, 310.5, 1234.5, "2026-11-17"))
+        self.assertEqual(p["volumes"], [{"q": 2, "esp": "CAIXA"}, {"q": 1, "esp": "PALETE"}])   # o vol sem nada fica de fora
+        self.assertEqual(len(p["produtos"]), 30)                                                # teto por nota
+        self.assertEqual(p["produtosTotal"], 32)                                                # sem contar o de nome vazio
+        self.assertEqual(p["produtos"][0], {"d": "Produto número 1 linha", "q": 1.5, "u": "CX"})
+        self.assertEqual(p["obsNota"], "Entregar no portão 2. Pedido 4471")
+
+    def test_nota_sem_detalhes_nao_grava_campo_vazio(self):
+        p = entrada.ler_xml_nfe(nfe())["pedidos"][0]
+        for k in ("produtos", "produtosTotal", "volumes", "valor", "obsNota", "emissao"):
+            self.assertNotIn(k, p)
+        self.assertEqual(p["pesoLiq"], 11.76)
+
     def test_cidade_norm(self):
         self.assertEqual(entrada.cidade_norm("SAO PAULO/SP"), "São Paulo")
         self.assertEqual(entrada.cidade_norm("  ferraz de  vasconcelos "), "Ferraz de Vasconcelos")
