@@ -95,14 +95,14 @@ const emp = (p) => p.evaluate(() => JSON.parse(JSON.stringify(window.__FAKE.db.e
   ok(d['3008'].geoPrec === 'cidade' && d['3008'].lat !== UMBU_ERRADA.lat,
     'rua de outro nome ("São Sebastião do Umbuzeiro" no lugar de "Umbuzeiro") é recusada: fica aproximado, não no lugar errado com cara de certo');
   ok(d['3009'].geoPrec === 'cidade' && Math.abs(d['3009'].lat - (-23.396)) < 1e-9, 'rua achada em outra cidade é recusada: fica na cidade certa, como aproximado');
-  ok(d['3012'].lat === RUA_SF.lat && d['3012'].geoPrec === 'rua' && d['3012'].geoV === 2, 'ponto antigo em outra cidade é refeito com a busca conferida');
-  ok(d['3013'].lat === UMBU_ERRADA.lat && d['3013'].geoPrec === 'cidade' && d['3013'].geoV === 2,
+  ok(d['3012'].lat === RUA_SF.lat && d['3012'].geoPrec === 'rua' && d['3012'].geoV === 3, 'ponto antigo em outra cidade é refeito com a busca conferida');
+  ok(d['3013'].lat === UMBU_ERRADA.lat && d['3013'].geoPrec === 'cidade' && d['3013'].geoV === 3,
     'ponto antigo sem confirmação, na mesma região: continua, mas passa a aparecer como aproximado para corrigir');
   ok(d['3014'].lat === -23.48 && d['3014'].geoPrec === 'lembrado' && !d['3014'].geoV, 'ponto lembrado não é mexido');
   ok(d['3015'].lat === -22.90 && !d['3015'].geoV, 'pedido que já saiu em rota não é mexido');
-  ok(d['3001'].geoV === 2 && d['3002'].geoV === 2, 'pedido localizado agora fica marcado como conferido (não é refeito)');
+  ok(d['3001'].geoV === 3 && d['3002'].geoV === 3, 'pedido localizado agora fica marcado como conferido (não é refeito)');
   const gc = await p.evaluate(() => window.__FAKE.db.geo_cache);
-  ok(Object.values(gc).every((x) => x.v === 2), 'cache dos CEPs gravado com a versão conferida');
+  ok(Object.values(gc).every((x) => x.v === 3), 'cache dos CEPs gravado com a versão conferida');
   ok(gc['07020000'].prec === 'rua' && gc['07020000'].lat === RUA_SN.lat && !JSON.stringify(gc).includes('Cliente'), 'cache antigo do CEP (sem precisão) é refeito; cache geral não tem dados do cliente');
   ok(/pelo número/.test(barra) && /bairro ou a cidade/.test(barra), 'aviso final conta quantos foram pelo número e quantos ficaram aproximados: ' + barra);
 

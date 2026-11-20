@@ -3289,20 +3289,21 @@ async function _viaCep(cep){
 }
 
 let _nomUlt=0;   // última consulta ao Nominatim (a política pede no máximo 1 por segundo)
-async function _nominatimGet(params){
+async function _nominatimLista(params, limite=1){
   const espera=_nomUlt+1100-Date.now();
   if(espera>0) await _sleep(espera);
   _nomUlt=Date.now();
-  const q=new URLSearchParams({format:'jsonv2',addressdetails:'1',limit:'1',countrycodes:'br',...params});
+  const q=new URLSearchParams({format:'jsonv2',addressdetails:'1',limit:String(limite),countrycodes:'br',...params});
   let r; try{ r = await fetch('https://nominatim.openstreetmap.org/search?'+q, { headers: { 'Accept-Language':'pt-BR' } }); }catch(e){ throw _erroRede('Nominatim sem resposta'); }
   if(!r.ok) throw _erroRede('Nominatim HTTP '+r.status);
   const arr = await r.json();
-  if(!arr.length) return null;
-  const a=arr[0].address||{};
-  return { lat: parseFloat(arr[0].lat), lng: parseFloat(arr[0].lon), numero:a.house_number||'', rua:a.road||'',
+  return (Array.isArray(arr)?arr:[]).map(x=>{ const a=x.address||{}; return {
+    lat: parseFloat(x.lat), lng: parseFloat(x.lon), numero:a.house_number||'', rua:a.road||'',
     cidades:[a.city,a.town,a.village,a.municipality,a.city_district].filter(Boolean),
-    uf:String(a['ISO3166-2-lvl4']||'').replace(/^BR-/,'') };
+    bairros:[a.suburb,a.neighbourhood,a.quarter,a.city_district,a.residential].filter(Boolean),
+    uf:String(a['ISO3166-2-lvl4']||'').replace(/^BR-/,'') }; });
 }
+async function _nominatimGet(params){ return (await _nominatimLista(params,1))[0]||null; }
 function _nominatim(query){ return _nominatimGet({q:query}); }
 // O Nominatim devolve o "mais parecido", não o certo: "Rua Umbuzeiro, Guarulhos" voltava a
 // "Rua São Sebastião do Umbuzeiro", a 5 km dali (conferido em 19/11/2026); e uma rua que
@@ -3310,7 +3311,29 @@ function _nominatim(query){ return _nominatimGet({q:query}); }
 // quando se procurou uma rua, da MESMA rua. O que não passa cai para o passo seguinte
 // (bairro, cidade), que aparece como "local aproximado": aproximado e dito é melhor que
 // errado com cara de certo.
-const GEO_VERSAO=2;   // pontos achados antes desta conferência são procurados de novo
+// v3 (20/11/2026): rua com o mesmo nome em outro bairro da mesma cidade. "Rua Belo
+// Horizonte, Brás" (CEP 03052-040) caiu na divisa com Mairiporã: São Paulo tem mais de uma
+// rua com esse nome e o Nominatim devolveu a primeira. Agora a rua tem de ficar perto do
+// bairro do CEP; os pontos achados antes disso são procurados de novo.
+const GEO_VERSAO=3;   // pontos achados antes desta conferência são procurados de novo
+const RAIO_BAIRRO_KM=4;   // a rua achada tem de estar a até 4 km do centro do bairro do CEP
+function _mesmoBairro(g,bairro){
+  const b=_nomeCidade(bairro);
+  return !!b && (g&&g.bairros||[]).some(x=>{ const y=_nomeCidade(x); return y===b||y.includes(b)||b.includes(y)&&y.length>3; });
+}
+// Entre várias ruas com o mesmo nome na cidade, a do bairro do CEP: a mais perto do centro
+// do bairro (até RAIO_BAIRRO_KM), ou a que o próprio mapa diz ser do bairro. Sem como
+// decidir (mais de uma e nenhuma confirmada), nenhuma: melhor aproximado que errado.
+function _escolherRua(cands, pontoBairro, bairro){
+  if(!cands.length) return null;
+  if(pontoBairro){
+    const m=cands.map(g=>({g,d:_haversineKm(g,pontoBairro)})).sort((a,b)=>a.d-b.d)[0];
+    return m.d<=RAIO_BAIRRO_KM ? m.g : null;
+  }
+  const doBairro=cands.filter(g=>_mesmoBairro(g,bairro));
+  if(doBairro.length) return doBairro[0];
+  return cands.length===1 ? cands[0] : null;
+}
 function _nomeCidade(t){ return _semAcento(t).replace(/[^a-z0-9]/g,''); }
 function _mesmaCidade(g,cidade,uf){
   if(!g) return false;
@@ -3330,15 +3353,18 @@ async function _geocodificarCep(cep){
   try{
     const end = await _viaCep(cep);
     const lugar={city:end.localidade, ...(UF_NOME[end.uf]?{state:UF_NOME[end.uf]}:{}), country:'Brasil'};
-    let coord=null, prec='';
-    if(end.logradouro){
-      const g=await _nominatimGet({street:end.logradouro, ...lugar});
-      if(_mesmaCidade(g,end.localidade,end.uf)&&_mesmaRua(g,end.logradouro)){ coord=g; prec='rua'; }
-    }
-    if(!coord&&end.bairro){
+    let coord=null, prec='', pontoBairro=null;
+    // o centro do bairro do CEP primeiro: é ele que diz qual das ruas com o mesmo nome é a certa
+    if(end.bairro){
       const g=await _nominatim(`${end.bairro}, ${end.localidade}, ${end.uf}, Brasil`);
-      if(_mesmaCidade(g,end.localidade,end.uf)){ coord=g; prec='bairro'; }
+      if(_mesmaCidade(g,end.localidade,end.uf)) pontoBairro=g;
     }
+    if(end.logradouro){
+      const lista=await _nominatimLista({street:end.logradouro, ...lugar}, 5);
+      const g=_escolherRua(lista.filter(x=>_mesmaCidade(x,end.localidade,end.uf)&&_mesmaRua(x,end.logradouro)), pontoBairro, end.bairro);
+      if(g){ coord=g; prec='rua'; }
+    }
+    if(!coord&&pontoBairro){ coord=pontoBairro; prec='bairro'; }
     if(!coord){
       const g=await _nominatimGet(lugar);
       if(_mesmaCidade(g,end.localidade,end.uf)){ coord=g; prec='cidade'; }
@@ -3375,10 +3401,14 @@ async function _localizarPedido(o, persistir=true){
   let res=null, g=null;
   // 1) rua + número (com o nome oficial da rua pelo CEP, quando houver)
   if(numero&&cidade&&(base?.rua||rua)&&!/\bkm$/i.test(rua)){
-    g=await _nominatimGet({street:`${numero} ${base?.rua||rua}`, ...lugar});
-    // número achado longe demais da rua do CEP = provavelmente outra rua com o mesmo nome
-    if(g&&_mesmoNumero(g.numero,numero)&&_mesmaCidade(g,cidade,uf)&&_mesmaRua(g,base?.rua||rua)
-       &&!(base&&base.prec==='rua'&&_haversineKm(g,base)>6)) res={lat:g.lat,lng:g.lng,prec:'numero'};
+    const lista=await _nominatimLista({street:`${numero} ${base?.rua||rua}`, ...lugar}, 5);
+    const cands=lista.filter(x=>_mesmoNumero(x.numero,numero)&&_mesmaCidade(x,cidade,uf)&&_mesmaRua(x,base?.rua||rua));
+    // número achado longe do que o CEP deu = outra rua com o mesmo nome: fica o mais perto,
+    // e só se estiver perto (6 km da rua, RAIO_BAIRRO_KM do centro do bairro)
+    const lim=base?(base.prec==='rua'?6:base.prec==='bairro'?RAIO_BAIRRO_KM:Infinity):Infinity;
+    const m=base?cands.map(x=>({x,d:_haversineKm(x,base)})).sort((a,b)=>a.d-b.d)[0]:(cands.length===1?{x:cands[0],d:0}:null);
+    g=lista[0]||null;
+    if(m&&m.d<=lim) res={lat:m.x.lat,lng:m.x.lng,prec:'numero'};
   }
   // 2) o que o CEP deu (rua, bairro ou cidade)
   if(!res&&base) res={lat:base.lat,lng:base.lng,prec:base.prec||'rua',...(base.nv?{nv:true}:{})};
