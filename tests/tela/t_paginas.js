@@ -18,9 +18,9 @@ const ok = (c, m) => console.log((c ? 'OK   ' : 'FALHA ') + m);
   await p.screenshot({ path: 'pg-pedidos.png' });
   // Motoristas
   await p.click('.sb-item[data-page="motoristas"]'); await p.waitForTimeout(300);
-  await p.click('text=+ Adicionar Motorista'); await p.fill('#mot-nome', 'João Teste');
+  await p.click('text=+ Adicionar veículo'); await p.fill('#mot-nome', 'João Teste');
   await p.click('#mot-veh-grid .veh-card >> nth=0'); await p.fill('#mot-cap-kg', '650');
-  await p.click('text=Salvar Motorista'); await p.waitForTimeout(500);
+  await p.click('text=Salvar veículo'); await p.waitForTimeout(500);
   const mots = await p.evaluate(() => window.__FAKE.db.empresas.emp1.motoristas);
   ok(mots && Object.values(mots).some((m) => m.nome === 'João Teste'), 'cadastrar motorista grava em motoristas/');
   await p.screenshot({ path: 'pg-motoristas.png' });

@@ -33,7 +33,7 @@ const seed = (d) => { window.__FAKE = { user: { uid: 'u', email: 'a@b.com', getI
     await ctx.close();
   }
 
-  // Veículos: cinco desenhos diferentes e o tamanho cresce do Fiorino para a carreta
+  // Veículos: seis desenhos diferentes e o tamanho cresce do Fiorino para a carreta
   {
     const { ctx, p } = await open(b, 'index.html', 1440, 900, seed, false, { ped: PED, mot: MOT });
     await ctx.route(/viacep|nominatim/, (r) => r.fulfill({ contentType: 'application/json', body: '[]' }));
@@ -41,7 +41,7 @@ const seed = (d) => { window.__FAKE = { user: { uid: 'u', email: 'a@b.com', getI
     const cartoes = await p.evaluate(() => [...document.querySelectorAll('#veh-grid .veh-card')]
       .map((c) => [c.querySelector('.veh-card-name')?.textContent || '', c.querySelector('img')?.getAttribute('src') || '']));
     const nomes = cartoes.map((x) => x[0]).join(',');
-    ok(new Set(cartoes.map((x) => x[1])).size === 5, 'os cinco veículos têm desenhos diferentes: ' + JSON.stringify(cartoes.map((x) => x[1])));
+    ok(new Set(cartoes.map((x) => x[1])).size === 6, 'os seis veículos têm desenhos diferentes: ' + JSON.stringify(cartoes.map((x) => x[1])));
     ok(nomes.startsWith('Fiorino') && nomes.endsWith('Carreta'), 'ordem dos veículos preservada: ' + nomes);
     // largura do desenho dentro da caixa de 120 unidades: tem que crescer
     const larguras = await p.evaluate(async () => {

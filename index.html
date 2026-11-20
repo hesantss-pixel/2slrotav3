@@ -217,6 +217,29 @@ button{font-family:inherit;}
 .veh-card-name{font-family:var(--sans);font-weight:800;font-size:15px;color:var(--text);}
 .veh-card-tag{display:inline-block;background:rgba(243,182,43,.15);border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700;color:var(--ac);margin:5px 0;font-family:var(--mono);}
 .veh-card-desc{font-size:11.5px;color:var(--text2);line-height:1.4;}
+/* Placa do veículo, no desenho da placa de verdade: é o que diferencia dois carros do mesmo modelo */
+.placa{display:inline-flex;flex-direction:column;background:#fff;border:1.5px solid #1d2433;border-radius:4px;overflow:hidden;flex-shrink:0;line-height:1;vertical-align:middle;}
+.placa-faixa{background:#1a3d8f;color:#fff;font:700 6px/1 var(--sans);letter-spacing:1.6px;text-align:center;padding:2px 0 1.5px;}
+.placa-num{color:#0d1b2e;font:800 14px/1 var(--sans);letter-spacing:1px;text-align:center;padding:3px 7px 3.5px;white-space:nowrap;}
+.placa.antiga{background:#d5d9de;}
+.placa.antiga .placa-faixa{display:none;}
+.frota-topo{display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap;}
+.rc-card.frota .rc-card-head{align-items:flex-start;}
+.rc-card.frota .rc-card-veic{width:96px;height:52px;}
+.rc-card.frota .veh-img-mini{height:44px;}
+.rc-card.frota .rc-card-sub{margin-top:6px;font-size:12px;}
+.frota-mot{font-size:12px;color:var(--text2);margin-top:5px;}
+.frota-mot.vazio{color:var(--text3);font-style:italic;}
+.frota-acoes{display:flex;gap:8px;padding:0 16px 14px;}
+.frota-acoes button{background:var(--s3);border:1px solid var(--border2);border-radius:9px;padding:7px 12px;font:700 12px var(--sans);color:var(--text2);cursor:pointer;}
+.frota-acoes button:hover{border-color:var(--rc,var(--mid));color:var(--text);}
+.frota-acoes .excluir:hover{border-color:#d1425e;color:#b3263f;}
+.frota-2col{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.frota-2col .field-lbl{margin-top:14px;}
+.frota-dica{font-size:11.5px;color:var(--text3);margin-top:6px;line-height:1.4;}
+.frota-tipo-desc{font-size:12px;color:var(--text2);margin-top:8px;min-height:16px;}
+#mot-veh-grid .veh-card.on{border-color:var(--vc);box-shadow:0 0 0 2px var(--vc) inset;}
+@media (max-width:400px){ .frota-2col{grid-template-columns:1fr;} }
 .cap-form-box{background:var(--s2);border:1px solid var(--border2);border-radius:18px;padding:26px;max-width:420px;}
 .presets-row{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap;}
 .preset-chip{background:var(--s3);border:1px solid var(--border2);border-radius:20px;padding:7px 14px;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;font-family:var(--mono);}
@@ -1173,18 +1196,27 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
   <div class="page" id="page-motoristas" style="display:none">
     <button class="btn-voltar-topo" onclick="irParaPagina('dashboard')"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Voltar ao Dashboard</button>
     <div class="page-head">
-      <div class="page-title">Motoristas</div>
-      <div class="page-sub">Motoristas fixos cadastrados — clique em Roteirização pra usar direto</div>
+      <div class="page-title">Veículos e motoristas</div>
+      <div class="page-sub">Cada veículo com modelo, placa e quem dirige — na Roteirização é só clicar nele</div>
     </div>
-    <div class="btn-add-ag" style="margin-bottom:18px;display:inline-block" onclick="toggleFormMotorista()">+ Adicionar Motorista</div>
-    <div id="form-motorista-box" class="cap-form-box" style="display:none;margin-bottom:20px;max-width:420px">
-      <span class="field-lbl">Nome do motorista</span>
-      <input type="text" class="field-inp field-inp-text" id="mot-nome" placeholder="Ex: João Silva">
-      <span class="field-lbl" style="margin-top:14px">Veículo</span>
-      <div class="veh-grid" id="mot-veh-grid" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px"></div>
-      <span class="field-lbl">Capacidade (kg)</span>
+    <div class="btn-add-ag" style="margin-bottom:18px;display:inline-block" onclick="toggleFormMotorista()">+ Adicionar veículo</div>
+    <div id="form-motorista-box" class="cap-form-box" style="display:none;margin-bottom:20px;max-width:520px">
+      <div class="veh-card-name" id="mot-form-tit" style="font-size:17px">Novo veículo</div>
+      <span class="field-lbl">Tipo de veículo</span>
+      <div class="veh-grid" id="mot-veh-grid" style="grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px"></div>
+      <div class="frota-tipo-desc" id="mot-veh-desc"></div>
+      <div class="frota-2col">
+        <div><label class="field-lbl" for="mot-modelo">Modelo</label>
+          <input type="text" class="field-inp field-inp-text" id="mot-modelo" placeholder="Ex: Accelo 1016" maxlength="40"></div>
+        <div><label class="field-lbl" for="mot-placa">Placa</label>
+          <input type="text" class="field-inp" id="mot-placa" placeholder="ABC1D23" maxlength="8" autocapitalize="characters" autocomplete="off" spellcheck="false" oninput="this.value=this.value.toUpperCase()"></div>
+      </div>
+      <label class="field-lbl" for="mot-cap-kg">Capacidade (kg)</label>
       <input type="number" class="field-inp" id="mot-cap-kg" placeholder="0">
-      <button class="btn-modal-primary" onclick="salvarMotorista()">Salvar Motorista</button>
+      <div class="frota-dica">Peso máximo que a rota pode levar neste veículo. Use a carga útil real, com a carroceria.</div>
+      <label class="field-lbl" for="mot-nome">Motorista (opcional)</label>
+      <input type="text" class="field-inp field-inp-text" id="mot-nome" placeholder="Ex: João Silva">
+      <button class="btn-modal-primary" onclick="salvarMotorista()">Salvar veículo</button>
       <button class="btn-modal-sec" onclick="toggleFormMotorista()">Cancelar</button>
     </div>
     <div id="motoristas-lista" class="reg-cards-grid"></div>
@@ -1529,6 +1561,17 @@ function imgVeiculo(v,cls){
   const nome=(v&&v.nome)?v.nome:'Veículo';
   return `<img class="${cls}" src="${arq}" alt="${nome}" loading="lazy">`;
 }
+// Placa: guarda só letras e números (ABC1D23). Aceita a Mercosul e a antiga (ABC1234).
+function _placaNorm(s){ return String(s||'').toUpperCase().replace(/[^A-Z0-9]/g,''); }
+function _placaValida(p){ return /^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/.test(p); }
+function _placaFmt(p){ p=_placaNorm(p); return /^[A-Z]{3}[0-9]{4}$/.test(p)?p.slice(0,3)+'-'+p.slice(3):p; }
+function placaHtml(p){
+  p=_placaNorm(p); if(!p) return '';
+  const antiga=/^[A-Z]{3}[0-9]{4}$/.test(p);
+  return `<span class="placa${antiga?' antiga':''}" role="img" aria-label="Placa ${esc(_placaFmt(p))}"><span class="placa-faixa" aria-hidden="true">BRASIL</span><span class="placa-num" aria-hidden="true">${esc(_placaFmt(p))}</span></span>`;
+}
+// Como um veículo cadastrado aparece em texto: "Accelo 1016 · FFN3H25"
+function _rotuloVeic(m){ return [m&&(m.modelo||m.veiculo_nome), m&&m.placa?_placaFmt(m.placa):''].filter(Boolean).join(' · '); }
 const CORES_REGIAO = ['#f3b62b','#2f6fe4','#e08a00','#16a36a','#7c5cc4','#0e8f9f','#d1425e'];
 const COR_OUTRAS = '#94a3b8';
 const RAIO_ISOLADO_KM = 70;
@@ -3919,8 +3962,9 @@ window.__danfe={linhas:_linhasPdf, campos:_camposDanfe, pedido:_pedidoDoDanfe, i
 // ROTEIRIZAÇÃO — wizard veículo → capacidade → confirma → /solve backend
 // ══════════════════════════════════════════════════════════════════════════
 const VEICULOS=[
-  {id:'fiorino',nome:'Fiorino',tag:'até 1.5t',desc:'Furgão leve — entregas urbanas',presets:[500,800,1200],cor:'#6f9a1f',img:'assets/veic/fiorino.svg'},
+  {id:'fiorino',nome:'Fiorino',tag:'até 650 kg',desc:'Furgão leve — entregas urbanas',presets:[400,550,650],cor:'#6f9a1f',img:'assets/veic/fiorino.svg'},
   {id:'vuc',nome:'VUC',tag:'até 3t',desc:'Veículo Urbano de Carga',presets:[1500,2000,3000],cor:'#2f6fe4',img:'assets/veic/vuc.svg'},
+  {id:'tres4',nome:'Caminhão 3/4',tag:'até 6t',desc:'Caminhão leve — ex.: Accelo 815, 1016, 915C',presets:[4000,5000,6000],cor:'#d9822b',img:'assets/veic/tres4.svg'},
   {id:'toco',nome:'Truck Toco',tag:'até 8t',desc:'Truck 2 eixos — cargas médias',presets:[4000,6000,8000],cor:'#0e8f9f',img:'assets/veic/toco.svg'},
   {id:'bitruck',nome:'Bitruck',tag:'até 16t',desc:'Truck 3 eixos — cargas pesadas',presets:[10000,12000,16000],cor:'#3b7fd0',img:'assets/veic/bitruck.svg'},
   {id:'carreta',nome:'Carreta',tag:'até 33t',desc:'Articulada — grandes volumes',presets:[20000,27000,32000],cor:'#7c5cc4',img:'assets/veic/carreta.svg'},
@@ -4011,17 +4055,17 @@ function renderVeiculosD(){
   rotaGeradaD=[]; rotaOrigD=null; ajusteD=false;
 
   // Atalho: motoristas fixos cadastrados (clica → pula direto pra confirmação)
-  const mots = modoDemo ? motoristasDemo : Object.values(motoristasFirebase);
+  const mots = _listaFrota();
   const veicMap=Object.fromEntries(VEICULOS.map(v=>[v.id,v]));
   const atalhoHtml = mots.length ? `
-    <div class="sec-title" style="font-family:var(--sans);font-weight:700;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text2);margin-bottom:12px">Motoristas fixos — clique pra usar direto</div>
-    <div class="veh-grid" style="margin-bottom:26px">${mots.map(m=>{
+    <div class="sec-title" style="font-family:var(--sans);font-weight:700;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text2);margin-bottom:12px">Veículos cadastrados — clique pra usar direto</div>
+    <div class="veh-grid" style="margin-bottom:26px">${_frotaOrdenada(mots).map(m=>{
       const v=veicMap[m.veiculo_id];
-      return `<div class="veh-card" style="--vc:${v?.cor||'#f3b62b'}" onclick="usarMotoristaD('${m.id}')">
+      return `<div class="veh-card" style="--vc:${v?.cor||'#f3b62b'}" onclick="usarMotoristaD('${esc(m.id)}')">
         <div class="veh-card-icon">${imgVeiculo(v,'veh-img')}</div>
-        <div class="veh-card-name">${esc(m.nome)}</div>
-        <div class="veh-card-tag">${esc(m.veiculo_nome)} · ${(m.cap_kg||0).toLocaleString('pt-BR')}kg</div>
-        <div class="veh-card-desc">Clique pra gerar rota com este motorista</div>
+        <div class="frota-topo"><div class="veh-card-name">${esc(m.modelo||m.veiculo_nome||'Veículo')}</div>${placaHtml(m.placa)}</div>
+        <div class="veh-card-tag">${esc(v?.nome||m.veiculo_nome||'')} · ${(m.cap_kg||0).toLocaleString('pt-BR')} kg</div>
+        <div class="veh-card-desc">${m.nome?'Motorista: '+esc(m.nome):'Sem motorista definido'}</div>
       </div>`;
     }).join('')}</div>
     <div class="sec-title" style="font-family:var(--sans);font-weight:700;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text2);margin-bottom:12px">Ou escolha o veículo manualmente</div>` : '';
@@ -4045,12 +4089,11 @@ window.renderVeiculosD=renderVeiculosD;
 
 // Atalho: usa motorista fixo — preenche veículo+capacidade e vai direto pra tela de limite de pedidos
 function usarMotoristaD(motId){
-  const mots = modoDemo ? motoristasDemo : Object.values(motoristasFirebase);
-  const m=mots.find(x=>x.id===motId);
+  const m=_listaFrota().find(x=>x.id===motId);
   if(!m) return;
   motoristaSelecionadoD=m;
   vehSel=VEICULOS.find(v=>v.id===m.veiculo_id)||VEICULOS[0];
-  document.getElementById('cap-veh-name').textContent=`${m.nome} — ${m.veiculo_nome}`;
+  document.getElementById('cap-veh-name').textContent=_rotuloVeic(m)+(m.nome?' — '+m.nome:'');
   document.getElementById('cap-kg-d').value=m.cap_kg;
   document.getElementById('cap-maxped-d').value='8';
   document.getElementById('presets-row-d').innerHTML='';
@@ -4969,7 +5012,8 @@ async function confirmarRotaD(){
         chegada_min:p.chegada_min??null, janela_ini:p.janela_ini??null, janela_fim:p.janela_fim??null }));
       const nP=_contarTipos(paradas);
       return { id:`${rotaId}_${i+1}`, criada_em:agora, data:rotaCtxD.data||_hojeISO(), saida:rotaCtxD.saida??null,
-        veiculo:vehSel?.nome||'', motorista:motoristaSelecionadoD?.nome||'', cap_kg:capKgD,
+        veiculo:(motoristaSelecionadoD&&_rotuloVeic(motoristaSelecionadoD))||vehSel?.nome||'', motorista:motoristaSelecionadoD?.nome||'', cap_kg:capKgD,
+        ...(motoristaSelecionadoD?.placa?{placa:_placaNorm(motoristaSelecionadoD.placa)}:{}),
         km:r.km||r.distancia_km||0, tempo_min:r.mins||r.tempo_min||0,
         peso_total:r.peso_total||paradas.reduce((s,p)=>s+(p.peso||0),0),
         num_paradas:paradas.length, entregas:nP.entrega, coletas:nP.coleta, status:'em_rota', paradas,
@@ -5824,30 +5868,55 @@ async function apagarRotaD(rotaId){
 window.apagarRotaD=apagarRotaD;
 
 // ══════════════════════════════════════════════════════════════════════════
-// PÁGINA MOTORISTAS — cadastro fixo (nome + veículo + capacidade)
+// PÁGINA VEÍCULOS E MOTORISTAS — cadastro fixo (tipo, modelo, placa, capacidade, motorista)
+// Continua gravado em motoristas/ (um registro por veículo): os cadastros antigos,
+// que só tinham nome + tipo + capacidade, seguem funcionando.
 // ══════════════════════════════════════════════════════════════════════════
-function toggleFormMotorista(){
+let _vehMotoristaSel=null, _motEditId=null;
+// Sem nenhum pedido a tela entra no exemplo (modoDemo). A frota de uma conta de cliente
+// não pode ir junto: o veículo cadastrado ali ficava só na memória e sumia ao recarregar.
+function _frotaDoBanco(){ return !modoDemo || (!!auth.currentUser && !contaDemo); }
+function _listaFrota(){ return _frotaDoBanco() ? Object.values(motoristasFirebase||{}) : motoristasDemo; }
+// Do menor para o maior veículo; dentro do mesmo tipo, por modelo e placa
+function _frotaOrdenada(l){
+  const ordem=Object.fromEntries(VEICULOS.map((v,i)=>[v.id,i]));
+  return l.slice().sort((a,b)=>((ordem[a.veiculo_id]??99)-(ordem[b.veiculo_id]??99))
+    || String(a.modelo||'').localeCompare(String(b.modelo||''),'pt-BR') || String(a.placa||'').localeCompare(String(b.placa||'')));
+}
+function toggleFormMotorista(editId){
   const box=document.getElementById('form-motorista-box');
-  const abrir=box.style.display==='none';
+  const editar=typeof editId==='string';
+  const abrir=editar || box.style.display==='none';
   box.style.display=abrir?'block':'none';
-  if(abrir){
-    document.getElementById('mot-nome').value='';
-    document.getElementById('mot-cap-kg').value='';
-    document.getElementById('mot-veh-grid').innerHTML=VEICULOS.map(v=>
-      `<div class="veh-card" style="--vc:${v.cor};padding:12px" onclick="selVeicMotorista('${v.id}',this)">
-        <div class="veh-mini">${imgVeiculo(v,'veh-img-mini')}</div>
-        <div class="veh-card-name" style="font-size:12.5px">${v.nome}</div>
-        <div class="veh-card-tag" style="margin:3px 0 0">${v.tag}</div>
-      </div>`).join('');
+  if(!abrir){ _motEditId=null; return; }
+  const m=editar?_listaFrota().find(x=>x.id===editId):null;
+  _motEditId=m?m.id:null;
+  _vehMotoristaSel=null;
+  document.getElementById('mot-form-tit').textContent=m?'Editar veículo':'Novo veículo';
+  document.getElementById('mot-nome').value=m?.nome||'';
+  document.getElementById('mot-modelo').value=m?.modelo||'';
+  document.getElementById('mot-placa').value=m?.placa?_placaFmt(m.placa):'';
+  document.getElementById('mot-cap-kg').value=m?.cap_kg||'';
+  document.getElementById('mot-veh-desc').textContent='';
+  document.getElementById('mot-veh-grid').innerHTML=VEICULOS.map(v=>
+    `<div class="veh-card" style="--vc:${v.cor};padding:12px" onclick="selVeicMotorista('${v.id}',this)" title="${esc(v.desc)}">
+      <div class="veh-mini">${imgVeiculo(v,'veh-img-mini')}</div>
+      <div class="veh-card-name" style="font-size:12.5px">${v.nome}</div>
+      <div class="veh-card-tag" style="margin:3px 0 0">${v.tag}</div>
+    </div>`).join('');
+  if(m){
+    const i=VEICULOS.findIndex(v=>v.id===m.veiculo_id);
+    if(i>=0) selVeicMotorista(m.veiculo_id, document.querySelectorAll('#mot-veh-grid .veh-card')[i]);
   }
+  if(editar) box.scrollIntoView({behavior:'smooth',block:'start'});
 }
 window.toggleFormMotorista=toggleFormMotorista;
 
-let _vehMotoristaSel=null;
 function selVeicMotorista(id,el){
   _vehMotoristaSel=VEICULOS.find(v=>v.id===id);
-  document.querySelectorAll('#mot-veh-grid .veh-card').forEach(c=>c.style.opacity='.5');
-  el.style.opacity='1';
+  document.querySelectorAll('#mot-veh-grid .veh-card').forEach(c=>{ c.style.opacity='.5'; c.classList.remove('on'); });
+  el.style.opacity='1'; el.classList.add('on');
+  document.getElementById('mot-veh-desc').textContent=_vehMotoristaSel.desc+' · '+_vehMotoristaSel.tag;
   // pré-preenche capacidade com o preset médio do veículo, se ainda vazio
   const capInp=document.getElementById('mot-cap-kg');
   if(!capInp.value) capInp.value=_vehMotoristaSel.presets[1];
@@ -5856,41 +5925,68 @@ window.selVeicMotorista=selVeicMotorista;
 
 async function salvarMotorista(){
   const nome=document.getElementById('mot-nome').value.trim();
+  const modelo=document.getElementById('mot-modelo').value.trim();
+  const placa=_placaNorm(document.getElementById('mot-placa').value);
   const cap=parseInt(document.getElementById('mot-cap-kg').value);
-  if(!nome){ alert('Informe o nome do motorista'); return; }
-  if(!_vehMotoristaSel){ alert('Selecione o veículo'); return; }
+  if(!_vehMotoristaSel){ alert('Escolha o tipo de veículo'); return; }
+  if(placa && !_placaValida(placa)){ alert('Placa inválida. Use o formato ABC1D23 (Mercosul) ou ABC-1234.'); return; }
+  if(!placa && !nome){ alert('Informe a placa do veículo ou o nome do motorista'); return; }
   if(!cap||cap<=0){ alert('Informe a capacidade em kg'); return; }
+  const outro=placa && _listaFrota().find(x=>x.id!==_motEditId && _placaNorm(x.placa)===placa);
+  if(outro){ alert(`A placa ${_placaFmt(placa)} já está cadastrada (${_rotuloVeic(outro)}).`); return; }
 
-  const id='mot_'+Date.now();
-  const motorista={ id, nome, veiculo_id:_vehMotoristaSel.id, veiculo_nome:_vehMotoristaSel.nome, cap_kg:cap };
+  const id=_motEditId||('mot_'+Date.now());
+  const anterior=_listaFrota().find(x=>x.id===id)||{};
+  const motorista={ ...anterior, id, nome, veiculo_id:_vehMotoristaSel.id, veiculo_nome:_vehMotoristaSel.nome, cap_kg:cap };
+  if(modelo) motorista.modelo=modelo; else delete motorista.modelo;
+  if(placa) motorista.placa=placa; else delete motorista.placa;
 
-  if(!modoDemo){
+  if(_frotaDoBanco()){
     await update(ref(db,TP('motoristas')),{[id]:motorista});
   } else {
-    motoristasDemo.push(motorista);
+    const i=motoristasDemo.findIndex(x=>x.id===id);
+    if(i>=0) motoristasDemo[i]=motorista; else motoristasDemo.push(motorista);
   }
+  _motEditId=null;
   toggleFormMotorista();
   renderMotoristasPage();
 }
 window.salvarMotorista=salvarMotorista;
 
+async function excluirMotorista(id){
+  const m=_listaFrota().find(x=>x.id===id); if(!m) return;
+  const nome=_rotuloVeic(m)+(m.nome?' — '+m.nome:'');
+  if(!confirm(`Excluir ${nome} do cadastro?\n\nAs rotas que já saíram com ele não mudam.`)) return;
+  if(_frotaDoBanco()) await update(ref(db,TP('motoristas')),{[id]:null});
+  else motoristasDemo=motoristasDemo.filter(x=>x.id!==id);
+  if(_motEditId===id) toggleFormMotorista();
+  renderMotoristasPage();
+}
+window.excluirMotorista=excluirMotorista;
+
 function renderMotoristasPage(){
   const cont=document.getElementById('motoristas-lista');
-  const lista = modoDemo ? motoristasDemo : Object.values(motoristasFirebase);
+  const lista = _listaFrota();
   if(!lista.length){
-    cont.innerHTML=`<div class="placeholder"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c1.2-4 4-6 7.5-6s6.3 2 7.5 6"/></svg><h3>Nenhum motorista cadastrado</h3><p>Clique em "+ Adicionar Motorista" pra cadastrar os fixos da equipe.</p></div>`;
+    cont.innerHTML=`<div class="placeholder"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M4.5 20c1.2-4 4-6 7.5-6s6.3 2 7.5 6"/></svg><h3>Nenhum veículo cadastrado</h3><p>Clique em "+ Adicionar veículo" pra cadastrar a frota com modelo e placa.</p></div>`;
     return;
   }
   const veicMap=Object.fromEntries(VEICULOS.map(v=>[v.id,v]));
-  cont.innerHTML = lista.map(m=>{
+  cont.innerHTML = _frotaOrdenada(lista).map(m=>{
     const v=veicMap[m.veiculo_id];
-    return `<div class="rc-card" style="--rc:${v?.cor||'#f3b62b'}">
+    const id=esc(m.id);
+    return `<div class="rc-card frota" style="--rc:${v?.cor||'#f3b62b'}" data-mot="${id}">
       <div class="rc-card-head" style="cursor:default">
         <div class="rc-card-veic">${imgVeiculo(v,'veh-img-mini')}</div>
         <div class="rc-card-info">
-          <div class="rc-card-name">${esc(m.nome)}</div>
-          <div class="rc-card-sub">${esc(m.veiculo_nome)} · ${(m.cap_kg||0).toLocaleString('pt-BR')} kg</div>
+          <div class="frota-topo"><div class="rc-card-name">${esc(m.modelo||m.veiculo_nome||'Veículo')}</div>${placaHtml(m.placa)}</div>
+          <div class="rc-card-sub">${esc(v?.nome||m.veiculo_nome||'')} · ${(m.cap_kg||0).toLocaleString('pt-BR')} kg</div>
+          <div class="frota-mot${m.nome?'':' vazio'}">${m.nome?'Motorista: '+esc(m.nome):'Sem motorista definido'}</div>
         </div>
+      </div>
+      <div class="frota-acoes">
+        <button type="button" onclick="toggleFormMotorista('${id}')">Editar</button>
+        <button type="button" class="excluir" onclick="excluirMotorista('${id}')">Excluir</button>
       </div>
     </div>`;
   }).join('');

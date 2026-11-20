@@ -1,4 +1,4 @@
-// Desenho dos cinco veículos: carregam, são diferentes entre si e aparecem nos quatro
+// Desenho dos seis veículos: carregam, são diferentes entre si e aparecem nos quatro
 // lugares onde a frota é mostrada (roteirização, atalho dos motoristas fixos, página
 // Motoristas e cadastro de motorista).
 const { chromium } = require('playwright');
@@ -34,7 +34,7 @@ const seed = (d) => { window.__FAKE = { user: { uid: 'uid-ana', email: 'ana@t.co
     });
     ok(r.total > 0, `${tag}: a roteirização mostra os desenhos (${r.total})`);
     ok(!r.quebradas.length, `${tag}: todos os desenhos carregam` + (r.quebradas.length ? ' → ' + r.quebradas.join(', ') : ''));
-    ok(r.distintos === 5, `${tag}: os cinco veículos têm desenhos diferentes (${r.distintos})`);
+    ok(r.distintos === 6, `${tag}: os seis veículos têm desenhos diferentes (${r.distintos})`);
 
     await p.evaluate(() => window.irParaPagina('motoristas'));
     await p.waitForTimeout(600);
@@ -51,7 +51,7 @@ const seed = (d) => { window.__FAKE = { user: { uid: 'uid-ana', email: 'ana@t.co
     await ctx.close();
   }
 
-  // cadastro de motorista: a grade de escolha também mostra os cinco
+  // cadastro de veículo: a grade de escolha também mostra os seis
   {
     const { ctx, p } = await open(b, 'index.html', 1280, 900, seed, false, { ped: PED, mot: {} });
     await ctx.route(/viacep|nominatim/, (r) => r.fulfill({ contentType: 'application/json', body: '[]' }));
@@ -63,7 +63,7 @@ const seed = (d) => { window.__FAKE = { user: { uid: 'uid-ana', email: 'ana@t.co
       return { n: i.length, ok: i.every((x) => x.complete && x.naturalWidth > 0),
                distintos: new Set(i.map((x) => x.getAttribute('src'))).size };
     });
-    ok(f.n === 5 && f.ok && f.distintos === 5, 'cadastro de motorista mostra os cinco desenhos: ' + JSON.stringify(f));
+    ok(f.n === 6 && f.ok && f.distintos === 6, 'cadastro de veículo mostra os seis desenhos: ' + JSON.stringify(f));
     await ctx.close();
   }
   console.log(falhas ? falhas + ' FALHA(S)' : 'TUDO OK');
