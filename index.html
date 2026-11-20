@@ -3679,13 +3679,15 @@ function _camposDanfe(linhas, tipo){
 // localizar nada: devolve null e a nota é reportada como não lida, em vez de
 // entrar na lista com um ponto inventado.
 function _pedidoDoDanfe(c, tipo){
-  if(!c.nf&&!c.chave) return null;
+  if(!c.nf&&!c.chave&&!c.ordem) return null;
   const cidade=c.cidade?_cidadeNorm(c.cidade):'';
   if(!c.cep&&(!cidade||cidade==='Sem cidade')) return null;
-  const base=c.chave||`${c.nf}-${c.cep||cidade}`;
+  // ordem de coleta: o número da ordem identifica (a NF às vezes não vem)
+  const base=c.chave||(c.ordem?'OC-'+c.ordem.replace(/\s+/g,'-'):`${c.nf}-${c.cep||cidade}`);
   const coord=CITY_COORDS[cidade]||DEPOT;
   return {
-    id:_chaveId(base,tipo), nf:c.nf||'S/N', tipo, chave:c.chave||'',
+    id:_chaveId(base,tipo), nf:c.nf||(c.ordem?'OC '+c.ordem:'S/N'), tipo, chave:c.chave||'',
+    ...(c.ordem?{ordemColeta:c.ordem}:{}),
     dest:c.nome||cidade||'Conferir',
     remetente:tipo==='coleta'?c.nome:'', destinatario:tipo==='coleta'?'':c.nome,
     endereco:c.endereco, bairro:c.bairro, uf:c.uf,
@@ -3695,6 +3697,61 @@ function _pedidoDoDanfe(c, tipo){
     urgente:false, agendado:false, dataAgendada:'', status:'pendente', origem:'pdf',
     lat:coord.lat+(Math.random()-.5)*.015, lng:coord.lng+(Math.random()-.5)*.015,
   };
+}
+
+// ── ORDEM DE COLETA DE CARGAS (layout do sistema da Via Verde) ─────────────
+// Não é DANFE: é um formulário com "RÓTULO: valor" na mesma linha, duas vias da
+// mesma ordem por página. Lê pelo rótulo: o valor é o que vem à direita dele
+// até o próximo rótulo (texto terminado em ":"). Endereço, bairro, cidade/UF e
+// CEP são do REMETENTE, que é onde a coleta acontece; quantidade e peso saem da
+// linha logo abaixo de "Quantidade  Espécie  Peso  ...  Nota Fiscal".
+function _ehOrdemColeta(linhas){
+  return linhas.some(l=>/ORDEM DE COLETA DE CARGAS/.test(_SACENTO(l.itens.map(i=>i.s).join(' '))));
+}
+function _valorRotuloOC(linhas, re, a=0){
+  for(let i=a;i<linhas.length;i++){
+    const it=linhas[i].itens;
+    const j=it.findIndex(x=>re.test(_SACENTO(x.s)));
+    if(j<0) continue;
+    // o rótulo pode vir grudado no valor ("CONTATO:JULIANA")
+    const resto=_SACENTO(it[j].s).replace(re,'').trim()?it[j].s.replace(/^[^:]*:\s*/,'').trim():'';
+    const val=[];
+    if(resto) val.push(resto);
+    for(const x of it.slice(j+1)){ if(/:\s*$/.test(x.s)||/^[A-Z][A-Z\/ ]{2,}:/.test(_SACENTO(x.s))) break; val.push(x.s); }  // o próximo rótulo fecha
+    return {txt:val.join(' ').replace(/\s+/g,' ').trim(), linha:i};
+  }
+  return {txt:'', linha:-1};
+}
+function _camposOrdemColeta(linhas){
+  // só a 1ª via da página: a 2ª repete a mesma ordem
+  const ini=linhas.findIndex(l=>/ORDEM DE COLETA DE CARGAS/.test(_SACENTO(l.itens.map(i=>i.s).join(' '))));
+  let fim=linhas.findIndex((l,k)=>k>ini&&/ORDEM DE COLETA DE CARGAS/.test(_SACENTO(l.itens.map(i=>i.s).join(' '))));
+  if(fim<0) fim=linhas.length;
+  const L=linhas.slice(Math.max(0,ini),fim);
+  const tit=L[0]?L[0].itens.map(i=>i.s).join(' '):'';
+  const mo=tit.match(/N[º°o]\s*([A-Z0-9]+)\s+(\d+)/i)||tit.match(/([A-Z]{1,4}\d{0,3})\s+(\d{4,})/);
+  const ordem=mo?`${mo[1].toUpperCase()} ${mo[2]}`:'';
+  const limpa=s=>String(s||'').replace(/[<>"']/g,'').trim();
+  const nome=_valorRotuloOC(L,/^REMETENTE:/).txt;
+  const endereco=_valorRotuloOC(L,/^ENDERECO:/).txt;
+  const bairro=_valorRotuloOC(L,/^BAIRRO:/);
+  // a 1ª "CIDADE/UF:" é a do remetente (na linha do bairro); a 2ª é a do destinatário
+  const cid=_valorRotuloOC(L,/^CIDADE\/UF:/, Math.max(0,bairro.linha)).txt;
+  const mc=cid.match(/^(.*?)\s*\/\s*([A-Za-z]{2})\b/);
+  const cep=_cepDe(_valorRotuloOC(L,/^CEP:/).txt);
+  // linha da carga: logo abaixo do cabeçalho da tabela
+  let volumes=0, peso=0, nf='';
+  const h=L.findIndex(l=>{ const t=_SACENTO(l.itens.map(i=>i.s).join(' ')); return /QUANTIDADE/.test(t)&&/PESO/.test(t); });
+  if(h>=0&&L[h+1]){
+    const xNF=(L[h].itens.find(i=>/NOTA FISCAL/.test(_SACENTO(i.s)))||{x:Infinity}).x;
+    const txt=L[h+1].itens.filter(i=>i.x<xNF-8).map(i=>i.s).join(' ');
+    const m=txt.match(/^\s*(\d+)\s+\S+\s+([\d.]+,\d+|\d+)/);
+    if(m){ volumes=+m[1]; peso=_numDanfe(m[2]); }
+    const n=L[h+1].itens.filter(i=>i.x>=xNF-8).map(i=>i.s).join(' ').match(/\d{3,}/);
+    nf=n?String(+n[0]):'';
+  }
+  return { ordem, chave:'', nf, nome:limpa(nome), endereco:limpa(endereco), bairro:limpa(bairro.txt),
+           cep, cidade:limpa(mc?mc[1]:cid), uf:mc?mc[2].toUpperCase():'', volumes:volumes>0?volumes:0, peso };
 }
 
 async function _parsePDF(file,tipo){
@@ -3713,13 +3770,15 @@ async function _parsePDF(file,tipo){
     const itens=_itensPagina(await (await pdf.getPage(p)).getTextContent());
     if(itens.length) comTexto++;
     const linhas=_linhasPdf(itens);
-    const c=_camposDanfe(linhas,tipo);
-    if(!c.nf&&!c.chave) continue;              // folha de continuação, sem a nota
+    // Ordem de Coleta de Cargas: é sempre coleta, no endereço do remetente
+    const oc=_ehOrdemColeta(linhas);
+    const c=oc?_camposOrdemColeta(linhas):_camposDanfe(linhas,tipo);
+    if(!c.nf&&!c.chave&&!c.ordem) continue;    // folha de continuação, sem a nota
     paginas++;
-    const id=c.chave||c.nf;
+    const id=c.chave||(c.ordem?'OC '+c.ordem:c.nf);
     if(vistos.has(id)) continue;               // 2ª via ou 2ª folha da mesma nota
     vistos.add(id);
-    const o=_pedidoDoDanfe(c,tipo);
+    const o=_pedidoDoDanfe(c,oc?'coleta':tipo);
     if(!o){ semEndereco++; continue; }
     if(!c.peso) semPeso++;
     orders.push(o);
@@ -3767,7 +3826,7 @@ async function importarArquivo(input){
   if(!files.length) return;
   const tipo=tipoImport;
   if(files.some(f=>/\.pdf$/i.test(f.name))){
-    const ok=confirm('⚠️ A LEITURA DE PDF É EXPERIMENTAL.\n\nDo DANFE o sistema lê a chave e o número da nota, o nome, o endereço, o bairro, o CEP, o município, os volumes e o peso. O ponto no mapa sai do CEP, como no XML.\n\nCada emissor desenha a nota de um jeito, então algum campo pode vir errado ou vazio: confira a lista antes de gerar a rota. Nota sem CEP e sem município não é importada.\n\nPara um resultado garantido, use o XML da nota ou uma planilha (Excel/CSV).\n\nContinuar mesmo assim?');
+    const ok=confirm('⚠️ A LEITURA DE PDF É EXPERIMENTAL.\n\nDo DANFE o sistema lê a chave e o número da nota, o nome, o endereço, o bairro, o CEP, o município, os volumes e o peso. Da Ordem de Coleta de Cargas lê o número da ordem, o remetente, o endereço, o bairro, o CEP, a cidade, a quantidade de volumes e o peso, e ela entra sempre como coleta. O ponto no mapa sai do CEP, como no XML.\n\nCada emissor desenha a nota de um jeito, então algum campo pode vir errado ou vazio: confira a lista antes de gerar a rota. Nota sem CEP e sem município não é importada.\n\nPara um resultado garantido, use o XML da nota ou uma planilha (Excel/CSV).\n\nContinuar mesmo assim?');
     if(!ok){ _impMsg('err','Importação cancelada.'); return; }
   }
   _impMsg('info',`Lendo ${_plural(files.length,'arquivo','arquivos')}...`);
@@ -3818,7 +3877,8 @@ async function importarArquivo(input){
   if(canc.length) await _tratarCancelamentos([...new Set(canc)]);
 }
 window.importarArquivo=importarArquivo;
-window.__danfe={linhas:_linhasPdf, campos:_camposDanfe, pedido:_pedidoDoDanfe, itens:_itensPagina};
+window.__danfe={linhas:_linhasPdf, campos:_camposDanfe, pedido:_pedidoDoDanfe, itens:_itensPagina,
+                ehOrdem:_ehOrdemColeta, ordem:_camposOrdemColeta};
 
 // ══════════════════════════════════════════════════════════════════════════
 // ROTEIRIZAÇÃO — wizard veículo → capacidade → confirma → /solve backend
