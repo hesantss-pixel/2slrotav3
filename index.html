@@ -3898,6 +3898,22 @@ async function _lerArquivo(file,tipo){
   throw new Error('formato não suportado (use XML, Excel, CSV ou PDF)');
 }
 
+// Nota reimportada que ainda não saiu: os dados vêm do arquivo, mas o que só existe
+// no sistema fica — o agendamento, a urgência e o ponto no mapa (se o endereço não mudou).
+const _CAMPOS_AGENDA=['agendado','dataAgendada','horaEntrega','horaFim','horaSaidaSugerida'];
+const _CAMPOS_LOCAL=['lat','lng','geoStatus','geoPrec','geoManual','geoV'];
+function _mesmoEndereco(a,b){
+  const n=x=>_SACENTO(x).replace(/[^A-Z0-9]/g,'');
+  return n(a.cep)===n(b.cep) && n(a.endereco)===n(b.endereco) && n(a.cidade)===n(b.cidade);
+}
+function _mesclarReimportada(o,cru){
+  const r={...o};
+  if(cru.agendado) _CAMPOS_AGENDA.forEach(k=>{ if(cru[k]!==undefined) r[k]=cru[k]; });
+  if(cru.urgente) r.urgente=true;
+  r._localMantido = cru.geoStatus==='ok' && Number.isFinite(+cru.lat) && Number.isFinite(+cru.lng) && _mesmoEndereco(o,cru);
+  if(r._localMantido) _CAMPOS_LOCAL.forEach(k=>{ if(cru[k]!==undefined) r[k]=cru[k]; });
+  return r;
+}
 async function importarArquivo(input){
   const files=[...(input.files||[])]; input.value='';
   if(!files.length) return;
@@ -3927,9 +3943,23 @@ async function importarArquivo(input){
     if(!ok){ _impMsg('err','Importação cancelada: notas sem peso.'); return; }
   }
   // Nota que já saiu para rota (despachada/entregue) não é alterada.
-  const payload={}; let jaEmRota=0;
-  // despachada numa rota que foi apagada ou devolvida volta a valer: entra de novo como pendente
-  lidos.forEach(o=>{ if(_notaTravada(o.id,_regPorId[o.id]||{status:_statusPorId[o.id]})){ jaEmRota++; return; } payload[o.id]=o; });
+  // Nota que já está no sistema e não saiu é regravada na mesma chave (não duplica),
+  // mantendo o que só existe aqui: agendamento, urgência e o ponto no mapa.
+  // Despachada numa rota que foi apagada ou devolvida volta a valer: entra de novo como pendente.
+  const payload={}; let jaEmRota=0, jaFeitas=0;
+  const novasL=[], atualizadas=[], voltaram=[], mudouEnd=[];
+  lidos.forEach(o=>{
+    const reg=_regPorId[o.id]||{status:_statusPorId[o.id]};
+    if(_notaTravada(o.id,reg)){ if((reg.status||'')==='despachado') jaEmRota++; else jaFeitas++; return; }
+    const cru=pedidosCrus&&pedidosCrus[o.id];
+    if(cru&&typeof cru==='object'){
+      const r=_mesclarReimportada(o,cru);
+      payload[o.id]=r;
+      ((cru.status||'pendente')==='despachado'?voltaram:atualizadas).push(o.id);
+      if(!r._localMantido && cru.geoStatus==='ok') mudouEnd.push(o.id);
+      delete r._localMantido;
+    } else { payload[o.id]=o; novasL.push(o); }
+  });
   const novos=Object.values(payload);
   if(contaDemo && !EID){
     // conta de demonstração com as regras antigas do banco: as notas ficam só nesta tela. Na primeira importação,
@@ -3941,12 +3971,16 @@ async function importarArquivo(input){
     try{ if(novos.length) await update(ref(db,TP('pedidos_rota')),payload); }
     catch(e){ _impMsg('err','❌ Não foi possível salvar as notas: '+e.message); return; }
   }
-  const nT=_contarTipos(novos);
-  let msg = !novos.length ? 'Nenhuma nota nova.'
-    : nT.entrega&&nT.coleta ? `✅ ${_plural(novos.length,'nota importada','notas importadas')}: ${_resumoTipos(nT,' e ')}.`
+  const nT=_contarTipos(novasL);
+  let msg = !novasL.length ? 'Nenhuma nota nova.'
+    : nT.entrega&&nT.coleta ? `✅ ${_plural(novasL.length,'nota importada','notas importadas')}: ${_resumoTipos(nT,' e ')}.`
     : nT.coleta ? `✅ ${_plural(nT.coleta,'coleta importada','coletas importadas')}.`
     : `✅ ${_plural(nT.entrega,'entrega importada','entregas importadas')}.`;
+  if(atualizadas.length) msg+=` ${_plural(atualizadas.length,'nota já estava','notas já estavam')} no sistema e ${atualizadas.length===1?'foi atualizada':'foram atualizadas'}, sem duplicar.`;
+  if(voltaram.length) msg+=` ${_plural(voltaram.length,'nota de rota apagada voltou','notas de rota apagada voltaram')} para os pendentes.`;
+  if(mudouEnd.length) msg+=` ${_plural(mudouEnd.length,'nota veio','notas vieram')} com outro endereço no arquivo e ${mudouEnd.length===1?'vai ser localizada':'vão ser localizadas'} de novo no mapa.`;
   if(jaEmRota) msg+=` ${_plural(jaEmRota,'nota já estava','notas já estavam')} em rota e não ${jaEmRota===1?'foi alterada':'foram alteradas'}.`;
+  if(jaFeitas) msg+=` ${_plural(jaFeitas,'nota já foi concluída','notas já foram concluídas')} (entregue ou coletada) e não ${jaFeitas===1?'foi alterada':'foram alteradas'}.`;
   if(semEndereco) msg+=` ${_plural(semEndereco,'nota do PDF ficou de fora','notas do PDF ficaram de fora')}: sem CEP e sem município legíveis — use o XML ${semEndereco===1?'dela':'delas'}.`;
   if(erros.length) msg+=` Não deu para ler: ${erros.join(' · ')}.`;
   _impMsg(erros.length||!novos.length?'warn':'ok', msg);

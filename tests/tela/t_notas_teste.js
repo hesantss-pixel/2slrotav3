@@ -42,7 +42,11 @@ const seed = () => { window.__FAKE = { user: { uid: 'uid-ana', email: 'ana@x.com
   await p.screenshot({ path: path.join(N, 'import-390.png') });
   // arquivo separado também
   await p.setInputFiles('#file-input', path.join(N, 'rotav3-notas-teste', 'NF-900001-teste.xml')); await p.waitForTimeout(600);
-  ok((await p.textContent('#import-msg-pedidos')).includes('1 entrega importada'), 'arquivo separado: ' + (await p.textContent('#import-msg-pedidos')).trim());
+  // a mesma nota que já veio no arquivo único: não duplica e mantém o ponto já achado
+  ok((await p.textContent('#import-msg-pedidos')).includes('1 nota já estava no sistema e foi atualizada, sem duplicar'), 'arquivo separado: ' + (await p.textContent('#import-msg-pedidos')).trim());
+  const d3 = await p.evaluate(() => window.__FAKE.db.empresas.emp1.pedidos_rota);
+  const n1a = d2.find((o) => o.nf === '900001'), n1b = Object.values(d3).find((o) => o.nf === '900001');
+  ok(Object.keys(d3).length === 25 && n1b.lat === n1a.lat && n1b.geoPrec === n1a.geoPrec, 'continua com 25 notas e a 900001 no mesmo ponto');
   ok(!errs.length, 'sem erros: ' + JSON.stringify(errs.slice(0, 3)));
   console.log(falhas ? falhas + ' FALHA(S)' : 'TUDO OK'); await b.close();
 })();

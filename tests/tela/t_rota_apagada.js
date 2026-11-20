@@ -66,7 +66,7 @@ const importar = async (p) => {
   ok(e[a].status === 'pendente' && !e[a].rota_atual, 'nota da rota APAGADA volta como pendente ao importar de novo');
   ok(e[a].peso !== 1, 'e é regravada com os dados do PDF');
   ok(e[c].status === 'despachado' && e[c].rota_atual === 'R_ATIVA', 'nota de rota que ainda existe não é mexida');
-  ok(/1 coleta importada/.test(msg) && /1 nota já estava em rota/.test(msg), 'mensagem: 1 importada, 1 em rota → ' + msg);
+  ok(/1 nota de rota apagada voltou para os pendentes/.test(msg) && /1 nota já estava em rota/.test(msg) && !/importada/.test(msg), 'mensagem: 1 voltou da rota apagada, 1 em rota → ' + msg);
   todosErros.push(...errs);
 
   // 4. busca: a nota presa em rota apagada pode ser excluída; a da rota ativa não
