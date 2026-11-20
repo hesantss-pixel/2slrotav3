@@ -1769,6 +1769,7 @@ function carregarPedidos(){
   // rotas confirmadas (histórico permanente) — alimenta a página Rotas + overlay do Mapa
   onValue(ref(db,TP('rotas_confirmadas')), snap=>{
     rotasFirebase = snap.val() || {};
+    _rotasCarregadas = true;
     _sincronizarBaixas();
     render(); // os cartões ROTAS e KM DAS ROTAS contam as rotas confirmadas
     if(document.getElementById('page-rotas')?.style.display==='block'){ renderRotasConfirmadas(); }
@@ -2809,6 +2810,8 @@ function buscarNotas(v,deFora){
   _renderBusca();
 }
 window.buscarNotas=buscarNotas;
+// pode excluir: pendente, ou despachada numa rota que foi apagada/devolvida (ficou presa sem rota)
+function _excluivel(o){ return o.status==='pendente'||(o.status==='despachado'&&!_emRotaAtiva(o.id,o)); }
 function _renderBusca(){
   const box=$id('busca-res'); if(!box) return;
   const q=_buscaQ.trim(), busca=!!q;
@@ -2817,7 +2820,7 @@ function _renderBusca(){
   box.className='busca-res';
   const {res,faltou}=_buscarPedidos(q);
   // a seleção só guarda o que ainda está na busca e pendente
-  const pendIds=new Set(res.filter(o=>o.status==='pendente').map(o=>o.id));
+  const pendIds=new Set(res.filter(_excluivel).map(o=>o.id));
   [..._buscaSel].forEach(id=>{ if(!pendIds.has(id)) _buscaSel.delete(id); });
   const mostrar=res.slice(0,BUSCA_MAX), nPend=pendIds.size;
   const todasSel=nPend>0&&[...pendIds].every(id=>_buscaSel.has(id));
@@ -2826,12 +2829,12 @@ function _renderBusca(){
     <div class="busca-topo"><span>${res.length?_plural(res.length,'nota encontrada','notas encontradas'):'Nenhuma nota encontrada.'}${res.length>BUSCA_MAX?` (mostrando ${BUSCA_MAX})`:''}</span>
       ${nPend>1?`<label class="chk"><input type="checkbox" id="busca-todas" ${todasSel?'checked':''} onchange="selTodasBusca(this.checked)"> Selecionar todas (${nPend})</label>`:''}</div>
     <div class="busca-lista">${mostrar.map(o=>{
-      const pend=o.status==='pendente', sel=_buscaSel.has(o.id), cid='bs-'+o.id.replace(/[^A-Za-z0-9_-]/g,'_');
+      const pend=_excluivel(o), presa=pend&&o.status!=='pendente', sel=_buscaSel.has(o.id), cid='bs-'+o.id.replace(/[^A-Za-z0-9_-]/g,'_');
       const ch=_chaveDe(o);
       return `<div class="busca-item${sel?' sel':''}">
         <input type="checkbox" id="${esc(cid)}" data-id="${esc(o.id)}" ${sel?'checked':''} ${pend?'':'disabled'} onchange="selBusca(this.dataset.id,this.checked)" aria-label="Selecionar NF ${esc(o.nf)}${pend?'':' (em rota, não pode ser excluída)'}">
-        <div class="bi-txt" onclick="abrirPedido(${esc(JSON.stringify(o.id))})"><div class="bi-nf">NF ${esc(o.nf)}${_tag(o)}${_chipAgenda(o)}${pend?'':`<span class="st-rota">${esc(_statusTxt(o))}</span>`}</div>
-          <div class="bi-sub">${o.dest&&o.dest!==o.cidade?esc(o.dest)+' · ':''}${esc(o.cidade)} · ${(+o.peso||0).toLocaleString('pt-BR')} kg${ch?` · chave …${esc(ch.slice(-8))}`:''}${pend?'':' · para excluir, devolva a rota na página Rotas'}</div></div>
+        <div class="bi-txt" onclick="abrirPedido(${esc(JSON.stringify(o.id))})"><div class="bi-nf">NF ${esc(o.nf)}${_tag(o)}${_chipAgenda(o)}${pend&&!presa?'':`<span class="st-rota">${presa?'rota apagada':esc(_statusTxt(o))}</span>`}</div>
+          <div class="bi-sub">${o.dest&&o.dest!==o.cidade?esc(o.dest)+' · ':''}${esc(o.cidade)} · ${(+o.peso||0).toLocaleString('pt-BR')} kg${ch?` · chave …${esc(ch.slice(-8))}`:''}${presa?' · a rota foi apagada: pode excluir':pend?'':' · para excluir, devolva a rota na página Rotas'}</div></div>
         <button type="button" class="btn-sm" onclick="abrirPedido(${esc(JSON.stringify(o.id))})" aria-label="Abrir NF ${esc(o.nf)}">Abrir</button>
       </div>`;
     }).join('')}</div>
@@ -2845,7 +2848,7 @@ function selBusca(id,on){
 window.selBusca=selBusca;
 function selTodasBusca(on){
   const {res}=_buscarPedidos(_buscaQ.trim());
-  res.filter(o=>o.status==='pendente').forEach(o=>{ if(on) _buscaSel.add(o.id); else _buscaSel.delete(o.id); });
+  res.filter(_excluivel).forEach(o=>{ if(on) _buscaSel.add(o.id); else _buscaSel.delete(o.id); });
   _renderBusca();
   const el=$id('busca-todas'); if(el) el.focus();
 }
@@ -2855,12 +2858,13 @@ async function _excluirPedidos(ids){
   ids=[...new Set(ids)];
   const soTela=(contaDemo&&!EID)||modoDemo, backup={};
   if(soTela){
-    allOrders.filter(o=>ids.includes(o.id)&&o.status==='pendente').forEach(o=>{ backup[o.id]=o; });
+    allOrders.filter(o=>ids.includes(o.id)&&_excluivel(o)).forEach(o=>{ backup[o.id]=o; });
     allOrders=allOrders.filter(o=>!backup[o.id]);
   } else {
     const banco=(await get(ref(db,TP('pedidos_rota')))).val()||{};
     const upd={};
-    ids.forEach(id=>{ const r=banco[id]; if(r&&(r.status||'pendente')==='pendente'){ backup[id]=r; upd[TP('pedidos_rota/'+id)]=null; } });
+    // pendente, ou despachada numa rota apagada/devolvida (presa sem rota)
+    ids.forEach(id=>{ const r=banco[id]; if(r&&((r.status||'pendente')==='pendente'||(r.status==='despachado'&&!_emRotaAtiva(id,r)))){ backup[id]=r; upd[TP('pedidos_rota/'+id)]=null; } });
     if(!Object.keys(upd).length) return 0;
     await update(ref(db),upd);
   }
@@ -3881,7 +3885,8 @@ async function importarArquivo(input){
   }
   // Nota que já saiu para rota (despachada/entregue) não é alterada.
   const payload={}; let jaEmRota=0;
-  lidos.forEach(o=>{ if(FINAIS.includes(_statusPorId[o.id])){ jaEmRota++; return; } payload[o.id]=o; });
+  // despachada numa rota que foi apagada ou devolvida volta a valer: entra de novo como pendente
+  lidos.forEach(o=>{ if(_notaTravada(o.id,_regPorId[o.id]||{status:_statusPorId[o.id]})){ jaEmRota++; return; } payload[o.id]=o; });
   const novos=Object.values(payload);
   if(contaDemo && !EID){
     // conta de demonstração com as regras antigas do banco: as notas ficam só nesta tela. Na primeira importação,
@@ -5590,6 +5595,27 @@ window.trocarEmpresa=trocarEmpresa;
 // PÁGINA ROTAS — lista rotas confirmadas (Firebase ou demo)
 // ══════════════════════════════════════════════════════════════════════════
 let rotasFirebase={};  // preenchido pelo listener do Firebase
+let _rotasCarregadas=false;
+// A nota "em rota" (despachada) está mesmo numa rota que existe? Rota apagada ou devolvida
+// não segura mais a nota: "Apagar rota" deixava as notas como despachadas para sempre, sem
+// dar para excluir nem importar de novo (20/11/2026). Antes das rotas carregarem, na dúvida,
+// conta como em rota (não mexe).
+function _emRotaAtiva(id, reg){
+  if(!_rotasCarregadas) return true;
+  // só libera o que está comprovadamente numa rota apagada ou devolvida; rota que não aparece
+  // (dado incompleto) continua contando como em rota
+  const morta=r=>!!r&&(r.status==='apagada'||r.status==='devolvida');
+  const rid=reg&&reg.rota_atual;
+  if(rid) return !morta(rotasFirebase[rid]);
+  const rotas=Object.values(rotasFirebase||{}).filter(r=>r&&(r.paradas||[]).some(p=>_idDe(p)===id));
+  return !(rotas.length&&rotas.every(morta));
+}
+// Já saiu de verdade: entregue/coletada/confirmada, ou despachada numa rota que ainda existe
+function _notaTravada(id, reg){
+  const st=(reg&&reg.status)||'';
+  if(!FINAIS.includes(st)) return false;
+  return st==='despachado' ? _emRotaAtiva(id, reg) : true;
+}
 
 // paleta de cores por rota (usada tanto no mini-map da Rotas quanto no
 // overlay do Mapa completo — mesma cor pra mesma rota nos dois lugares)
