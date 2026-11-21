@@ -43,7 +43,7 @@ const seed = (d) => { window.__FAKE = { user: { uid: 'u', email: 'a@b.com', getI
     const nomes = cartoes.map((x) => x[0]).join(',');
     ok(new Set(cartoes.map((x) => x[1])).size === 6, 'os seis veículos têm desenhos diferentes: ' + JSON.stringify(cartoes.map((x) => x[1])));
     ok(nomes.startsWith('Fiorino') && nomes.endsWith('Carreta'), 'ordem dos veículos preservada: ' + nomes);
-    // largura do desenho dentro da caixa de 120 unidades: tem que crescer
+    // comprimento do desenho (a sombra acompanha), na mesma escala: tem que crescer
     const larguras = await p.evaluate(async () => {
       const arquivos = [...document.querySelectorAll('#veh-grid .veh-card img')].map((i) => i.getAttribute('src'));
       const medidas = [];

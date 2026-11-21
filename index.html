@@ -210,10 +210,10 @@ button{font-family:inherit;}
 .veh-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--vc,var(--mid));}
 .veh-card:hover{border-color:var(--vc,var(--mid));transform:translateY(-2px);}
 .veh-card-icon{width:116px;height:56px;background:var(--s3);border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;max-width:100%;}
-.veh-img{height:50px;width:auto;max-width:100%;display:block;}
+.veh-img{height:50px;width:auto;max-width:100%;object-fit:contain;display:block;}
 .veh-mini{width:100%;height:42px;background:var(--s3);border-radius:9px;display:flex;align-items:center;justify-content:center;margin-bottom:5px;}
 .rc-card-veic{width:74px;height:38px;border-radius:10px;background:var(--s3);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.veh-img-mini{height:34px;width:auto;max-width:100%;display:block;}
+.veh-img-mini{height:34px;width:auto;max-width:100%;object-fit:contain;display:block;}
 .veh-card-name{font-family:var(--sans);font-weight:800;font-size:15px;color:var(--text);}
 .veh-card-tag{display:inline-block;background:rgba(243,182,43,.15);border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700;color:var(--ac);margin:5px 0;font-family:var(--mono);}
 .veh-card-desc{font-size:11.5px;color:var(--text2);line-height:1.4;}
@@ -1554,8 +1554,9 @@ const CITY_COORDS = {
 // Regiões montadas a partir dos próprios pedidos: as 7 cidades com mais pedidos
 // ganham cor própria; o resto vira "Outras cidades". Pedido a mais de
 // RAIO_ISOLADO_KM do centro de distribuição conta como região isolada.
-// Desenho do veículo (SVG próprio, em assets/veic). Mesma escala nos cinco:
-// o tamanho do desenho mostra o porte, e os eixos são os de verdade.
+// Desenho do veículo (SVG em assets/veic, gerado por assets/veic/fonte/gerar.py a partir dos
+// ícones da frota). Mesma altura e mesma escala: o comprimento mostra o porte, e os eixos são
+// os de verdade.
 function imgVeiculo(v,cls){
   const arq=(v&&v.img)||'assets/veic/vuc.svg';
   const nome=(v&&v.nome)?v.nome:'Veículo';
