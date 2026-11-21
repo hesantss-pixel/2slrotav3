@@ -190,6 +190,20 @@ class TesteRotasEntrada(unittest.TestCase):
         with mock.patch.dict(os.environ, {"GOOGLE_GEOCODING_KEY": ""}):
             self.assertEqual(main.status()["geocodificacao_google"], "sem chave")
 
+    def test_geocode_google_fora_responde_503(self):
+        # recusa ou limite do Google não pode virar "não achou" (a tela marcaria o pedido como
+        # revisado e não tentaria de novo)
+        with mock.patch.dict(os.environ, {"GOOGLE_GEOCODING_KEY": "segredo-de-teste"}), \
+             mock.patch.object(main.geocode_google, "geocodificar", side_effect=main.geocode_google.GoogleIndisponivel("REQUEST_DENIED")):
+            with self.assertRaises(HTTPException) as c:
+                main.geocode(main.GeocodeRequest(rua="Rua A", numero="1", cidade="Guarulhos", uf="SP"), ("u1", "cliente"))
+        self.assertEqual(c.exception.status_code, 503)
+        self.assertNotIn("segredo", str(c.exception.detail))
+        with mock.patch.dict(os.environ, {"GOOGLE_GEOCODING_KEY": "segredo-de-teste"}), \
+             mock.patch.object(main.geocode_google, "geocodificar", return_value=None):
+            self.assertEqual(main.geocode(main.GeocodeRequest(rua="Rua A", numero="1", cidade="Guarulhos", uf="SP"), ("u1", "cliente")),
+                             {"configurado": True, "resultado": None})
+
     def test_health_responde_sem_tocar_em_nada(self):
         # o Railway chama /health antes de trocar de deploy: não pode depender de banco
         # nem de serviço externo, e não devolve nada da operação

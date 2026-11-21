@@ -384,7 +384,7 @@ def status():
         "login": "obrigatório" if auth_firebase.AUTH_REQUIRED else "desligado (teste local)",
         "entrada_automatica": {"api": BANCO.ligado(), "email": bool(entrada_email.estado["ligado"])},
         # só diz se a chave existe (GOOGLE_GEOCODING_KEY), nunca a chave
-        "geocodificacao_google": "ligada" if geocode_google.configurado() else "sem chave",
+        "geocodificacao_google": geocode_google.estado(),
         "componentes": componentes(),
     }
 
@@ -620,7 +620,11 @@ def geocode(body: GeocodeRequest, quem: tuple = Depends(exigir_login_ou_demo)):
     # (GOOGLE_GEOCODING_LIMITE_DIA)
     if not geocode_google.configurado():
         return {"configurado": False, "resultado": None}
-    return {"configurado": True, "resultado": geocode_google.geocodificar(body.model_dump())}
+    try:
+        return {"configurado": True, "resultado": geocode_google.geocodificar(body.model_dump())}
+    except geocode_google.GoogleIndisponivel:
+        # a tela segue pelo OpenStreetMap e não marca o pedido como "já passou pelo Google"
+        raise HTTPException(status_code=503, detail="Localização pelo Google indisponível agora")
 
 
 @app.post("/chat")

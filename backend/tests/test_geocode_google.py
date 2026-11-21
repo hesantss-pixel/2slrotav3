@@ -1,5 +1,7 @@
 """Geocoding do Google: interpretação do resultado, limites e o /geocode (sem rede)."""
 import os
+
+import pytest
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -74,7 +76,8 @@ def test_consulta_memoria_e_limite(monkeypatch):
     assert len(chamadas) == 1
     assert chamadas[0]["components"] == "country:BR" and chamadas[0]["language"] == "pt-BR"
     gg.geocodificar({**PED, "numero": "125"})
-    assert gg.geocodificar({**PED, "numero": "127"}) is None  # passou do limite do dia
+    with pytest.raises(gg.GoogleIndisponivel):              # passou do limite do dia: não é "não achou"
+        gg.geocodificar({**PED, "numero": "127"})
     assert len(chamadas) == 2
 
 
@@ -87,5 +90,21 @@ def test_sem_chave_nao_consulta(monkeypatch):
 def test_chave_recusada_nao_quebra(monkeypatch):
     monkeypatch.setenv("GOOGLE_GEOCODING_KEY", "x")
     monkeypatch.setattr(gg.requests, "get", lambda *a, **k: _Resp({"status": "REQUEST_DENIED", "error_message": "API desativada"}))
+    gg._CACHE.clear(); gg._uso.update(dia="", n=0); gg._ultimo["erro"] = ""
+    with pytest.raises(gg.GoogleIndisponivel):              # recusa não vira "não achou"
+        gg.geocodificar(PED)
+    assert gg.estado() == "recusada pelo Google (REQUEST_DENIED)"
+    assert "x" not in gg.estado().replace("recusada", "")     # nunca mostra a chave
+    # o primeiro acerto apaga a recusa
+    monkeypatch.setattr(gg.requests, "get", lambda *a, **k: _Resp({"status": "ZERO_RESULTS", "results": []}))
+    assert gg.geocodificar({**PED, "numero": "999"}) is None and gg.estado() == "ligada"
+
+
+def test_sem_resposta_nao_vira_nao_achou(monkeypatch):
+    monkeypatch.setenv("GOOGLE_GEOCODING_KEY", "x")
+    def cai(*a, **k):
+        raise gg.requests.ConnectionError("sem rede")
+    monkeypatch.setattr(gg.requests, "get", cai)
     gg._CACHE.clear(); gg._uso.update(dia="", n=0)
-    assert gg.geocodificar(PED) is None
+    with pytest.raises(gg.GoogleIndisponivel):
+        gg.geocodificar(PED)

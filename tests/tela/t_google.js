@@ -81,6 +81,7 @@ async function cenario(b, opt) {
   await ctx.route(/tile\.openstreetmap\.org/, (r) => { reg.osm = (reg.osm || 0) + 1; r.fulfill({ contentType: 'image/png', body: PNG }); });
   await ctx.route(/railway\.app\/geocode/, (r) => {
     const body = JSON.parse(r.request().postData()); reg.geo.push(body); reg.auth.push(r.request().headers()['authorization']);
+    if (opt.google503) return r.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ detail: 'Localização pelo Google indisponível agora' }) });
     r.fulfill({ contentType: 'application/json', body: JSON.stringify(opt.semChave ? { configurado: false, resultado: null } : geocode(body)) });
   });
   await ctx.route(/viacep\.com\.br\/ws\/(\d+)\/json/, (r) => { const cep = r.request().url().match(/ws\/(\d+)\//)[1]; r.fulfill({ contentType: 'application/json', body: JSON.stringify(VIACEP[cep] || { erro: true }) }); });
@@ -162,6 +163,18 @@ const fimFila = (p) => p.waitForFunction(() => { const e = document.getElementBy
     ok(d['4001'].geoPrec && !d['4001'].geoFonte && d['4005'].lat === -23.431, 'pedidos localizados pelo OpenStreetMap');
     ok(d['4007'].lat === -23.4321 && !d['4007'].geoG, 'sem o Google, a revisão não acontece (nem gasta consulta ao OpenStreetMap)');
     ok(d['4002'].lat === -23.45 && d['4002'].geoPrec === 'bairro', 'aproximado fica como estava (nada melhor para pôr)');
+    ok(!errs.length, 'sem erros: ' + JSON.stringify(errs.slice(0, 3)));
+    await p.context().close();
+  }
+
+  // ── 3b) Google recusou (chave com restrição errada, cota): não conta como "já revisado" ──
+  {
+    const { p, errs, reg } = await cenario(b, { google503: true });
+    await fimFila(p);
+    const d = (await emp(p)).pedidos_rota;
+    ok(reg.geo.length === 1, 'Google fora: o servidor responde 503 e a tela para de perguntar por 5 min (' + reg.geo.length + ')');
+    ok(!d['4002'].geoG && d['4002'].lat === -23.45 && !d['4007'].geoG && !d['4008'].geoG, 'pedidos a revisar NÃO ficam marcados como revisados (tentam de novo depois)');
+    ok(d['4001'].geoPrec && !d['4001'].geoFonte, 'nota nova é localizada pelo OpenStreetMap');
     ok(!errs.length, 'sem erros: ' + JSON.stringify(errs.slice(0, 3)));
     await p.context().close();
   }

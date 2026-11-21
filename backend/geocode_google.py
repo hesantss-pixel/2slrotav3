@@ -29,6 +29,20 @@ _CACHE: dict[str, tuple[float, dict | None]] = {}
 _CACHE_SEG = 24 * 3600
 _CACHE_MAX = 5000
 _uso = {"dia": "", "n": 0}
+_ultimo = {"erro": ""}   # última recusa do Google (status), apagada no primeiro acerto
+
+
+class GoogleIndisponivel(Exception):
+    """O Google não respondeu como devia (chave recusada, cota, limite do dia, rede).
+
+    Diferente de "não achou": quem chama não deve tratar isso como resposta."""
+
+
+def estado() -> str:
+    """Para o /status: diz se a chave existe e se o Google aceitou; nunca a chave."""
+    if not configurado():
+        return "sem chave"
+    return f"recusada pelo Google ({_ultimo['erro']})" if _ultimo["erro"] else "ligada"
 
 
 def chave() -> str:
@@ -127,7 +141,7 @@ def geocodificar(pedido: dict) -> dict | None:
         _uso["dia"], _uso["n"] = hoje, 0
     if _uso["n"] >= _limite_dia():
         logger.warning("geocode: limite do dia atingido (%s)", _uso["n"])
-        return None
+        raise GoogleIndisponivel("limite do dia")
     _uso["n"] += 1
     try:
         r = requests.get(URL, params={"address": texto, "components": "country:BR", "region": "br",
@@ -135,12 +149,14 @@ def geocodificar(pedido: dict) -> dict | None:
         dados = r.json()
     except Exception as e:  # rede, JSON
         logger.warning("geocode: falha na consulta: %s", e)
-        return None
+        raise GoogleIndisponivel("sem resposta") from None
     status = dados.get("status")
     if status not in ("OK", "ZERO_RESULTS"):
         # REQUEST_DENIED / OVER_QUERY_LIMIT: chave errada, API desativada ou cota
         logger.warning("geocode: Google respondeu %s: %s", status, dados.get("error_message", ""))
-        return None
+        _ultimo["erro"] = str(status or "erro")[:40]
+        raise GoogleIndisponivel(_ultimo["erro"])
+    _ultimo["erro"] = ""
     resultado = interpretar((dados.get("results") or [None])[0], pedido) if status == "OK" else None
     if len(_CACHE) >= _CACHE_MAX:
         _CACHE.clear()
