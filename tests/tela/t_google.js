@@ -28,6 +28,11 @@ const PED = {
 };
 const seed = (a) => {
   window.__GMAPS_KEY = 'CHAVE-TESTE';
+  if (a.demo) {
+    window.__FAKE = { user: { uid: 'uid-vis', email: 'v@x.com', getIdToken: async () => 'T-demo' },
+      db: { acesso: { 'uid-vis': 'demo' }, demos: { 'uid-vis': { email: 'v@x.com', criado: Date.now(), expira: Date.now() + 864e5 } } } };
+    return;
+  }
   window.__FAKE = {
     user: { uid: 'uid-ana', email: 'ana@empresa.com.br', getIdToken: async () => 'TOKEN-ANA' },
     db: { acesso: { 'uid-ana': true }, membros: { 'uid-ana': 'emp1' },
@@ -77,7 +82,7 @@ async function cenario(b, opt) {
   await ctx.route(/viacep\.com\.br\/ws\/(\d+)\/json/, (r) => { const cep = r.request().url().match(/ws\/(\d+)\//)[1]; r.fulfill({ contentType: 'application/json', body: JSON.stringify(VIACEP[cep] || { erro: true }) }); });
   await ctx.route(/nominatim\.openstreetmap\.org/, (r) => r.fulfill({ contentType: 'application/json', body: JSON.stringify(nominatim(new URL(r.request().url()))) }));
   };
-  const { ctx, p, errs } = await open(b, 'index.html', 1440, 900, seed, false, { ped: JSON.parse(JSON.stringify(PED)), semSessao: true }, rotas);
+  const { ctx, p, errs } = await open(b, 'index.html', 1440, 900, seed, false, { ped: JSON.parse(JSON.stringify(PED)), semSessao: true, demo: !!opt.demo }, rotas);
   p.on('pageerror', (e) => console.log('STACK', (e.stack || '').split('\n').slice(0, 5).join(' | ')));
   return { ctx, p, errs, reg };
 }
@@ -151,6 +156,25 @@ const fimFila = (p) => p.waitForFunction(() => { const e = document.getElementBy
     ok(d['4001'].geoPrec && !d['4001'].geoFonte && d['4005'].lat === -23.431, 'pedidos localizados pelo OpenStreetMap');
     ok(d['4007'].lat === -23.4321 && !d['4007'].geoG, 'sem o Google, a revisão não acontece (nem gasta consulta ao OpenStreetMap)');
     ok(d['4002'].lat === -23.45 && d['4002'].geoPrec === 'bairro', 'aproximado fica como estava (nada melhor para pôr)');
+    ok(!errs.length, 'sem erros: ' + JSON.stringify(errs.slice(0, 3)));
+    await p.context().close();
+  }
+
+  // ── 4) conta de demonstração: a empresa que testa também tem o número pelo Google ──
+  {
+    const { p, errs, reg } = await cenario(b, { demo: true });
+    p.on('dialog', (d) => d.accept());
+    await p.waitForTimeout(600);
+    ok(reg.geo.length === 0, 'pedidos fictícios da demonstração não gastam consulta ao Google');
+    const csv = require('path').join(__dirname, 'xml', 'google-demo.csv');
+    require('fs').writeFileSync(csv, 'NF;Cliente;Endereço;Número;Bairro;Cidade;UF;CEP;Peso\n8001;Cliente Demo;Avenida Salgado Filho;1000;Centro;Guarulhos;SP;07010-030;80\n8002;Outro Demo;Avenida Salgado Filho;1500;Centro;Guarulhos;SP;07010-030;40\n');
+    await p.evaluate(() => window.irParaPagina('pedidos')); await p.waitForTimeout(300);
+    await p.setInputFiles('#file-input', csv); await p.waitForTimeout(800);
+    await p.waitForFunction(() => { const e = window.__FAKE.db.empresas && window.__FAKE.db.empresas['demo_uid-vis']; const x = e && e.pedidos_rota; return x && x['8001'] && x['8001'].geoFonte && x['8002'] && x['8002'].geoFonte; }, null, { timeout: 30000 }).catch(() => {});
+    const d = await p.evaluate(() => JSON.parse(JSON.stringify(((window.__FAKE.db.empresas || {})['demo_uid-vis'] || {}).pedidos_rota || {})));
+    ok(d['8001'] && d['8001'].geoPrec === 'numero' && d['8001'].lat === G_NUM.lat && d['8001'].geoFonte === 'google', 'demonstração: nota importada cai no número pelo Google');
+    ok(d['8002'] && d['8002'].lat === G_1500.lat && d['8002'].geoFonte === 'google', 'demonstração: as outras notas também (sem limite por conta)');
+    ok(reg.auth.length === 2 && reg.auth.every((a) => a === 'Bearer T-demo'), 'consulta vai com o login da demonstração (' + reg.auth.length + ')');
     ok(!errs.length, 'sem erros: ' + JSON.stringify(errs.slice(0, 3)));
     await p.context().close();
   }

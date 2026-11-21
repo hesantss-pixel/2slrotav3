@@ -616,7 +616,8 @@ class GeocodeRequest(BaseModel):
 def geocode(body: GeocodeRequest, quem: tuple = Depends(exigir_login_ou_demo)):
     """Ponto do endereço pelo Google (número da casa ou meio da rua), já conferido pela
     cidade. {configurado: false} quando a chave não está no servidor. Não grava o banco."""
-    _limite_demo(quem, "geocode", 200)
+    # sem limite por conta de demonstração (21/11/2026): o teto é o diário do servidor inteiro
+    # (GOOGLE_GEOCODING_LIMITE_DIA)
     if not geocode_google.configurado():
         return {"configurado": False, "resultado": None}
     return {"configurado": True, "resultado": geocode_google.geocodificar(body.model_dump())}

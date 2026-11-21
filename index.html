@@ -3498,7 +3498,8 @@ async function _geocodificarCep(cep){
 const GOOGLE_DIAS = 30;
 const _gGeo = {off:false, pausaAte:0};
 const _gTentados = new Set();   // pedidos aproximados que já passaram pelo Google nesta sessão
-function _googleLigado(){ return !_gGeo.off && Date.now()>=_gGeo.pausaAte && !!GOOGLE_MAPS_KEY && !contaDemo; }
+// vale também para as contas de demonstração (decisão de 21/11/2026: a empresa que testa vê o pino no número)
+function _googleLigado(){ return !_gGeo.off && Date.now()>=_gGeo.pausaAte && !!GOOGLE_MAPS_KEY; }
 async function _googleGeocode(dados){
   if(!_googleLigado()) return null;
   // mapa do Google não abriu (chave recusada, sem internet): o resultado não poderia ser mostrado

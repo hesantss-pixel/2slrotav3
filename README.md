@@ -792,6 +792,10 @@ Regras do Google que o sistema segue:
   não são apagadas aos 30 dias.
 - O Google pede que o site tenha **Termos de Uso** e **Política de Privacidade** públicos.
 
+Vale também para as **contas de demonstração** (21/11/2026), sem limite por conta: a empresa que
+testa vê o pino no número. Os pedidos fictícios da demonstração não consultam o Google. O único
+teto é o diário do servidor inteiro (`GOOGLE_GEOCODING_LIMITE_DIA`).
+
 Pedidos pendentes que estavam aproximados (rua, bairro ou cidade) passam **uma vez** pelo Google
 (`geoG: 1` marca que já passaram). Se o Google achar o número, o ponto troca; se não, fica como
 estava. Sem a chave no servidor (`/status` mostra `"geocodificacao_google": "sem chave"`), o
