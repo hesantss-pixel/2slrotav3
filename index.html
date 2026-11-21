@@ -5969,8 +5969,9 @@ async function devolverRotaD(rotaId){
       const rota = rotasFirebase[rotaId];
       if(!rota) throw new Error('Rota não encontrada');
       const upd={};
-      // só volta o que ainda está despachado (o que já foi entregue/coletado fica como está)
-      (rota.paradas||[]).forEach(p=>{ const id=_idDe(p), reg=_regPorId[id]; if(reg&&reg.status==='despachado') upd[TP('pedidos_rota/'+id+'/status')]='pendente'; });
+      // só volta o que ainda está despachado NESTA rota (o que já foi entregue/coletado fica como
+      // está; nota apagada e importada de novo, que já saiu em outra rota, também não é mexida)
+      (rota.paradas||[]).forEach(p=>{ const id=_idDe(p), reg=_regPorId[id]; if(reg&&reg.status==='despachado'&&(!reg.rota_atual||reg.rota_atual===rotaId)) upd[TP('pedidos_rota/'+id+'/status')]='pendente'; });
       upd[TP('rotas_confirmadas/'+rotaId+'/status')]='devolvida';
       if(rota.token){ upd['entregador/'+rota.token+'/expira']=Date.now(); upd[TP('rotas_confirmadas/'+rotaId+'/link_expira')]=Date.now(); }
       await update(ref(db), upd);

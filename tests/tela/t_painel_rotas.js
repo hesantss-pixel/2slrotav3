@@ -67,7 +67,16 @@ const painel = (p) => p.evaluate(() => ({
   const rid = await p.evaluate(() => Object.keys(window.__FAKE.db.empresas.emp1.rotas_confirmadas)[0]);
 
   // ── 4. devolvida: volta para zero ─────────────────────────────────────────
+  // nota apagada no Firebase, importada de novo e já despachada em OUTRA rota: devolver a rota
+  // antiga não pode mexer nela (21/11/2026)
+  const nasParadas = await p.evaluate((id) => (window.__FAKE.db.empresas.emp1.rotas_confirmadas[id].paradas || []).map((x) => String(x.id || x.nf)), rid);
+  const alvo = nasParadas[0];
+  await p.evaluate((a) => { const F = window.__FAKE; const o = F.db.empresas.emp1.pedidos_rota[a]; F.setAt('empresas/emp1/pedidos_rota/' + a, { ...o, status: 'despachado', rota_atual: 'OUTRA-ROTA' }); F.fire(); }, alvo);
+  await p.waitForTimeout(300);
   await p.evaluate((id) => window.devolverRotaD(id), rid); await p.waitForTimeout(900);
+  const pr = await p.evaluate(() => JSON.parse(JSON.stringify(window.__FAKE.db.empresas.emp1.pedidos_rota)));
+  ok(pr[alvo].status === 'despachado' && pr[alvo].rota_atual === 'OUTRA-ROTA', 'devolver a rota antiga não mexe na nota que já saiu em outra rota (' + alvo + ')');
+  ok(nasParadas.slice(1).every((i) => pr[i].status === 'pendente'), 'as outras notas da rota voltam para pendente: ' + nasParadas.slice(1).map((i) => i + '=' + pr[i].status).join(' '));
   v = await painel(p);
   ok(v.rotas === '0' && v.km === '0 km', 'rota devolvida sai do painel: ' + v.rotas + ' / ' + v.km);
   ok(v.rotasSub === 'nenhuma rota confirmada', 'e a explicação volta ao começo — ' + v.rotasSub);
