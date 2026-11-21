@@ -1017,7 +1017,7 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
           </button>
         </div>
       </div>
-      <div class="imp-help" id="imp-help">XML da NF-e, Excel, CSV ou PDF. Pode escolher vários arquivos de uma vez. <b>Entrega:</b> o sistema usa o endereço do <b>destinatário</b> (ou o local de entrega, se a nota tiver). Na planilha, uma coluna <b>tipo</b> com "coleta" ou "entrega" vale linha a linha, e as colunas <b>endereço</b> e <b>número</b> ajudam a achar o ponto certo. O <b>XML de cancelamento</b> da nota tira ela dos pendentes. No <b>PDF do DANFE</b> o sistema lê nome, endereço, bairro, CEP, município, volumes e peso — pode errar, então confira; nota sem CEP e sem município não entra.</div>
+      <div class="imp-help" id="imp-help">XML da NF-e, Excel, CSV ou PDF. Pode escolher vários arquivos de uma vez. <b>Entrega:</b> o sistema usa o endereço do <b>destinatário</b> (ou o local de entrega, se a nota tiver). Na planilha, uma coluna <b>tipo</b> com "coleta" ou "entrega" vale linha a linha, e as colunas <b>endereço</b> e <b>número</b> ajudam a achar o ponto certo. O <b>XML de cancelamento</b> da nota tira ela dos pendentes. No <b>PDF</b> do DANFE ou da Ordem de Coleta de Cargas, o sistema lê nome, endereço, bairro, CEP, município, volumes e peso.</div>
       <details class="auto-ent" id="auto-ent">
         <summary><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/></svg><span><b>Receber pedidos automaticamente</b><small>Por e-mail ou pelo sistema da sua empresa, sem subir arquivo</small></span></summary>
         <div class="auto-ent__corpo" id="auto-ent-corpo" aria-live="polite">Carregando…</div>
@@ -1752,7 +1752,7 @@ function setTipoImport(v){
   document.getElementById('imp-help').innerHTML = 'XML da NF-e, Excel, CSV ou PDF. Pode escolher vários arquivos de uma vez. ' + (tipoImport==='coleta'
     ? '<b>Coleta:</b> o sistema usa o endereço do <b>remetente</b>, quem emitiu a nota (ou o local de retirada, se a nota tiver).'
     : '<b>Entrega:</b> o sistema usa o endereço do <b>destinatário</b> (ou o local de entrega, se a nota tiver).')
-    + ' Na planilha, uma coluna <b>tipo</b> com "coleta" ou "entrega" vale linha a linha, e as colunas <b>endereço</b> e <b>número</b> ajudam a achar o ponto certo. O <b>XML de cancelamento</b> da nota tira ela dos pendentes.';
+    + ' Na planilha, uma coluna <b>tipo</b> com "coleta" ou "entrega" vale linha a linha, e as colunas <b>endereço</b> e <b>número</b> ajudam a achar o ponto certo. O <b>XML de cancelamento</b> da nota tira ela dos pendentes. No <b>PDF</b> do DANFE ou da Ordem de Coleta de Cargas, o sistema lê nome, endereço, bairro, CEP, município, volumes e peso.';
 }
 document.addEventListener('click',e=>{
   const f=e.target.closest('[data-filtro] button'); if(f){ setFiltroTipo(f.dataset.v); return; }
@@ -3918,10 +3918,6 @@ async function importarArquivo(input){
   const files=[...(input.files||[])]; input.value='';
   if(!files.length) return;
   const tipo=tipoImport;
-  if(files.some(f=>/\.pdf$/i.test(f.name))){
-    const ok=confirm('⚠️ A LEITURA DE PDF É EXPERIMENTAL.\n\nDo DANFE o sistema lê a chave e o número da nota, o nome, o endereço, o bairro, o CEP, o município, os volumes e o peso. Da Ordem de Coleta de Cargas lê o número da ordem, o remetente, o endereço, o bairro, o CEP, a cidade, a quantidade de volumes e o peso, e ela entra sempre como coleta. O ponto no mapa sai do CEP, como no XML.\n\nCada emissor desenha a nota de um jeito, então algum campo pode vir errado ou vazio: confira a lista antes de gerar a rota. Nota sem CEP e sem município não é importada.\n\nPara um resultado garantido, use o XML da nota ou uma planilha (Excel/CSV).\n\nContinuar mesmo assim?');
-    if(!ok){ _impMsg('err','Importação cancelada.'); return; }
-  }
   _impMsg('info',`Lendo ${_plural(files.length,'arquivo','arquivos')}...`);
   const lidos=[], erros=[], canc=[]; let semPeso=0, semEndereco=0;
   for(const f of files){
