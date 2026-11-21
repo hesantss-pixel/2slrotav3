@@ -3523,10 +3523,11 @@ async function _localizarPedido(o, persistir=true){
   if(salvo&&salvo.p==='manual') return {lat:salvo.lat,lng:salvo.lng,prec:'lembrado',bairro:'',cidade:''};
   // aprendido nas entregas (GPS do motorista): não vence, como o ponto marcado à mão
   if(salvo&&salvo.p==='aprendido'&&Number.isFinite(+salvo.lat)) return {lat:+salvo.lat,lng:+salvo.lng,prec:'aprendido',bairro:'',cidade:''};
-  // achado antes, automaticamente: vale por 90 dias (30 se veio do Google). O que não chegou ao
-  // número e ainda não passou pelo Google é procurado de novo enquanto o Google estiver ligado.
+  // achado antes, automaticamente: vale por 90 dias (30 se veio do Google). O que ainda não
+  // passou pelo Google (mesmo o "número" do OpenStreetMap, que errava muito: 21/11/2026) é
+  // procurado de novo enquanto o Google estiver ligado.
   if(salvo&&(+salvo.v||0)>=GEO_VERSAO&&Date.now()-(salvo.em||0)<(salvo.f==='g'?GOOGLE_DIAS:LOCAL_AUTO_DIAS)*864e5
-     &&(salvo.p==='numero'||salvo.gt||!_googleLigado()))
+     &&(salvo.f==='g'||salvo.gt||!_googleLigado()))
     return {lat:salvo.lat,lng:salvo.lng,prec:salvo.p,bairro:'',cidade:'',...(salvo.f==='g'?{fonte:'google'}:{}),...(salvo.gt?{gt:true}:{})};
   const cep=String(o.cep||'').replace(/\D/g,'');
   let base=null;
@@ -3683,8 +3684,9 @@ function _precisaLocalizar(o){
   if((+o.geoV||0)<GEO_VERSAO) return true;
   // ponto do Google: depois de 30 dias é procurado de novo (regra do Google)
   if(o.geoFonte==='google') return Date.now()-(+o.geoEm||0)>GOOGLE_DIAS*864e5;
-  // aproximado (rua, bairro, cidade) e o Google ainda não tentou: uma vez, com o Google ligado
-  if(o.geoG || !_googleLigado() || !['rua','bairro','cidade'].includes(o.geoPrec) || !_temEndereco(o) || _gTentados.has(o.id)) return false;
+  // achado pelo OpenStreetMap (número, rua, bairro ou cidade) e o Google ainda não tentou:
+  // uma vez, com o Google ligado. Desde 21/11/2026 vale também para o "número" do OpenStreetMap.
+  if(o.geoG || !_googleLigado() || !['numero','rua','bairro','cidade'].includes(o.geoPrec) || !_temEndereco(o) || _gTentados.has(o.id)) return false;
   return true;
 }
 function agendarGeocodificacao(pedidos){

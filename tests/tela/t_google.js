@@ -23,6 +23,8 @@ const PED = {
   '4005': { nf: '4005', tipo: 'entrega', cidade: 'Guarulhos', dest: 'E', endereco: 'Rua Sem Google, 9', cep: '07020000', peso: 10, itens: 1, status: 'pendente', geoStatus: 'pendente', lat: -23.46, lng: -46.53 },
   // aproximado: o Google não melhora → o ponto fica e o pedido não é revisado de novo
   '4007': { nf: '4007', tipo: 'entrega', cidade: 'Guarulhos', dest: 'G', endereco: 'Rua Sem Google, 77', cep: '07020000', peso: 10, itens: 1, status: 'pendente', geoStatus: 'ok', geoPrec: 'rua', geoV: 3, lat: -23.4321, lng: -46.5021 },
+  // "número" achado pelo OpenStreetMap (errava muito): passa uma vez pelo Google (21/11/2026)
+  '4008': { nf: '4008', tipo: 'entrega', cidade: 'Guarulhos', dest: 'H', endereco: 'Rua Renova, 30', cep: '07010030', peso: 10, itens: 1, status: 'pendente', geoStatus: 'ok', geoPrec: 'numero', geoV: 3, lat: -23.30, lng: -46.30 },
   // aproximado já tentado no Google: não volta
   '4006': { nf: '4006', tipo: 'entrega', cidade: 'Guarulhos', dest: 'F', endereco: 'Rua Tentada, 1', cep: '07010030', peso: 10, itens: 1, status: 'pendente', geoStatus: 'ok', geoPrec: 'rua', geoV: 3, geoG: 1, lat: -23.44, lng: -46.51 },
 };
@@ -36,7 +38,9 @@ const seed = (a) => {
   window.__FAKE = {
     user: { uid: 'uid-ana', email: 'ana@empresa.com.br', getIdToken: async () => 'TOKEN-ANA' },
     db: { acesso: { 'uid-ana': true }, membros: { 'uid-ana': 'emp1' },
-      empresas: { emp1: { info: { nome: 'Emp 1' }, config: { deposito: { nome: 'CD', lat: -23.4245, lng: -46.3877 } }, pedidos_rota: a.ped } } },
+      empresas: { emp1: { info: { nome: 'Emp 1' }, config: { deposito: { nome: 'CD', lat: -23.4245, lng: -46.3877 },
+        // ponto guardado do OpenStreetMap ("número", sem a marca do Google): não vale mais enquanto o Google está ligado
+        locais: { '07010030_1000_salgado-filho': { lat: -23.31, lng: -46.31, p: 'numero', em: Date.now(), v: 3 } } }, pedidos_rota: a.ped } } },
   };
   if (a.semSessao) localStorage.removeItem('rv3_gtiles');
 };
@@ -106,6 +110,8 @@ const fimFila = (p) => p.waitForFunction(() => { const e = document.getElementBy
     ok(!JSON.stringify(reg.geo).includes('CHAVE-TESTE') && !reg.geo.some((x) => 'key' in x), 'a chave do Google de geocodificação não sai do navegador (fica no servidor)');
     ok(d['4002'].geoPrec === 'numero' && d['4002'].lat === G_1500.lat && d['4002'].geoFonte === 'google', 'pedido aproximado passa pelo Google uma vez e vai para o número');
     ok(d['4003'].lat === G_RENOVA.lat && Date.now() - d['4003'].geoEm < 60000, 'ponto do Google com mais de 30 dias é procurado de novo');
+    ok(d['4008'].lat === G_RENOVA.lat && d['4008'].geoFonte === 'google', '"número" do OpenStreetMap passa pelo Google e troca pelo ponto do Google');
+    ok(d['4001'].lat !== -23.31, 'ponto guardado do OpenStreetMap não é usado no lugar do Google');
     ok(d['4004'].lat === -23.41 && d['4004'].geoEm < Date.now() - 4 * DIA, 'ponto do Google com 5 dias não é mexido');
     ok(d['4005'].geoPrec === 'numero' && d['4005'].lat === -23.431 && !d['4005'].geoFonte && d['4005'].geoG === 1, 'Google não confirmou: segue pelo OpenStreetMap, sem marca do Google');
     ok(d['4006'].lat === -23.44 && !reg.geo.some((x) => x.numero === '1' && /Tentada/.test(x.endereco)), 'aproximado que já passou pelo Google não é consultado de novo');

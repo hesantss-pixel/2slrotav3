@@ -816,7 +816,8 @@ Vale também para as **contas de demonstração** (21/11/2026), sem limite por c
 testa vê o pino no número. Os pedidos fictícios da demonstração não consultam o Google. O único
 teto é o diário do servidor inteiro (`GOOGLE_GEOCODING_LIMITE_DIA`).
 
-Pedidos pendentes que estavam aproximados (rua, bairro ou cidade) passam **uma vez** pelo Google
+Pedidos pendentes achados pelo OpenStreetMap (desde 21/11/2026 também os de "número", que erravam
+muito; antes só rua, bairro ou cidade) passam **uma vez** pelo Google
 (`geoG: 1` marca que já passaram). Se o Google achar o número, o ponto troca; se não, fica como
 estava. Sem a chave no servidor (`/status` mostra `"geocodificacao_google": "sem chave"`), o
 sistema pergunta uma vez por sessão e segue com ViaCEP + OpenStreetMap, sem refazer nada.
