@@ -383,6 +383,8 @@ def status():
         "python": ".".join(platform.python_version_tuple()[:2]),
         "login": "obrigatório" if auth_firebase.AUTH_REQUIRED else "desligado (teste local)",
         "entrada_automatica": {"api": BANCO.ligado(), "email": bool(entrada_email.estado["ligado"])},
+        # só diz se a chave existe (GOOGLE_GEOCODING_KEY), nunca a chave
+        "geocodificacao_google": "ligada" if geocode_google.configurado() else "sem chave",
         "componentes": componentes(),
     }
 

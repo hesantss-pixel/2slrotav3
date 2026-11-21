@@ -4,7 +4,7 @@ const fs = require('fs'), path = require('path');
 const FAKE = path.join(__dirname, 'fakefb');
 // Leaflet servido de dentro do próprio repositório, para o teste não depender da internet
 const LEAF = process.env.LEAFLET_DIR || path.join(__dirname, 'vendor', 'leaflet');
-async function open(b, file, W, H, init, mob, arg) {
+async function open(b, file, W, H, init, mob, arg, rotas) {
   const ctx = await b.newContext({ viewport: { width: W, height: H }, isMobile: !!mob, hasTouch: !!mob, deviceScaleFactor: mob ? 2 : 1 });
   await ctx.route(/gstatic\.com\/firebasejs\/[\d.]+\/(firebase-[a-z]+\.js)/, (r) => {
     const f = r.request().url().match(/(firebase-[a-z]+\.js)/)[1];
@@ -14,8 +14,9 @@ async function open(b, file, W, H, init, mob, arg) {
     const f = r.request().url().match(/leaflet\.min\.(js|css)/)[1];
     r.fulfill({ path: path.join(LEAF, f === 'js' ? 'leaflet.js' : 'leaflet.css'), contentType: f === 'js' ? 'text/javascript' : 'text/css' });
   });
-  await ctx.route(/fonts\.googleapis|fonts\.gstatic|tile\.openstreetmap|basemaps|cartocdn|arcgisonline|cdnjs\.cloudflare\.com\/ajax\/libs\/(xlsx|pdf)|cdn\.sheetjs\.com|railway\.app|viacep|nominatim/, (r) => r.abort());
+  await ctx.route(/fonts\.googleapis|fonts\.gstatic|tile\.openstreetmap|basemaps|cartocdn|arcgisonline|cdnjs\.cloudflare\.com\/ajax\/libs\/(xlsx|pdf)|cdn\.sheetjs\.com|railway\.app|viacep|nominatim|tile\.googleapis|developers\.google\.com/, (r) => r.abort());
   if (init) await ctx.addInitScript(init, arg);
+  if (rotas) await rotas(ctx);   // rotas próprias do teste, antes de a página abrir
   const p = await ctx.newPage();
   const errs = [];
   p.on('pageerror', (e) => errs.push(e.message));

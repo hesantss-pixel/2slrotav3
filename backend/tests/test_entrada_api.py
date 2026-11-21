@@ -182,6 +182,13 @@ class TesteRotasEntrada(unittest.TestCase):
         self.assertEqual(st["entrada_automatica"], {"api": True, "email": True})
         self.assertRegex(st["python"], r"^3\.\d+$")   # só major.minor
         self.assertEqual(st["componentes"], {"motor_de_rotas": "ok", "assistente": "ok", "leitura_de_nf": "ok"})
+        # geocodificação do Google: diz se a chave existe, nunca a chave
+        with mock.patch.dict(os.environ, {"GOOGLE_GEOCODING_KEY": "segredo-de-teste"}):
+            st = main.status()
+            self.assertEqual(st["geocodificacao_google"], "ligada")
+            self.assertNotIn("segredo-de-teste", str(st))
+        with mock.patch.dict(os.environ, {"GOOGLE_GEOCODING_KEY": ""}):
+            self.assertEqual(main.status()["geocodificacao_google"], "sem chave")
 
     def test_health_responde_sem_tocar_em_nada(self):
         # o Railway chama /health antes de trocar de deploy: não pode depender de banco

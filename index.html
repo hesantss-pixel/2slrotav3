@@ -210,6 +210,9 @@ button{font-family:inherit;}
 .veh-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--vc,var(--mid));}
 .veh-card:hover{border-color:var(--vc,var(--mid));transform:translateY(-2px);}
 .veh-card-icon{width:116px;height:56px;background:var(--s3);border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;max-width:100%;}
+.g-logo{margin:0 0 4px 6px!important;line-height:0;pointer-events:none;}
+.g-logo img{height:18px;width:auto;display:block;}
+.g-logo--txt{line-height:1;font:600 12px var(--sans);color:#3c4043;background:rgba(255,255,255,.85);padding:2px 5px;border-radius:3px;}
 .veh-img{height:50px;width:auto;max-width:100%;object-fit:contain;display:block;}
 .veh-mini{width:100%;height:42px;background:var(--s3);border-radius:9px;display:flex;align-items:center;justify-content:center;margin-bottom:5px;}
 .rc-card-veic{width:74px;height:38px;border-radius:10px;background:var(--s3);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
@@ -1793,6 +1796,7 @@ function carregarPedidos(){
         horaEntrega:p.horaEntrega||'', horaFim:p.horaFim||'', rota_atual:p.rota_atual||'', status:p.status||'pendente',
         cep:p.cep||'', geoStatus:p.geoStatus||(p.cep?'pendente':'sem_cep'), bairro:p.bairro||'',
         geoPrec:p.geoPrec||'', geoManual:!!p.geoManual, geoV:+p.geoV||0, origem:p.origem||'',
+        geoFonte:p.geoFonte||'', geoEm:+p.geoEm||0, geoG:+p.geoG||0,
         lat:p.lat||(CITY_COORDS[p.cidade]?.lat??DEPOT.lat), lng:p.lng||(CITY_COORDS[p.cidade]?.lng??DEPOT.lng),
       })).filter(o=>o.status!=='entregue'&&o.status!=='coletado');
     } else {
@@ -1907,16 +1911,71 @@ function render(){
 }
 
 // ── Fundo dos mapas ───────────────────────────────────────────────────────
-// A CARTO passou a exigir chave (set/2026; grátis para uso comercial até 1 milhão
-// de blocos por mês). Sem chave, o fundo é o do OpenStreetMap, com o crédito exigido.
-// Ao colocar a chave, confira na documentação da CARTO o nome do parâmetro na URL.
-const CARTO_KEY = '';
+// Mapa do Google (Map Tiles API, blocos 2D "roadmap") desenhado pelo Leaflet.
+// A chave é de navegador e só funciona nos sites do ROTAV3 (restrição no Google Cloud).
+// Regras do Google: logo do Google visível e sem nada por cima, e o texto de direitos
+// que vem de /tile/v1/viewport. A sessão vale cerca de 2 semanas e é reaproveitada.
+// Sem chave, ou se o Google recusar, o fundo volta a ser o do OpenStreetMap.
+const GOOGLE_MAPS_KEY = (typeof window!=='undefined'&&window.__GMAPS_KEY!==undefined) ? window.__GMAPS_KEY : 'AIzaSyBBGsj7it-YRnWlqN6qF-QEUgECBCEtj9c';
+const GOOGLE_TILES = 'https://tile.googleapis.com';
+const GOOGLE_LOGO = 'https://developers.google.com/static/maps/documentation/images/google_on_non_white.png';
+let _gSessaoP = null, _gSessaoFalhou = 0;
+function _sessaoGoogle(){
+  if(!GOOGLE_MAPS_KEY) return Promise.resolve(null);
+  if(_gSessaoP) return _gSessaoP;
+  if(Date.now()-_gSessaoFalhou<120000) return Promise.resolve(null);
+  const marca=GOOGLE_MAPS_KEY.slice(-6);
+  try{
+    const c=JSON.parse(localStorage.getItem('rv3_gtiles')||'null');
+    if(c&&c.k===marca&&c.session&&(+c.expiry||0)*1000>Date.now()+864e5) return (_gSessaoP=Promise.resolve(c.session));
+  }catch(e){}
+  _gSessaoP=fetch(`${GOOGLE_TILES}/v1/createSession?key=${encodeURIComponent(GOOGLE_MAPS_KEY)}`,{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({mapType:'roadmap',language:'pt-BR',region:'BR'})
+  }).then(r=>r.ok?r.json():Promise.reject(new Error('sessão do mapa: '+r.status)))
+    .then(j=>{ if(!j||!j.session) throw new Error('sessão do mapa vazia');
+      try{ localStorage.setItem('rv3_gtiles',JSON.stringify({k:marca,session:j.session,expiry:j.expiry})); }catch(e){}
+      return j.session; })
+    .catch(e=>{ console.warn('Mapa do Google indisponível, usando o OpenStreetMap:', e&&e.message); _gSessaoP=null; _gSessaoFalhou=Date.now(); return null; });
+  return _gSessaoP;
+}
+function _fundoOSM(map){
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19, attribution:'© OpenStreetMap'}).addTo(map);
+}
 function _fundoMapa(map){
-  const url = CARTO_KEY
-    ? 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?api_key='+encodeURIComponent(CARTO_KEY)
-    : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-  L.control.attribution({prefix:false}).addTo(map);
-  L.tileLayer(url,{maxZoom:19, attribution: CARTO_KEY ? '© OpenStreetMap · © CARTO' : '© OpenStreetMap'}).addTo(map);
+  const cred=L.control.attribution({prefix:false}).addTo(map);
+  if(!GOOGLE_MAPS_KEY){ _fundoOSM(map); return; }
+  _sessaoGoogle().then(sess=>{
+    if(!sess){ _fundoOSM(map); return; }
+    const k=encodeURIComponent(GOOGLE_MAPS_KEY);
+    const camada=L.tileLayer(`${GOOGLE_TILES}/v1/2dtiles/{z}/{x}/{y}?session=${encodeURIComponent(sess)}&key=${k}`,{maxZoom:21});
+    let erros=0;
+    camada.on('tileerror',()=>{ if(++erros===8){ try{ localStorage.removeItem('rv3_gtiles'); }catch(e){} } });
+    camada.addTo(map);
+    // logo do Google no canto, sozinho (nenhum outro logo por cima)
+    const Logo=L.Control.extend({options:{position:'bottomleft'}, onAdd(){
+      const d=L.DomUtil.create('div','g-logo');
+      const im=document.createElement('img'); im.src=GOOGLE_LOGO; im.alt='Google'; im.height=18;
+      im.onerror=()=>{ d.textContent='Google'; d.classList.add('g-logo--txt'); };
+      d.appendChild(im); L.DomEvent.disableClickPropagation(d); return d; }});
+    new Logo().addTo(map);
+    // texto de direitos da área visível
+    let atual='', t=null;
+    const creditar=()=>{
+      clearTimeout(t);
+      t=setTimeout(()=>{
+        if(!map._loaded) return;
+        const b=map.getBounds(), z=Math.round(map.getZoom());
+        const q=`session=${encodeURIComponent(sess)}&key=${k}&zoom=${z}&north=${b.getNorth().toFixed(5)}&south=${b.getSouth().toFixed(5)}&east=${b.getEast().toFixed(5)}&west=${b.getWest().toFixed(5)}`;
+        fetch(`${GOOGLE_TILES}/tile/v1/viewport?${q}`).then(r=>r.ok?r.json():null).then(j=>{
+          const txt=(j&&j.copyright)?String(j.copyright):'Dados do mapa © Google';
+          if(txt!==atual){ if(atual) cred.removeAttribution(atual); cred.addAttribution(atual=txt); }
+        }).catch(()=>{ if(!atual) cred.addAttribution(atual='Dados do mapa © Google'); });
+      },500);
+    };
+    map.on('moveend',creditar);
+    if(map._loaded) creditar(); else map.whenReady(creditar);
+  });
 }
 // ── Traçado pelas ruas ──────────────────────────────────────────────────────
 // O servidor devolve a linha da rota em polyline6 (OSRM /route): o caminho pelas ruas,
@@ -3431,14 +3490,39 @@ async function _geocodificarCep(cep){
   return resultado;
 }
 
+// Google Geocoding, pelo nosso servidor (a chave fica só no Railway, em GOOGLE_GEOCODING_KEY).
+// O servidor só devolve o ponto se for da mesma cidade e UF e, para "numero", do mesmo número.
+// Regras do Google: o resultado tem de aparecer num mapa do Google (por isso só é usado quando
+// o mapa do Google abriu) e a coordenada dele fica guardada por no máximo 30 dias.
+// Sem a chave no servidor, sem login ou fora do ar: segue o caminho de sempre (ViaCEP + OpenStreetMap).
+const GOOGLE_DIAS = 30;
+const _gGeo = {off:false, pausaAte:0};
+const _gTentados = new Set();   // pedidos aproximados que já passaram pelo Google nesta sessão
+function _googleLigado(){ return !_gGeo.off && Date.now()>=_gGeo.pausaAte && !!GOOGLE_MAPS_KEY && !contaDemo; }
+async function _googleGeocode(dados){
+  if(!_googleLigado()) return null;
+  // mapa do Google não abriu (chave recusada, sem internet): o resultado não poderia ser mostrado
+  if(!(await _sessaoGoogle())){ _gGeo.off=true; return null; }
+  try{
+    const r=await apiPost('/geocode', dados);
+    if(!r||r.configurado===false){ _gGeo.off=true; return null; }
+    return r.resultado ? {...r.resultado, fonte:'google'} : {nada:true};   // nada: o Google não confirmou
+  }catch(e){ _gGeo.pausaAte=Date.now()+300000; return null; }   // servidor fora: 5 min sem tentar
+}
+
 // Localiza UM pedido. Devolve {lat,lng,prec,bairro,cidade,uf}; prec = lembrado | numero | rua | bairro | cidade
+// fonte:'google' quando o ponto veio do Google; gt: o Google foi consultado
 async function _localizarPedido(o, persistir=true){
   if(_locaisProntos) await _locaisProntos;
   const chave=_chaveLocal(o), salvo=chave?locaisEmp[chave]:null;
   if(salvo&&salvo.p==='manual') return {lat:salvo.lat,lng:salvo.lng,prec:'lembrado',bairro:'',cidade:''};
   // aprendido nas entregas (GPS do motorista): não vence, como o ponto marcado à mão
   if(salvo&&salvo.p==='aprendido'&&Number.isFinite(+salvo.lat)) return {lat:+salvo.lat,lng:+salvo.lng,prec:'aprendido',bairro:'',cidade:''};
-  if(salvo&&(+salvo.v||0)>=GEO_VERSAO&&Date.now()-(salvo.em||0)<LOCAL_AUTO_DIAS*864e5) return {lat:salvo.lat,lng:salvo.lng,prec:salvo.p,bairro:'',cidade:''};
+  // achado antes, automaticamente: vale por 90 dias (30 se veio do Google). O que não chegou ao
+  // número e ainda não passou pelo Google é procurado de novo enquanto o Google estiver ligado.
+  if(salvo&&(+salvo.v||0)>=GEO_VERSAO&&Date.now()-(salvo.em||0)<(salvo.f==='g'?GOOGLE_DIAS:LOCAL_AUTO_DIAS)*864e5
+     &&(salvo.p==='numero'||salvo.gt||!_googleLigado()))
+    return {lat:salvo.lat,lng:salvo.lng,prec:salvo.p,bairro:'',cidade:'',...(salvo.f==='g'?{fonte:'google'}:{}),...(salvo.gt?{gt:true}:{})};
   const cep=String(o.cep||'').replace(/\D/g,'');
   let base=null;
   if(cep.length===8){ try{ base=await _geocodificarCep(cep); }catch(e){} }
@@ -3446,9 +3530,15 @@ async function _localizarPedido(o, persistir=true){
   const cidade=base?.cidade||(o.cidade&&o.cidade!=='Sem cidade'?o.cidade:'');
   const uf=String(base?.uf||o.uf||'').toUpperCase();
   const lugar={city:cidade, ...(UF_NOME[uf]?{state:UF_NOME[uf]}:{}), country:'Brasil'};
-  let res=null, g=null;
+  let res=null, g=null, gg=null;
+  // 0) Google: o número exato (o servidor confere cidade, UF e número)
+  if(cidade&&rua){
+    gg=await _googleGeocode({endereco:String(o.endereco||'').slice(0,300), rua:(base?.rua||rua).slice(0,200), numero:String(numero).slice(0,20),
+      bairro:String(base?.bairro||o.bairro||'').slice(0,120), cidade:String(cidade).slice(0,120), uf:uf.slice(0,2), cep:cep.slice(0,12)});
+    if(gg&&gg.prec==='numero') res={lat:+gg.lat,lng:+gg.lng,prec:'numero',fonte:'google'};
+  }
   // 1) rua + número (com o nome oficial da rua pelo CEP, quando houver)
-  if(numero&&cidade&&(base?.rua||rua)&&!/\bkm$/i.test(rua)){
+  if(!res&&numero&&cidade&&(base?.rua||rua)&&!/\bkm$/i.test(rua)){
     const lista=await _nominatimLista({street:`${numero} ${base?.rua||rua}`, ...lugar}, 5);
     const cands=lista.filter(x=>_mesmoNumero(x.numero,numero)&&_mesmaCidade(x,cidade,uf)&&_mesmaRua(x,base?.rua||rua));
     // número achado longe do que o CEP deu = outra rua com o mesmo nome: fica o mais perto,
@@ -3458,6 +3548,8 @@ async function _localizarPedido(o, persistir=true){
     g=lista[0]||null;
     if(m&&m.d<=lim) res={lat:m.x.lat,lng:m.x.lng,prec:'numero'};
   }
+  // 1b) o Google achou a rua (sem confirmar o número): melhor que o bairro ou a cidade do CEP
+  if(!res&&gg&&gg.prec==='rua'&&(!base||base.prec!=='rua')) res={lat:+gg.lat,lng:+gg.lng,prec:'rua',fonte:'google'};
   // 2) o que o CEP deu (rua, bairro ou cidade)
   if(!res&&base) res={lat:base.lat,lng:base.lng,prec:base.prec||'rua',...(base.nv?{nv:true}:{})};
   // 3) sem CEP: a rua sem o número, depois só a cidade
@@ -3468,8 +3560,9 @@ async function _localizarPedido(o, persistir=true){
   }
   if(!res) throw new Error('endereço não encontrado');
   // guarda o que deu mais trabalho (número, ou endereço sem CEP) para não consultar a cada nota
-  if(chave&&(numero||!base)&&!res.nv) _guardarLocal(chave,{lat:res.lat,lng:res.lng,p:res.prec,em:Date.now(),v:GEO_VERSAO},persistir);
-  return {...res, bairro:base?.bairro||'', cidade:base?.cidade||'', uf:base?.uf||''};
+  if(gg) res.gt=true;
+  if(chave&&(numero||!base)&&!res.nv) _guardarLocal(chave,{lat:res.lat,lng:res.lng,p:res.prec,em:Date.now(),v:GEO_VERSAO,...(res.fonte==='google'?{f:'g'}:{}),...(res.gt?{gt:1}:{})},persistir);
+  return {...res, bairro:base?.bairro||gg?.bairro||'', cidade:base?.cidade||'', uf:base?.uf||''};
 }
 
 function _sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
@@ -3484,6 +3577,7 @@ async function _processarFilaGeo(){
 
   while(_geoFila.length){
     const o = _geoFila.shift();
+    if(o._gRevisao && !_googleLigado()) continue;   // revisão só faz sentido com o Google ligado
     _geoAtual = o.id;
     try{
       const g = await _localizarPedido(o, !modoDemo);
@@ -3494,6 +3588,9 @@ async function _processarFilaGeo(){
       // marcado à mão enquanto estava na fila: o ponto da pessoa vale
       const agora=allOrders.find(x=>x.id===o.id);
       if(agora&&agora.geoManual) continue;
+      // revisão pelo Google de um ponto aproximado: o Google não respondeu → nada muda;
+      // respondeu sem melhorar → o ponto fica e o pedido não volta a ser revisado
+      if(o._gRevisao && !g.gt) continue;
       let payload = { lat:g.lat, lng:g.lng, geoStatus:'ok', geoPrec:g.prec, bairro:g.bairro||o.bairro||'', cidade:g.cidade||o.cidade, ...(g.nv?{}:{geoV:GEO_VERSAO}) };
       // Já tinha ponto, achado antes da conferência de cidade e rua (19/11/2026):
       // - a busca conferida achou o número: vale o novo;
@@ -3501,7 +3598,8 @@ async function _processarFilaGeo(){
       // - só achou o bairro ou a cidade: o ponto antigo fica se estiver na mesma região,
       //   mas passa a aparecer como aproximado ("corrigir"), porque nada confirma ele;
       //   longe disso (outra cidade), troca.
-      if(o._melhorar && Number.isFinite(+o.lat) && Number.isFinite(+o.lng) && !['numero','lembrado','aprendido'].includes(g.prec)){
+      // ponto do Google com mais de 30 dias: troca pelo que vier agora, sem guardar o antigo
+      if(o._melhorar && o.geoFonte!=='google' && Number.isFinite(+o.lat) && Number.isFinite(+o.lng) && !['numero','lembrado','aprendido'].includes(g.prec)){
         const dist=_haversineKm(g,{lat:+o.lat,lng:+o.lng});
         if(g.prec==='rua'){
           if(o.geoPrec==='numero'&&dist<=0.5) payload={ geoV:GEO_VERSAO };
@@ -3509,6 +3607,9 @@ async function _processarFilaGeo(){
           payload={ geoV:GEO_VERSAO, geoPrec:g.prec };
         }
       }
+      if(o._gRevisao && g.fonte!=='google') payload={};
+      if('lat' in payload){ payload.geoFonte=g.fonte==='google'?'google':null; payload.geoEm=g.fonte==='google'?Date.now():null; }
+      if(g.gt) payload.geoG=1;
       if(!modoDemo){
         await update(ref(db,TP('pedidos_rota/'+o.id)), payload);
       } else {
@@ -3516,8 +3617,12 @@ async function _processarFilaGeo(){
         if(local) Object.assign(local, payload);
       }
       const p=payload.geoPrec;
+      if(o._gRevisao && !('lat' in payload)){ n.conf++; continue; }
       n.ok++; if(p==='numero') n.numero++; else if(p==='lembrado') n.lembrado++; else if(p==='bairro'||p==='cidade') n.aprox++;
     }catch(e){
+      // ponto do Google vencido que não deu para renovar (endereço não achado agora): sai do
+      // mapa e o pedido aparece como "sem localização", para marcar à mão
+      if(o._melhorar&&o.geoFonte==='google'&&!(e&&e.rede)){ o._melhorar=false; o._gVencido=true; }
       if(o._melhorar){
         // conferência de ponto antigo sem resposta: o ponto fica como estava e não conta como
         // "sem localização". Serviço fora: a conferência para até a tela abrir de novo (não
@@ -3525,11 +3630,11 @@ async function _processarFilaGeo(){
         // para não procurar de novo toda vez.
         n.conf++;
         if(e&&e.rede){ n.fora++; _geoRevalidarPausa=true; _geoFila=_geoFila.filter(x=>!x._melhorar); }
-        else if(!modoDemo && (o.id in _statusPorId)) update(ref(db,TP('pedidos_rota/'+o.id)), { geoV:GEO_VERSAO }).catch(()=>{});
+        else if(!modoDemo && (o.id in _statusPorId)) update(ref(db,TP('pedidos_rota/'+o.id)), { geoV:GEO_VERSAO, ...(o._gRevisao?{geoG:1}:{}) }).catch(()=>{});
       } else n.falhou++;
       if(o._melhorar){ /* continua com o ponto que já tinha */ }
       else if(!modoDemo && (o.id in _statusPorId)){
-        update(ref(db,TP('pedidos_rota/'+o.id)), { geoStatus:'falhou' }).catch(()=>{});
+        update(ref(db,TP('pedidos_rota/'+o.id)), { geoStatus:'falhou', ...(o._gVencido?{geoFonte:null,geoEm:null,lat:null,lng:null}:{}) }).catch(()=>{});
       } else {
         const local = allOrders.find(x=>x.id===o.id);
         if(local) local.geoStatus='falhou';
@@ -3568,14 +3673,21 @@ function _precisaLocalizar(o){
   if(o.geoManual) return false;
   if(o.geoStatus==='pendente') return !!o.cep||_temEndereco(o);
   if(o.geoStatus==='sem_cep') return _temEndereco(o);
-  return o.geoStatus==='ok' && !modoDemo && !_geoRevalidarPausa && (o.status||'pendente')==='pendente'
-    && (+o.geoV||0)<GEO_VERSAO && !['lembrado','aprendido','manual'].includes(o.geoPrec)
-    && (!!o.cep||_temEndereco(o));
+  if(!(o.geoStatus==='ok' && !modoDemo && !_geoRevalidarPausa && (o.status||'pendente')==='pendente'
+    && !['lembrado','aprendido','manual'].includes(o.geoPrec) && (!!o.cep||_temEndereco(o)))) return false;
+  if((+o.geoV||0)<GEO_VERSAO) return true;
+  // ponto do Google: depois de 30 dias é procurado de novo (regra do Google)
+  if(o.geoFonte==='google') return Date.now()-(+o.geoEm||0)>GOOGLE_DIAS*864e5;
+  // aproximado (rua, bairro, cidade) e o Google ainda não tentou: uma vez, com o Google ligado
+  if(o.geoG || !_googleLigado() || !['rua','bairro','cidade'].includes(o.geoPrec) || !_temEndereco(o) || _gTentados.has(o.id)) return false;
+  return true;
 }
 function agendarGeocodificacao(pedidos){
   const candidatos = pedidos.filter(o=>_precisaLocalizar(o) && o.id!==_geoAtual && !_geoFila.find(f=>f.id===o.id));
   if(!candidatos.length) return;
-  _geoFila.push(...candidatos.map(o=>({...o,_melhorar:o.geoStatus==='ok'})));
+  candidatos.forEach(o=>_gTentados.add(o.id));   // a nova tentativa com o Google é uma por sessão
+  _geoFila.push(...candidatos.map(o=>({...o,_melhorar:o.geoStatus==='ok',
+    _gRevisao:o.geoStatus==='ok'&&(+o.geoV||0)>=GEO_VERSAO&&o.geoFonte!=='google'})));
   _processarFilaGeo();
 }
 window.agendarGeocodificacao = agendarGeocodificacao;

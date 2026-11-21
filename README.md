@@ -759,13 +759,52 @@ sendo lidos nas rotas antigas, mas desde 18/11/2026 nada na tela do motorista es
 vale. A foto fica no próprio banco (não precisa de plano pago); o plano gratuito do Firebase
 guarda 1 GB, o que dá alguns milhares de fotos.
 
-## Fundo dos mapas
+## Mapa e endereços do Google (21/11/2026)
 
-O fundo dos mapas é o do **OpenStreetMap** (com o crédito exigido). O da CARTO (Voyager), usado
-antes, passou a exigir chave em set/2026 e mostrava "API KEY REQUIRED". A chave da CARTO é
-grátis (uso comercial até 1 milhão de blocos por mês); com ela, preencha `CARTO_KEY` no
-`index.html` e confira o nome do parâmetro na documentação da CARTO. Paradas no mesmo ponto
-(até 30 m) aparecem num marcador só ("1–6"), e paradas sem endereço exato são avisadas.
+**Fundo dos mapas.** Todos os mapas do sistema usam o mapa do Google (Map Tiles API, blocos 2D
+"roadmap", em português), desenhado pelo Leaflet. A chave do mapa (`GOOGLE_MAPS_KEY`, no
+`index.html`) é de navegador: fica no código de propósito e só funciona nos endereços liberados no
+Google Cloud (`rotav3.com.br/*`, `*.rotav3.com.br/*`, `hesantss-pixel.github.io/*`) e só para a
+Map Tiles API. O sistema cria uma sessão (`createSession`, vale cerca de 2 semanas, guardada no
+navegador em `rv3_gtiles`), mostra o **logo do Google** no canto de baixo à esquerda e o texto de
+direitos que o Google devolve para a área visível (`/tile/v1/viewport`), como as regras dele pedem.
+Se o Google recusar a sessão (chave errada, site não liberado, sem internet), o mapa volta sozinho
+ao **OpenStreetMap** e tenta o Google de novo depois de 2 minutos.
+
+**Endereço no número.** A geocodificação do Google passa pelo servidor (`POST /geocode`, com
+login): a chave fica só no Railway (`GOOGLE_GEOCODING_KEY`) e nunca vai para a tela. O servidor
+(`backend/geocode_google.py`) só devolve o ponto quando é da **mesma cidade e UF** e, para
+"número", do **mesmo número** (ROOFTOP ou interpolado); só a rua conta como "rua"; resposta de
+bairro ou cidade é descartada. Guarda as respostas por 24 h na memória e tem limite diário
+(`GOOGLE_GEOCODING_LIMITE_DIA`, padrão 1000) para a conta não disparar.
+
+Ordem na tela (`_localizarPedido`): ponto marcado à mão → ponto aprendido nas entregas → ponto
+guardado do endereço → **Google** → número no OpenStreetMap → rua do Google → o que o CEP deu.
+
+Regras do Google que o sistema segue:
+- O ponto do Google só é usado quando o mapa do Google abriu (o resultado tem de aparecer num mapa
+  do Google). Sem o mapa do Google, o sistema nem consulta o servidor.
+- A coordenada do Google fica guardada no máximo **30 dias**. O pedido guarda `geoFonte: "google"`
+  e `geoEm` (quando foi achado); o endereço guardado em `config/locais` leva `f: "g"`. Pedido
+  pendente com ponto do Google mais velho que 30 dias é procurado de novo; se não der para
+  renovar, o ponto sai e o pedido aparece como "sem localização".
+- **Limite:** as rotas que já saíram guardam as coordenadas das paradas para o histórico; essas
+  não são apagadas aos 30 dias.
+- O Google pede que o site tenha **Termos de Uso** e **Política de Privacidade** públicos.
+
+Pedidos pendentes que estavam aproximados (rua, bairro ou cidade) passam **uma vez** pelo Google
+(`geoG: 1` marca que já passaram). Se o Google achar o número, o ponto troca; se não, fica como
+estava. Sem a chave no servidor (`/status` mostra `"geocodificacao_google": "sem chave"`), o
+sistema pergunta uma vez por sessão e segue com ViaCEP + OpenStreetMap, sem refazer nada.
+
+Custo (tabela do Google conferida em 21/11/2026): 10 mil geocodificações grátis por mês e
+depois US$ 5 por mil; 100 mil blocos de mapa 2D grátis por mês e depois US$ 0,60 por mil. Cada
+bloco é um quadrado de 256 px: abrir um mapa na tela cheia carrega uns 20 a 30, e arrastar ou
+aproximar carrega mais. Vale pôr um **limite de cota diária** e um **alerta de orçamento** no
+Google Cloud.
+
+Paradas no mesmo ponto (até 30 m) aparecem num marcador só ("1–6"), e paradas sem endereço exato
+são avisadas.
 
 ## Janela de horário (agendados)
 
@@ -839,6 +878,8 @@ Variáveis de ambiente usadas:
 | `GROQ_HISTORICO` | Quantas mensagens anteriores vão em cada pergunta (padrão 6). Mais = mais tokens por pergunta | Não |
 | `OSRM_URL` / `OSRM_LIMIT` / `OSRM_TIMEOUT` | Servidor de distâncias pelas ruas (endereço completo do serviço `/table`), máximo de pontos por consulta (padrão 100) e segundos de espera (padrão 10). O padrão é o servidor público de demonstração do OSRM, que não é para uso comercial | Não, até ter servidor próprio |
 | `CUSTO_METRO_S` | Quanto cada metro pesa na escolha da ordem, em segundos (padrão 0,02). 0 = o motor escolhe só pelo tempo | Não |
+| `GOOGLE_GEOCODING_KEY` | Chave do Google só com a Geocoding API, para achar o número da casa. **Nunca** vai para a tela, o código ou um commit | Não (sem ela, o endereço vem do OpenStreetMap) |
+| `GOOGLE_GEOCODING_LIMITE_DIA` | Máximo de consultas ao Google por dia (padrão 1000) | Não |
 | `OSRM_ROUTE_URL` / `OSRM_ROUTE_MAX` / `OSRM_INTERVALO` | Serviço `/route` do traçado (padrão: o mesmo servidor do `OSRM_URL`, trocando `/table/` por `/route/`), pontos por consulta antes de dividir em partes (padrão 50) e segundos entre consultas ao servidor público (padrão 1) | Não |
 
 Python fixado em `backend/.python-version` (3.12) e bibliotecas com versão exata em
