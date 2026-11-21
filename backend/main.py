@@ -37,6 +37,7 @@ import vrp_solver
 import km_rastro
 import entrada
 import entrada_email
+import geocode_google
 
 try:
     from totvs_sync import sincronizar
@@ -597,6 +598,26 @@ def tracado(body: TracadoRequest, quem: tuple = Depends(exigir_login_ou_demo)):
     if any(not (-90 <= p["lat"] <= 90 and -180 <= p["lng"] <= 180) for p in pontos):
         raise HTTPException(status_code=422, detail="Coordenada fora do mapa.")
     return {"tracado": tracado_rota(pontos)}
+
+
+class GeocodeRequest(BaseModel):
+    endereco: str = Field("", max_length=300)
+    rua: str = Field("", max_length=200)
+    numero: str = Field("", max_length=20)
+    bairro: str = Field("", max_length=120)
+    cidade: str = Field("", max_length=120)
+    uf: str = Field("", max_length=2)
+    cep: str = Field("", max_length=12)
+
+
+@app.post("/geocode")
+def geocode(body: GeocodeRequest, quem: tuple = Depends(exigir_login_ou_demo)):
+    """Ponto do endereço pelo Google (número da casa ou meio da rua), já conferido pela
+    cidade. {configurado: false} quando a chave não está no servidor. Não grava o banco."""
+    _limite_demo(quem, "geocode", 200)
+    if not geocode_google.configurado():
+        return {"configurado": False, "resultado": None}
+    return {"configurado": True, "resultado": geocode_google.geocodificar(body.model_dump())}
 
 
 @app.post("/chat")

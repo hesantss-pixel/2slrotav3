@@ -172,8 +172,8 @@ class TesteRotasProtegidas(unittest.TestCase):
         # o que lê ou grava o banco direto é só do administrador (empresa principal)
         self.assertEqual(sorted(protegidas), sorted(["listar_pedidos", "upload_nf", "sync_totvs"]))
         # a conta de demonstração só calcula rota, mede a rota ajustada, pede o traçado pelas
-        # ruas e conversa com a IA
-        self.assertEqual(sorted(demo), sorted(["solve", "avaliar", "tracado", "km_rastro_rota", "chat"]))
+        # ruas, localiza endereço (Google, com limite por dia) e conversa com a IA
+        self.assertEqual(sorted(demo), sorted(["solve", "avaliar", "tracado", "km_rastro_rota", "geocode", "chat"]))
         # entrada automática: a tela (login com empresa) gera a chave; os sistemas entram com a chave
         self.assertEqual(sorted(empresa), sorted(["integracao", "integracao_gerar"]))
         self.assertEqual(sorted(chave), sorted(["entrada_xml", "entrada_pedidos"]))
