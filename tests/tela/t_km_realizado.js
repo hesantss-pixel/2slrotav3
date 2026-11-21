@@ -51,9 +51,10 @@ const seedCliente = (arg) => {
 
   // ── 2. pedido na rua certa, sem o número ──────────────────────────────────
   await p.evaluate(() => window.irParaPagina('pedidos')); await p.waitForTimeout(500);
-  ok((await p.$$('.semnum')).length === 1, 'pedido que ficou só na rua ganha a etiqueta "sem o número"');
+  // 21/11/2026: ponto na rua é ponto bom; nada de etiqueta nem aviso "sem o número"
+  ok((await p.$$('.semnum')).length === 0 && !/sem o número/.test(await p.textContent('#page-pedidos')), 'pedido que ficou na rua não ganha etiqueta nem aviso "sem o número"');
   const aviso = await p.textContent('#ped-aprox');
-  ok(/1 pedido ficou na rua certa, mas sem o número/.test(aviso), 'aviso em Pedidos explica o que fazer: ' + aviso.trim().slice(0, 90));
+  ok(aviso.trim() === '', 'sem faixa de aviso em Pedidos');
 
   // ── 1. ajuste de tempo: confirmação, motor e rota ─────────────────────────
   await p.evaluate(() => window.irParaPagina('roteirizacao')); await p.waitForTimeout(400);
@@ -62,7 +63,7 @@ const seedCliente = (arg) => {
   await p.click('text=Continuar →'); await p.waitForTimeout(200);
   let conf = await p.textContent('#confirm-details-d');
   ok(conf.includes('Tempos ajustados ao trânsito: ×1,25'), 'confirmação mostra o ajuste de tempo da empresa (×1,25)');
-  ok(conf.includes('1 pedido está na rua certa, sem o número'), 'e avisa do pedido sem o número');
+  ok(!/sem o número|aproximad/.test(conf), 'a confirmação não fala em "sem o número" nem em "aproximado"');
   // o administrador muda o ajuste com a página do cliente aberta
   await p.evaluate(() => { window.__FAKE.setAt('empresas/emp1/config/fator_tempo', 1.3); window.__FAKE.fire(); });
   await p.click('#rot-step-confirm >> text=← Voltar'); await p.waitForTimeout(150);

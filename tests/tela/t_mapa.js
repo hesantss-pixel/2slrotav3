@@ -18,9 +18,9 @@ const ok = (c, m) => { console.log((c ? 'OK   ' : 'FALHA ') + m); if (!c) proces
   await p.click('text=Continuar →'); await p.waitForTimeout(150); await p.click('text=Gerar Rota Agora'); await p.waitForTimeout(1200);
   const marcas = await p.$$eval('#rota-map .leaflet-marker-icon', (e) => e.map((x) => x.textContent.trim()));
   ok(JSON.stringify(marcas) === JSON.stringify(['1–6', '7']), 'paradas no mesmo ponto viram um marcador "1–6"; a outra fica "7": ' + JSON.stringify(marcas));
-  ok((await p.textContent('#rota-detail-d')).includes('6 paradas estão sem endereço exato'), 'aviso explica as paradas sem endereço exato');
+  ok(!/sem endereço exato|aproximad/.test(await p.textContent('#rota-detail-d')), 'resultado da rota sem faixa de aviso sobre endereço');
   const nAprox = (await p.$$('#rota-detail-d .aprox-bt')).length;
-  ok(nAprox === 6, 'cada parada sem endereço exato tem a etiqueta "local aproximado" (achei ' + nAprox + ')');
+  ok(nAprox === 6, 'cada parada sem ponto próprio tem o botão "confirmar ponto" (achei ' + nAprox + ')');
   ok((await p.textContent('#rot-step-results')).includes('Esta viagem levou 7 de 9'), 'explica quantos pedidos a viagem levou');
   ok((await p.textContent('#rota-map .leaflet-control-attribution')).includes('© OpenStreetMap'), 'mapa mostra o crédito do OpenStreetMap');
   ok(tiles.length > 0 && tiles.every((u) => u.startsWith('https://tile.openstreetmap.org/')), 'fundo do mapa vem do OpenStreetMap (sem CARTO): ' + tiles.length + ' blocos');

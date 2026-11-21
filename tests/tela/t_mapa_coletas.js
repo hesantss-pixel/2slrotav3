@@ -46,9 +46,9 @@ async function abrir(b, pedidos) {
     const c = await conta(p);
     ok(c && c.visivel, 'a linha de prestação de contas aparece embaixo do mapa');
     ok(/3 pedidos têm pino próprio/.test(c.txt), 'diz quantos têm pino: ' + c.txt);
-    ok(/2 pedidos estão sem endereço exato/.test(c.txt), 'e quantos estão sem endereço exato');
+    ok(/2 pedidos com ponto a confirmar/.test(c.txt), 'e quantos têm ponto a confirmar');
     ok(/\(2 coletas\)/.test(c.txt), 'e diz que são as COLETAS que ficaram de fora — era isso que faltava');
-    ok(/bolha da cidade/.test(c.txt) && /corrigir/.test(c.txt), 'e diz onde elas estão e como resolver');
+    ok(/bolha da cidade/.test(c.txt) && /marcar o ponto/.test(c.txt), 'e diz onde elas estão e como resolver');
     ok(errs.length === 0, 'sem erro de JavaScript: ' + JSON.stringify(errs.slice(0, 2)));
     await p.screenshot({ path: 'mapa-coletas-sem-ponto.png' });
     await ctx.close();
@@ -63,7 +63,7 @@ async function abrir(b, pedidos) {
     await p.waitForTimeout(700);
     const m = await pinos(p), c = await conta(p);
     ok(m.verdes === 0 && m.azuis === 0, 'filtro Coletas: nenhum pino no mapa');
-    ok(c.visivel && /0 pedidos têm pino próprio/.test(c.txt) && /2 pedidos estão sem endereço exato/.test(c.txt),
+    ok(c.visivel && /0 pedidos têm pino próprio/.test(c.txt) && /2 pedidos com ponto a confirmar/.test(c.txt),
       'e a tela diz exatamente isso em vez de deixar o mapa mudo: ' + c.txt);
     ok(!/\(2 coletas\)/.test(c.txt), 'com o filtro em Coletas não repete "coletas" (já está no filtro)');
     await ctx.close();

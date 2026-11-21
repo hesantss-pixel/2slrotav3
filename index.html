@@ -1600,8 +1600,8 @@ function _aprox(o){ return !!o && ((!!o.geoStatus&&o.geoStatus!=='ok') || o.geoP
 function _semNumero(o){ return !!o && !o.geoManual && o.geoPrec==='rua' && !_aprox(o); }
 function _origemLocal(o){
   if(o.geoManual) return 'Ponto marcado à mão';
-  return ({lembrado:'Ponto que você já marcou para este endereço',aprendido:'Ponto aprendido nas entregas (GPS do motorista)',numero:'Achado pelo número',rua:'Achado pela rua (sem o número)',
-    bairro:'Local aproximado: só o bairro',cidade:'Local aproximado: só a cidade',endereco:'Achado pelo endereço'})[o.geoPrec]||'Localização via CEP ou endereço';
+  return ({lembrado:'Ponto que você já marcou para este endereço',aprendido:'Ponto aprendido nas entregas (GPS do motorista)',numero:'Pelo número',rua:'Pela rua',
+    bairro:'Pelo bairro',cidade:'Pela cidade',endereco:'Pelo endereço'})[o.geoPrec]||'Localização via CEP ou endereço';
 }
 function _pedidoIsolado(o){ return Number.isFinite(o.lat)&&Number.isFinite(o.lng)&&_haversineKm(o,DEPOT)>RAIO_ISOLADO_KM; }
 
@@ -2103,7 +2103,7 @@ function atualizarMapaCompleto(){
     const coord={lat:r.lat,lng:r.lng};
     const radius=9+Math.min(28,n*1.1);
     L.circleMarker([coord.lat,coord.lng],{radius,color:r.cor,weight:2,fillColor:r.cor,fillOpacity:.4}).addTo(mapLayerFull)
-      .bindTooltip(`<b>${esc(r.nome)}</b><br>${n} pedido(s) sem endereço exato (${_plural(_contarTipos(lista).entrega,'entrega','entregas')}, ${_plural(_contarTipos(lista).coleta,'coleta','coletas')})<br>${lista.reduce((s,o)=>s+(o.peso||0),0).toLocaleString('pt-BR')} kg total`);
+      .bindTooltip(`<b>${esc(r.nome)}</b><br>${_plural(n,'pedido com ponto a confirmar','pedidos com ponto a confirmar')} (${_plural(_contarTipos(lista).entrega,'entrega','entregas')}, ${_plural(_contarTipos(lista).coleta,'coleta','coletas')})<br>${lista.reduce((s,o)=>s+(o.peso||0),0).toLocaleString('pt-BR')} kg total`);
     L.polyline([[DEPOT.lat,DEPOT.lng],[coord.lat,coord.lng]],{color:r.cor,weight:1.4,opacity:.4,dashArray:'4,6'}).addTo(mapLayerFull);
   });
 
@@ -2114,7 +2114,7 @@ function atualizarMapaCompleto(){
   if(contaEl){
     const porTipo = l => filtroTipo==='todos' ? ` (${_resumoTipos(_contarTipos(l),' e ')})` : '';
     const partes=[];
-    if(semGeo.length) partes.push(`<b>${_plural(semGeo.length,'pedido está sem endereço exato','pedidos estão sem endereço exato')}</b>${porTipo(semGeo)} e ${semGeo.length===1?'aparece':'aparecem'} na bolha da cidade, sem pino próprio — toque no pedido e use <b>corrigir</b> para marcar o ponto`);
+    if(semGeo.length) partes.push(`<b>${_plural(semGeo.length,'pedido com ponto a confirmar','pedidos com ponto a confirmar')}</b>${porTipo(semGeo)} ${semGeo.length===1?'fica':'ficam'} na bolha da cidade — toque no pedido para marcar o ponto`);
     if(futuros) partes.push(`<b>${_plural(futuros,'está agendado para outro dia','estão agendados para outros dias')}</b>${porTipo(todosPend.filter(o=>_agendadoFuturo(o)))} e só ${futuros===1?'aparece':'aparecem'} no dia`);
     contaEl.innerHTML = partes.length ? `${_plural(comGeo.length,'pedido tem pino próprio','pedidos têm pino próprio')} no mapa. ${partes.join('. ')}.` : '';
     contaEl.style.display = partes.length ? 'block' : 'none';
@@ -2124,7 +2124,7 @@ function atualizarMapaCompleto(){
   // mini-mapa individual na aba Rotas (fica mais limpo, sem misturar as duas coisas).
   const legEl = document.getElementById('mapa-completo-legenda');
   _desenharVeiculosMapa();
-  if(legEl) legEl.innerHTML = `<span>🚚 Veículo em rota (localização ao vivo)</span><span><i style="background:#16a36a;border:2px solid #fff;box-shadow:0 0 0 1px #9fd8bb"></i>Entrega</span><span><i style="background:#0d1b2e;border:2px solid #f3b62b"></i>Coleta</span><span><i style="background:${COR_SAI_HOJE};border:2px solid #fff;box-shadow:0 0 0 1px ${COR_SAI_HOJE}"></i>Agendado: sai hoje${hoje?` (${hoje})`:''}</span><span><i style="background:#e09c12;border:2px solid #fff;box-shadow:0 0 0 1px #e09c12"></i>${esc(DEPOT.name)}</span><span><i style="background:rgba(148,163,184,.35);border:2px solid #94a3b8"></i>Cidade (pedidos ainda sem endereço exato)</span>${futuros?`<span class="leg-fut">📅 ${_plural(futuros,'agendado para outro dia não aparece','agendados para outros dias não aparecem')} até o dia</span>`:''}`;
+  if(legEl) legEl.innerHTML = `<span>🚚 Veículo em rota (localização ao vivo)</span><span><i style="background:#16a36a;border:2px solid #fff;box-shadow:0 0 0 1px #9fd8bb"></i>Entrega</span><span><i style="background:#0d1b2e;border:2px solid #f3b62b"></i>Coleta</span><span><i style="background:${COR_SAI_HOJE};border:2px solid #fff;box-shadow:0 0 0 1px ${COR_SAI_HOJE}"></i>Agendado: sai hoje${hoje?` (${hoje})`:''}</span><span><i style="background:#e09c12;border:2px solid #fff;box-shadow:0 0 0 1px #e09c12"></i>${esc(DEPOT.name)}</span><span><i style="background:rgba(148,163,184,.35);border:2px solid #94a3b8"></i>Cidade (pedidos com ponto a confirmar)</span>${futuros?`<span class="leg-fut">📅 ${_plural(futuros,'agendado para outro dia não aparece','agendados para outros dias não aparecem')} até o dia</span>`:''}`;
 }
 window.atualizarMapaCompleto=atualizarMapaCompleto;
 
@@ -2563,16 +2563,13 @@ function renderPedidosPage(){
         <div class="rc-card-n">${os.length}</div><div class="rc-card-chev">›</div>
       </div>
       <div class="rc-card-body"><div class="nf-mini-grid">${os.map((o,j)=>
-        `<button type="button" class="nf-mini${j>=10?' extra':''}" onclick="abrirPedido(${esc(JSON.stringify(o.id))})" aria-label="Editar pedido NF ${esc(o.nf)}"><div class="nf-mini-code">NF ${esc(o.nf)}${_tag(o)}${_chipAgenda(o)}</div>${o.dest&&o.dest!==o.cidade?`<div class="nf-mini-end">${esc(o.dest)}</div>`:''}<div class="nf-mini-meta">${(+o.peso||0).toLocaleString('pt-BR')} kg · ${o.itens} vol.${o.urgente?' · urgente':''}</div>${_aprox(o)?'<span class="aprox">local aproximado</span>':_semNumero(o)?'<span class="semnum">sem o número</span>':''}</button>`
+        `<button type="button" class="nf-mini${j>=10?' extra':''}" onclick="abrirPedido(${esc(JSON.stringify(o.id))})" aria-label="Editar pedido NF ${esc(o.nf)}"><div class="nf-mini-code">NF ${esc(o.nf)}${_tag(o)}${_chipAgenda(o)}</div>${o.dest&&o.dest!==o.cidade?`<div class="nf-mini-end">${esc(o.dest)}</div>`:''}<div class="nf-mini-meta">${(+o.peso||0).toLocaleString('pt-BR')} kg · ${o.itens} vol.${o.urgente?' · urgente':''}</div>${_aprox(o)?'<span class="aprox">confirmar ponto</span>':''}</button>`
       ).join('')}</div>${os.length>10?`<button type="button" class="rc-mais" onclick="verTodosRc(${i})">${todos.has(r.nome)?'Mostrar menos':`Mostrar todos (${os.length})`}</button>`:''}</div>
     </div>`;
   }).join('') : `<div class="empty-mini">${vazio}</div>`;
-  // aviso dos pedidos que ainda estão só com a cidade ou o bairro
-  const aprox=pend.filter(_aprox).length, semNum=pend.filter(_semNumero).length;
-  $id('ped-aprox').innerHTML = (aprox
-    ? `<div class="mapa-nota" style="margin:0">⚠️ ${aprox===1?'1 pedido está sem local exato (no mapa, fica no centro do bairro ou da cidade)':`${aprox} pedidos estão sem local exato (no mapa, ficam no centro do bairro ou da cidade)`}. Toque no pedido para buscar o endereço ou marcar o ponto no mapa. O ponto que você marcar fica guardado para as próximas notas do mesmo endereço.</div>` : '')
-    + (semNum
-    ? `<div class="mapa-nota info" style="margin:${aprox?'8px':'0'} 0 0">ℹ️ ${_plural(semNum,'pedido ficou','pedidos ficaram')} na rua certa, mas sem o número (o mapa não tem o número dessa rua). Em rua curta não muda nada; em avenida longa, abra o pedido e arraste o pino até a porta: o ponto fica guardado para as próximas notas.</div>` : '');
+  // Sem faixas de aviso sobre a precisão do ponto (21/11/2026: "tira a credibilidade").
+  // O pedido que precisa de ponto tem só a etiqueta discreta "confirmar ponto".
+  $id('ped-aprox').innerHTML='';
   _renderBusca();
 }
 function toggleRcCard(i){ document.getElementById('rcd-'+i).classList.toggle('exp'); }
@@ -2656,16 +2653,16 @@ function _pedGeoStatus(){
   const el=$id('ped-geo-st'); let t, c='';
   const g=_pedGeo, f=g&&(g.fonte==='salvo'?(g.prec||'salvo'):g.fonte);
   const guarda=' O sistema guarda este ponto e usa nas próximas notas do mesmo endereço.';
-  if(!g){ t='Ainda sem local. Preencha a rua com o número e a cidade (ou o CEP) e toque em "Buscar pelo endereço", ou toque no mapa.'; c='warn'; }
-  else if(g.fonte==='salvo'&&!g.exato&&!['bairro','cidade'].includes(f)){ t='Ainda sem local exato: o pino está no centro da cidade. Busque pelo endereço ou arraste o pino.'; c='warn'; }
+  if(!g){ t='Preencha a rua com o número e a cidade (ou o CEP) e toque em "Buscar pelo endereço", ou toque no mapa.'; }
+  else if(g.fonte==='salvo'&&!g.exato&&!['bairro','cidade'].includes(f)){ t='Confirme o ponto: toque em "Buscar pelo endereço" ou arraste o pino até o local.'; c='warn'; }
   else if(f==='manual'){ t=g.fonte==='salvo'?'Ponto marcado à mão. Arraste o pino para corrigir.':'Ponto marcado por você.'+(_pedChaveForm()?guarda:''); c='ok'; }
   else if(f==='lembrado'){ t='Ponto que você já tinha marcado para este endereço. Arraste o pino se precisar.'; c='ok'; }
   else if(f==='aprendido'){ t='Ponto aprendido nas entregas: onde o motorista estava ao dar baixa, em mais de uma entrega. Arraste o pino se precisar.'; c='ok'; }
-  else if(f==='numero'){ t='Achamos pelo número. Confira o pino e arraste se precisar.'; c='ok'; }
-  else if(f==='endereco'){ t='Achamos pelo endereço. Confira o pino e arraste se precisar.'; c='ok'; }
-  else if(f==='rua'){ t='Achamos a rua, mas não o número (o mapa não tem o número de toda rua). Arraste o pino até o ponto certo.'+(_pedChaveForm()?guarda:''); c='warn'; }
-  else if(f==='bairro'){ t='Só achamos o bairro. Arraste o pino até o endereço.'; c='warn'; }
-  else if(f==='cidade'){ t='Só achamos a cidade. Arraste o pino até o endereço.'; c='warn'; }
+  else if(f==='numero'){ t='Ponto no número. Arraste o pino se precisar.'; c='ok'; }
+  else if(f==='endereco'){ t='Ponto pelo endereço. Arraste o pino se precisar.'; c='ok'; }
+  else if(f==='rua'){ t='Ponto na rua. Se quiser, arraste o pino até a porta.'+(_pedChaveForm()?guarda:''); }
+  else if(f==='bairro'){ t='Confirme o ponto: arraste o pino até o endereço.'; c='warn'; }
+  else if(f==='cidade'){ t='Confirme o ponto: arraste o pino até o endereço.'; c='warn'; }
   else { t='Local salvo. Arraste o pino se não estiver no ponto certo.'; }
   el.textContent=t; el.className='ped-geo-st'+(c?' '+c:'');
 }
@@ -3653,8 +3650,8 @@ async function _processarFilaGeo(){
     if(document.getElementById('page-mapa')?.style.display==='block'){ atualizarMapaCompleto(); }
   }
   _geoRodando = false; _geoAtual = null;
-  const det=[n.numero&&`${n.numero} pelo número`, n.lembrado&&`${n.lembrado} pelo ponto que você já tinha marcado`, n.aprox&&`${n.aprox} só com o bairro ou a cidade`].filter(Boolean);
-  _geoStatusUI(n.ok||n.falhou||n.conf ? `Mapa atualizado: ${_plural(n.ok,'pedido localizado','pedidos localizados')}${det.length?' ('+det.join(', ')+')':''}${n.falhou?`, ${n.falhou} sem localização`:''}${n.fora?`; a conferência dos pontos antigos fica para depois (serviço de endereços sem resposta)`:''}.` : '');
+  const det=[n.numero&&`${n.numero} pelo número`, n.lembrado&&`${n.lembrado} pelo ponto que você já tinha marcado`, n.aprox&&`${n.aprox} com ponto a confirmar`].filter(Boolean);
+  _geoStatusUI(n.ok||n.falhou||n.conf ? `Mapa atualizado: ${_plural(n.ok,'pedido localizado','pedidos localizados')}${det.length?' ('+det.join(', ')+')':''}${n.falhou?`, ${n.falhou} para marcar no mapa`:''}.` : '');
   _atualizarTelasPedidos();
   setTimeout(()=>_geoStatusUI(''), 9000);
 }
@@ -4287,9 +4284,9 @@ function irConfirmD(){
     : rotTipoD==='entrega' ? _plural(nV.entrega,'entrega','entregas')
     : `${_plural(nV.entrega,'entrega','entregas')} e ${_plural(nV.coleta,'coleta','coletas')}`;
   const comHora=viagem.filter(o=>o.janela_ini!=null).length;
-  const semLocal=viagem.filter(_aprox).length, semNumV=viagem.filter(_semNumero).length;
+  const semLocal=viagem.filter(_aprox).length;
   document.getElementById('confirm-veh-name').textContent=vehSel.nome;
-  document.getElementById('confirm-details-d').innerHTML=`Capacidade: <b style="color:var(--ac)">${kg.toLocaleString('pt-BR')} kg</b><br>Máx. de paradas: <b>${maxPedD}</b>${rotCidadeD!=='todas'?`<br>Só de: <b>${esc(rotCidadeD)}</b>`:''}<br>Nesta viagem: <b>${oque} pendentes</b>${rotTipoD==='todos'?' <span style="color:var(--text3)">(entregas primeiro, coletas depois)</span>':''}<br>Saída: <b>${esc(DEPOT.name)}</b> às <b>${_hhmm(rotaCtxD.saida)}</b> de <b>${_dataBR(rotaCtxD.data)}</b><br>Fim: <b>${rotaCtxD.volta?'volta ao CD':'na última parada'}</b>${FATOR_TEMPO!==1?`<br>Tempos ajustados ao trânsito: <b>×${FATOR_TEMPO.toLocaleString('pt-BR',{maximumFractionDigits:2})}</b> <span style="color:var(--text3)">(calibrado pelas suas rotas)</span>`:''}${comHora?`<br>Com horário marcado: <b>${comHora}</b>`:''}${outroDia?`<br><span style="color:var(--text3)">${_plural(outroDia,'agendado para outro dia fica','agendados para outro dia ficam')} de fora.</span>`:''}${semLocal?`<br><span style="color:#8a5a06">⚠️ ${_plural(semLocal,'pedido ainda está','pedidos ainda estão')} sem localização exata (só o bairro ou a cidade). A ordem e os km desses pedidos são aproximados.</span>`:''}${semNumV?`<br><span style="color:var(--text3)">ℹ️ ${_plural(semNumV,'pedido está','pedidos estão')} na rua certa, sem o número: em avenida longa, a ordem pode sair pior.</span>`:''}`;
+  document.getElementById('confirm-details-d').innerHTML=`Capacidade: <b style="color:var(--ac)">${kg.toLocaleString('pt-BR')} kg</b><br>Máx. de paradas: <b>${maxPedD}</b>${rotCidadeD!=='todas'?`<br>Só de: <b>${esc(rotCidadeD)}</b>`:''}<br>Nesta viagem: <b>${oque} pendentes</b>${rotTipoD==='todos'?' <span style="color:var(--text3)">(entregas primeiro, coletas depois)</span>':''}<br>Saída: <b>${esc(DEPOT.name)}</b> às <b>${_hhmm(rotaCtxD.saida)}</b> de <b>${_dataBR(rotaCtxD.data)}</b><br>Fim: <b>${rotaCtxD.volta?'volta ao CD':'na última parada'}</b>${FATOR_TEMPO!==1?`<br>Tempos ajustados ao trânsito: <b>×${FATOR_TEMPO.toLocaleString('pt-BR',{maximumFractionDigits:2})}</b> <span style="color:var(--text3)">(calibrado pelas suas rotas)</span>`:''}${comHora?`<br>Com horário marcado: <b>${comHora}</b>`:''}${outroDia?`<br><span style="color:var(--text3)">${_plural(outroDia,'agendado para outro dia fica','agendados para outro dia ficam')} de fora.</span>`:''}${semLocal?`<br><span style="color:var(--text3)">📍 ${_plural(semLocal,'pedido com ponto a confirmar','pedidos com ponto a confirmar')} no mapa.</span>`:''}`;
   document.getElementById('rot-step-cap').style.display='none';
   document.getElementById('rot-step-confirm').style.display='block';
 }
@@ -4845,7 +4842,7 @@ function _manListas(carga){
     return `<div class="man-item ${col?'col':''} ${carga.pico===i?'pico':''}">
       <div class="man-num" aria-hidden="true">${i+1}</div>
       <div class="man-txt"><b>${col?'Coleta':'Entrega'} · NF ${esc(p.nf)}</b>
-        <span>${p.dest&&p.dest!==p.cidade?esc(p.dest)+' · ':''}${p.bairro?esc(p.bairro)+' — ':''}${esc(p.cidade)} · ${(+p.peso||0).toLocaleString('pt-BR')} kg${apos!=null?` · ${apos.toLocaleString('pt-BR')} kg a bordo depois daqui`:''}${_aprox(p)?' · ponto aproximado':_semNumero(p)?' · sem o número':''}</span></div>
+        <span>${p.dest&&p.dest!==p.cidade?esc(p.dest)+' · ':''}${p.bairro?esc(p.bairro)+' — ':''}${esc(p.cidade)} · ${(+p.peso||0).toLocaleString('pt-BR')} kg${apos!=null?` · ${apos.toLocaleString('pt-BR')} kg a bordo depois daqui`:''}${_aprox(p)?' · confirmar ponto':''}</span></div>
       <div class="man-bts">
         <button class="man-bt" type="button" id="man-bt-${i}-u" onclick="manMover(${i},-1)" ${i===0?'disabled':''}
           aria-label="Subir a parada ${i+1}, NF ${esc(p.nf)}">↑</button>
@@ -4862,10 +4859,10 @@ function _manListas(carga){
   const semPonto=sobra.filter(o=>!_manNoMapa(o));
   $id('man-disponiveis').innerHTML = !sobra.length ? '' : `
     <details class="man-det"${semPonto.length?' open':''}>
-      <summary>Pedidos que ainda não estão na rota (${sobra.length})${semPonto.length?` · ${semPonto.length} sem ponto exato`:''}</summary>
+      <summary>Pedidos que ainda não estão na rota (${sobra.length})${semPonto.length?` · ${semPonto.length} com ponto a confirmar`:''}</summary>
       <div class="man-det-in">
-        ${semPonto.length?`<p class="man-dica" style="margin:0 0 10px">${_plural(semPonto.length,'pedido tem','pedidos têm')} só o bairro ou a cidade, então não dá para tocar nele no mapa. Coloque na rota por aqui e corrija o ponto depois, na tela de Pedidos.</p>`:''}
-        ${sobra.map(o=>`<button class="man-add" type="button" onclick="manAddUm('${esc(_manId(o))}')">+ ${_tipoDe(o)==='coleta'?'Coleta':'Entrega'} · NF ${esc(o.nf)} — ${o.bairro?esc(o.bairro)+', ':''}${esc(o.cidade)} · ${(+o.peso||0).toLocaleString('pt-BR')} kg${_manNoMapa(o)?'':' · sem ponto exato'}</button>`).join('')}
+        ${semPonto.length?`<p class="man-dica" style="margin:0 0 10px">${_plural(semPonto.length,'pedido ainda não tem','pedidos ainda não têm')} pino próprio no mapa. Coloque na rota por aqui e confirme o ponto depois, na tela de Pedidos.</p>`:''}
+        ${sobra.map(o=>`<button class="man-add" type="button" onclick="manAddUm('${esc(_manId(o))}')">+ ${_tipoDe(o)==='coleta'?'Coleta':'Entrega'} · NF ${esc(o.nf)} — ${o.bairro?esc(o.bairro)+', ':''}${esc(o.cidade)} · ${(+o.peso||0).toLocaleString('pt-BR')} kg${_manNoMapa(o)?'':' · confirmar ponto'}</button>`).join('')}
       </div>
     </details>`;
 }
@@ -6185,11 +6182,10 @@ function selRotaTabD(idx){
         ${outras.length?`<select data-foco="${esc(pid)}|rota" aria-label="Mover NF ${esc(p.nf)} para outra viagem" onchange="moverParaRotaD(${idx},${i},this.value)"><option value="">Viagem…</option>${outras.map(k=>`<option value="${k}">Rota ${k+1}</option>`).join('')}</select>`:''}
         <button type="button" class="tirar" data-foco="${esc(pid)}|tirar" onclick="tirarParadaD(${idx},${i})" aria-label="Tirar NF ${esc(p.nf)} desta rota" title="Tirar da rota">✕</button>
       </div>`:'';
-    return `<div class="delivery-mini${ajusteD?' ajuste':''}"><div class="delivery-mini-num${_tipoDe(p)==='coleta'?' c':''}">${i+1}</div><div class="dm-txt"><div style="font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text)">NF ${esc(p.nf)}${_tag(p)}${p.chegada_min!=null&&p.janela_ini!=null?`<span class="cheg" title="Horário marcado: ${_hhmm(p.janela_ini)}–${_hhmm(p.janela_fim??p.janela_ini)}">chega ~${_hhmm(p.chegada_min)}</span>`:''}${tarde?'<span class="atraso">depois do horário</span>':''}${aprox?`<button type="button" class="aprox-bt" data-foco="${esc(pid)}|local" onclick="abrirPedido(${esc(JSON.stringify(pid))})">local aproximado · corrigir</button>`:_semNumero(p)?`<button type="button" class="semnum-bt" data-foco="${esc(pid)}|local" onclick="abrirPedido(${esc(JSON.stringify(pid))})">sem o número · ajustar</button>`:''}</div><div style="font-size:11px;color:var(--text3)">${p.janela_ini!=null?`Horário ${_hhmm(p.janela_ini)}–${_hhmm(p.janela_fim)} · `:''}${p.dest&&p.dest!==p.cidade?esc(p.dest)+' · ':''}${p.endereco?esc(p.endereco)+' · ':''}${esc(p.cidade||'')} · ${(+p.peso||0).toLocaleString('pt-BR')} kg</div></div>${acoes}</div>`;
+    return `<div class="delivery-mini${ajusteD?' ajuste':''}"><div class="delivery-mini-num${_tipoDe(p)==='coleta'?' c':''}">${i+1}</div><div class="dm-txt"><div style="font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text)">NF ${esc(p.nf)}${_tag(p)}${p.chegada_min!=null&&p.janela_ini!=null?`<span class="cheg" title="Horário marcado: ${_hhmm(p.janela_ini)}–${_hhmm(p.janela_fim??p.janela_ini)}">chega ~${_hhmm(p.chegada_min)}</span>`:''}${tarde?'<span class="atraso">depois do horário</span>':''}${aprox?`<button type="button" class="aprox-bt" data-foco="${esc(pid)}|local" onclick="abrirPedido(${esc(JSON.stringify(pid))})">confirmar ponto</button>`:''}</div><div style="font-size:11px;color:var(--text3)">${p.janela_ini!=null?`Horário ${_hhmm(p.janela_ini)}–${_hhmm(p.janela_fim)} · `:''}${p.dest&&p.dest!==p.cidade?esc(p.dest)+' · ':''}${p.endereco?esc(p.endereco)+' · ':''}${esc(p.cidade||'')} · ${(+p.peso||0).toLocaleString('pt-BR')} kg</div></div>${acoes}</div>`;
   };
   document.getElementById('rota-detail-d').innerHTML=`
     <div id="rota-map"></div>
-    ${paradas.some(_aprox)?`<div class="mapa-nota">⚠️ ${_plural(paradas.filter(_aprox).length,'parada está','paradas estão')} sem endereço exato. No mapa, ficam no centro do bairro ou da cidade, e a ordem e os km delas são aproximados. Toque em "corrigir" para buscar o endereço ou marcar o ponto.</div>`:''}
     ${paradas.length?`<div class="nav-btns-d"><a href="${gmaps}" target="_blank" rel="noopener" class="btn-nav-d gmaps">📍 Google Maps</a>${last?`<a href="https://waze.com/ul?ll=${last.lat},${last.lng}&navigate=yes" target="_blank" rel="noopener" class="btn-nav-d waze">🚗 Waze</a>`:''}</div>`:''}
     <div class="card" style="margin-bottom:14px"><div style="display:flex;gap:20px;font-size:13px;color:var(--text2);flex-wrap:wrap"><span>📦 <b style="color:var(--text)">${peso.toLocaleString('pt-BR')} kg</b></span><span>📍 <b style="color:var(--text)">${paradas.length}</b> paradas</span>${nT.coleta&&nT.entrega?`<span>🚚 sai com <b style="color:var(--text)">${carga.saida.toLocaleString('pt-BR')} kg</b> · no máximo <b style="color:var(--text)">${carga.max.toLocaleString('pt-BR')} kg</b> a bordo</span>`:''}<span>🛣️ <b style="color:var(--text)">${_x(km)}</b> km</span></div>
       ${notaFonte}

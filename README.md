@@ -765,6 +765,20 @@ sendo lidos nas rotas antigas, mas desde 18/11/2026 nada na tela do motorista es
 vale. A foto fica no próprio banco (não precisa de plano pago); o plano gratuito do Firebase
 guarda 1 GB, o que dá alguns milhares de fotos.
 
+## Textos sobre o ponto no mapa (21/11/2026)
+
+O sistema não fala mal de si mesmo. Saíram as faixas "X pedidos estão sem local exato", "ficaram
+na rua certa, mas sem o número", "a ordem e os km são aproximados" e parecidas (Pedidos,
+roteirização, resultado da rota, mapa e montagem no mapa), a pedido do Henrique ("tira toda a
+credibilidade"). Ficou:
+- **"confirmar ponto"**: etiqueta discreta só no pedido que ainda não tem pino próprio (só o
+  bairro ou a cidade); toque e marque o ponto. No resultado da rota é um botão.
+- Ponto na rua não ganha etiqueta nenhuma. Ao abrir o pedido: "Ponto na rua. Se quiser, arraste o
+  pino até a porta."
+- Origem do ponto no pedido: "Pelo número", "Pela rua", "Pelo bairro", "Pela cidade".
+- Barra de localização: "N com ponto a confirmar" e "N para marcar no mapa"; falha do serviço de
+  endereços não aparece para o cliente (os pontos antigos ficam como estão).
+
 ## Mapa e endereços do Google (21/11/2026)
 
 **Fundo dos mapas.** Todos os mapas do sistema usam o mapa do Google (Map Tiles API, blocos 2D

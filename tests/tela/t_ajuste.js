@@ -65,7 +65,8 @@ async function mockServicos(ctx, reg) {
   // ── A. Pedido à mão ──────────────────────────────────────────────────────
   await p.evaluate(() => window.irParaPagina('pedidos')); await p.waitForTimeout(300);
   ok(await p.isVisible('#btn-novo-pedido'), 'Pedidos: botão "Novo pedido" ao lado de "Importar notas"');
-  ok((await p.textContent('#ped-aprox')).includes('1 pedido está sem local exato (no mapa, fica no centro do bairro ou da cidade)'), 'aviso: 1 pedido sem local exato (C_2001, sem CEP)');
+  // 21/11/2026: sem faixa de aviso; o pedido sem ponto tem só a etiqueta "confirmar ponto"
+  ok((await p.textContent('#ped-aprox')).trim() === '' && (await p.$$eval('#reg-cards-grid .aprox', (e) => e.map((x) => x.textContent))).join() === 'confirmar ponto', 'sem faixa de aviso: só a etiqueta "confirmar ponto" no pedido sem ponto (C_2001, sem CEP)');
   await p.click('#btn-novo-pedido'); await p.waitForTimeout(250);
   ok(await p.isVisible('#modal-pedido'), 'modal "Novo pedido" abre');
   ok(await p.evaluate(() => document.activeElement.id === 'ped-nf'), 'foco vai para o campo da nota');
@@ -85,7 +86,7 @@ async function mockServicos(ctx, reg) {
   await p.click('#ped-buscar');
   await p.waitForFunction(() => !/Procurando/.test(document.getElementById('ped-geo-st').textContent), null, { timeout: 8000 });
   ok(reg.nom.some((q) => q.includes('55 Rua Teste') && q.includes('Guarulhos')), 'buscar pelo endereço consulta rua + número + cidade');
-  ok((await p.textContent('#ped-geo-st')).includes('Achamos pelo número') && (await p.$('#ped-mapa .ped-pino')) !== null, 'pino aparece no mapa com aviso para conferir');
+  ok((await p.textContent('#ped-geo-st')).includes('Ponto no número') && (await p.$('#ped-mapa .ped-pino')) !== null, 'pino aparece no mapa com aviso para conferir');
   await p.click('#ped-salvar'); await p.waitForTimeout(400);
   let d = await db(p);
   const c5 = d.pedidos_rota['C_5005'];
@@ -95,13 +96,13 @@ async function mockServicos(ctx, reg) {
 
   // corrigir o local de um pedido aproximado tocando no mapa
   await p.evaluate(() => window.abrirPedido('C_2001')); await p.waitForTimeout(350);
-  ok((await p.textContent('#ped-geo-st')).includes('Ainda sem local exato'), 'pedido sem CEP: avisa que o pino está no centro da cidade');
+  ok((await p.textContent('#ped-geo-st')).includes('Confirme o ponto'), 'pedido sem CEP: pede para confirmar o ponto');
   await p.click('#ped-mapa', { position: { x: 160, y: 90 } }); await p.waitForTimeout(150);
   ok((await p.textContent('#ped-geo-st')).includes('marcado por você'), 'toque no mapa marca o ponto');
   await p.click('#ped-salvar'); await p.waitForTimeout(400);
   d = await db(p);
   ok(d.pedidos_rota['C_2001'].geoStatus === 'ok' && d.pedidos_rota['C_2001'].geoManual === true && d.pedidos_rota['C_2001'].lat !== -23.48, 'local corrigido à mão fica salvo (geoManual)');
-  ok(!(await p.textContent('#ped-aprox')).includes('sem local exato'), 'aviso de local aproximado some');
+  ok(!(await p.$('#reg-cards-grid .aprox')), 'etiqueta "confirmar ponto" some depois de marcar');
 
   // editar só o nome não mexe no local
   await p.evaluate(() => window.abrirPedido('1003')); await p.waitForTimeout(300);

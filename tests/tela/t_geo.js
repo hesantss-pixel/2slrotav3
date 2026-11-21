@@ -104,15 +104,16 @@ const emp = (p) => p.evaluate(() => JSON.parse(JSON.stringify(window.__FAKE.db.e
   const gc = await p.evaluate(() => window.__FAKE.db.geo_cache);
   ok(Object.values(gc).every((x) => x.v === 3), 'cache dos CEPs gravado com a versão conferida');
   ok(gc['07020000'].prec === 'rua' && gc['07020000'].lat === RUA_SN.lat && !JSON.stringify(gc).includes('Cliente'), 'cache antigo do CEP (sem precisão) é refeito; cache geral não tem dados do cliente');
-  ok(/pelo número/.test(barra) && /bairro ou a cidade/.test(barra), 'aviso final conta quantos foram pelo número e quantos ficaram aproximados: ' + barra);
+  ok(/pelo número/.test(barra) && /com ponto a confirmar/.test(barra) && !/aproximad|sem localização/.test(barra), 'aviso final conta quantos foram pelo número e quantos têm ponto a confirmar: ' + barra);
 
   await p.evaluate(() => window.irParaPagina('pedidos')); await p.waitForTimeout(300);
   const aproxTxt = await p.textContent('#ped-aprox');
-  ok(aproxTxt.includes('4 pedidos estão sem local exato') && aproxTxt.includes('fica guardado'), 'aviso de aproximado conta os pedidos só com a cidade (inclusive os recusados de outra rua ou cidade) → ' + aproxTxt.slice(0, 80));
+  const etq = await p.$$eval('#reg-cards-grid .aprox', (e) => e.map((x) => x.textContent));
+  ok(aproxTxt.trim() === '' && etq.length === 4 && etq.every((t) => t === 'confirmar ponto'), 'sem faixa de aviso; os 4 pedidos só com a cidade (inclusive os recusados de outra rua ou cidade) têm a etiqueta "confirmar ponto": ' + JSON.stringify(etq));
 
   // corrigir à mão: guarda e aplica aos outros pedidos do mesmo endereço
   await p.evaluate(() => window.abrirPedido('3002')); await p.waitForTimeout(350);
-  ok((await p.textContent('#ped-geo-st')).includes('não o número'), 'pedido achado só pela rua: avisa que o número não está no mapa');
+  ok((await p.textContent('#ped-geo-st')).includes('Ponto na rua'), 'pedido achado pela rua: "Ponto na rua", sem dizer que falta o número');
   await p.click('#ped-mapa', { position: { x: 180, y: 100 } }); await p.waitForTimeout(150);
   ok((await p.textContent('#ped-geo-st')).includes('guarda este ponto'), 'ao marcar: avisa que o ponto fica guardado para o endereço');
   await p.click('#ped-salvar'); await p.waitForTimeout(500);
@@ -169,7 +170,8 @@ const emp = (p) => p.evaluate(() => JSON.parse(JSON.stringify(window.__FAKE.db.e
       'serviço fora: ponto antigo fica como estava e NÃO é marcado como conferido');
     ok(d2['4002'].geoStatus === 'ok' && d2['4002'].lat === -23.4650 && !d2['4002'].geoV,
       'pedido novo usa o cache antigo do CEP para não ficar sem ponto, mas fica para conferir depois');
-    ok(/fica para depois/.test(barra2) && !/sem localização/.test(barra2), 'aviso diz que a conferência ficou para depois, sem chamar de "sem localização" → ' + barra2);
+    // 21/11/2026: o aviso não fala de falha do serviço de endereços; os pontos antigos ficam como estão
+    ok(!/sem localização|sem resposta|fica para depois/.test(barra2), 'aviso não expõe falha do serviço nem chama de "sem localização" → ' + barra2);
     const antes2 = consultas;
     await o2.p.evaluate(() => window.__FAKE.set && 0);   // nada: só deixa a tela parada
     await o2.p.waitForTimeout(2500);

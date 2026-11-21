@@ -225,9 +225,9 @@ const centro = (p, nf) => p.evaluate((n) => {
       bts: d ? [...d.querySelectorAll('.man-add')].map((x) => x.textContent.replace(/\s+/g, ' ').trim()) : [] };
   });
   ok(lista.bts.length === 5, `a lista traz os 5 pedidos que ainda não estão na rota (${lista.bts.length})`);
-  ok(lista.bts.some((t) => /NF 1009/.test(t) && /sem ponto exato/.test(t)), 'o pedido sem ponto exato aparece marcado na lista');
-  ok(lista.aberta && /sem ponto exato/.test(lista.resumo), 'a lista já abre quando há pedido que não dá para tocar no mapa');
-  ok(/corrija o ponto depois/.test(lista.nota), 'a lista explica o que fazer com quem não tem ponto exato');
+  ok(lista.bts.some((t) => /NF 1009/.test(t) && /confirmar ponto/.test(t)), 'o pedido sem ponto exato aparece marcado na lista');
+  ok(lista.aberta && /com ponto a confirmar/.test(lista.resumo), 'a lista já abre quando há pedido que não dá para tocar no mapa');
+  ok(/confirme o ponto depois/.test(lista.nota), 'a lista explica o que fazer com quem não tem ponto exato');
   await p.click('#man-disponiveis .man-add:has-text("NF 1009")');
   await p.waitForTimeout(260);
   const comSem = await painel(p);
