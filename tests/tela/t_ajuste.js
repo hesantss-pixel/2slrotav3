@@ -275,9 +275,12 @@ async function mockServicos(ctx, reg) {
     await ctx.close();
   }
 
-  // ── E. Dados de exemplo (banco vazio): editar não grava nada ─────────────
+  // ── E. Dados de exemplo (conta de demonstração sem notas próprias): editar não grava nada ──
+  // Desde 21/11/2026 só a demonstração tem os pedidos de exemplo (empresa de verdade: t_vazio).
   {
-    const { ctx, p, errs } = await open(b, 'index.html', 1440, 900, seed, false, null);
+    const seedDemo = () => { window.__FAKE = { user: { uid: 'uid-vis', email: 'v@x.com', getIdToken: async () => 'T' },
+      db: { acesso: { 'uid-vis': 'demo' }, demos: { 'uid-vis': { email: 'v@x.com', criado: Date.now(), expira: Date.now() + 864e5 } } } }; };
+    const { ctx, p, errs } = await open(b, 'index.html', 1440, 900, seedDemo, false, null);
     await mockServicos(ctx, { viacep: [], nom: [], solve: [], avaliar: [], dialogs: [] });
     p.on('dialog', (dd) => dd.accept());
     await p.waitForTimeout(800);

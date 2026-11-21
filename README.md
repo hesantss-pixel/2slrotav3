@@ -72,8 +72,13 @@ Banco e login: Firebase, projeto `slog-pedidos` (Realtime Database + Authenticat
 - A página Pedidos avisa quantos pendentes estão sem local exato (sem ponto, ou só com o bairro
   ou a cidade) e marca cada um.
 - Número repetido: pergunta antes de trocar; se a nota com esse número já saiu em rota, não deixa.
-- Nos dados de exemplo (banco vazio) e na demonstração com as regras antigas, as mudanças ficam
-  só na tela. Cadastrar o primeiro pedido de verdade tira os pedidos de exemplo, como a importação.
+- Nos dados de exemplo (conta de demonstração sem notas próprias) e na demonstração com as regras
+  antigas, as mudanças ficam só na tela. Cadastrar o primeiro pedido de verdade tira os pedidos de
+  exemplo, como a importação.
+- **Empresa de verdade sem nenhuma nota (21/11/2026)**: tela vazia ("Nenhum pedido pendente"), as
+  rotas confirmadas dela e a frota do banco. Antes entravam os 86 pedidos fictícios, que para um
+  cliente pareciam a operação dele (por exemplo, depois de apagar todas as notas no Firebase para
+  subir de novo). Teste: `t_vazio`.
 - O Nominatim recebe no máximo 1 consulta por segundo (a política dele pede isso).
 
 ## Como o sistema acha o endereço (versão 3.7)
@@ -403,7 +408,8 @@ demonstração**. Testes: `t_demo` (sem faixa no exemplo; com as notas, a faixa 
   dados não são reais, ficou **"exemplo"**: "pedidos de exemplo" no card de pedidos, aviso nos
   Relatórios e na planilha, "Exemplo: o link abre a tela do motorista…" na página Rotas, posição
   "(simulada)" e "Rota de exemplo" na tela do motorista. O selo do topo "Pedidos de exemplo"
-  continua só para conta de verdade com o banco vazio (cliente novo vendo o exemplo). O alerta
+  ficou para quando a tela cai no exemplo por erro de leitura do banco (desde 21/11/2026, conta de
+  verdade com o banco vazio vê a tela vazia). O alerta
   "Modo demonstração ativo" do painel saiu. Página Acessos (só o administrador) não mudou.
 - **Revisão dos acessos:**
   - O prazo (demonstração e acesso completo com prazo, como o teste de 3 dias) era conferido só ao
