@@ -199,7 +199,12 @@ está ligado em `entrada_automatica`.
   ajustada, com `ajustada: true`, e o link do motorista sai nessa ordem.
 - Rota já confirmada não é editada (as baixas do motorista são guardadas pela posição da parada).
   Para mudar, use **Devolver** na página Rotas e gere de novo.
-- "Gerar outra rota" ou sair da página Roteirização descarta a rota que não foi confirmada.
+- Trocar de tela **não descarta** a rota em montagem (desde 23/11/2026): da escolha do veículo em
+  diante, voltar à Roteirização mostra tudo como estava (rota gerada, ajustes, montagem no mapa).
+  Só "Gerar outra rota" começa do zero. Fechar ou recarregar a página com rota gerada e não
+  confirmada pede confirmação do navegador. Depois de confirmar a saída, a próxima visita começa
+  uma rota nova. A rota fica na memória da página: recarregar a página ainda perde. Teste:
+  `t_rota_rascunho`.
 
 ## Km rodado, tempo real e pinos aprendidos (versão 3.12)
 
@@ -740,6 +745,21 @@ codificação do Google com 6 casas decimais). A tela desenha essa linha.
   "em implantação" ficava estranha. Só volta quando a integração com rastreador existir.
 
 ## Link do motorista (baixa pelo celular)
+
+**Sem sinal (23/11/2026).** Cada baixa (com a foto e o GPS) é guardada no próprio celular
+(IndexedDB, base `rv3-motorista`) **antes** de ir para o banco, e só sai de lá quando o banco
+confirma. Sem sinal, com a página fechada ou o celular desligado, ela continua guardada e vai
+sozinha quando a página abrir com sinal (ou quando o sinal voltar com ela aberta). A parada
+mostra "Guardada no celular" e o progresso já conta a baixa. Corrigir sem sinal troca a baixa
+guardada e mantém a foto. A hora gravada é a da baixa no celular (logo após a baixa, a do
+servidor; se o servidor recusar a hora do celular, vai a do envio). Baixa recusada pelo banco
+(link encerrado) sai da fila com aviso.
+
+A página também **abre sem sinal** depois da primeira vez: a rota fica copiada no celular
+(`localStorage`, `rv3_rota_<código>`) e o service worker `sw-motorista.js` guarda a página, o
+código do Firebase e o logo. O escopo é só `./motorista` (não mexe no sistema). Em produção ele
+só liga em https. Testes: `t_motorista_offline` (22) e `t_motorista_sw` (7).
+
 
 1. Ao **confirmar a saída** de uma rota, o sistema cria um link só daquela rota
    (`motorista.html#<código>`, código aleatório de 24 caracteres) que vale **7 dias**.

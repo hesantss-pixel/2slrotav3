@@ -2392,7 +2392,10 @@ function irParaPagina(p){
     renderPedidosPage();
   } else if(p==='roteirizacao'){
     document.getElementById('page-roteirizacao').style.display='block';
-    renderVeiculosD();
+    // rota em montagem (escolha do veículo em diante) continua como estava: trocar de tela não
+    // descarta mais nada (23/11/2026). Começar de novo só pelo botão "Gerar outra rota".
+    if(_rotEmAndamento()) setTimeout(()=>{ [rotaMapInst,manMap].forEach(m=>{ try{ m&&m.invalidateSize(); }catch(e){} }); },60);
+    else renderVeiculosD();
   } else if(p==='rotas'){
     document.getElementById('page-rotas').style.display='block';
     renderRotasConfirmadas();
@@ -4190,6 +4193,17 @@ function renderRotCidadeD(inicial){
 let motoristasFirebase={}, motoristasDemo=[], motoristaSelecionadoD=null;
 let chatSessionId='';
 
+// A Roteirização está no meio de uma rota (passou da escolha do veículo)?
+function _rotEmAndamento(){
+  return ['rot-step-cap','rot-step-confirm','rot-step-loading','rot-step-results','rot-step-manual']
+    .some(id=>{ const el=$id(id); return el && el.style.display && el.style.display!=='none'; });
+}
+// Rota gerada ou montada e ainda não confirmada: avisa antes de fechar ou recarregar a página
+function _rotaNaoConfirmada(){
+  return (Array.isArray(rotaGeradaD)&&rotaGeradaD.length>0) || (Array.isArray(manSel)&&manSel.length>0);
+}
+window.addEventListener('beforeunload', e=>{ if(_rotaNaoConfirmada()){ e.preventDefault(); e.returnValue=''; } });
+
 function renderVeiculosD(){
   document.getElementById('rot-step-veiculo').style.display='block';
   document.getElementById('rot-step-cap').style.display='none';
@@ -5201,6 +5215,7 @@ async function confirmarRotaD(){
     btn.textContent='✔ Rota confirmada!';
     setTimeout(()=>{
       rotaGeradaD=[];
+      renderVeiculosD();   // a próxima visita à Roteirização começa uma rota nova
       irParaPagina('rotas');
       render();
     },900);
