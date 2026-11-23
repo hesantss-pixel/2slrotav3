@@ -60,9 +60,18 @@ export function onValue(r, cb, err) {
   return () => { F.listeners = F.listeners.filter((x) => x !== l); };
 }
 export function off() {}
+// Sem sinal (F.offline): como no SDK, a gravação fica esperando e só chega ao banco quando
+// a conexão volta (F.reconectar). Se a página fechar antes, ela se perde.
+F.esperando = F.esperando || [];
+F.reconectar = () => {
+  F.offline = false; F.db['.info'] = { ...(F.db['.info'] || {}), connected: true };
+  const l = F.esperando.splice(0); l.forEach((f) => f()); fire();
+};
 export function set(r, val) {
   try { validarValor(val, 'set', r.path); } catch (e) { recusar(e); }
-  return (async () => { if (denied(r.path)) throw new Error('PERMISSION_DENIED'); F.writes.push(['set', r.path, val]); setAt(r.path, val); fire(); })();
+  const grava = () => { if (denied(r.path)) throw new Error('PERMISSION_DENIED'); F.writes.push(['set', r.path, val]); setAt(r.path, val); fire(); };
+  if (F.offline) return new Promise((ok, ko) => F.esperando.push(() => { try { grava(); ok(); } catch (e) { ko(e); } }));
+  return (async () => grava())();
 }
 export function update(r, obj) {
   try { validarUpdate(obj, r.path); } catch (e) { recusar(e); }
@@ -74,7 +83,7 @@ export function update(r, obj) {
   })();
 }
 export async function remove(r) { F.writes.push(['remove', r.path]); setAt(r.path, null); fire(); }
-export async function get(r) { if (denied(r.path)) throw Object.assign(new Error('permission_denied'), { code: 'PERMISSION_DENIED' }); return snap(r.path); }
+export async function get(r) { if (F.offline) throw new Error('Error: Client is offline.'); if (denied(r.path)) throw Object.assign(new Error('permission_denied'), { code: 'PERMISSION_DENIED' }); return snap(r.path); }
 export function serverTimestamp() { return Date.now(); }
 // Como no SDK de verdade, o push recusado pelas regras devolve uma promessa com erro
 // (antes ele sempre dava certo, e um caminho sem permissão passava batido nos testes).

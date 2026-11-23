@@ -83,6 +83,7 @@ label.foto input{font-size:14px;}
 .loc-sw{flex:none;min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--line2);background:#fff;font:700 14px Inter,sans-serif;color:var(--navy);cursor:pointer;}
 .loc.on .loc-sw{background:var(--navy);color:#fff;border-color:var(--navy);}
 .demo-aviso{background:#fff3df;border:1px solid #f6dca6;color:#7a4f05;border-radius:12px;padding:10px 12px;font-size:13.5px;font-weight:600;margin-bottom:14px;}
+.guardada{margin-top:8px;font-size:13px;font-weight:600;color:#8a5a06;}
 .offline{position:fixed;left:12px;right:12px;bottom:max(12px,env(safe-area-inset-bottom));z-index:9;background:#8a5a06;color:#fff;border-radius:12px;padding:12px 14px;font-size:14px;font-weight:600;box-shadow:0 10px 30px -10px rgba(0,0,0,.4);}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;}}
 </style>
@@ -90,7 +91,7 @@ label.foto input{font-size:14px;}
 <body>
 <header class="top"><img src="assets/logo-rotav3.png" alt="ROTAV3 Systems" width="124" height="30"><span class="top-tag" id="top-tag">ROTA DO MOTORISTA</span></header>
 <main id="app"><div class="estado" role="status">Carregando a rota…</div></main>
-<div class="offline" id="offline" role="status" hidden>Sem internet. As baixas ficam guardadas e são enviadas quando a conexão voltar. Não feche esta página.</div>
+<div class="offline" id="offline" role="status" hidden>Sem internet. As baixas ficam guardadas neste celular e vão sozinhas quando o sinal voltar, mesmo se você fechar a página.</div>
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
@@ -118,6 +119,78 @@ const MOTIVOS = ['Cliente ausente', 'Endereço não encontrado', 'Recusado pelo 
 
 let info = null, paradas = [], baixas = {}, aberto = null, renderPendente = false, rolou = false;
 const enviando = {};
+let pendentes = {};        // baixas guardadas no celular que ainda não chegaram ao escritório (por parada)
+let semSinal = false;
+
+// ── Fila no aparelho (IndexedDB) ─────────────────────────────────────────────
+// Cada baixa (com a foto e o GPS) é guardada aqui ANTES de ir para o banco e só sai daqui
+// quando o banco confirma. Sem sinal, com a página fechada ou o celular desligado, ela
+// continua guardada e vai na próxima vez que a página abrir com sinal.
+const FILA_DB = 'rv3-motorista', FILA_ST = 'fila';
+let _filaDb = null;
+function abrirFila() {
+  if (_filaDb) return _filaDb;
+  _filaDb = new Promise((ok, ko) => {
+    if (!('indexedDB' in window)) return ko(new Error('sem IndexedDB'));
+    const r = indexedDB.open(FILA_DB, 1);
+    r.onupgradeneeded = () => r.result.createObjectStore(FILA_ST, { keyPath: 'k' });
+    r.onsuccess = () => ok(r.result);
+    r.onerror = () => ko(r.error);
+  });
+  _filaDb.catch(() => { _filaDb = null; });
+  return _filaDb;
+}
+async function filaOp(modo, fn) {
+  const d = await abrirFila();
+  return new Promise((ok, ko) => {
+    const tx = d.transaction(FILA_ST, modo); const pedido = fn(tx.objectStore(FILA_ST));
+    tx.oncomplete = () => ok(pedido && pedido.result); tx.onerror = () => ko(tx.error); tx.onabort = () => ko(tx.error);
+  });
+}
+const filaPor = (v) => filaOp('readwrite', (st) => st.put(v)).catch(() => {});
+const filaTira = (k) => filaOp('readwrite', (st) => st.delete(k)).catch(() => {});
+const filaDaRota = () => filaOp('readonly', (st) => st.getAll()).then((l) => (l || []).filter((e) => e.token === token)).catch(() => []);
+
+const naFila = new Set();
+async function enviarDaFila(e) {
+  if (naFila.has(e.k)) return;
+  naFila.add(e.k); enviando[e.i] = true;
+  const base = `entregador/${e.token}`;
+  // A hora é a da baixa no celular. Logo depois da baixa vai a hora do servidor (relógio do
+  // celular errado não atrapalha); se o servidor recusar a hora do celular, vai a do envio.
+  const recente = Date.now() - e.em < 120000;
+  const baixa = { ...e.baixa, hora: recente ? serverTimestamp() : e.baixa.hora };
+  try {
+    if (e.foto) await set(ref(db, `${base}/fotos/${e.i}`), e.foto);
+    try { await set(ref(db, `${base}/baixas/${e.i}`), baixa); }
+    catch (err) { if (recente) throw err; await set(ref(db, `${base}/baixas/${e.i}`), { ...baixa, hora: serverTimestamp() }); }
+    if (e.pos && Number.isFinite(e.pos.precisao)) set(ref(db, `${base}/gps/${e.i}`), e.pos).catch(() => {});
+    await filaTira(e.k);
+    delete pendentes[e.i];
+  } catch (err) {
+    // recusada pelo banco (link encerrado): não adianta tentar de novo
+    await filaTira(e.k);
+    delete pendentes[e.i];
+    alert(`A baixa da parada ${e.i + 1} não foi aceita. Se o link expirou, fale com o escritório.`);
+  } finally {
+    naFila.delete(e.k); delete enviando[e.i];
+    if (!aberto) render(); else renderPendente = true;
+  }
+}
+async function enviarFila() {
+  if (DEMO || !token) return;
+  for (const e of await filaDaRota()) { pendentes[e.i] = e; enviarDaFila(e); }
+}
+
+// Cópia da rota neste celular: com ela a página abre sem sinal (a rota vem do banco quando há sinal)
+const chaveRota = 'rv3_rota_' + token;
+function guardarRota() { try { localStorage.setItem(chaveRota, JSON.stringify({ info, paradas, baixas, em: Date.now() })); } catch (e) {} }
+function rotaGuardada() { try { const r = JSON.parse(localStorage.getItem(chaveRota) || 'null'); return r && r.info && Array.isArray(r.paradas) && r.paradas.length ? r : null; } catch (e) { return null; } }
+function semRede(err) { return !navigator.onLine || /offline|network|internet/i.test(String(err && (err.message || err))); }
+
+// Página que abre sem sinal: o navegador guarda esta página e o código do banco (sw-motorista.js)
+if (!DEMO && 'serviceWorker' in navigator && (location.protocol === 'https:' || window.__SW_TESTE))
+  navigator.serviceWorker.register('sw-motorista.js', { scope: './motorista' }).catch(() => {});
 // Demonstração dentro da página de vendas (iframe): manda o estado das baixas para o painel ao lado.
 // Só no modo DEMO, com dados fictícios. Nunca rola a página de fora.
 const EMBUTIDO = DEMO && window.parent !== window;
@@ -334,35 +407,46 @@ async function iniciar() {
     return;
   }
   if (token.length < 20) return erro('Link incompleto', 'Peça o link da rota de novo ao escritório.');
+  for (const e of await filaDaRota()) pendentes[e.i] = e;
   try {
     const [i, p] = await Promise.all([get(ref(db, `entregador/${token}/info`)), get(ref(db, `entregador/${token}/paradas`))]);
     info = i.val();
     const pv = p.val();
     if (!info || !pv) return erro('Rota não encontrada', 'Confira se o link está completo ou peça de novo ao escritório.');
     paradas = Array.isArray(pv) ? pv : Object.keys(pv).sort((a, b) => a - b).map((k) => pv[k]);
+    guardarRota();
   } catch (e) {
-    return erro('Link encerrado', 'Este link expirou ou foi encerrado pelo escritório.');
+    // sem sinal: abre com a cópia guardada neste celular
+    const g = semRede(e) ? rotaGuardada() : null;
+    if (!g) return semRede(e)
+      ? erro('Sem internet', 'Abra o link de novo quando tiver sinal. Depois da primeira vez, a rota abre mesmo sem sinal.')
+      : erro('Link encerrado', 'Este link expirou ou foi encerrado pelo escritório.');
+    info = g.info; paradas = g.paradas; baixas = g.baixas || {};
+    semSinal = true; $('offline').hidden = false;
   }
   onValue(ref(db, `entregador/${token}/baixas`), (s) => {
     baixas = s.val() || {};
+    guardarRota();
     if (aberto) renderPendente = true; else render();
-  }, () => erro('Link encerrado', 'Este link expirou ou foi encerrado pelo escritório.'));
+  }, () => { if (!semSinal) erro('Link encerrado', 'Este link expirou ou foi encerrado pelo escritório.'); });
   let t = null;
   onValue(ref(db, '.info/connected'), (s) => {
     clearTimeout(t);
-    if (s.val() === false) t = setTimeout(() => { $('offline').hidden = false; }, 3000);
-    else $('offline').hidden = true;
+    if (s.val() === false) t = setTimeout(() => { semSinal = true; $('offline').hidden = false; if (!aberto) render(); }, 3000);
+    else if (s.val() === true) { semSinal = false; $('offline').hidden = true; enviarFila(); }
   }, () => {});
+  window.addEventListener('online', () => enviarFila());
   render();
+  enviarFila();
   retomarLocalizacao();
 }
 
 function render() {
   renderPendente = false;
   const n = paradas.length;
-  const feitas = paradas.filter((_, i) => baixas[i]).length;
+  const feitas = paradas.filter((_, i) => baixas[i] || pendentes[i]).length;
   if (!DEMO && n && feitas === n && watchId !== null) { if (watchId !== null) navigator.geolocation.clearWatch(watchId); watchId = null; soltarTela(); gravarLocal(prefLoc(), 0); locStatus = 'Rota concluída: localização desligada.'; }
-  const prox = paradas.findIndex((_, i) => !baixas[i]);
+  const prox = paradas.findIndex((_, i) => !baixas[i] && !pendentes[i]);
   const quando = [info.data ? dataBR(info.data) : '', info.saida != null ? 'saída ' + hhmm(info.saida) : '', info.deposito?.nome ? 'de ' + info.deposito.nome : ''].filter(Boolean).join(' · ');
   app.innerHTML = `
     <section class="resumo" aria-label="Resumo da rota">
@@ -379,7 +463,8 @@ function render() {
 }
 
 function card(p, i, prox) {
-  const b = baixas[i], col = p.tipo === 'coleta', verbo = col ? 'Coletado' : 'Entregue';
+  const guardada = pendentes[i] && !DEMO ? pendentes[i] : null;
+  const b = guardada ? { ...guardada.baixa, temFoto: !!guardada.foto } : baixas[i], col = p.tipo === 'coleta', verbo = col ? 'Coletado' : 'Entregue';
   const cls = ['parada', b ? (b.status === 'feito' ? 'ok' : 'nok') : '', prox ? 'prox' : ''].filter(Boolean).join(' ');
   // Só mostra a previsão onde há horário marcado com o cliente: no resto da rota o
   // número engana (atrasa com o trânsito e com a espera de quem tem hora marcada).
@@ -389,14 +474,15 @@ function card(p, i, prox) {
   if (aberto && aberto.i === i) corpo = form(p, i);
   else if (b) {
     corpo = `<div class="feito-linha">${b.status === 'feito'
-      ? `✓ ${verbo} às ${horaTs(b.hora)}${b.recebedor ? ' · ' + esc(b.recebedor) : ''}${b.temFoto ? ' · 📷 foto enviada' : ''}`
+      ? `✓ ${verbo} às ${horaTs(b.hora)}${b.recebedor ? ' · ' + esc(b.recebedor) : ''}${b.temFoto ? (guardada ? ' · 📷 com foto' : ' · 📷 foto enviada') : ''}`
       : `✗ Não realizado: ${esc(b.motivo || '')}${b.obs ? ' — ' + esc(b.obs) : ''}`}</div>
       <button type="button" class="btn-link" data-acao="corrigir" data-i="${i}">Corrigir</button>`;
   } else {
     corpo = `<div class="acoes"><a class="btn nav" href="${esc(linkMapa(p))}" target="_blank" rel="noopener">Google Maps</a><a class="btn nav" href="${esc(linkWaze(p))}" target="_blank" rel="noopener">Waze</a></div>
       <div class="acoes"><button type="button" class="btn ok" data-acao="feito" data-i="${i}">${verbo}</button><button type="button" class="btn nok" data-acao="nao" data-i="${i}">Não realizado</button></div>`;
   }
-  if (enviando[i]) corpo += '<div class="enviando">Enviando…</div>';
+  if (guardada && semSinal) corpo += '<div class="guardada">Guardada no celular. Vai para o escritório quando o sinal voltar.</div>';
+  else if (enviando[i] || guardada) corpo += '<div class="enviando">Enviando…</div>';
   return `<li class="${cls}" id="p-${i}">
     <div class="p-top"><span class="num">${i + 1}</span><span class="tag ${col ? 'c' : 'e'}">${col ? 'Coleta' : 'Entrega'}</span><span class="nf">NF ${esc(p.nf)}</span>${prox ? '<span class="prox-lbl">PRÓXIMA</span>' : ''}</div>
     <div class="dest">${esc(p.dest || p.cidade || '')}</div>
@@ -406,7 +492,7 @@ function card(p, i, prox) {
 }
 
 function form(p, i) {
-  const col = p.tipo === 'coleta', b = baixas[i] || {};
+  const col = p.tipo === 'coleta', b = pendentes[i]?.baixa || baixas[i] || {};
   const motivos = MOTIVOS.map((m) => `<option${b.motivo === m ? ' selected' : ''}>${esc(m)}</option>`).join('');
   const campos = aberto.modo === 'nao'
     ? `<label>Motivo<select name="motivo" required>${motivos}</select></label>
@@ -432,7 +518,7 @@ document.addEventListener('click', (e) => {
   const i = +b.dataset.i, acao = b.dataset.acao;
   if (acao === 'feito') abrir(i, 'feito');
   else if (acao === 'nao') abrir(i, 'nao');
-  else if (acao === 'corrigir') abrir(i, baixas[i]?.status === 'nao_feito' ? 'nao' : 'feito');
+  else if (acao === 'corrigir') abrir(i, (pendentes[i]?.baixa || baixas[i])?.status === 'nao_feito' ? 'nao' : 'feito');
   else if (acao === 'cancelar') { aberto = null; render(); }
   else if (acao === 'loc') { if (watchId !== null) desligarLocalizacao(); else ligarLocalizacao(); }
 });
@@ -477,19 +563,19 @@ document.addEventListener('submit', async (e) => {
   const pos = await posicao();
   if (pos) { baixa.lat = pos.lat; baixa.lng = pos.lng; }
   aberto = null;
-  enviando[i] = true;
-  baixas = { ...baixas, [i]: { ...baixa, hora: Date.now() } };
+  // guarda no celular antes de enviar (foto, GPS e hora da baixa); sai da fila quando o banco
+  // confirmar. A posição com a precisão do GPS: o escritório usa para acertar o ponto do endereço
+  const agora = Date.now();
+  const antigas = (await filaDaRota()).filter((v) => v.i === i);
+  // corrigiu sem tirar outra foto: a foto da baixa guardada continua valendo
+  const antes = antigas[antigas.length - 1];
+  if (!foto && antes && antes.foto && antes.baixa.status === baixa.status) { foto = antes.foto; baixa.temFoto = true; }
+  const nova = { k: token + '|' + i + '|' + agora, token, i, baixa: { ...baixa, hora: agora }, foto, pos, em: agora };
+  for (const v of antigas) await filaTira(v.k);   // corrigir: vale a última
+  pendentes[i] = nova;
+  await filaPor(nova);
   render();
-  try {
-    if (foto) await set(ref(db, `entregador/${token}/fotos/${i}`), foto);
-    await set(ref(db, `entregador/${token}/baixas/${i}`), baixa);
-    // posição com a precisão do GPS: o escritório usa para acertar o ponto do endereço
-    if (pos && Number.isFinite(pos.precisao)) set(ref(db, `entregador/${token}/gps/${i}`), pos).catch(() => {});
-  } catch (err) {
-    alert('A baixa não foi aceita. Se o link expirou, fale com o escritório.');
-  }
-  delete enviando[i];
-  if (!aberto) render();
+  enviarDaFila(nova);
 });
 
 // Foto em JPEG, no máximo ~280 KB (cabe no banco sem plano pago)
