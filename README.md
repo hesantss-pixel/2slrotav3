@@ -815,6 +815,17 @@ trena e salvar. Medida típica não é gravada (o veículo segue a do tipo).
    "m³"/"Cubagem" da planilha, ou escrito na nota ("Cubagem: 1,25 m3", "M3: 0,8" nas informações
    complementares do XML ou do PDF; coluna M3/Cubagem da ordem de coleta). "Peso cubado" é kg e
    fica de fora.
+   **Medidas de um volume escritas à mão** nas observações da ordem de coleta (e nas informações
+   complementares da nota): "MED 50X50X50", "1,15X1,15X0,60CM", "0,58X0,49X0,49", "10*15*330 METROS",
+   "120 CM (COMPRIMENTO) X 49 CM (LARGURA) X 23 CM (ALTURA)", "33CM DE COMPRIMENTO, 33CM DE LARGURA,
+   69CM DE ALTURA", "60 CM . 30 CM . 5M 20CM". m³ = medida × volumes, origem "medidas", e o pedido
+   guarda o texto da medida para conferir. A unidade escrita nem sempre bate: "1,15X1,15X0,60CM" é
+   metro e "10*15*330 METROS" é cm; vale a que faz sentido para uma embalagem (lados de 1 cm a 14 m).
+   Só o comprimento ("BARRAS DE 6 METROS", "6 MTS") não dá m³, mas vira o aviso de peça maior que o
+   baú. Sem as três medidas ("PALETE 1 POR 1,20", "CHAPA 45*45") fica sem m³. Na ordem de coleta
+   real de 24/11/2026 (17 ordens): 12 com m³, 2 com o comprimento, 3 sem medida. Os casos de teste
+   (`tests/tela/xml/medidas-casos.json`) têm só o formato, sem os dados do cliente, e valem para a
+   tela e para o servidor (`medidas_do_texto` em `backend/entrada.py`).
 2. Das **medidas dos produtos** (menu Produtos): o XML traz código, descrição, quantidade e unidade
    de cada produto. A tela lista os produtos das notas pendentes sem medida (os que aparecem em
    mais pedidos primeiro); a pessoa digita C × L × A em cm de **1 unidade como vem na nota**. O

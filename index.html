@@ -2778,7 +2778,9 @@ function abrirPedido(id){
   const mi=o?_m3Info(o):null, propio=o&&+o.m3>0;
   v('m3', propio?String(+o.m3).replace('.',','):'');
   $id('ped-m3').placeholder=mi&&!propio&&mi.fonte==='produtos'?_fmtM3(mi.m3)+' pelos produtos':'Opcional';
-  $id('ped-m3-nota').textContent = propio&&o.m3Fonte&&o.m3Fonte!=='digitado' ? `Veio ${_ROTULO_M3[o.m3Fonte]||'do arquivo'}.`
+  const dO=o?_dadosPed(o):{};
+  $id('ped-m3-nota').textContent = propio&&o.m3Fonte==='medidas'&&dO.medidas ? `Veio das observações: ${dO.medidas} × ${_plural(+o.itens||1,'volume','volumes')}. Confira.`
+    : propio&&o.m3Fonte&&o.m3Fonte!=='digitado' ? `Veio ${_ROTULO_M3[o.m3Fonte]||'do arquivo'}.`
     : mi&&!propio&&mi.fonte==='produtos' ? 'Vazio, o m³ sai das medidas dos produtos da nota.'
     : mi&&!propio&&mi.fonte==='parcial' ? `Só parte dos produtos tem medida (${_fmtM3(mi.m3)} m³ até agora). Digite o total ou complete em Produtos.`
     : '';
@@ -3367,6 +3369,50 @@ function _m3DoTexto(txt,livre){
   return v>0&&v<=200?Math.round(v*1e4)/1e4:0;
 }
 window.__m3DoTexto=_m3DoTexto;   // testes de tela
+
+// Medidas de UM volume escritas à mão nas observações: "MED 50X50X50", "1,15X1,15X0,60CM",
+// "0,58X0,49X0,49", "120 CM (COMPRIMENTO) X 49 CM (LARGURA) X 23 CM (ALTURA)",
+// "33CM DE COMPRIMENTO, 33CM DE LARGURA, 69CM DE ALTURA", "60 CM . 30 CM . 5M 20CM".
+// A unidade escrita nem sempre bate ("1,15X1,15X0,60CM" é metro; "10*15*330 METROS" é cm): vale a
+// que faz sentido para uma embalagem. Igual a medidas_do_texto do backend/entrada.py.
+// Devolve {cm:[c,l,a]} de um volume, {maiorCm} quando só há o comprimento ("BARRAS DE 6 METROS"), ou null.
+function _medidasDoTexto(txt){
+  let t=_semAcento(txt).toUpperCase().replace(/[*×]/g,'X').replace(/\s+/g,' ');
+  t=t.replace(/(\d+)\s*M\s+(\d{1,2})\s*CM\b/g,(m,a,b)=>a+','+b.padStart(2,'0')+'M');      // "5M 20CM" = 5,20 m
+  t=t.replace(/(\d)(\s*(?:MM|CM|M))?\s+\.\s+(?=\d)/g,(m,d,u)=>d+(u||'')+' X ');          // "60 CM . 30 CM"
+  const N='(\\d+(?:[.,]\\d+)?)', U='(?:\\s*(MM|CM|MTS|METROS?|M)(?![A-Z0-9]))?';
+  const R='\\s*(?:\\((?:COMPRIMENTO|LARGURA|ALTURA|COMP|LARG|ALT)\\.?\\))?\\s*';
+  const tri=[];
+  const rot=t.match(new RegExp(N+U+'\\s*(?:DE\\s+)?COMP(?:RIMENTO)?\\b.*?'+N+U+'\\s*(?:DE\\s+)?LARG(?:URA)?\\b.*?'+N+U+'\\s*(?:DE\\s+)?ALT(?:URA)?\\b'));
+  if(rot) tri.push([[rot[1],rot[2]],[rot[3],rot[4]],[rot[5],rot[6]]]);
+  const re=new RegExp(N+U+R+'X\\s*'+N+U+R+'X\\s*'+N+U,'g');
+  let m; while((m=re.exec(t))) tri.push([[m[1],m[2]],[m[3],m[4]],[m[5],m[6]]]);
+  for(const x of tri){ const cm=_ladosCm(x); if(cm) return {cm, maiorCm:Math.max(...cm)}; }
+  const l=t.match(/(?:^|[^\d.,])(\d{1,2}(?:[.,]\d{1,2})?)\s*(?:METROS?|MTS|M)(?![A-Z0-9])/);
+  if(l){ const v=_numBR(l[1]); if(v>=1&&v<=14) return {maiorCm:Math.round(v*100)}; }
+  return null;
+}
+function _ladosCm(x){
+  const un=u=>!u?'':u==='MM'?'MM':u==='CM'?'CM':'M';
+  const v=x.map(([n])=>_numBR(n)); if(!v.every(n=>n>0)) return null;
+  const max=Math.max(...v), temDec=x.some(([n])=>/[.,]/.test(n));
+  const prop=x.map(([,u])=>un(u)), nProp=prop.filter(Boolean).length;
+  let fim=prop[2]||prop.find(Boolean)||(max<=6?'M':'CM');
+  if(nProp<=1&&fim==='M'&&max>14) fim='CM';                    // "10*15*330 METROS": 330 m não é carga
+  if(nProp<=1&&fim==='CM'&&max<=6&&temDec) fim='M';            // "1,15X1,15X0,60CM": é metro
+  const cm=v.map((n,i)=>{ const k=nProp>1&&prop[i]?prop[i]:fim; return Math.round((k==='MM'?n/10:k==='M'?n*100:n)*10)/10; });
+  return cm.every(n=>n>=1&&n<=1400)&&cm[0]*cm[1]*cm[2]/1e6<=60?cm:null;
+}
+// m³ do pedido pelas medidas de um volume × volumes; {m3, medidas, maiorCm} ou {maiorCm} ou null
+function _m3PorMedidas(txt,volumes){
+  const md=_medidasDoTexto(txt); if(!md) return null;
+  if(!md.cm) return {maiorCm:md.maiorCm};
+  const n=Math.max(1,Math.round(+volumes||1));
+  const m3=Math.round(md.cm[0]*md.cm[1]*md.cm[2]/1e6*n*1e4)/1e4;
+  if(!(m3>0&&m3<=200)) return {maiorCm:md.maiorCm};
+  return {m3, maiorCm:md.maiorCm, medidas:md.cm.map(_fmtMed).join(' × ')+' cm'};
+}
+window.__medidasDoTexto=_medidasDoTexto;
 function _lerXmlNFe(texto,tipo){
   const doc=new DOMParser().parseFromString(String(texto).replace(/^﻿/,''),'application/xml');
   if(doc.getElementsByTagName('parsererror').length) throw new Error('XML inválido ou corrompido');
@@ -3421,6 +3467,11 @@ function _lerXmlNFe(texto,tipo){
       lat:coord.lat+(Math.random()-.5)*.015, lng:coord.lng+(Math.random()-.5)*.015,
       ..._detalhesNota(inf),
     };
+  }).map(o=>{
+    // "MED 50X50X50" nas informações complementares: medidas de um volume × volumes
+    const pm=o.obsNota?_m3PorMedidas(o.obsNota,o.itens):null;
+    if(pm){ if(pm.maiorCm) o.maiorCm=pm.maiorCm; if(!(+o.m3>0)&&pm.m3){ o.m3=pm.m3; o.m3Fonte='medidas'; o.medidas=pm.medidas; } }
+    return o;
   });
   return {orders, semPeso};
 }
@@ -4069,9 +4120,11 @@ function _camposDanfe(linhas, tipo){
   // m³ escrito na nota: solto só nos dados adicionais; com rótulo ("Cubagem:") em qualquer parte
   const yAd=_acharY(linhas,/DADOS ADICIONAIS|INFORMACOES COMPLEMENTARES/);
   const txtAd=yAd==null?'':linhas.filter(l=>l.y<yAd).map(l=>l.itens.map(i=>i.s).join(' ')).join(' ');
-  const m3=_m3DoTexto(txtAd,true)||_m3DoTexto(plano);
+  let m3=_m3DoTexto(txtAd,true)||_m3DoTexto(plano), m3Fonte=m3?'nota':'', medidas='', maiorCm=0;
+  const pmA=txtAd?_m3PorMedidas(txtAd,qtd):null;   // "MED 50X50X50" nos dados adicionais
+  if(pmA){ maiorCm=pmA.maiorCm||0; if(!m3&&pmA.m3){ m3=pmA.m3; m3Fonte='medidas'; medidas=pmA.medidas; } }
 
-  return { chave, nf, m3, nome:String(nome||'').replace(/[<>"']/g,'').trim(),
+  return { chave, nf, m3, m3Fonte, medidas, maiorCm, nome:String(nome||'').replace(/[<>"']/g,'').trim(),
            endereco:String(endereco||'').replace(/[<>"']/g,'').trim(),
            bairro:String(bairro||'').replace(/[<>"']/g,'').trim(),
            cep, cidade:String(cidade||'').replace(/[<>"']/g,'').trim(), uf,
@@ -4097,7 +4150,9 @@ function _pedidoDoDanfe(c, tipo){
     cidade:cidade||'Sem cidade', cep:c.cep,
     geoStatus:c.cep?'pendente':'sem_cep',
     peso:c.peso?Math.round(c.peso*100)/100:100, itens:c.volumes||1,
-    ...(c.m3>0?{m3:c.m3, m3Fonte:'nota'}:{}),
+    ...(c.m3>0?{m3:c.m3, m3Fonte:c.m3Fonte||'nota'}:{}),
+    ...(c.medidas?{medidas:c.medidas}:{}), ...(c.maiorCm>0?{maiorCm:c.maiorCm}:{}),
+    ...(c.obs?{obsNota:c.obs}:{}),
     urgente:false, agendado:false, dataAgendada:'', status:'pendente', origem:'pdf',
     lat:coord.lat+(Math.random()-.5)*.015, lng:coord.lng+(Math.random()-.5)*.015,
   };
@@ -4162,8 +4217,22 @@ function _camposOrdemColeta(linhas){
     }
   }
   if(!m3) m3=_m3DoTexto(L.map(l=>l.itens.map(i=>i.s).join(' ')).join(' '));
+  // Observações: o que vem abaixo do rótulo até a linha de assinatura. Ali a transportadora
+  // escreve as medidas de um volume ("MED 50X50X50"), que vezes os volumes dão o m³.
+  const io=L.findIndex(l=>/^OBSERVACOES:?/.test(_SACENTO(l.itens.map(i=>i.s).join(' ')).trim()));
+  let obs='';
+  if(io>=0){
+    const fimO=L.findIndex((l,k)=>k>io&&/DATA RECEBIMENTO|NOME LEGIVEL|_{5,}|CNPJ\/MF/.test(_SACENTO(l.itens.map(i=>i.s).join(' '))));
+    // até ~70 pt abaixo do rótulo: mais longe já é a 2ª via da folha
+    obs=L.slice(io+1,fimO<0?L.length:fimO).filter(l=>Math.abs(L[io].y-l.y)<=70)
+      .map(l=>l.itens.map(i=>i.s).join(' ')).join(' ').replace(/\s+/g,' ').trim();
+  }
+  let m3Fonte=m3?'nota':'', medidas='', maiorCm=0;
+  const pm=obs?_m3PorMedidas(obs,volumes):null;
+  if(pm){ maiorCm=pm.maiorCm||0; if(!m3&&pm.m3){ m3=pm.m3; m3Fonte='medidas'; medidas=pm.medidas; } }
   return { ordem, chave:'', nf, nome:limpa(nome), endereco:limpa(endereco), bairro:limpa(bairro.txt),
-           cep, cidade:limpa(mc?mc[1]:cid), uf:mc?mc[2].toUpperCase():'', volumes:volumes>0?volumes:0, peso, m3 };
+           cep, cidade:limpa(mc?mc[1]:cid), uf:mc?mc[2].toUpperCase():'', volumes:volumes>0?volumes:0, peso, m3,
+           m3Fonte, medidas, maiorCm, obs:limpa(obs).slice(0,500) };
 }
 
 async function _parsePDF(file,tipo){
@@ -4414,7 +4483,7 @@ function _maiorLadoCm(o){
   if(prods.length){ const forn=_fornDe(d), cat=_catalogo(); prods.forEach(p=>{ const m=cat[_chaveProd(forn,p)]?.cm; if(m) mx=Math.max(mx,...m.map(Number).filter(Number.isFinite)); }); }
   return mx;
 }
-const _ROTULO_M3={exemplo:'dado de exemplo', digitado:'digitado', planilha:'da planilha', nota:'escrito na nota', produtos:'pelas medidas dos produtos',
+const _ROTULO_M3={exemplo:'dado de exemplo', medidas:'pelas medidas escritas na nota', digitado:'digitado', planilha:'da planilha', nota:'escrito na nota', produtos:'pelas medidas dos produtos',
   parcial:'parte dos produtos tem medida', estimado:'estimado pelo peso'};
 // Quantos pedidos de uma lista (já com m3, m3Fonte e m3Ok, como _pedidosDaViagem devolve) têm m³
 function _coberturaM3(lista){

@@ -194,6 +194,95 @@ def m3_do_texto(txt: str, livre: bool = False) -> float:
     return round(n, 4) if 0 < n <= 200 else 0.0
 
 
+_N = r"(\d+(?:[.,]\d+)?)"
+_U = r"(?:\s*(MM|CM|MTS|METROS?|M)(?![A-Z0-9]))?"
+_R = r"\s*(?:\((?:COMPRIMENTO|LARGURA|ALTURA|COMP|LARG|ALT)\.?\))?\s*"
+_MED_ROT = re.compile(_N + _U + r"\s*(?:DE\s+)?COMP(?:RIMENTO)?\b.*?" + _N + _U + r"\s*(?:DE\s+)?LARG(?:URA)?\b.*?"
+                      + _N + _U + r"\s*(?:DE\s+)?ALT(?:URA)?\b")
+_MED_X = re.compile(_N + _U + _R + r"X\s*" + _N + _U + _R + r"X\s*" + _N + _U)
+_MED_COMP = re.compile(r"(?:^|[^\d.,])(\d{1,2}(?:[.,]\d{1,2})?)\s*(?:METROS?|MTS|M)(?![A-Z0-9])")
+
+
+def _num_br_txt(v: str) -> float:
+    if "," in v:
+        v = v.replace(".", "").replace(",", ".")
+    elif re.fullmatch(r"\d{1,3}(\.\d{3})+", v):
+        v = v.replace(".", "")
+    try:
+        return float(v)
+    except ValueError:
+        return 0.0
+
+
+def _lados_cm(x) -> list | None:
+    un = lambda u: "" if not u else ("MM" if u == "MM" else "CM" if u == "CM" else "M")
+    v = [_num_br_txt(n) for n, _ in x]
+    if not all(n > 0 for n in v):
+        return None
+    mx, tem_dec = max(v), any(re.search(r"[.,]", n) for n, _ in x)
+    prop = [un(u) for _, u in x]
+    n_prop = len([u for u in prop if u])
+    fim = prop[2] or next((u for u in prop if u), "") or ("M" if mx <= 6 else "CM")
+    if n_prop <= 1 and fim == "M" and mx > 14:
+        fim = "CM"     # "10*15*330 METROS": 330 m não é carga
+    if n_prop <= 1 and fim == "CM" and mx <= 6 and tem_dec:
+        fim = "M"      # "1,15X1,15X0,60CM": é metro
+    cm = []
+    for i, n in enumerate(v):
+        k = prop[i] if n_prop > 1 and prop[i] else fim
+        cm.append(round((n / 10 if k == "MM" else n * 100 if k == "M" else n) * 10) / 10)
+    if all(1 <= n <= 1400 for n in cm) and cm[0] * cm[1] * cm[2] / 1e6 <= 60:
+        return cm
+    return None
+
+
+def medidas_do_texto(txt: str) -> dict | None:
+    """Medidas de UM volume escritas à mão ("MED 50X50X50", "1,15X1,15X0,60CM",
+    "120 CM (COMPRIMENTO) X 49 CM (LARGURA) X 23 CM (ALTURA)", "60 CM . 30 CM . 5M 20CM").
+    Igual a _medidasDoTexto do index.html. {"cm": [c, l, a], "maiorCm"}, {"maiorCm"} ou None."""
+    t = unicodedata.normalize("NFD", str(txt or ""))
+    t = re.sub(r"[\u0300-\u036f]", "", t).upper()
+    t = re.sub(r"[*×]", "X", t)
+    t = re.sub(r"\s+", " ", t)
+    t = re.sub(r"(\d+)\s*M\s+(\d{1,2})\s*CM\b", lambda m: m.group(1) + "," + m.group(2).zfill(2) + "M", t)
+    t = re.sub(r"(\d)(\s*(?:MM|CM|M))?\s+\.\s+(?=\d)", lambda m: m.group(1) + (m.group(2) or "") + " X ", t)
+    tri = []
+    m = _MED_ROT.search(t)
+    if m:
+        tri.append([(m.group(1), m.group(2)), (m.group(3), m.group(4)), (m.group(5), m.group(6))])
+    for m in _MED_X.finditer(t):
+        tri.append([(m.group(1), m.group(2)), (m.group(3), m.group(4)), (m.group(5), m.group(6))])
+    for x in tri:
+        cm = _lados_cm(x)
+        if cm:
+            return {"cm": cm, "maiorCm": max(cm)}
+    m = _MED_COMP.search(t)
+    if m:
+        v = _num_br_txt(m.group(1))
+        if 1 <= v <= 14:
+            return {"maiorCm": round(v * 100)}
+    return None
+
+
+def _fmt_med(v: float) -> str:
+    s = f"{v:.2f}".rstrip("0").rstrip(".")
+    return s.replace(".", ",")
+
+
+def _medidas_da_obs(p: dict) -> None:
+    """m³ pelas medidas de um volume × volumes, quando a nota não diz o m³."""
+    md = medidas_do_texto(p.get("obsNota", "")) if p.get("obsNota") else None
+    if not md:
+        return
+    p["maiorCm"] = md["maiorCm"]
+    if md.get("cm") and not (p.get("m3") or 0) > 0:
+        c = md["cm"]
+        m3 = math.floor(c[0] * c[1] * c[2] / 1e6 * max(1, int(p.get("itens") or 1)) * 1e4 + 0.5) / 1e4
+        if 0 < m3 <= 200:
+            p["m3"], p["m3Fonte"] = m3, "medidas"
+            p["medidas"] = " × ".join(_fmt_med(n) for n in c) + " cm"
+
+
 def _detalhes_nota(inf) -> dict:
     """O que a janela "ver pedido" da tela mostra além do básico (igual a _detalhesNota do
     index.html). A NF-e não tem medida: o tamanho da carga vem do peso, dos volumes e da
@@ -324,6 +413,7 @@ def ler_xml_nfe(conteudo, tipo: str = "entrega") -> dict:
             "urgente": False, "agendado": False, "dataAgendada": "", "status": "pendente",
             **_detalhes_nota(inf),
         })
+        _medidas_da_obs(pedidos[-1])
     return {"pedidos": pedidos, "sem_peso": sem_peso, "cancelamentos": []}
 
 

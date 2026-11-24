@@ -50,6 +50,17 @@ const emp = (p) => p.evaluate(() => window.__FAKE.db.empresas.emp1);
     .concat([window.__m3DoTexto('Carga com 4,2 m3 no total'), window.__m3DoTexto('Carga com 4,2 m3 no total', true)]));
   ok(J(casos) === J([1.25, 0.85, 2.5, 3, 12, 0, 0, 0, 0, 0, 4.2]), 'm³ escrito na nota: mesma leitura do servidor ' + J(casos));
 
+  // ── medidas escritas à mão nas observações (formatos de ordens de coleta reais, sem os dados) ──
+  const medCasos = JSON.parse(require('fs').readFileSync(__dirname + '/xml/medidas-casos.json', 'utf8'));
+  const medRes = await p.evaluate((cs) => cs.map(([t]) => { const r = window.__medidasDoTexto(t); return r ? (r.cm || r.maiorCm) : null; }), medCasos);
+  const medErr = medCasos.filter(([t, e], i) => J(medRes[i]) !== J(e)).map(([t], i) => t);
+  ok(!medErr.length, `medidas de um volume nas observações: ${medCasos.length - medErr.length} de ${medCasos.length} formatos, igual ao servidor ` + J(medErr));
+  const oc = JSON.parse(require('fs').readFileSync(__dirname + '/pdf/ordem-coleta-exemplo.json', 'utf8'))[0];
+  const ocP = await p.evaluate((it) => { const l = window.__danfe.linhas(it); return window.__danfe.pedido(window.__danfe.ordem(l), 'coleta'); }, oc);
+  ok(ocP.m3 === 1.5 && ocP.m3Fonte === 'medidas' && ocP.medidas === '50 × 50 × 50 cm' && ocP.maiorCm === 50 && ocP.itens === 12,
+    'ordem de coleta: "MED 50X50X50 CM" × 12 volumes = 1,5 m³ ' + J([ocP.m3, ocP.m3Fonte, ocP.medidas, ocP.itens]));
+  ok(ocP.obsNota === 'MED 50X50X50 CM', 'as observações da ordem ficam no pedido: ' + J(ocP.obsNota));
+
   // ── Frota: baú ───────────────────────────────────────────────────────────
   await p.evaluate(() => window.irParaPagina('motoristas')); await p.waitForTimeout(300);
   ok((await p.textContent('#motoristas-lista')).includes('5.000 kg · 25,88 m³'), 'cartão do veículo mostra o m³ do baú medido (4,5 × 2,3 × 2,5)');

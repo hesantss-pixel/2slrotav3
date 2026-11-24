@@ -47,7 +47,7 @@ async function importar(b, ped) {
   // 2. mesma PDF de novo, sem mexer em nada: continua 2, aviso diz que já existiam
   const r2 = await importar(b, r1.db);
   ok(Object.keys(r2.db).length === 2, 'subir de novo não duplica');
-  ok(/^Nenhuma nota nova\. 2 notas já estavam no sistema e foram atualizadas, sem duplicar\.$/.test(r2.msg), 'aviso: nenhuma nova, 2 já estavam → ' + r2.msg);
+  ok(/^Nenhuma nota nova\. 2 notas já estavam no sistema e foram atualizadas, sem duplicar\. 2 notas vieram com o m³ no arquivo\.$/.test(r2.msg), 'aviso: nenhuma nova, 2 já estavam → ' + r2.msg);
 
   // 3. A já coletada; B pendente com ponto corrigido à mão, agendada e urgente
   const s3 = JSON.parse(JSON.stringify(r1.db));
@@ -78,7 +78,7 @@ async function importar(b, ped) {
   // 5. metade nova, metade já existente (o caso de subir 30 com 5 repetidas)
   const s5 = { [B]: JSON.parse(JSON.stringify(r1.db[B])) };
   const r5 = await importar(b, s5);
-  ok(Object.keys(r5.db).length === 2 && /^✅ 1 coleta importada\. 1 nota já estava no sistema e foi atualizada, sem duplicar\.$/.test(r5.msg), 'aviso: 1 nova e 1 que já estava → ' + r5.msg);
+  ok(Object.keys(r5.db).length === 2 && /^✅ 1 coleta importada\. 1 nota já estava no sistema e foi atualizada, sem duplicar\. 2 notas vieram com o m³ no arquivo\.$/.test(r5.msg), 'aviso: 1 nova e 1 que já estava → ' + r5.msg);
 
   ok(!todosErros.length, 'sem erro de JavaScript' + (todosErros.length ? ': ' + todosErros.join(' | ') : ''));
   console.log(falhas ? falhas + ' FALHA(S)' : 'TUDO OK');

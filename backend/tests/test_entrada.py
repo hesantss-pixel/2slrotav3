@@ -2,6 +2,7 @@
 (python -m unittest discover -s tests)."""
 import copy
 import io
+import json
 import os
 import sys
 import unittest
@@ -151,6 +152,17 @@ class TesteLeituraNFe(unittest.TestCase):
         self.assertEqual(p["produtos"][0], {"d": "Produto número 1 linha", "q": 1.5, "u": "CX", "c": "P1"})
         self.assertEqual(p["obsNota"], "Entregar no portão 2. Pedido 4471")
         self.assertNotIn("m3", p)   # a observação não fala em volume
+
+    def test_medidas_escritas_a_mao(self):
+        # mesmos casos de tests/tela/t_cubagem.js (formatos vistos em ordens de coleta reais, sem os dados)
+        casos = json.load(open(os.path.join(os.path.dirname(__file__), "..", "..", "tests", "tela", "xml", "medidas-casos.json"), encoding="utf-8"))
+        for txt, esperado in casos:
+            r = entrada.medidas_do_texto(txt)
+            got = r and (r.get("cm") or r.get("maiorCm"))
+            self.assertEqual(got, esperado, txt)
+        xml = nfe().replace("</infNFe>", "<infAdic><infCpl>MED 50X50X50 CM</infCpl></infAdic></infNFe>")
+        p = entrada.ler_xml_nfe(xml)["pedidos"][0]
+        self.assertEqual((p["m3"], p["m3Fonte"], p["medidas"], p["maiorCm"]), (round(0.125 * p["itens"], 4), "medidas", "50 × 50 × 50 cm", 50))
 
     def test_m3_escrito_na_nota(self):
         casos = {
