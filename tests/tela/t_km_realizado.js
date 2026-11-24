@@ -160,7 +160,7 @@ const seedCliente = (arg) => {
     'relatório compara o km do painel com o planejado das mesmas rotas');
   ok(rel.includes('Km pelo GPS: 41,2 km') && rel.includes('Tempo entre as paradas: 2,3× o planejado') && rel.includes('1 parada feita fora da ordem planejada'), 'relatório traz GPS, tempo e ordem');
   const linha = await p.evaluate(() => [...document.querySelectorAll('#rel-corpo table.rel-tab')[0].querySelectorAll('tbody tr td')].map((t) => t.textContent.trim()));
-  ok(linha.slice(-4).join('|') === '42,5|41,2|2,3×|1', 'tabela de rotas com km painel, km GPS, tempo real e fora da ordem: ' + linha.slice(-4).join('|'));
+  ok(linha.slice(-5, -1).join('|') === '42,5|41,2|2,3×|1', 'tabela de rotas com km painel, km GPS, tempo real e fora da ordem: ' + linha.slice(-5, -1).join('|'));
   const [dl] = await Promise.all([p.waitForEvent('download'), p.click('#rel-csv')]);
   const csv = fs.readFileSync(await dl.path(), 'utf8');
   const cab = csv.split('\r\n').find((l) => l.startsWith('Data;'));

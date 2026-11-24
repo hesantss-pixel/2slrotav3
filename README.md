@@ -854,9 +854,35 @@ baú gera aviso.
 **O que não faz (ainda):** medidas de produto no PDF da DANFE (só o XML traz a lista de produtos);
 encaixe 3D de caixas; "40x30x25" solto no texto da nota (sem saber a quantidade, não dá para somar).
 
+**Curto prazo da pesquisa de cubagem (24/11/2026):**
+- **Confiança do m³.** Cada parada (resultado e plano de carga) mostra de onde veio o m³: nota,
+  medidas da nota, planilha, produtos, digitado, CT-e, estimado, ou "sem medida". Com volume do baú,
+  a rota avisa as paradas sem medida (o volume real pode ser maior: nunca é tratado como "cabe").
+  Medida que dá menos de 10 ou mais de 3.000 kg por m³ com o peso do pedido pede conferência.
+- **Peça maior que o baú.** O pedido cujo maior lado passa do comprimento do baú fica fora do
+  cálculo (continua pendente) e o resultado diz qual e por quê. Por enquanto o filtro é na tela,
+  porque cada cálculo usa um veículo só.
+- **Carroceria** no cadastro do veículo e na roteirização: baú fechado, sider ou aberta. Na
+  aberta, o volume e o comprimento do baú não limitam. A rota confirmada guarda `carroceria`.
+- **Fator de cubagem** da empresa (Produtos → "Fator de cubagem", 300 de partida), em
+  `config/cubagem/fator`. Peso cubado = m³ × fator; peso taxado = o maior entre o real e o cubado.
+  Aparece no pedido e na janela "ver pedido". m³ estimado pelo peso não gera peso cubado.
+- **Relatórios:** "Ocupação dos veículos" (peso e volume usados em média, viagens abaixo de 50%,
+  em quantas o volume encheu antes do peso, % de paradas sem medida) e coluna "Ocupação" por
+  rota; "Peso cubado acima do real" lista os pedidos das rotas do período em que o cubado passou
+  do real, para conferir o frete. Só rotas confirmadas a partir de hoje têm o volume do baú.
+- **m³ pelo XML do CT-e.** Importar o CT-e (mesmo botão da NF-e) não cria pedido: acha os
+  pedidos pendentes pelas chaves das NF-e do CT-e e preenche o m³. Lê `infQ` com `cUnid` 00 (m³);
+  sem ele, o peso com `tpMed` que fala em cubagem ("PESO CUBADO") ÷ fator da empresa; no CT-e
+  simplificado, os códigos 00/01 (cubagem) e 04 (peso cubado). CT-e com várias notas divide o
+  m³ pelo peso de cada pedido. Não troca m³ digitado nem pedido que já saiu. Reimportar a NF-e
+  mantém o m³ do CT-e. Só na tela (a entrada por e-mail ainda não lê CT-e).
+- **Fica para depois:** NOTFIS (EDI) quando um cliente mandar um arquivo de exemplo (cada
+  empresa monta de um jeito); medida na coleta pelo celular; IA para observações; plano 2D.
+
 **Para publicar:** além de subir os arquivos, publique as **regras novas do Firebase**
-(`firebase/database.rules.json`, nó `produtos`). Sem elas, o resto funciona, mas salvar medida de
-produto dá "O banco recusou" e a tela explica o motivo.
+(`firebase/database.rules.json`, nós `produtos` e `config/cubagem`). Sem elas, o resto funciona,
+mas salvar medida de produto ou o fator de cubagem dá "O banco recusou" e a tela explica o motivo.
 
 ## Endereço de coleta nas observações da ordem de coleta (24/11/2026)
 

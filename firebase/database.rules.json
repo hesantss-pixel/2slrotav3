@@ -255,6 +255,10 @@
         "config": {
           "locais": {
             ".write": "auth != null && ((root.child('acesso').child(auth.uid).val() === true && root.child('membros').child(auth.uid).val() === $eid) || ($eid === 'demo_' + auth.uid && root.child('acesso').child(auth.uid).val() === 'demo' && root.child('demos').child(auth.uid).child('expira').val() > now))"
+          },
+          "cubagem": {
+            ".write": "auth != null && ((root.child('acesso').child(auth.uid).val() === true && root.child('membros').child(auth.uid).val() === $eid) || ($eid === 'demo_' + auth.uid && root.child('acesso').child(auth.uid).val() === 'demo' && root.child('demos').child(auth.uid).child('expira').val() > now))",
+            ".validate": "newData.hasChildren(['fator']) && newData.child('fator').isNumber() && newData.child('fator').val() >= 50 && newData.child('fator').val() <= 1000"
           }
         }
       }

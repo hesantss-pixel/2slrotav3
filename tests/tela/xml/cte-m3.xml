@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- CT-e fictício para teste (cubagem em m³ e peso cubado). Nada de dado real. -->
+<cteProc xmlns="http://www.portalfiscal.inf.br/cte" versao="4.00">
+  <CTe><infCte Id="CTe35261111222333000100570010000001231000000011" versao="4.00">
+    <ide><nCT>123</nCT></ide>
+    <infCTeNorm>
+      <infCarga><vCarga>1000.00</vCarga><proPred>DIVERSOS</proPred>
+        <infQ><cUnid>01</cUnid><tpMed>PESO BRUTO</tpMed><qCarga>120.0000</qCarga></infQ>
+        <infQ><cUnid>00</cUnid><tpMed>M3</tpMed><qCarga>2.5000</qCarga></infQ>
+      </infCarga>
+      <infDoc><infNFe><chave>35261111222333000100550010009200011000000027</chave></infNFe>
+              <infNFe><chave>35261111222333000100550010009999991000000099</chave></infNFe></infDoc>
+    </infCTeNorm>
+  </infCte></CTe>
+  <CTe><infCte Id="CTe35261111222333000100570010000001241000000012" versao="4.00">
+    <ide><nCT>124</nCT></ide>
+    <infCTeNorm>
+      <infCarga><vCarga>500.00</vCarga>
+        <infQ><cUnid>01</cUnid><tpMed>PESO BRUTO</tpMed><qCarga>50.0000</qCarga></infQ>
+        <infQ><cUnid>01</cUnid><tpMed>PESO CUBADO</tpMed><qCarga>600.0000</qCarga></infQ>
+      </infCarga>
+      <infDoc><infNFe><chave>35261111222333000100550010008888881000000088</chave></infNFe></infDoc>
+    </infCTeNorm>
+  </infCte></CTe>
+</cteProc>

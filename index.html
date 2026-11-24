@@ -854,12 +854,17 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
 .plano-tab th{font-size:11px;color:var(--text3);font-weight:700;}
 .plano-tab td:first-child{font-weight:800;color:var(--text);}
 .plano-sem{color:#8a5a06;font-weight:600;}
+.plano-orig{display:block;font-size:10.5px;color:var(--text3);font-weight:500;}
+.m3-orig{color:var(--text3);}
+.m3-orig.ruim{color:#8a5a06;font-weight:600;}
 .plano-err{color:var(--red);}
 .plano-nota{font-size:11.5px;color:var(--text3);margin:12px 0 0;line-height:1.5;}
 .prod-sec{max-width:820px;margin:18px 0 26px;}
 .prod-h{font-size:16px;margin:0 0 4px;color:var(--text);}
 .prod-sub{font-size:12.5px;color:var(--text2);line-height:1.55;margin:0 0 10px;}
 .prod-busca{max-width:420px;margin-bottom:10px;font-family:var(--body);}
+.prod-fator{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text2);}
+.prod-fator input{width:96px;text-align:center;}
 .prod-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;background:var(--s2);border:1px solid var(--border2);border-radius:12px;padding:10px 12px;margin-bottom:8px;}
 .prod-info{min-width:0;}
 .prod-info b{display:block;font-size:13px;color:var(--text);overflow-wrap:anywhere;}
@@ -1136,6 +1141,10 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
         <span class="field-lbl">Capacidade máxima (kg)</span>
         <div><input type="number" class="field-inp" id="cap-kg-d" placeholder="0"></div>
         <div class="presets-row" id="presets-row-d"></div>
+        <label class="field-lbl" for="cap-carroc-d">Carroceria</label>
+        <select class="field-inp field-inp-text" id="cap-carroc-d" onchange="_carrocMudouD()">
+          <option value="bau">Baú fechado</option><option value="sider">Sider (lona na lateral)</option><option value="aberta">Aberta (sem teto)</option>
+        </select>
         <label class="field-lbl" for="cap-m3-d">Volume do baú (m³)</label>
         <div class="cub-linha">
           <input type="text" class="field-inp" id="cap-m3-d" inputmode="decimal" autocomplete="off" placeholder="Sem limite de volume" oninput="_renderCubNota()" aria-describedby="cap-m3-nota">
@@ -1301,6 +1310,13 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
         <label>Altura<input class="field-inp" id="mot-bau-a" inputmode="decimal" autocomplete="off" oninput="_motBauNota()"></label>
       </div>
       <div class="frota-dica" id="mot-bau-nota">Medida de parede a parede, do chão ao teto. Ela vira o volume (m³) na roteirização.</div>
+      <label class="field-lbl" for="mot-carroc">Carroceria</label>
+      <select class="field-inp field-inp-text" id="mot-carroc">
+        <option value="bau">Baú fechado</option>
+        <option value="sider">Sider (lona na lateral)</option>
+        <option value="aberta">Aberta (sem teto)</option>
+      </select>
+      <div class="frota-dica">Na aberta, o volume e o comprimento do baú não limitam a rota.</div>
       <label class="field-lbl" for="mot-nome">Motorista (opcional)</label>
       <input type="text" class="field-inp field-inp-text" id="mot-nome" placeholder="Ex: João Silva">
       <button class="btn-modal-primary" onclick="salvarMotorista()">Salvar veículo</button>
@@ -1313,10 +1329,19 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
   <div class="page" id="page-produtos" style="display:none">
     <button class="btn-voltar-topo" onclick="irParaPagina('dashboard')"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Voltar ao Dashboard</button>
     <div class="page-head">
-      <div class="page-title">Medidas dos produtos</div>
+      <div class="page-title">Medidas e cubagem</div>
       <div class="page-sub">Com a medida de cada produto, o sistema calcula o m³ dos pedidos que chegam pelo XML da nota</div>
     </div>
     <div class="import-msg" id="prod-msg" role="status"></div>
+    <section class="prod-sec">
+      <h2 class="prod-h">Fator de cubagem</h2>
+      <p class="prod-sub">Peso cubado = m³ × fator. O frete costuma ser cobrado pelo maior entre o peso real e o cubado (o peso taxado). No rodoviário o costume é 300 kg por m³, mas cada contrato pode ter o seu.</p>
+      <div class="prod-fator">
+        <input class="field-inp" id="prod-fator" inputmode="numeric" autocomplete="off" aria-label="Fator de cubagem em kg por m³">
+        <span>kg por m³</span>
+        <button type="button" class="btn-sm" onclick="salvarFatorCub()">Salvar</button>
+      </div>
+    </section>
     <section class="prod-sec">
       <h2 class="prod-h">Sem medida nos pedidos pendentes</h2>
       <p class="prod-sub" id="prod-pend-sub"></p>
@@ -2325,6 +2350,9 @@ function _relCalcular(){
   const linhas=rotas.map(r=>{
     const c=cont[r.id], par=Number(r.num_paradas)||(r.paradas||[]).length;
     const med=_medirRota(r,_horaDeRota(r,null)), hp=r.km_painel, g=r.km_gps;
+    // ocupação: o máximo a bordo contra o que o veículo leva (peso) e o que a viagem podia usar do baú (m³)
+    const ps=_verLista(r.paradas).filter(Boolean), cg=_perfilCarga(ps), vl=_perfilVolume(ps);
+    const capKg=+r.cap_kg||0, capM3=+r.cap_m3||0;
     return { id:r.id, data:r.data||'', veiculo:r.veiculo||'', motorista:(r.motorista||'').trim()||'—',
       paradas:par, feitos:c.feitos, falhas:c.falhas, semBaixa:Math.max(0,par-c.feitos-c.falhas),
       km:Number(r.km)||0, min:Number(r.tempo_min)||0, peso:Number(r.peso_total)||0,
@@ -2333,7 +2361,11 @@ function _relCalcular(){
       kmPainel:hp&&Number.isFinite(+hp.km)?+hp.km:null,
       kmGps:g&&!g.so_baixas&&Number.isFinite(+g.km_total)?+g.km_total:null,   // só com o caminho gravado
       gpsCob:g&&!g.so_baixas&&Number.isFinite(+g.cobertura)?+g.cobertura:null,
-      razoes:med.razoes, rz:_mediana(med.razoes), fora:med.fora, feitasMed:med.feitas };
+      razoes:med.razoes, rz:_mediana(med.razoes), fora:med.fora, feitasMed:med.feitas,
+      pctKg:capKg?cg.max/capKg*100:null, pctM3:capM3?vl.max/capM3*100:null,
+      semMed:capM3?ps.filter(p=>!(+p.m3>0)).length:0, comM3Cap:capM3?ps.length:0,
+      cubados:ps.filter(p=>p.m3Fonte!=='estimado'&&+p.m3>0&&+p.m3*FATOR_CUB>(+p.peso||0)+0.05)
+        .map(p=>({nf:p.nf, dest:p.dest||p.cidade||'', peso:+p.peso||0, m3:+p.m3, cub:Math.round(+p.m3*FATOR_CUB*10)/10, data:r.data||''})) };
   });
   const tot=linhas.reduce((a,r)=>({rotas:a.rotas+1,paradas:a.paradas+r.paradas,feitos:a.feitos+r.feitos,
     falhas:a.falhas+r.falhas,km:a.km+r.km,peso:a.peso+r.peso,min:a.min+r.min,
@@ -2376,6 +2408,45 @@ function _relBlocoRealizado(d){
       Ele chega pelo link do motorista: o km do painel na saída e na chegada (com foto), o caminho pelo GPS e a hora de cada baixa.</div>`}</div>`;
 }
 
+// Ocupação dos veículos: quanto do peso e do volume as viagens usaram e qual dos dois chegou antes
+function _relBlocoOcupacao(d){
+  const comKg=d.linhas.filter(r=>r.pctKg!=null), comM3=d.linhas.filter(r=>r.pctM3!=null);
+  if(!comKg.length) return '';
+  const med=a=>a.length?Math.round(a.reduce((s,x)=>s+x,0)/a.length):null;
+  const uso=r=>Math.max(r.pctKg||0,r.pctM3||0);
+  const baixa=comKg.filter(r=>uso(r)<50).length;
+  const volLimitou=comM3.filter(r=>r.pctM3>r.pctKg).length;
+  const passou=d.linhas.filter(r=>(r.pctKg||0)>100.5||(r.pctM3||0)>100.5).length;
+  const semMed=d.linhas.reduce((s,r)=>s+r.semMed,0), totM3=d.linhas.reduce((s,r)=>s+r.comM3Cap,0);
+  const kpi=(v,l,ruim)=>`<div class="kpi"><div class="kpi-val"${ruim?' style="color:#b02a2a"':''}>${v}</div><div class="kpi-lbl">${l}</div></div>`;
+  return `<div class="card rel-sec"><h3>Ocupação dos veículos</h3>
+    <div class="kpis" style="grid-template-columns:repeat(auto-fit,minmax(128px,1fr));max-width:none;gap:11px;margin-bottom:10px">
+      ${kpi(med(comKg.map(r=>r.pctKg))+'%','PESO USADO (MÉDIA)')}
+      ${kpi(comM3.length?med(comM3.map(r=>r.pctM3))+'%':'—','VOLUME USADO (MÉDIA)')}
+      ${kpi(_n(baixa),'VIAGENS ABAIXO DE 50%',baixa>0)}
+      ${kpi(comM3.length?_n(volLimitou)+' de '+_n(comM3.length):'—','O VOLUME ENCHEU ANTES DO PESO')}
+      ${passou?kpi(_n(passou),'PASSARAM DO LIMITE',true):''}
+    </div>
+    <div class="rel-nota" style="margin:0">Conta o máximo a bordo em cada viagem. O peso é comparado com a capacidade do veículo; o volume, com o que a viagem podia usar do baú (já com a folga para arrumar a carga).
+    ${comM3.length<comKg.length?` ${_plural(comKg.length-comM3.length,'viagem saiu','viagens saíram')} sem o volume do baú e ${comKg.length-comM3.length===1?'entra':'entram'} só no peso.`:''}
+    ${totM3&&semMed?` <b>${Math.round(semMed/totM3*100)}% das paradas com volume do baú não tinham medida</b> (${_n(semMed)} de ${_n(totM3)}): nelas o volume real pode ter sido maior.`:''}</div>
+  </div>`;
+}
+// Pedidos em que o peso cubado passou do real: o frete deles deveria sair pelo cubado
+function _relBlocoCubado(d){
+  const lista=d.linhas.flatMap(r=>r.cubados).sort((a,b)=>(b.cub-b.peso)-(a.cub-a.peso));
+  if(!lista.length) return '';
+  const dif=lista.reduce((s,x)=>s+(x.cub-x.peso),0), MAX=60;
+  return `<div class="card rel-sec"><h3>Peso cubado acima do real</h3>
+    <div class="rel-nota" style="margin:0 0 10px">${_plural(lista.length,'pedido teve','pedidos tiveram')} o peso cubado (m³ × ${FATOR_CUB}) maior que o peso real, ${_n(Math.round(dif))} kg a mais no total. Se o contrato cobra pelo peso taxado (o maior entre o real e o cubado) e o frete saiu pelo peso real, ele ficou mais barato do que deveria. Confira: o sistema não tem o valor do frete.</div>
+    <div class="rel-rola">Arraste a tabela para o lado para ver o resto.</div><div class="rel-wrap"><table class="rel-tab">
+    <thead><tr><th>Data</th><th>Nota</th><th>Cliente</th><th class="num">Peso real</th><th class="num">m³</th><th class="num">Peso cubado</th><th class="num">Diferença</th></tr></thead>
+    <tbody>${lista.slice(0,MAX).map(x=>`<tr><td>${esc(_dataBR(x.data))}</td><td>NF ${esc(x.nf)}</td><td>${esc(x.dest)}</td>
+      <td class="num">${_n(Math.round(x.peso))} kg</td><td class="num">${_fmtM3(x.m3)}</td><td class="num">${_n(Math.round(x.cub))} kg</td>
+      <td class="num ruim">+${_n(Math.round(x.cub-x.peso))} kg</td></tr>`).join('')}</tbody></table></div>
+    ${lista.length>MAX?`<div class="rel-nota" style="margin:8px 0 0">Mostrando os ${MAX} de maior diferença, de ${lista.length}.</div>`:''}
+  </div>`;
+}
 function renderRelatorios(){
   const d=_relDadosAtuais=_relCalcular();
   const alvo=document.getElementById('rel-corpo'); if(!alvo) return;
@@ -2430,7 +2501,7 @@ function renderRelatorios(){
     <thead><tr><th>Data</th><th>Veículo</th><th>Motorista</th><th class="num">Paradas</th>
       <th class="num">Feitas</th><th class="num">Não feitas</th><th class="num">Sem baixa</th>
       <th class="num">Km</th><th>Medida</th>
-      <th class="num">Km painel</th><th class="num">Km GPS</th><th class="num">Tempo real</th><th class="num">Fora da ordem</th></tr></thead>
+      <th class="num">Km painel</th><th class="num">Km GPS</th><th class="num">Tempo real</th><th class="num">Fora da ordem</th><th class="num">Ocupação</th></tr></thead>
     <tbody>${d.linhas.map(r=>`<tr><td>${esc(_dataBR(r.data))}${r.devolvida?' <span style="color:var(--text3)">(devolvida)</span>':''}</td>
       <td>${esc(r.veiculo)}</td><td>${esc(r.motorista)}</td>
       <td class="num">${r.paradas}</td><td class="num">${r.feitos}</td>
@@ -2440,7 +2511,8 @@ function renderRelatorios(){
       <td class="num">${r.kmPainel==null?'—':_n(r.kmPainel,1)}</td>
       <td class="num">${r.kmGps==null?'—':_n(r.kmGps,1)}</td>
       <td class="num">${_vezes(r.rz)}</td>
-      <td class="num${r.fora?' ruim':''}">${r.feitasMed>=2?r.fora:'—'}</td></tr>`).join('')}</tbody>
+      <td class="num${r.fora?' ruim':''}">${r.feitasMed>=2?r.fora:'—'}</td>
+      <td class="num${(r.pctKg||0)>100.5||(r.pctM3||0)>100.5?' ruim':''}">${r.pctKg==null?'—':Math.round(r.pctKg)+'% peso'}${r.pctM3!=null?'<br>'+Math.round(r.pctM3)+'% vol.':''}</td></tr>`).join('')}</tbody>
   </table></div></div>`;
 
   const tabMot=`<div class="card rel-sec"><h3>Por motorista</h3><div class="rel-rola">Arraste a tabela para o lado para ver o resto.</div><div class="rel-wrap"><table class="rel-tab">
@@ -2465,7 +2537,7 @@ function renderRelatorios(){
     ${modoDemo?'<br>· <b>Atenção: estes são pedidos de exemplo</b>, não a sua operação.':''}
   </div>`;
 
-  alvo.innerHTML=cab+kpis+alertaReta+_relBlocoRealizado(d)+blocoMotivos+tabRotas+tabMot+notas;
+  alvo.innerHTML=cab+kpis+alertaReta+_relBlocoRealizado(d)+_relBlocoOcupacao(d)+blocoMotivos+tabRotas+_relBlocoCubado(d)+tabMot+notas;
 }
 
 function _relCSV(){
@@ -2784,10 +2856,15 @@ function abrirPedido(id){
   endNota.hidden=!dO.coletaObs;
   endNota.textContent=dO.coletaObs?`Endereço de coleta tirado das observações da ordem. O do remetente é ${dO.endRemetente||'outro'}.`:'';
   $id('ped-m3-nota').textContent = propio&&o.m3Fonte==='medidas'&&dO.medidas ? `Veio das observações: ${dO.medidas} × ${_plural(+o.itens||1,'volume','volumes')}. Confira.`
+    : propio&&o.m3Fonte==='cte' ? `Veio do CT-e${dO.cteNum?' '+dO.cteNum:''}${dO.m3DeCubado?`, pelo peso cubado ÷ ${FATOR_CUB}`:''}${dO.m3Rateio?', dividido pelo peso entre as notas dele':''}.`
     : propio&&o.m3Fonte&&o.m3Fonte!=='digitado' ? `Veio ${_ROTULO_M3[o.m3Fonte]||'do arquivo'}.`
     : mi&&!propio&&mi.fonte==='produtos' ? 'Vazio, o m³ sai das medidas dos produtos da nota.'
     : mi&&!propio&&mi.fonte==='parcial' ? `Só parte dos produtos tem medida (${_fmtM3(mi.m3)} m³ até agora). Digite o total ou complete em Produtos.`
     : '';
+  const pc=o?_pesoCubado(o):0;
+  if(pc) $id('ped-m3-nota').textContent=($id('ped-m3-nota').textContent+` Peso cubado: ${pc.toLocaleString('pt-BR')} kg (${_fmtM3(mi.m3)} m³ × ${FATOR_CUB}). Peso taxado: ${Math.max(pc,+o.peso||0).toLocaleString('pt-BR')} kg, o maior entre o real e o cubado.`).trim();
+  const dens=o?_densidadeEstranha(o.peso,mi&&mi.m3):0;
+  if(dens) $id('ped-m3-nota').textContent=($id('ped-m3-nota').textContent+` Com ${(+o.peso).toLocaleString('pt-BR')} kg, dá ${dens.toLocaleString('pt-BR')} kg por m³: a medida parece errada. Confira.`).trim();
   _pedMaiorCm=0; ['cc','cl','ca'].forEach(k=>{ $id('ped-'+k).value=''; });
   $id('ped-calc').open=false; $id('ped-calc-nota').textContent='Medidas em centímetros de uma caixa; o total multiplica pelos volumes.';
   $id('ped-urg').checked=!!o?.urgente;
@@ -3447,12 +3524,58 @@ function _coletaDasObs(txt){
   return {endereco:endereco.slice(0,140), cep, cidade, uf};
 }
 window.__coletaDasObs=_coletaDasObs;
+// CT-e: só o que interessa à cubagem. Em infCarga/infQ, cUnid "00" é m³; peso com tpMed que fala em
+// cubagem ("PESO CUBADO") vira m³ dividindo pelo fator da empresa (é a regra do TOTVS GFE). No CT-e
+// simplificado o tpMed é código: 00/01 = cubagem (da NF-e / aferida), 04 = peso cubado.
+// Devolve [{n, chaves:[44 dígitos], m3, deCubado}] — só os CT-e com chave de NF-e.
+function _lerCte(doc){
+  return [...doc.getElementsByTagNameNS('*','infCte')].map(inf=>{
+    const chaves=[...inf.getElementsByTagNameNS('*','infNFe')].map(x=>_txtXml(x,'chave')).filter(c=>/^\d{44}$/.test(c));
+    let m3=0, deCubado=false;
+    const qs=[...inf.getElementsByTagNameNS('*','infQ')].map(q=>({u:_txtXml(q,'cUnid'), t:_semAcento(_txtXml(q,'tpMed')).toUpperCase(), q:+_txtXml(q,'qCarga')||0}));
+    const m3q=qs.find(x=>x.u==='00'&&x.q>0&&(/CUB|M3|METRO/.test(x.t)||/^0[01]$/.test(x.t)))||qs.find(x=>x.u==='00'&&x.q>0);
+    if(m3q) m3=m3q.q;
+    else { const pc=qs.find(x=>x.u==='01'&&x.q>0&&(/CUB/.test(x.t)||x.t==='04')); if(pc){ m3=pc.q/FATOR_CUB; deCubado=true; } }
+    return {n:_txtXml(_filho(inf,'ide'),'nCT'), chaves:[...new Set(chaves)], m3:m3>0&&m3<=500?Math.round(m3*1e4)/1e4:0, deCubado};
+  }).filter(c=>c.chaves.length);
+}
+// Aplica o m³ dos CT-e nos pedidos das notas deles. CT-e com várias notas: divide pelo peso.
+// Não mexe no m³ digitado por alguém nem em pedido que já saiu para rota.
+async function _aplicarCtes(ctes){
+  const r={pedidos:0, semPedido:0, semM3:0, travados:0}, upd={};
+  for(const c of ctes){
+    if(!(c.m3>0)){ r.semM3++; continue; }
+    const alvos=c.chaves.flatMap(ch=>[ch,'C_'+ch]).map(id=>allOrders.find(o=>o.id===id)).filter(Boolean);
+    const livres=alvos.filter(o=>o.status==='pendente'&&!(o.m3Fonte==='digitado'&&+o.m3>0));
+    r.travados+=alvos.length-livres.length;
+    if(!livres.length){ if(!alvos.length) r.semPedido++; continue; }
+    const pt=livres.reduce((s,o)=>s+(+o.peso||0),0);
+    livres.forEach(o=>{
+      const m3=Math.round(c.m3*(pt>0?(+o.peso||0)/pt:1/livres.length)*1e4)/1e4;
+      if(!(m3>0)) return;
+      upd[o.id]={m3, m3Fonte:'cte', medidas:null, cteNum:c.n||'', ...(livres.length>1?{m3Rateio:true}:{m3Rateio:null}), ...(c.deCubado?{m3DeCubado:true}:{m3DeCubado:null})};
+      r.pedidos++;
+    });
+  }
+  if(!Object.keys(upd).length) return r;
+  if(contaDemo&&!EID){ Object.entries(upd).forEach(([id,v])=>{ const o=allOrders.find(x=>x.id===id); if(o) Object.assign(o,v); }); }
+  else {
+    const multi={}; Object.entries(upd).forEach(([id,v])=>Object.entries(v).forEach(([k,x])=>{ multi[TP('pedidos_rota/'+id+'/'+k)]=x; }));
+    await update(ref(db),multi);
+  }
+  return r;
+}
 function _lerXmlNFe(texto,tipo){
   const doc=new DOMParser().parseFromString(String(texto).replace(/^﻿/,''),'application/xml');
   if(doc.getElementsByTagName('parsererror').length) throw new Error('XML inválido ou corrompido');
+  // CT-e primeiro: ele também tem "infNFe" (as chaves das notas que transporta)
+  if(doc.getElementsByTagNameNS('*','infCte').length){
+    const ctes=_lerCte(doc);
+    if(!ctes.length) throw new Error('é um CT-e sem as chaves das notas');
+    return {orders:[], semPeso:0, ctes};
+  }
   const infs=[...doc.getElementsByTagNameNS('*','infNFe')];
   if(!infs.length){
-    if(doc.getElementsByTagNameNS('*','infCte').length) throw new Error('é um CT-e; por enquanto o sistema lê o XML da NF-e');
     const evs=[...doc.getElementsByTagNameNS('*','infEvento')];
     if(evs.length){
       // 110111 = cancelamento; 110112 = cancelamento por substituição
@@ -4335,7 +4458,7 @@ async function _textoXml(file){
 }
 async function _lerArquivo(file,tipo){
   const ext=file.name.split('.').pop().toLowerCase();
-  if(ext==='xml'){ const r=_lerXmlNFe(await _textoXml(file),tipo); return {orders:r.orders, semPeso:r.semPeso, cancelamentos:r.cancelamentos||[]}; }
+  if(ext==='xml'){ const r=_lerXmlNFe(await _textoXml(file),tipo); return {orders:r.orders, semPeso:r.semPeso, cancelamentos:r.cancelamentos||[], ctes:r.ctes||[]}; }
   if(ext==='pdf'){ const r=await _parsePDF(file,tipo); return {orders:r.orders, semPeso:r.semPeso, semEndereco:r.semEndereco}; }
   if(ext==='csv'){
     const text=(await file.text()).replace(/^﻿/,'');
@@ -4371,7 +4494,11 @@ function _mesclarReimportada(o,cru){
   if(cru.agendado) _CAMPOS_AGENDA.forEach(k=>{ if(cru[k]!==undefined) r[k]=cru[k]; });
   if(cru.urgente) r.urgente=true;
   // m³ digitado aqui vale mais que a falta dele no arquivo novo
-  if(!(+r.m3>0)&&+cru.m3>0&&cru.m3Fonte==='digitado'){ r.m3=+cru.m3; r.m3Fonte='digitado'; if(+cru.maiorCm>0) r.maiorCm=+cru.maiorCm; }
+  // m³ digitado aqui ou vindo do CT-e vale mais que a falta dele no arquivo novo
+  if(!(+r.m3>0)&&+cru.m3>0&&(cru.m3Fonte==='digitado'||cru.m3Fonte==='cte')){
+    r.m3=+cru.m3; r.m3Fonte=cru.m3Fonte; if(+cru.maiorCm>0) r.maiorCm=+cru.maiorCm;
+    ['cteNum','m3Rateio','m3DeCubado'].forEach(k=>{ if(cru[k]!==undefined) r[k]=cru[k]; });
+  }
   r._localMantido = cru.geoStatus==='ok' && Number.isFinite(+cru.lat) && Number.isFinite(+cru.lng) && _mesmoEndereco(o,cru);
   if(r._localMantido) _CAMPOS_LOCAL.forEach(k=>{ if(cru[k]!==undefined) r[k]=cru[k]; });
   return r;
@@ -4381,13 +4508,27 @@ async function importarArquivo(input){
   if(!files.length) return;
   const tipo=tipoImport;
   _impMsg('info',`Lendo ${_plural(files.length,'arquivo','arquivos')}...`);
-  const lidos=[], erros=[], canc=[]; let semPeso=0, semEndereco=0;
+  const lidos=[], erros=[], canc=[], ctes=[]; let semPeso=0, semEndereco=0;
   for(const f of files){
     try{
       const r=await _lerArquivo(f,tipo);
-      if(!r.orders.length&&!(r.cancelamentos||[]).length) throw new Error('nenhuma nota encontrada');
-      lidos.push(...r.orders); semPeso+=r.semPeso; semEndereco+=(r.semEndereco||0); canc.push(...(r.cancelamentos||[]));
+      if(!r.orders.length&&!(r.cancelamentos||[]).length&&!(r.ctes||[]).length) throw new Error('nenhuma nota encontrada');
+      lidos.push(...r.orders); semPeso+=r.semPeso; semEndereco+=(r.semEndereco||0); canc.push(...(r.cancelamentos||[])); ctes.push(...(r.ctes||[]));
     }catch(e){ erros.push(`${f.name}: ${e.message}`); }
+  }
+  // CT-e: não cria pedido, só traz o m³ para os pedidos das notas dele
+  const msgCte=async()=>{
+    if(!ctes.length) return '';
+    let a; try{ a=await _aplicarCtes(ctes); }catch(e){ return ` Não foi possível gravar o m³ dos CT-e: ${e.message}.`; }
+    return ` ${_plural(ctes.length,'CT-e lido','CT-e lidos')}: m³ em ${_plural(a.pedidos,'pedido','pedidos')}`
+      +(a.semPedido?`; ${a.semPedido} sem pedido pendente das notas ${a.semPedido===1?'dele':'deles'} (importe a NF-e antes)`:'')
+      +(a.semM3?`; ${a.semM3} sem m³ no CT-e`:'')
+      +(a.travados?`; ${_plural(a.travados,'pedido mantido','pedidos mantidos')} (m³ digitado ou já em rota)`:'')+'.';
+  };
+  if(!lidos.length&&ctes.length&&!canc.length){
+    const m=await msgCte();
+    _impMsg(erros.length?'warn':'ok',m.trim()+(erros.length?' Não deu para ler: '+erros.join(' · ')+'.':''));
+    return;
   }
   if(!lidos.length){
     if(!canc.length){ _impMsg('err','❌ Nada foi importado. '+erros.join(' · ')); return; }
@@ -4444,6 +4585,7 @@ async function importarArquivo(input){
   const comM3=novos.filter(o=>+o.m3>0&&o.m3Fonte!=='digitado').length;
   if(comM3) msg+=` ${_plural(comM3,'nota veio','notas vieram')} com o m³ no arquivo.`;
   if(semEndereco) msg+=` ${_plural(semEndereco,'nota do PDF ficou de fora','notas do PDF ficaram de fora')}: sem CEP e sem município legíveis — use o XML ${semEndereco===1?'dela':'delas'}.`;
+  msg+=await msgCte();
   if(erros.length) msg+=` Não deu para ler: ${erros.join(' · ')}.`;
   _impMsg(erros.length||!novos.length?'warn':'ok', msg);
   // localiza no mapa em segundo plano as que vieram com CEP
@@ -4487,12 +4629,24 @@ function _bauDe(m,vid){
   return p?{c:p[0],l:p[1],a:p[2],padrao:true}:null;
 }
 function _m3Bau(b){ return b?Math.round(b.c*b.l*b.a*100)/100:0; }
+const _CARROC={bau:'baú fechado', sider:'sider', aberta:'carroceria aberta'};
+function _carrocDe(m){ const c=m&&m.carroceria; return _CARROC[c]?c:'bau'; }
 function _cfgCubagem(){
   let c={}; try{ c=JSON.parse(localStorage.getItem('rotav3_cubagem')||'{}')||{}; }catch(e){}
   const lim=(v,a,b,p)=>Number.isFinite(+v)&&+v>0?Math.min(b,Math.max(a,+v)):p;
   return { aprov:lim(c.aprov,50,100,85), estimar:!!c.estimar, dens:lim(c.dens,50,2000,300) };
 }
 function _salvarCfgCubagem(c){ try{ localStorage.setItem('rotav3_cubagem',JSON.stringify(c)); }catch(e){} }
+// Fator de cubagem (kg por m³): peso cubado = m³ × fator. 300 é o costume do rodoviário (NTC);
+// cada contrato pode ter o seu. Fica em empresas/<eid>/config/cubagem.
+let FATOR_CUB=300;
+const _fatorCubValido=f=>Number.isFinite(+f)&&+f>=50&&+f<=1000?Math.round(+f):300;
+// Peso cubado do pedido (kg) quando o m³ é de verdade (não estimado pelo peso). 0 = não dá para saber.
+function _pesoCubado(o){
+  const i=o&&o.m3Ok!==undefined?{m3:+o.m3||0,fonte:o.m3Fonte||''}:_m3Info(o||{});
+  if(!(i.m3>0)||i.fonte==='estimado') return 0;
+  return Math.round(i.m3*FATOR_CUB*10)/10;
+}
 function _fmtM3(v){ v=+v||0; return v.toLocaleString('pt-BR',{maximumFractionDigits:v>0&&v<0.1?3:2}); }
 function _fmtMed(v){ return (+v||0).toLocaleString('pt-BR',{maximumFractionDigits:2}); }
 
@@ -4533,6 +4687,21 @@ function _m3Info(o,cfg){
   if(cfg.estimar&&+d.peso>0){ const est=(+d.peso)/cfg.dens; if(est>m3) return {m3:est, fonte:'estimado', completo:false, faltam}; }
   return {m3, fonte:m3>0?'parcial':'', completo:false, faltam};
 }
+// Medida que não combina com o peso: abaixo de 10 kg por m³ (mais leve que isopor solto) ou acima
+// de 3.000 (mais denso que aço empilhado). Não muda nada sozinho: a tela pede para conferir.
+function _densidadeEstranha(peso,m3){
+  if(!(+m3>0)||!(+peso>0)) return 0;
+  const d=+peso/+m3;
+  return d<10||d>3000?Math.round(d):0;
+}
+// Rótulo curto da origem do m³, para a lista de paradas e o plano de carga
+const _ORIGEM_CURTA={exemplo:'exemplo', medidas:'medidas da nota', nota:'nota', planilha:'planilha', produtos:'produtos', digitado:'digitado',
+  parcial:'parcial', estimado:'estimado', cte:'CT-e'};
+function _origemM3(p){
+  if(!(+p.m3>0)) return 'sem medida';
+  const o=_ORIGEM_CURTA[p.m3Fonte]||'';
+  return _densidadeEstranha(p.peso,p.m3)?(o?o+', confira':'confira'):o;
+}
 // Maior lado de um volume do pedido (cm), para avisar o que pode não caber no baú
 function _maiorLadoCm(o){
   const d=_dadosPed(o);
@@ -4541,7 +4710,7 @@ function _maiorLadoCm(o){
   if(prods.length){ const forn=_fornDe(d), cat=_catalogo(); prods.forEach(p=>{ const m=cat[_chaveProd(forn,p)]?.cm; if(m) mx=Math.max(mx,...m.map(Number).filter(Number.isFinite)); }); }
   return mx;
 }
-const _ROTULO_M3={exemplo:'dado de exemplo', medidas:'pelas medidas escritas na nota', digitado:'digitado', planilha:'da planilha', nota:'escrito na nota', produtos:'pelas medidas dos produtos',
+const _ROTULO_M3={cte:'do CT-e', exemplo:'dado de exemplo', medidas:'pelas medidas escritas na nota', digitado:'digitado', planilha:'da planilha', nota:'escrito na nota', produtos:'pelas medidas dos produtos',
   parcial:'parte dos produtos tem medida', estimado:'estimado pelo peso'};
 // Quantos pedidos de uma lista (já com m3, m3Fonte e m3Ok, como _pedidosDaViagem devolve) têm m³
 function _coberturaM3(lista){
@@ -4668,7 +4837,7 @@ function renderVeiculosD(){
       return `<div class="veh-card" style="--vc:${v?.cor||'#f3b62b'}" onclick="usarMotoristaD('${esc(m.id)}')">
         <div class="veh-card-icon">${imgVeiculo(v,'veh-img')}</div>
         <div class="frota-topo"><div class="veh-card-name">${esc(m.modelo||m.veiculo_nome||'Veículo')}</div>${placaHtml(m.placa)}</div>
-        <div class="veh-card-tag">${esc(v?.nome||m.veiculo_nome||'')} · ${(m.cap_kg||0).toLocaleString('pt-BR')} kg${_bauDe(m)?` · ${_fmtM3(_m3Bau(_bauDe(m)))} m³`:''}</div>
+        <div class="veh-card-tag">${esc(v?.nome||m.veiculo_nome||'')} · ${(m.cap_kg||0).toLocaleString('pt-BR')} kg${_carrocDe(m)==='aberta'?' · aberta':_bauDe(m)?` · ${_fmtM3(_m3Bau(_bauDe(m)))} m³`:''}</div>
         <div class="veh-card-desc">${m.nome?'Motorista: '+esc(m.nome):'Sem motorista definido'}</div>
       </div>`;
     }).join('')}</div>
@@ -4701,7 +4870,7 @@ function usarMotoristaD(motId){
   document.getElementById('cap-kg-d').value=m.cap_kg;
   document.getElementById('cap-maxped-d').value='8';
   document.getElementById('presets-row-d').innerHTML='';
-  _prepararCubD(_bauDe(m));
+  _prepararCubD(_bauDe(m),_carrocDe(m));
   document.getElementById('rot-step-veiculo').style.display='none';
   document.getElementById('rot-step-cap').style.display='block';
   renderRotTipoD(true);
@@ -4720,11 +4889,12 @@ function selVeicD(id){
   renderRotTipoD(true);
 }
 window.selVeicD=selVeicD;
-let _bauSelD=null;
-function _prepararCubD(bau){
+let _bauSelD=null, carrocD='bau', longosD=[];
+function _prepararCubD(bau,carroc){
   _bauSelD=bau;
+  $id('cap-carroc-d').value=carroc||'bau';
   const cfg=_cfgCubagem();
-  $id('cap-m3-d').value=bau?_fmtMed(_m3Bau(bau)):'';
+  $id('cap-m3-d').value=bau&&carroc!=='aberta'?_fmtMed(_m3Bau(bau)):'';
   $id('cap-aprov-d').innerHTML=[100,95,90,85,80,75,70].map(v=>`<option value="${v}"${v===Math.round(cfg.aprov)?' selected':''}>${v}% do baú</option>`).join('')
     +(![100,95,90,85,80,75,70].includes(Math.round(cfg.aprov))?`<option value="${cfg.aprov}" selected>${cfg.aprov}% do baú</option>`:'');
   $id('cap-estimar-d').checked=cfg.estimar;
@@ -4736,7 +4906,9 @@ function _renderCubNota(){
   const txt=$id('cap-m3-d').value.trim(), bau=txt?_numBR(txt):0, aprov=+$id('cap-aprov-d').value||85;
   const ok=bau>0&&bau<=200;
   const tipo=vehSel?vehSel.nome:'veículo';
-  nota.innerHTML = !txt ? 'Sem volume, a rota limita só pelo peso.'
+  const aberta=$id('cap-carroc-d').value==='aberta';
+  nota.innerHTML = aberta&&!txt ? 'Carroceria aberta: o volume e o comprimento do baú não limitam esta viagem.'
+    : !txt ? 'Sem volume, a rota limita só pelo peso.'
     : !ok ? '<span class="cub-err">Escreva o volume em m³, como 21,6.</span>'
     : `A rota usa até <b>${_fmtM3(Math.floor(bau*aprov)/100)} m³</b> (${aprov}% de ${_fmtM3(bau)} m³). O resto é a folga para arrumar a carga.`
       + (_bauSelD&&_bauSelD.padrao&&Math.abs(_m3Bau(_bauSelD)-bau)<0.01?` Medida típica de ${esc(tipo)} (${_fmtMed(_bauSelD.c)} × ${_fmtMed(_bauSelD.l)} × ${_fmtMed(_bauSelD.a)} m por dentro): confira a do seu baú e salve no cadastro do veículo.`:'');
@@ -4756,6 +4928,13 @@ function _renderCubNota(){
       + link;
 }
 window._renderCubNota=_renderCubNota;
+function _carrocMudouD(){
+  const c=$id('cap-carroc-d').value;
+  if(c==='aberta') $id('cap-m3-d').value='';
+  else if(!$id('cap-m3-d').value.trim()&&_bauSelD) $id('cap-m3-d').value=_fmtMed(_m3Bau(_bauSelD));
+  _renderCubNota();
+}
+window._carrocMudouD=_carrocMudouD;
 window.__pedidosDaViagem=(c)=>_pedidosDaViagem(c);   // testes de tela
 function setPresetD(v,el){ document.getElementById('cap-kg-d').value=v; document.querySelectorAll('.preset-chip').forEach(c=>c.classList.remove('on')); el.classList.add('on'); }
 window.setPresetD=setPresetD;
@@ -4770,6 +4949,7 @@ function irConfirmD(){
   if(estimar&&!(dens>=50&&dens<=2000)){ alert('Para estimar pelo peso, informe quantos kg cabem em 1 m³ (entre 50 e 2.000).'); return; }
   _salvarCfgCubagem({aprov, estimar, dens:estimar?dens:_cfgCubagem().dens});
   bauM3D=bau>0?bau:0; capM3D=bau>0?Math.floor(bau*aprov)/100:0;
+  carrocD=$id('cap-carroc-d').value||'bau';
   capKgD=kg; maxPedD=Math.min(20,Math.max(1,parseInt(document.getElementById('cap-maxped-d').value)||8));
   const saidaTxt=document.getElementById('rot-saida-d').value||'07:00';
   rotaCtxD={ data:document.getElementById('rot-data-d').value||_hojeISO(), saida:_min(saidaTxt)??420,
@@ -4787,7 +4967,7 @@ function irConfirmD(){
   const comHora=viagem.filter(o=>o.janela_ini!=null).length;
   const semLocal=viagem.filter(_aprox).length;
   document.getElementById('confirm-veh-name').textContent=vehSel.nome;
-  document.getElementById('confirm-details-d').innerHTML=`Capacidade: <b style="color:var(--ac)">${kg.toLocaleString('pt-BR')} kg</b><br>${capM3D?`Volume: <b style="color:var(--ac)">${_fmtM3(capM3D)} m³</b> <span style="color:var(--text3)">(${Math.round(capM3D/bauM3D*100)}% do baú de ${_fmtM3(bauM3D)} m³)</span><br>`:''}Máx. de paradas: <b>${maxPedD}</b>${rotCidadeD!=='todas'?`<br>Só de: <b>${esc(rotCidadeD)}</b>`:''}<br>Nesta viagem: <b>${oque} pendentes</b>${rotTipoD==='todos'?' <span style="color:var(--text3)">(entregas primeiro, coletas depois)</span>':''}<br>Saída: <b>${esc(DEPOT.name)}</b> às <b>${_hhmm(rotaCtxD.saida)}</b> de <b>${_dataBR(rotaCtxD.data)}</b><br>Fim: <b>${rotaCtxD.volta?'volta ao CD':'na última parada'}</b>${FATOR_TEMPO!==1?`<br>Tempos ajustados ao trânsito: <b>×${FATOR_TEMPO.toLocaleString('pt-BR',{maximumFractionDigits:2})}</b> <span style="color:var(--text3)">(calibrado pelas suas rotas)</span>`:''}${comHora?`<br>Com horário marcado: <b>${comHora}</b>`:''}${outroDia?`<br><span style="color:var(--text3)">${_plural(outroDia,'agendado para outro dia fica','agendados para outro dia ficam')} de fora.</span>`:''}${semLocal?`<br><span style="color:var(--text3)">📍 ${_plural(semLocal,'pedido com ponto a confirmar','pedidos com ponto a confirmar')} no mapa.</span>`:''}`;
+  document.getElementById('confirm-details-d').innerHTML=`Capacidade: <b style="color:var(--ac)">${kg.toLocaleString('pt-BR')} kg</b><br>${carrocD!=='bau'?`Carroceria: <b>${esc(_CARROC[carrocD])}</b><br>`:''}${capM3D?`Volume: <b style="color:var(--ac)">${_fmtM3(capM3D)} m³</b> <span style="color:var(--text3)">(${Math.round(capM3D/bauM3D*100)}% do baú de ${_fmtM3(bauM3D)} m³)</span><br>`:''}Máx. de paradas: <b>${maxPedD}</b>${rotCidadeD!=='todas'?`<br>Só de: <b>${esc(rotCidadeD)}</b>`:''}<br>Nesta viagem: <b>${oque} pendentes</b>${rotTipoD==='todos'?' <span style="color:var(--text3)">(entregas primeiro, coletas depois)</span>':''}<br>Saída: <b>${esc(DEPOT.name)}</b> às <b>${_hhmm(rotaCtxD.saida)}</b> de <b>${_dataBR(rotaCtxD.data)}</b><br>Fim: <b>${rotaCtxD.volta?'volta ao CD':'na última parada'}</b>${FATOR_TEMPO!==1?`<br>Tempos ajustados ao trânsito: <b>×${FATOR_TEMPO.toLocaleString('pt-BR',{maximumFractionDigits:2})}</b> <span style="color:var(--text3)">(calibrado pelas suas rotas)</span>`:''}${comHora?`<br>Com horário marcado: <b>${comHora}</b>`:''}${outroDia?`<br><span style="color:var(--text3)">${_plural(outroDia,'agendado para outro dia fica','agendados para outro dia ficam')} de fora.</span>`:''}${semLocal?`<br><span style="color:var(--text3)">📍 ${_plural(semLocal,'pedido com ponto a confirmar','pedidos com ponto a confirmar')} no mapa.</span>`:''}`;
   document.getElementById('rot-step-cap').style.display='none';
   document.getElementById('rot-step-confirm').style.display='block';
 }
@@ -4798,7 +4978,17 @@ window.voltarCapD=voltarCapD;
 async function executarVRPD(){
   document.getElementById('rot-step-confirm').style.display='none';
   document.getElementById('rot-step-loading').style.display='block';
-  const pend=_pedidosDaViagem();
+  const todos=_pedidosDaViagem();
+  const comp=_compBauCmD();
+  const longos=comp?todos.filter(o=>_maiorLadoCm(o)>comp):[];
+  longosD=longos.map(o=>({id:o.id, nf:o.nf, cm:_maiorLadoCm(o)}));
+  const pend=longos.length?todos.filter(o=>!longos.includes(o)):todos;
+  if(!pend.length){
+    document.getElementById('rot-step-loading').style.display='none';
+    document.getElementById('rot-step-results').style.display='block';
+    document.getElementById('rot-step-results').innerHTML=`<div class="import-msg show warn">Nenhum pedido desta viagem cabe no comprimento do baú (${_fmtMed(comp/100)} m). Escolha um veículo maior ou de carroceria aberta.</div><button class="btn-modal-sec" onclick="renderVeiculosD()">← Voltar</button>`;
+    return;
+  }
   try{
     const data=await apiPost('/solve',{
       hora_saida: rotaCtxD.saida,
@@ -4900,7 +5090,7 @@ function _manAnunciar(txt){ const el=$id('man-anuncio'); if(el) el.textContent=t
 
 function abrirMapaManualD(){
   manSel=[]; manHist=[]; manMarc=new Map(); manLinha=null;
-  naoAlocD=[]; foraJanelaD=[]; regraCargaD='';
+  naoAlocD=[]; foraJanelaD=[]; regraCargaD=''; longosD=[];
   manSemHover = !!(window.matchMedia && window.matchMedia('(hover: none)').matches);
   manPool=_pedidosDaViagem();
   ['rot-step-veiculo','rot-step-cap','rot-step-confirm','rot-step-loading','rot-step-results']
@@ -5144,7 +5334,9 @@ function _fraseM3Ver(lista){
   const um=is.length===1?is[0]:null;
   const de=um?(_ROTULO_M3[um.fonte]||''):(is.every(i=>i.completo)?'':'parte estimada ou sem medida');
   const pct=capM3D>0?` Ocupa ${Math.max(1,Math.round(m3/capM3D*100))}% do volume da viagem (${_fmtM3(capM3D)} m³).`:'';
-  return `Cubagem: <b>${_fmtM3(m3)} m³</b>${de?` (${esc(de)})`:''}.${pct}`;
+  const pc=lista.reduce((s,o)=>s+_pesoCubado(o),0), pr=lista.reduce((s,o)=>s+(+o.peso||0),0);
+  const cub=pc>pr?` Peso cubado: <b>${Math.round(pc).toLocaleString('pt-BR')} kg</b>, maior que o real (${Math.round(pr).toLocaleString('pt-BR')} kg).`:'';
+  return `Cubagem: <b>${_fmtM3(m3)} m³</b>${de?` (${esc(de)})`:''}.${pct}${cub}`;
 }
 function verPedidoGrupo(g,foco){
   if(!g||$id('modal-ver').classList.contains('open')) return;
@@ -5347,11 +5539,13 @@ function _manAtualizar(){
   }
   const avisos=[];
   if(nivel==='cheio') avisos.push(`Passa da capacidade do ${esc(vehSel?vehSel.nome:'veículo')} em ${kg(carga.max-capKgD)} kg.`);
+  const compM=_compBauCmD(), longosM=compM?manSel.filter(p=>_maiorLadoCm(p)>compM):[];
+  if(longosM.length) avisos.push(`${longosM.length===1?'NF '+esc(longosM[0].nf)+' tem uma peça maior':'NF '+longosM.map(p=>esc(p.nf)).join(', ')+' têm peças maiores'} que o baú (${_fmtMed(compM/100)} m).`);
   if(nivelV==='cheio') avisos.push(`Passa do volume em ${_fmtM3(vol.max-capM3D)} m³ (a viagem usa até ${_fmtM3(capM3D)} m³ do baú).`);
   if(capM3D>0&&manSel.length&&(semMed||estM)) $id('man-sub').innerHTML+='<br>'+[semMed?`${_plural(semMed,'parada sem medida não conta','paradas sem medida não contam')} no volume.`:'',
     estM?`${_plural(estM,'parada entra','paradas entram')} com m³ estimado pelo peso.`:''].filter(Boolean).join(' ');
   if(maxPedD&&manSel.length>maxPedD) avisos.push(`${manSel.length} paradas: mais que o limite de ${maxPedD} que você escolheu na tela anterior.`);
-  $id('man-aviso').innerHTML = avisos.join('<br>') + (avisos.length&&(nivel==='cheio'||nivelV==='cheio')?'<br><span style="font-weight:400">Você pode seguir assim mesmo — na hora de confirmar a saída o sistema avisa de novo.</span>':'');
+  $id('man-aviso').innerHTML = avisos.join('<br>') + (avisos.length&&(nivel==='cheio'||nivelV==='cheio'||longosM.length)?'<br><span style="font-weight:400">Você pode seguir assim mesmo — na hora de confirmar a saída o sistema avisa de novo.</span>':'');
   $id('man-desfazer').disabled=!manHist.length;
   _manListas(carga);
   const bt=$id('man-usar');
@@ -5443,6 +5637,15 @@ function _poolViagemD(){
   return _pedidosDaViagem().filter(o=>!usados.has(_idDe(o)));
 }
 // Pontos de atenção da rota (texto simples; quem mostra em HTML escapa)
+// Avisos sobre a medida (não pedem confirmação na saída: muita operação ainda não mede tudo)
+function _avisosM3D(ps){
+  const out=[];
+  const semMed=ps.filter(p=>!(+p.m3>0));
+  if(capM3D&&semMed.length) out.push(`${semMed.length===ps.length?'Nenhuma parada tem':(semMed.length===1?'1 parada não tem':semMed.length+' paradas não têm')} medida (${semMed.length<=4?'NF '+semMed.map(p=>p.nf).join(', '):'veja a lista'}): o volume a bordo pode ser maior do que aparece. Digite o m³ no pedido ou ligue a estimativa pelo peso.`);
+  const estranhas=ps.filter(p=>_densidadeEstranha(p.peso,p.m3));
+  if(estranhas.length) out.push(`Medida que não combina com o peso em ${estranhas.length===1?'NF '+estranhas[0].nf+` (${_densidadeEstranha(estranhas[0].peso,estranhas[0].m3).toLocaleString('pt-BR')} kg por m³)`:'NF '+estranhas.map(p=>p.nf).join(', ')}: confira o m³.`);
+  return out;
+}
 function _problemasRotaD(r){
   const ps=_paradasD(r), out=[];
   if(!ps.length) return out;
@@ -5450,7 +5653,7 @@ function _problemasRotaD(r){
   if(capKgD&&carga.max>capKgD) out.push(`Passa da capacidade: chega a ${carga.max.toLocaleString('pt-BR')} kg a bordo, e o veículo leva ${capKgD.toLocaleString('pt-BR')} kg.`);
   const vol=_perfilVolume(ps);
   if(capM3D&&vol.max>capM3D+1e-9) out.push(`Passa do volume: chega a ${_fmtM3(vol.max)} m³ a bordo, e a viagem usa até ${_fmtM3(capM3D)} m³ do baú.`);
-  const comp=_bauSelD?_bauSelD.c*100:0;
+  const comp=_compBauCmD();
   const longos=comp?ps.filter(p=>_maiorLadoCm(p)>comp):[];
   if(longos.length) out.push(`${longos.length===1?'A NF '+longos[0].nf+' tem um volume':'As NF '+longos.map(p=>p.nf).join(', ')+' têm volumes'} maior que o comprimento do baú (${_fmtMed(_bauSelD.c)} m).`);
   if(maxPedD&&ps.length>maxPedD) out.push(`${ps.length} paradas: mais que o limite de ${maxPedD} que você escolheu.`);
@@ -5623,6 +5826,8 @@ function _renderResultadoD(){
   const tT=_contarTipos(rotas.flatMap(r=>_paradasD(r)));
   const ajustada=rotas.some(r=>r._ajustada||r._manual);
   const fora=ajustada?_poolViagemD().length:naoAlocD.length;
+  const msgLongos = !longosD.length||ajustada ? ''
+    : `<div class="import-msg show warn" style="max-width:640px;margin:0 0 16px">${longosD.length===1?'1 pedido ficou':longosD.length+' pedidos ficaram'} fora porque ${longosD.length===1?'é maior':'são maiores'} que o baú (${_fmtMed(_compBauCmD()/100)} m${_bauSelD&&_bauSelD.padrao?', medida típica':''}): ${longosD.map(x=>`NF ${esc(x.nf)} (${_fmtMed(x.cm/100)} m)`).join(', ')}. ${longosD.length===1?'Ele continua':'Eles continuam'} pendentes: use um veículo maior ou de carroceria aberta.</div>`;
   const msgFora = !fora ? ''
     : ajustada ? `<div class="import-msg show info" style="max-width:640px;margin:0 0 16px">${_plural(fora,'pedido pendente ficou','pedidos pendentes ficaram')} fora desta viagem. ${fora===1?'Ele continua':'Eles continuam'} na lista para a próxima.</div>`
     : `<div class="import-msg show info" style="max-width:640px;margin:0 0 16px">Esta viagem levou <b>${totalE} de ${totalE+naoAlocD.length}</b> pedidos: o limite foi de ${maxPedD} paradas e ${capKgD.toLocaleString('pt-BR')} kg. Os outros ${naoAlocD.length} continuam pendentes para a próxima viagem (gere outra com o próximo veículo).${foraJanelaD.length?` Atenção: ${_plural(foraJanelaD.length,'pedido tem','pedidos têm')} horário que não dá para cumprir saindo às ${_hhmm(rotaCtxD.saida)} (NF ${foraJanelaD.slice(0,8).map(esc).join(', ')}).`:''}</div>`;
@@ -5634,7 +5839,7 @@ function _renderResultadoD(){
       <div class="kpi"><div class="kpi-lbl">KM TOTAL</div><div class="kpi-val">${totalKm.toFixed(0)}</div></div>
     </div>
     ${regraCargaD==='soma_entregas_e_coletas'&&!ajustada?'<div class="import-msg show warn" style="max-width:640px;margin:0 0 16px">Nesta rota o peso das entregas e das coletas foi somado para caber no veículo (regra mais conservadora).</div>':''}
-    ${msgFora}
+    ${msgLongos}${msgFora}
     <div class="rota-tabs-d" id="rota-tabs-d" role="tablist">${rotas.map((r,i)=>`<div class="rota-tab-d ${i===rotaSelD?'active':''}" role="tab" tabindex="0" aria-selected="${i===rotaSelD}" onclick="selRotaTabD(${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selRotaTabD(${i})}">Rota ${i+1} · ${_paradasD(r).length} paradas${r._manual?' · montada no mapa':''}${r._ajustada?' · ajustada':''}</div>`).join('')}</div>
     <div id="rota-detail-d"></div>
     <div id="confirmar-rota-wrap" style="margin-top:18px;max-width:640px">
@@ -5697,6 +5902,7 @@ async function confirmarRotaD(){
         peso_total:r.peso_total||paradas.reduce((s,p)=>s+(p.peso||0),0),
         ...(m3Tot>0?{m3_total:m3Tot}:{}),
         ...(capM3D>0?{cap_m3:capM3D, bau_m3:bauM3D}:{}),
+        ...(carrocD!=='bau'?{carroceria:carrocD}:{}),
         ...(_bauDaViagemD()?{bau:{c:_bauSelD.c,l:_bauSelD.l,a:_bauSelD.a}}:{}),
         num_paradas:paradas.length, entregas:nP.entrega, coletas:nP.coleta, status:'em_rota', paradas,
         fonte_dist:r._fonte||fonteDistanciaD||'—',   // como o km e os horários foram medidos
@@ -6585,6 +6791,7 @@ function toggleFormMotorista(editId){
   document.getElementById('mot-cap-kg').value=m?.cap_kg||'';
   const bau=m?_bauDe(m):null;
   ['c','l','a'].forEach(k=>{ const i=$id('mot-bau-'+k); i.value=bau?String(bau[k]).replace('.',','):''; i.dataset.tipico=bau&&bau.padrao?'1':''; });
+  $id('mot-carroc').value=_carrocDe(m);
   _motBauNota();
   document.getElementById('mot-veh-desc').textContent='';
   document.getElementById('mot-veh-grid').innerHTML=VEICULOS.map(v=>
@@ -6650,6 +6857,8 @@ async function salvarMotorista(){
   const motorista={ ...anterior, id, nome, veiculo_id:_vehMotoristaSel.id, veiculo_nome:_vehMotoristaSel.nome, cap_kg:cap };
   if(modelo) motorista.modelo=modelo; else delete motorista.modelo;
   // medida típica não é gravada: o veículo segue usando a do tipo (e a tela avisa que é típica)
+  const carroc=$id('mot-carroc').value;
+  if(carroc&&carroc!=='bau') motorista.carroceria=carroc; else delete motorista.carroceria;
   if(bauVazio||bauTipico){ delete motorista.bau_c; delete motorista.bau_l; delete motorista.bau_a; }
   else { motorista.bau_c=Math.round(bauV[0]*100)/100; motorista.bau_l=Math.round(bauV[1]*100)/100; motorista.bau_a=Math.round(bauV[2]*100)/100; }
   if(placa) motorista.placa=placa; else delete motorista.placa;
@@ -6693,7 +6902,7 @@ function renderMotoristasPage(){
         <div class="rc-card-veic">${imgVeiculo(v,'veh-img-mini')}</div>
         <div class="rc-card-info">
           <div class="frota-topo"><div class="rc-card-name">${esc(m.modelo||m.veiculo_nome||'Veículo')}</div>${placaHtml(m.placa)}</div>
-          <div class="rc-card-sub">${esc(v?.nome||m.veiculo_nome||'')} · ${(m.cap_kg||0).toLocaleString('pt-BR')} kg${_bauDe(m)?` · ${_fmtM3(_m3Bau(_bauDe(m)))} m³${_bauDe(m).padrao?' (típico)':''}`:''}</div>
+          <div class="rc-card-sub">${esc(v?.nome||m.veiculo_nome||'')} · ${(m.cap_kg||0).toLocaleString('pt-BR')} kg${_carrocDe(m)==='aberta'?' · carroceria aberta':_bauDe(m)?` · ${_fmtM3(_m3Bau(_bauDe(m)))} m³${_bauDe(m).padrao?' (típico)':''}`:''}${_carrocDe(m)==='sider'?' · sider':''}</div>
           <div class="frota-mot${m.nome?'':' vazio'}">${m.nome?'Motorista: '+esc(m.nome):'Sem motorista definido'}</div>
         </div>
       </div>
@@ -6738,6 +6947,7 @@ function _prodLinha(x,extra,cm,mais){
 }
 function renderProdutosPage(){
   const pend=_produtosSemMedida(), cat=_catalogo();
+  const fi=$id('prod-fator'); if(fi&&document.activeElement!==fi) fi.value=String(FATOR_CUB);
   _prodInfo={};
   pend.forEach(x=>{ _prodInfo[x.k]={f:x.f,fn:x.fn,c:x.c,d:x.d,u:x.u}; });
   Object.entries(cat).forEach(([k,x])=>{ if(x&&typeof x==='object') _prodInfo[k]={f:x.f||'',fn:x.fn||'',c:x.c||'',d:x.d||'',u:x.u||''}; });
@@ -6784,6 +6994,17 @@ async function salvarProduto(k,bt){
   if(!_frotaDoBanco()) renderProdutosPage();
 }
 window.salvarProduto=salvarProduto;
+async function salvarFatorCub(){
+  const v=_numBR($id('prod-fator').value);
+  if(!(v>=50&&v<=1000)){ $id('prod-fator').setAttribute('aria-invalid','true'); _prodMsg('err','Fator de cubagem: um número entre 50 e 1.000 kg por m³.'); return; }
+  $id('prod-fator').removeAttribute('aria-invalid');
+  const f=Math.round(v);
+  try{ if(_frotaDoBanco()) await update(ref(db,TP('config/cubagem')),{fator:f}); else FATOR_CUB=f; }
+  catch(e){ _prodMsg('err',/permission/i.test(e.message)?'O banco recusou: falta publicar as regras novas do Firebase (veja o README, "Cubagem").':'Não foi possível salvar: '+e.message); return; }
+  FATOR_CUB=f;
+  _prodMsg('ok',`Fator salvo: ${f} kg por m³. Vale para o peso cubado de todos os pedidos e dos relatórios.`);
+}
+window.salvarFatorCub=salvarFatorCub;
 async function excluirProduto(k){
   const x=_catalogo()[k]; if(!x) return;
   if(!confirm(`Apagar a medida de "${x.d}"? Os pedidos com este produto ficam sem esse m³.`)) return;
@@ -6817,7 +7038,7 @@ function selRotaTabD(idx){
   const km=r.km||r.distancia_km||0, peso=r.peso_total||paradas.reduce((s,p)=>s+(p.peso||0),0);
   const fonte=r._fonte||fonteDistanciaD, calc=r._calc||'ok';
   const nT=_contarTipos(paradas), carga=_perfilCarga(paradas);
-  const probs=_problemasRotaD(r);
+  const probs=_problemasRotaD(r), avisosM3=_avisosM3D(_paradasD(r));
   const outras=rotaGeradaD.map((x,k)=>k).filter(k=>k!==idx);
   const notaFonte = calc==='calculando' ? '<div class="calc-st" role="status">Recalculando km e horários na ordem nova…</div>'
     : calc==='otimizando' ? '<div class="calc-st" role="status">Otimizando a ordem das paradas…</div>'
@@ -6832,7 +7053,7 @@ function selRotaTabD(idx){
         ${outras.length?`<select data-foco="${esc(pid)}|rota" aria-label="Mover NF ${esc(p.nf)} para outra viagem" onchange="moverParaRotaD(${idx},${i},this.value)"><option value="">Viagem…</option>${outras.map(k=>`<option value="${k}">Rota ${k+1}</option>`).join('')}</select>`:''}
         <button type="button" class="tirar" data-foco="${esc(pid)}|tirar" onclick="tirarParadaD(${idx},${i})" aria-label="Tirar NF ${esc(p.nf)} desta rota" title="Tirar da rota">✕</button>
       </div>`:'';
-    return `<div class="delivery-mini${ajusteD?' ajuste':''}"><div class="delivery-mini-num${_tipoDe(p)==='coleta'?' c':''}">${i+1}</div><div class="dm-txt"><div style="font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text)">NF ${esc(p.nf)}${_tag(p)}${p.chegada_min!=null&&p.janela_ini!=null?`<span class="cheg" title="Horário marcado: ${_hhmm(p.janela_ini)}–${_hhmm(p.janela_fim??p.janela_ini)}">chega ~${_hhmm(p.chegada_min)}</span>`:''}${tarde?'<span class="atraso">depois do horário</span>':''}${aprox?`<button type="button" class="aprox-bt" data-foco="${esc(pid)}|local" onclick="abrirPedido(${esc(JSON.stringify(pid))})">confirmar ponto</button>`:''}</div><div style="font-size:11px;color:var(--text3)">${p.janela_ini!=null?`Horário ${_hhmm(p.janela_ini)}–${_hhmm(p.janela_fim)} · `:''}${p.dest&&p.dest!==p.cidade?esc(p.dest)+' · ':''}${p.endereco?esc(p.endereco)+' · ':''}${esc(p.cidade||'')} · ${(+p.peso||0).toLocaleString('pt-BR')} kg${+p.m3>0?` · ${_fmtM3(p.m3)} m³${p.m3Fonte==='estimado'?' (estimado)':''}`:''}</div></div>${acoes}</div>`;
+    return `<div class="delivery-mini${ajusteD?' ajuste':''}"><div class="delivery-mini-num${_tipoDe(p)==='coleta'?' c':''}">${i+1}</div><div class="dm-txt"><div style="font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text)">NF ${esc(p.nf)}${_tag(p)}${p.chegada_min!=null&&p.janela_ini!=null?`<span class="cheg" title="Horário marcado: ${_hhmm(p.janela_ini)}–${_hhmm(p.janela_fim??p.janela_ini)}">chega ~${_hhmm(p.chegada_min)}</span>`:''}${tarde?'<span class="atraso">depois do horário</span>':''}${aprox?`<button type="button" class="aprox-bt" data-foco="${esc(pid)}|local" onclick="abrirPedido(${esc(JSON.stringify(pid))})">confirmar ponto</button>`:''}</div><div style="font-size:11px;color:var(--text3)">${p.janela_ini!=null?`Horário ${_hhmm(p.janela_ini)}–${_hhmm(p.janela_fim)} · `:''}${p.dest&&p.dest!==p.cidade?esc(p.dest)+' · ':''}${p.endereco?esc(p.endereco)+' · ':''}${esc(p.cidade||'')} · ${(+p.peso||0).toLocaleString('pt-BR')} kg${+p.m3>0?` · ${_fmtM3(p.m3)} m³ <span class="m3-orig${_densidadeEstranha(p.peso,p.m3)?' ruim':''}">(${esc(_origemM3(p))})</span>`:(capM3D>0?' · <span class="m3-orig ruim">sem medida</span>':'')}</div></div>${acoes}</div>`;
   };
   document.getElementById('rota-detail-d').innerHTML=`
     <div id="rota-map"></div>
@@ -6842,6 +7063,7 @@ function selRotaTabD(idx){
     </div>
     ${paradas.length?_blocoCargaD(paradas,idx):''}
     ${probs.length?`<div class="rota-alertas">${probs.map(t=>`<div class="import-msg show warn">⚠️ ${esc(t)}</div>`).join('')}</div>`:''}
+    ${avisosM3.length?`<div class="rota-alertas">${avisosM3.map(t=>`<div class="import-msg show info">${esc(t)}</div>`).join('')}</div>`:''}
     <div class="ajuste-barra">
       <span class="info">${ajusteD?'Mude a ordem com as setas, tire paradas ou adicione pedidos pendentes. Os km e horários são recalculados a cada mudança.':(r._ajustada?'Rota ajustada à mão.':'Ordem montada pelo sistema.')}${r._ajustada?'<span class="ajuste-tag">ajustada</span>':''}</span>
       <div class="ajuste-acoes">
@@ -6862,6 +7084,8 @@ function selRotaTabD(idx){
 }
 window.selRotaTabD=selRotaTabD;
 
+// Comprimento útil do baú em cm (0 = não limita: carroceria aberta ou sem medida)
+function _compBauCmD(){ return carrocD!=='aberta'&&_bauSelD?Math.round(_bauSelD.c*100):0; }
 // O baú escolhido só vale para desenhar se o volume da tela é o dele (a pessoa pode ter digitado outro)
 function _bauDaViagemD(){ return _bauSelD&&Math.abs(_m3Bau(_bauSelD)-bauM3D)<0.01?_bauSelD:null; }
 
@@ -6908,7 +7132,8 @@ function _planoCargaHtml(paradas,o){
     <text x="${(X0+WB-4).toFixed(1)}" y="${Y+H+34}" text-anchor="end" font-size="11" fill="#5b6b82">porta</text>
   </svg>`;
   const kg=v=>Math.round(+v||0).toLocaleString('pt-BR');
-  const fila=(c,k)=>`<tr><td>${k+1}º</td><td>${c.n}</td><td>NF ${esc(c.p.nf)}</td><td>${esc(c.p.dest||c.p.cidade||'')}</td><td>${Math.max(1,Math.round(+c.p.itens||1))}</td><td>${kg(c.p.peso)} kg</td><td>${+c.p.m3>0?_fmtM3(c.p.m3)+' m³':'<span class="plano-sem">sem medida</span>'}</td></tr>`;
+  const m3Cel=p=>+p.m3>0?`${_fmtM3(p.m3)} m³${_origemM3(p)?` <small class="plano-orig">${esc(_origemM3(p))}</small>`:''}`:'<span class="plano-sem">sem medida</span>';
+  const fila=(c,k)=>`<tr><td>${k+1}º</td><td>${c.n}</td><td>NF ${esc(c.p.nf)}</td><td>${esc(c.p.dest||c.p.cidade||'')}</td><td>${Math.max(1,Math.round(+c.p.itens||1))}</td><td>${kg(c.p.peso)} kg</td><td>${m3Cel(c.p)}</td></tr>`;
   const vol=_perfilVolume(paradas);
   const resumo=[
     o.bauM3>0?`Entregas: <b>${_fmtM3(m3E)} m³</b> de ${_fmtM3(o.bauM3)} m³ do baú (${Math.round(m3E/o.bauM3*100)}%)${o.capM3>0?`; o limite da viagem é ${_fmtM3(o.capM3)} m³`:''}.`
@@ -6926,7 +7151,7 @@ function _planoCargaHtml(paradas,o){
     <div class="plano-tab-wrap"><table class="plano-tab"><thead><tr><th>Carregar</th><th>Parada</th><th>Nota</th><th>Destinatário</th><th>Vol.</th><th>Peso</th><th>m³</th></tr></thead>
     <tbody>${carregar.map(fila).join('')}</tbody></table></div>`:'<p class="plano-p">Esta viagem só tem coletas: o veículo sai vazio.</p>'}
     ${col.length?`<h3 class="plano-h">Coletas na volta</h3><div class="plano-tab-wrap"><table class="plano-tab"><thead><tr><th>Parada</th><th>Nota</th><th>Remetente</th><th>Vol.</th><th>Peso</th><th>m³</th></tr></thead>
-    <tbody>${col.map(c=>`<tr><td>${c.n}</td><td>NF ${esc(c.p.nf)}</td><td>${esc(c.p.dest||c.p.cidade||'')}</td><td>${Math.max(1,Math.round(+c.p.itens||1))}</td><td>${kg(c.p.peso)} kg</td><td>${+c.p.m3>0?_fmtM3(c.p.m3)+' m³':'<span class="plano-sem">sem medida</span>'}</td></tr>`).join('')}</tbody></table></div>`:''}
+    <tbody>${col.map(c=>`<tr><td>${c.n}</td><td>NF ${esc(c.p.nf)}</td><td>${esc(c.p.dest||c.p.cidade||'')}</td><td>${Math.max(1,Math.round(+c.p.itens||1))}</td><td>${kg(c.p.peso)} kg</td><td>${m3Cel(c.p)}</td></tr>`).join('')}</tbody></table></div>`:''}
     <p class="plano-nota">Desenho por volume: não considera o formato das caixas nem o que pode ir por cima. Confira na hora de carregar.</p>`;
 }
 function _abrirPlano(paradas,o){
@@ -6961,7 +7186,7 @@ function imprimirPlanoCarga(){
     h1{font-size:19px;margin:0 0 4px}.plano-cab{color:#5b6b82;margin:0 0 12px}.plano-svg{width:100%;max-width:720px;height:auto}
     .plano-h{font-size:14px;margin:18px 0 6px}.plano-p,.plano-nota{margin:4px 0;line-height:1.5}.plano-nota{color:#5b6b82;font-size:11.5px;margin-top:14px}
     table{border-collapse:collapse;width:100%}th,td{border:1px solid #c8d1de;padding:5px 7px;text-align:left}th{background:#eef2f8}
-    .plano-sem{color:#8a5a06}.plano-err{color:#b42323}</style></head><body><h1>${esc($id('plano-tit').textContent)}</h1>${_planoCargaHtml(_planoAtual.paradas,_planoAtual.o)}</body></html>`);
+    .plano-sem{color:#8a5a06}.plano-err{color:#b42323}.plano-orig{display:block;font-size:10px;color:#5b6b82}</style></head><body><h1>${esc($id('plano-tit').textContent)}</h1>${_planoCargaHtml(_planoAtual.paradas,_planoAtual.o)}</body></html>`);
   w.document.close(); w.focus(); setTimeout(()=>{ try{ w.print(); }catch(e){} },250);
 }
 window.imprimirPlanoCarga=imprimirPlanoCarga;
@@ -7050,7 +7275,7 @@ async function enviarChatD(){
 window.enviarChatD=enviarChatD;
 
 // ── Início (só depois do login com acesso liberado) ─────────────────────
-let _fatorUnsub=null;
+let _fatorUnsub=null, _cubUnsub=null;
 const _fatorValido=f=>Number.isFinite(+f)&&+f>=0.5&&+f<=3 ? +f : 1;
 async function carregarConfig(){
   try{
@@ -7059,6 +7284,11 @@ async function carregarConfig(){
     // o administrador pode mudar o ajuste com a página aberta: segue o valor do banco
     if(_fatorUnsub){ try{ _fatorUnsub(); }catch(e){} }
     _fatorUnsub=onValue(ref(db,TP('config/fator_tempo')),sn=>{ FATOR_TEMPO=_fatorValido(sn.val()); },()=>{});
+    if(_cubUnsub){ try{ _cubUnsub(); }catch(e){} }
+    _cubUnsub=onValue(ref(db,TP('config/cubagem')),sn=>{
+      FATOR_CUB=_fatorCubValido(sn.val()&&sn.val().fator);
+      if(document.getElementById('page-produtos')?.style.display==='block') renderProdutosPage();
+    },()=>{});
     const d=(await get(ref(db,TP('config/deposito')))).val();
     if(d && Number.isFinite(+d.lat) && Number.isFinite(+d.lng)){ DEPOT.lat=+d.lat; DEPOT.lng=+d.lng; if(d.nome) DEPOT.name=String(d.nome); }
     else if(EID && EID!=='principal') DEPOT.name='CD padrão (Guarulhos)';

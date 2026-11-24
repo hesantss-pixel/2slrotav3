@@ -99,5 +99,9 @@ ok(!W('empresas/emp1/produtos/pabc', { d: 'Sem medida' }, ANA), 'produto sem as 
 ok(!W('empresas/emp1/produtos/pabc', { ...PROD, d: 'x'.repeat(121) }, ANA), 'descrição longa demais é recusada');
 ok(R('empresas/emp1/produtos', ANA) && !R('empresas/emp1/produtos', BIA), 'cada empresa lê só as medidas dela');
 ok(W('empresas/principal/produtos/pabc', PROD, ADMIN), 'administrador grava na empresa principal');
+ok(W('empresas/emp1/config/cubagem', { fator: 250 }, ANA), 'membro grava o fator de cubagem da empresa');
+ok(!W('empresas/emp1/config/cubagem', { fator: 5 }, ANA) && !W('empresas/emp1/config/cubagem', { fator: '300' }, ANA), 'fator fora de 50 a 1.000, ou em texto, é recusado');
+ok(!W('empresas/emp2/config/cubagem', { fator: 250 }, ANA), 'e não muda o fator de outra empresa');
+ok(!W('empresas/emp1/config/fator_tempo', 1.2, ANA), 'o membro continua sem mexer no ajuste de tempo (só o administrador)');
 
 console.log(falhas ? `${falhas} falha(s)` : 'regras ok');
