@@ -90,4 +90,14 @@ ok(!R('pedidos') && !W('pedidos/123', { nf: '123' }), 'sem login não lê nem gr
 ok(!R('pedidos', { uid: 'uid-demo' }), 'conta não liberada não lê pedidos');
 ok(!R('pedidos_side', ANA), 'pedidos_side continua fechada');
 
+// ── medidas dos produtos (cubagem, 24/11/2026) ───────────────────────────
+const PROD = { d: 'Caixa organizadora 40L', c: 'P1', f: '11222333000100', u: 'CX', cm: [50, 40, 30], em: now };
+ok(W('empresas/emp1/produtos/pabc', PROD, ANA), 'membro grava a medida de um produto da empresa dele');
+ok(!W('empresas/emp2/produtos/pabc', PROD, ANA), 'e não grava na empresa de outro');
+ok(!W('empresas/emp1/produtos/pabc', PROD, null), 'sem login não grava');
+ok(!W('empresas/emp1/produtos/pabc', { d: 'Sem medida' }, ANA), 'produto sem as medidas é recusado');
+ok(!W('empresas/emp1/produtos/pabc', { ...PROD, d: 'x'.repeat(121) }, ANA), 'descrição longa demais é recusada');
+ok(R('empresas/emp1/produtos', ANA) && !R('empresas/emp1/produtos', BIA), 'cada empresa lê só as medidas dela');
+ok(W('empresas/principal/produtos/pabc', PROD, ADMIN), 'administrador grava na empresa principal');
+
 console.log(falhas ? `${falhas} falha(s)` : 'regras ok');

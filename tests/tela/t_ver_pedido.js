@@ -84,7 +84,7 @@ const janela = (p) => p.evaluate(() => {
   ok(/332,46 kg/.test(j.resumo) && /líquido 310,5 kg/.test(j.resumo), 'mostra o peso bruto e o líquido → ' + j.resumo.slice(0, 80));
   ok(/3 volumes \(2 × caixa, 1 × palete\)/.test(j.resumo), 'mostra os volumes com a espécie → ' + j.resumo.slice(0, 120));
   ok(/Ocupa 33% da capacidade do Truck Toco \(1\.000 kg\)/.test(j.resumo), 'diz quanto do veículo o pedido ocupa');
-  ok(/não traz as medidas/.test(j.resumo), 'avisa com honestidade que a nota não tem as medidas da carga');
+  ok(/Sem cubagem: a nota fiscal não traz medida/.test(j.resumo), 'sem m³, avisa com honestidade que a nota não traz a medida e onde informar');
   ok(j.linhas === 30 && /Produtos \(32\)/.test(j.corpo) && /Mostrando 30 de 32/.test(j.corpo), `lista os produtos (${j.linhas} linhas, de 32 na nota)`);
   ok(/Produto número 1 linha/.test(j.primeira) && /1,5 CX/.test(j.primeira), 'cada produto com quantidade e unidade → ' + j.primeira);
   ok(j.fone.startsWith('tel:+551124681357'), 'telefone vira link de ligar → ' + j.fone);
@@ -186,7 +186,7 @@ const janela = (p) => p.evaluate(() => {
       'peso, volumes, líquido, valor e emissão iguais aos do backend → ' + JSON.stringify([reg.peso, reg.itens, reg.pesoLiq, reg.valor, reg.emissao]));
     ok(JSON.stringify(reg.volumes) === JSON.stringify([{ q: 2, esp: 'CAIXA' }, { q: 1, esp: 'PALETE' }]), 'espécie dos volumes igual à do backend');
     ok(Array.isArray(reg.produtos) && reg.produtos.length === 30 && reg.produtosTotal === 32, 'guarda 30 produtos e o total de 32');
-    ok(JSON.stringify(reg.produtos[0]) === JSON.stringify({ d: 'Produto número 1 linha', q: 1.5, u: 'CX' }), 'produto igual ao do backend → ' + JSON.stringify(reg.produtos[0]));
+    ok(JSON.stringify(reg.produtos[0]) === JSON.stringify({ d: 'Produto número 1 linha', q: 1.5, u: 'CX', c: 'P1' }), 'produto igual ao do backend → ' + JSON.stringify(reg.produtos[0]));
     ok(reg.obsNota === 'Entregar no portão 2. Pedido 4471' && reg.fone === '1124681357', 'observação e telefone da nota');
     const vazios = Object.entries(reg).filter(([, v]) => v === undefined || (typeof v === 'number' && !Number.isFinite(v)));
     ok(!vazios.length, 'nenhum campo undefined ou NaN, que o Firebase recusaria');

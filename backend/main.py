@@ -273,6 +273,7 @@ class Veiculo(BaseModel):
     id:     str
     nome:   str
     capKg:  float
+    capM3:  Optional[float] = Field(None, ge=0, le=200)   # volume útil do baú (m³); sem ele o volume não limita
     maxPed: int = 10
 
 class SolveRequest(BaseModel):

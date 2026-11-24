@@ -29,7 +29,7 @@ async function open(b, file, W, H, init, mob, arg, rotas) {
 // Desde a separação por empresa, os dados de um cliente ficam em empresas/<eid>/ e a
 // conta precisa de membros/<uid>. Esta função recebe um seed no formato antigo (config,
 // pedidos_rota... na raiz) e devolve no formato de hoje.
-const DA_EMPRESA = ['config', 'pedidos_rota', 'rotas', 'rotas_confirmadas', 'motoristas'];
+const DA_EMPRESA = ['config', 'pedidos_rota', 'rotas', 'rotas_confirmadas', 'motoristas', 'produtos'];
 function seedEmpresa(seed = {}, uid = 'uid-ana', eid = 'emp1') {
   const raiz = {}, empresa = { info: { nome: 'Transportadora Exemplo' } };
   for (const [k, v] of Object.entries(seed)) {

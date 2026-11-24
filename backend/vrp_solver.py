@@ -2,7 +2,7 @@
 vrp_solver.py — Motor de roteirização (OR-Tools VRP) do ROTAV3
 ------------------------------------------------
 Resolve Vehicle Routing Problem com:
-  - Capacidade por peso (kg)
+  - Capacidade por peso (kg) e, quando o veículo tem baú medido, por volume (m³)
   - Limite de paradas por veículo
   - Limite de 8 horas por viagem (estrada + 15 min por parada + espera)
   - Janela de horário por pedido (agendados): chegar entre janela_ini e janela_fim
@@ -36,6 +36,7 @@ class Pedido(TypedDict, total=False):
     dest: str
     cidade: str
     peso: float        # kg
+    m3: float          # volume em m³ (opcional; sem ele o pedido não ocupa volume)
     itens: int
     urgente: bool
     agendado: bool
@@ -43,10 +44,11 @@ class Pedido(TypedDict, total=False):
     lat: float
     lng: float
 
-class Veiculo(TypedDict):
+class Veiculo(TypedDict, total=False):
     id: str
     nome: str
     capKg: float
+    capM3: float       # volume útil do baú em m³ (opcional; sem ele o volume não limita)
     maxPed: int
 
 class RotaResultado(TypedDict):
@@ -427,14 +429,42 @@ def _kg(p: dict) -> int:
         return 0
 
 
-def perfil_carga(pedidos_em_ordem: list[dict]) -> dict:
-    """Carga a bordo ao longo da viagem, na ordem das paradas."""
-    carga = sum(_kg(p) for p in pedidos_em_ordem if _tipo(p) == "entrega")
+def _litros(p: dict) -> int:
+    """Volume inteiro em litros (dm³), arredondado para cima. Sem medida = 0."""
+    try:
+        return max(0, int(math.ceil(round(float(p.get("m3") or 0) * 1000, 6))))
+    except (TypeError, ValueError):
+        return 0
+
+
+def _cap_litros(v: dict) -> int | None:
+    """Volume útil do veículo em litros, arredondado para baixo; None = sem baú medido."""
+    try:
+        c = float(v.get("capM3") or 0)
+    except (TypeError, ValueError):
+        return None
+    return int(math.floor(round(c * 1000, 6))) if c > 0 else None
+
+
+def _perfil(pedidos_em_ordem: list[dict], medida) -> tuple[int, int, int]:
+    carga = sum(medida(p) for p in pedidos_em_ordem if _tipo(p) == "entrega")
     saida = maxima = carga
     for p in pedidos_em_ordem:
-        carga += _kg(p) if _tipo(p) == "coleta" else -_kg(p)
+        carga += medida(p) if _tipo(p) == "coleta" else -medida(p)
         maxima = max(maxima, carga)
-    return {"saida_kg": saida, "retorno_kg": carga, "maxima_kg": maxima}
+    return saida, carga, maxima
+
+
+def perfil_carga(pedidos_em_ordem: list[dict]) -> dict:
+    """Carga a bordo ao longo da viagem, na ordem das paradas."""
+    saida, retorno, maxima = _perfil(pedidos_em_ordem, _kg)
+    return {"saida_kg": saida, "retorno_kg": retorno, "maxima_kg": maxima}
+
+
+def perfil_volume(pedidos_em_ordem: list[dict]) -> dict:
+    """Volume a bordo (litros) ao longo da viagem, na ordem das paradas."""
+    saida, retorno, maxima = _perfil(pedidos_em_ordem, _litros)
+    return {"saida_l": saida, "retorno_l": retorno, "maxima_l": maxima}
 
 
 def _entrega_depois_de_coleta(pedidos_em_ordem: list[dict]) -> bool:
@@ -530,10 +560,14 @@ def avaliar_sequencia(
 
 def _rotas_dentro_da_regra(routes: list[dict], veiculos: list[dict]) -> bool:
     caps = {v["id"]: int(v["capKg"]) for v in veiculos}
+    caps_l = {v["id"]: _cap_litros(v) for v in veiculos}
     maxp = {v["id"]: int(v["maxPed"]) for v in veiculos}
     for r in routes:
         peds = r["pedidos"]
         if perfil_carga(peds)["maxima_kg"] > caps.get(r["veiculo_id"], 0):
+            return False
+        cap_l = caps_l.get(r["veiculo_id"])
+        if cap_l is not None and perfil_volume(peds)["maxima_l"] > cap_l:
             return False
         if len(peds) > maxp.get(r["veiculo_id"], 0) or _entrega_depois_de_coleta(peds):
             return False
@@ -728,6 +762,29 @@ def _resolver(pywrapcp, routing_enums_pb2, pedidos, tipos, janelas, saida_min, v
     else:
         routing.AddDimensionWithVehicleCapacity(demanda(None), 0, caps, True, "Peso")
 
+    # ── Capacidade (volume) ───────────────────────────────────────────────────
+    # Só entra quando algum veículo tem baú medido e algum pedido tem m³.
+    # Veículo sem baú medido não é limitado por volume. Mesma regra do peso:
+    # no modo "ordem", entregas e coletas cabem cada uma no baú.
+    caps_l = [_cap_litros(v) for v in veiculos]
+    total_l = sum(_litros(p) for p in pedidos)
+    if total_l and any(c is not None for c in caps_l):
+        caps_vol = [c if c is not None else total_l for c in caps_l]
+
+        def volume(filtro):
+            def cb(idx):
+                node = manager.IndexToNode(idx)
+                if node == 0 or (filtro and tipos[node - 1] != filtro):
+                    return 0
+                return _litros(pedidos[node - 1])
+            return routing.RegisterUnaryTransitCallback(cb)
+
+        if modo == "ordem":
+            routing.AddDimensionWithVehicleCapacity(volume("entrega"), 0, caps_vol, True, "VolumeEntregas")
+            routing.AddDimensionWithVehicleCapacity(volume("coleta"), 0, caps_vol, True, "VolumeColetas")
+        else:
+            routing.AddDimensionWithVehicleCapacity(volume(None), 0, caps_vol, True, "Volume")
+
     # ── Limite de paradas por veículo ─────────────────────────────────────────
     count_cb_idx = routing.RegisterUnaryTransitCallback(
         lambda idx: 0 if manager.IndexToNode(idx) == 0 else 1
@@ -791,6 +848,7 @@ def _resolver(pywrapcp, routing_enums_pb2, pedidos, tipos, janelas, saida_min, v
                 p["chegada_min"] = saida_min + int(round(t / 60))
             peds_rota.append(p)
         carga = perfil_carga(peds_rota)
+        vol = perfil_volume(peds_rota)
 
         # Coordenadas para polilinha no mapa
         coords = [{"lat": float(dep["lat"]), "lng": float(dep["lng"])}]
@@ -812,6 +870,11 @@ def _resolver(pywrapcp, routing_enums_pb2, pedidos, tipos, janelas, saida_min, v
             "peso_coletas": sum(p["peso"] for p in peds_rota if _tipo(p) == "coleta"),
             "carga_saida_kg": carga["saida_kg"],
             "carga_maxima_kg": carga["maxima_kg"],
+            "m3_total": round(sum(_litros(p) for p in peds_rota) / 1000, 3),
+            "m3_entregas": round(sum(_litros(p) for p in peds_rota if _tipo(p) == "entrega") / 1000, 3),
+            "m3_coletas": round(sum(_litros(p) for p in peds_rota if _tipo(p) == "coleta") / 1000, 3),
+            "carga_saida_m3": round(vol["saida_l"] / 1000, 3),
+            "carga_maxima_m3": round(vol["maxima_l"] / 1000, 3),
             "sequencia_coords": coords,
             "volta": bool(volta),
         })

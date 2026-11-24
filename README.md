@@ -799,6 +799,54 @@ credibilidade"). Ficou:
 - Barra de localização: "N com ponto a confirmar" e "N para marcar no mapa"; falha do serviço de
   endereços não aparece para o cliente (os pontos antigos ficam como estão).
 
+## Cubagem: m³ do baú e dos pedidos, plano de carga (24/11/2026)
+
+A rota passa a respeitar o **volume** do baú além do peso. Pedido leve e grande (isopor, colchão,
+caixa vazia) enche o baú antes de pesar; agora o sistema vê isso.
+
+**Baú do veículo** (Motoristas → veículo): comprimento, largura e altura **por dentro**, em metros.
+Ao escolher o tipo, entra a medida típica (Fiorino 1,87 × 1,29 × 1,25; VUC 4,2 × 2,05 × 2,1;
+3/4 4,1 × 2,2 × 2,4; Toco 6,9 × 2,2 × 2,4; Bitruck 10,4 × 2,45 × 2,7; Carreta 13,6 × 2,46 × 2,7).
+São médias de mercado, não do veículo do cliente: a tela marca "(típico)" até alguém medir com
+trena e salvar. Medida típica não é gravada (o veículo segue a do tipo).
+
+**m³ do pedido**, nesta ordem:
+1. Do próprio pedido: digitado (há uma calculadora "medidas de um volume × volumes"), coluna
+   "m³"/"Cubagem" da planilha, ou escrito na nota ("Cubagem: 1,25 m3", "M3: 0,8" nas informações
+   complementares do XML ou do PDF; coluna M3/Cubagem da ordem de coleta). "Peso cubado" é kg e
+   fica de fora.
+2. Das **medidas dos produtos** (menu Produtos): o XML traz código, descrição, quantidade e unidade
+   de cada produto. A tela lista os produtos das notas pendentes sem medida (os que aparecem em
+   mais pedidos primeiro); a pessoa digita C × L × A em cm de **1 unidade como vem na nota**. O
+   produto é do **fornecedor** (CNPJ da chave de acesso; sem chave, o nome do remetente), porque o
+   código "001" de um emitente não é o de outro. Grava em `empresas/<eid>/produtos`. O m³ do pedido é
+   calculado na hora (quantidade × medida); o pedido não é regravado.
+3. **Estimado pelo peso** (desligado de fábrica): na roteirização, "Pedido sem medida: estimar o m³
+   pelo peso", com a densidade em kg por m³ (300 de partida). É conta aproximada e a tela diz isso.
+
+Pedido sem nada disso **não ocupa volume** no cálculo. A tela mostra quantos estão assim. Foi
+escolha: estimar sem a pessoa pedir mudaria a rota com um número inventado.
+
+**Roteirização:** "Volume do baú (m³)" vem do veículo; "Usar até 85% do baú" (folga para arrumar a
+carga, de 70% a 100%). O motor de rotas (`backend/vrp_solver.py`) recebe `capM3` e o `m3` de cada
+pedido (em litros por dentro, arredondado para cima no pedido e para baixo no baú) e aplica a mesma
+regra do peso: entregas e coletas cabem cada uma no baú. Veículo sem `capM3` não é limitado por
+volume. Resultado, montagem no mapa e confirmação mostram peso e volume a bordo e avisam quando
+passa. A rota confirmada guarda `cap_m3`, `bau_m3`, `m3_total` e o m³ de cada parada.
+
+**Plano de carga** (resultado da rota e tela Rotas): desenho do baú de lado, a última entrega no
+fundo (cabine) e a primeira na porta, cada parada com o comprimento proporcional ao m³ dela; a
+ordem para carregar em tabela; coletas à parte. Botão Imprimir. O desenho é por volume: não sabe o
+formato das caixas nem o que vai por cima, e diz isso. Volume com lado maior que o comprimento do
+baú gera aviso.
+
+**O que não faz (ainda):** medidas de produto no PDF da DANFE (só o XML traz a lista de produtos);
+encaixe 3D de caixas; "40x30x25" solto no texto da nota (sem saber a quantidade, não dá para somar).
+
+**Para publicar:** além de subir os arquivos, publique as **regras novas do Firebase**
+(`firebase/database.rules.json`, nó `produtos`). Sem elas, o resto funciona, mas salvar medida de
+produto dá "O banco recusou" e a tela explica o motivo.
+
 ## Mapa e endereços do Google (21/11/2026)
 
 **Fundo dos mapas.** Todos os mapas do sistema usam o mapa do Google (Map Tiles API, blocos 2D

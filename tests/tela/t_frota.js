@@ -72,7 +72,7 @@ async function preencher(p, { tipo, modelo = '', placa = '', cap = '', nome = ''
     antiga: !!x.querySelector('.placa.antiga'), img: x.querySelector('img').getAttribute('src') })));
   ok(cards.map((c) => c.nome).join(',') === 'Fiorino,915C,Accelo 1016,Truck Toco', 'cartões em ordem do menor para o maior veículo: ' + cards.map((c) => c.nome).join(','));
   const ca = cards.find((c) => c.nome === 'Accelo 1016');
-  ok(ca && ca.placa === 'TST1A23' && ca.sub === 'Caminhão 3/4 · 6.000 kg' && ca.mot === 'Sem motorista definido' && ca.img.endsWith('tres4.svg'), 'cartão mostra modelo, placa, tipo, capacidade e que falta motorista: ' + JSON.stringify(ca));
+  ok(ca && ca.placa === 'TST1A23' && ca.sub === 'Caminhão 3/4 · 6.000 kg · 21,65 m³ (típico)' && ca.mot === 'Sem motorista definido' && ca.img.endsWith('tres4.svg'), 'cartão mostra modelo, placa, tipo, capacidade, m³ típico do baú e que falta motorista: ' + JSON.stringify(ca));
   const cf = cards.find((c) => c.nome === 'Fiorino');
   ok(cf && cf.mot === 'Motorista: Motorista Teste' && cf.img.endsWith('fiorino.svg') && !cf.antiga, 'Fiorino com o desenho de furgão e o motorista');
   ok(cards.find((c) => c.nome === '915C').placa === 'TST-1234' && cards.find((c) => c.nome === '915C').antiga, 'placa antiga aparece com hífen, no estilo cinza');

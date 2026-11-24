@@ -167,6 +167,33 @@ def _limpa(s, n: int) -> str:
     return re.sub(r"\s+", " ", str(s or "")).strip()[:n]
 
 
+_M3_ROTULO = re.compile(r"\b(?:cubagem(?: total)?|metros? cubicos?|volume\s*\(m[3³]\)|m3|m³)\s*(?:\(m[3³]\))?\s*[:=]\s*(\d{1,3}(?:[.,]\d{1,4})?)", re.I)
+_M3_CUBAGEM = re.compile(r"\bcubagem(?: total)?\s+(\d{1,3}(?:[.,]\d{1,4})?)\s*m[3³]?(?![a-z0-9])", re.I)
+_M3_SOLTO = re.compile(r"(?:^|[\s(])(\d{1,3}(?:[.,]\d{1,4})?)\s?m[3³](?![a-z0-9])", re.I)
+
+
+def m3_do_texto(txt: str, livre: bool = False) -> float:
+    """Volume em m³ escrito no texto da nota ("Cubagem: 1,25 m3", "M3: 0,8").
+    livre=True aceita também um "2,5 m³" solto (só nas informações complementares,
+    onde não há nome de produto). Igual a _m3DoTexto do index.html. 0 = não achou."""
+    t = unicodedata.normalize("NFD", str(txt or ""))
+    t = re.sub(r"[\u0300-\u036f]", "", t).lower()
+    t = re.sub(r"\s+", " ", t)
+    m = _M3_ROTULO.search(t) or _M3_CUBAGEM.search(t) or (_M3_SOLTO.search(t) if livre else None)
+    if not m:
+        return 0.0
+    v = m.group(1)
+    if "," in v:
+        v = v.replace(".", "").replace(",", ".")
+    elif re.fullmatch(r"\d{1,3}(\.\d{3})+", v):
+        v = v.replace(".", "")   # "1.250" é milhar, como na tela
+    try:
+        n = float(v)
+    except ValueError:
+        return 0.0
+    return round(n, 4) if 0 < n <= 200 else 0.0
+
+
 def _detalhes_nota(inf) -> dict:
     """O que a janela "ver pedido" da tela mostra além do básico (igual a _detalhesNota do
     index.html). A NF-e não tem medida: o tamanho da carga vem do peso, dos volumes e da
@@ -187,6 +214,9 @@ def _detalhes_nota(inf) -> dict:
         u = _limpa(_txt(p, "uCom"), 8)
         if u:
             it["u"] = u
+        c = _limpa(_txt(p, "cProd"), 40)
+        if c:
+            it["c"] = c   # código do produto no emitente: liga às medidas cadastradas (cubagem)
         prods.append(it)
     if prods:
         r["produtos"] = prods
@@ -211,6 +241,9 @@ def _detalhes_nota(inf) -> dict:
     obs = _limpa(_txt(_filho(inf, "infAdic"), "infCpl"), 500)
     if obs:
         r["obsNota"] = obs
+        m3 = m3_do_texto(obs, livre=True)
+        if m3:
+            r["m3"], r["m3Fonte"] = m3, "nota"
     ide = _filho(inf, "ide")
     em = (_txt(ide, "dhEmi") or _txt(ide, "dEmi"))[:10]
     if re.fullmatch(r"\d{4}-\d{2}-\d{2}", em):

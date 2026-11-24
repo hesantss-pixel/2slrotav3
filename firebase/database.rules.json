@@ -74,6 +74,13 @@
       ".read": "auth != null && auth.uid === 'PGblgW7V26SJ6W8UYPFj3dqlDGm2'",
       ".write": "auth != null && auth.uid === 'PGblgW7V26SJ6W8UYPFj3dqlDGm2'"
     },
+    "produtos": {
+      ".read": "auth != null && auth.uid === 'PGblgW7V26SJ6W8UYPFj3dqlDGm2'",
+      ".write": "auth != null && auth.uid === 'PGblgW7V26SJ6W8UYPFj3dqlDGm2'",
+      "$k": {
+        ".validate": "newData.hasChildren(['d','cm']) && newData.child('d').isString() && newData.child('d').val().length <= 120"
+      }
+    },
     "geo_cache": {
       ".read": "auth != null && root.child('acesso').child(auth.uid).val() === true",
       ".write": "auth != null && root.child('acesso').child(auth.uid).val() === true"
@@ -238,6 +245,12 @@
         },
         "motoristas": {
           ".write": "auth != null && ((root.child('acesso').child(auth.uid).val() === true && root.child('membros').child(auth.uid).val() === $eid) || ($eid === 'demo_' + auth.uid && root.child('acesso').child(auth.uid).val() === 'demo' && root.child('demos').child(auth.uid).child('expira').val() > now))"
+        },
+        "produtos": {
+          ".write": "auth != null && ((root.child('acesso').child(auth.uid).val() === true && root.child('membros').child(auth.uid).val() === $eid) || ($eid === 'demo_' + auth.uid && root.child('acesso').child(auth.uid).val() === 'demo' && root.child('demos').child(auth.uid).child('expira').val() > now))",
+          "$k": {
+            ".validate": "newData.hasChildren(['d','cm']) && newData.child('d').isString() && newData.child('d').val().length <= 120"
+          }
         },
         "config": {
           "locais": {

@@ -148,8 +148,23 @@ class TesteLeituraNFe(unittest.TestCase):
         self.assertEqual(p["volumes"], [{"q": 2, "esp": "CAIXA"}, {"q": 1, "esp": "PALETE"}])   # o vol sem nada fica de fora
         self.assertEqual(len(p["produtos"]), 30)                                                # teto por nota
         self.assertEqual(p["produtosTotal"], 32)                                                # sem contar o de nome vazio
-        self.assertEqual(p["produtos"][0], {"d": "Produto número 1 linha", "q": 1.5, "u": "CX"})
+        self.assertEqual(p["produtos"][0], {"d": "Produto número 1 linha", "q": 1.5, "u": "CX", "c": "P1"})
         self.assertEqual(p["obsNota"], "Entregar no portão 2. Pedido 4471")
+        self.assertNotIn("m3", p)   # a observação não fala em volume
+
+    def test_m3_escrito_na_nota(self):
+        casos = {
+            "Cubagem: 1,250 m3": 1.25, "CUBAGEM TOTAL 0,85 M3": 0.85, "M3: 2,5": 2.5,
+            "Volume (m³): 3": 3.0, "metros cúbicos = 12": 12.0, "Cubagem: 1.250": 0.0,   # 1.250 é milhar: passa de 200
+            "Parafuso M3X10": 0.0, "Pedido 4471": 0.0, "Cubagem: 0": 0.0,
+        }
+        for txt, esperado in casos.items():
+            self.assertEqual(entrada.m3_do_texto(txt), esperado, txt)
+        self.assertEqual(entrada.m3_do_texto("Carga com 4,2 m3 no total"), 0.0)        # solto só vale com livre=True
+        self.assertEqual(entrada.m3_do_texto("Carga com 4,2 m3 no total", livre=True), 4.2)
+        xml = nfe().replace("</infNFe>", "<infAdic><infCpl>Cubagem: 1,8 m³</infCpl></infAdic></infNFe>")
+        p = entrada.ler_xml_nfe(xml)["pedidos"][0]
+        self.assertEqual((p["m3"], p["m3Fonte"]), (1.8, "nota"))
 
     def test_nota_sem_detalhes_nao_grava_campo_vazio(self):
         p = entrada.ler_xml_nfe(nfe())["pedidos"][0]
