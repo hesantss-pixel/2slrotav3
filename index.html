@@ -1429,6 +1429,7 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
         <div><label class="field-lbl" for="ped-cep">CEP</label><input class="field-inp" id="ped-cep" inputmode="numeric" maxlength="9" autocomplete="off" placeholder="00000-000"></div>
         <div><label class="field-lbl" for="ped-end">Rua e número</label><input class="field-inp" id="ped-end" maxlength="140" autocomplete="off" placeholder="Ex.: Rua das Flores, 120"></div>
       </div>
+      <div class="rot-nota" id="ped-end-nota" hidden></div>
       <div class="trio">
         <div><label class="field-lbl" for="ped-bairro">Bairro</label><input class="field-inp" id="ped-bairro" maxlength="60" autocomplete="off"></div>
         <div><label class="field-lbl" for="ped-cidade">Cidade *</label><input class="field-inp" id="ped-cidade" maxlength="60" autocomplete="off" required></div>
@@ -2779,6 +2780,9 @@ function abrirPedido(id){
   v('m3', propio?String(+o.m3).replace('.',','):'');
   $id('ped-m3').placeholder=mi&&!propio&&mi.fonte==='produtos'?_fmtM3(mi.m3)+' pelos produtos':'Opcional';
   const dO=o?_dadosPed(o):{};
+  const endNota=$id('ped-end-nota');
+  endNota.hidden=!dO.coletaObs;
+  endNota.textContent=dO.coletaObs?`Endereço de coleta tirado das observações da ordem. O do remetente é ${dO.endRemetente||'outro'}.`:'';
   $id('ped-m3-nota').textContent = propio&&o.m3Fonte==='medidas'&&dO.medidas ? `Veio das observações: ${dO.medidas} × ${_plural(+o.itens||1,'volume','volumes')}. Confira.`
     : propio&&o.m3Fonte&&o.m3Fonte!=='digitado' ? `Veio ${_ROTULO_M3[o.m3Fonte]||'do arquivo'}.`
     : mi&&!propio&&mi.fonte==='produtos' ? 'Vazio, o m³ sai das medidas dos produtos da nota.'
@@ -3413,6 +3417,36 @@ function _m3PorMedidas(txt,volumes){
   return {m3, maiorCm:md.maiorCm, medidas:md.cm.map(_fmtMed).join(' × ')+' cm'};
 }
 window.__medidasDoTexto=_medidasDoTexto;
+
+// Endereço de coleta diferente do remetente, escrito nas observações da ordem de coleta:
+// "COLETAR>R. DAS FLORES, 112>COTIA > 06713-140", "ENDEREÇO DE COLETA: ROD. EXEMPLO, 22 - - SP, 09823-000",
+// "RUA EXEMPLO, N°65 09623-000 ABC". Só vale com CEP (é ele que diz onde fica); sem rótulo, só um
+// endereço que começa com o tipo da rua (RUA, AV, ROD...) e não fala em entrega. {endereco, cep, cidade, uf} ou null.
+function _coletaDasObs(txt){
+  const t=_semAcento(txt).toUpperCase().replace(/\s+/g,' ');
+  const CEP='(\\d{2}\\.?\\d{3}-?\\d{3})(?!\\d)';
+  const rot=t.match(new RegExp('(?:COLETAR(?:\\s+(?:EM|NO|NA))?\\s*[>:]+|(?:ENDERECO|LOCAL)\\s+(?:DE|DA|PARA)\\s+(?:COLETA|RETIRADA)\\s*:?|(?:COLETA|RETIRADA|RETIRAR)\\s+(?:EM|NO|NA)\\s*:)\\s*(.{4,160}?)'+CEP));
+  let m=rot;
+  if(!m){
+    m=t.match(new RegExp('(?:^|[^A-Z])((?:RUA|R\\.|AV\\.?|AVENIDA|ROD\\.?|RODOVIA|ESTRADA|ESTR\\.|AL\\.|ALAMEDA|TRAVESSA|TV\\.|PRACA|PCA\\.?)\\s[^>]{3,120}?)'+CEP));
+    if(m&&/ENTREG|DESTIN/.test(t.slice(Math.max(0,m.index-30),m.index+2))) m=null;
+  }
+  if(!m) return null;
+  const cep=m[2].replace(/\D/g,''); if(cep.length!==8) return null;
+  const partes=m[1].split(/\s*>\s*|\s+-\s+|\s*;\s*|\s+CEP\b\s*:?/).map(x=>x.replace(/^[\s,.:-]+|[\s,.:-]+$/g,'').trim()).filter(Boolean);
+  const ufs=/^(AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)$/;
+  let uf='', cidade='', endereco='';
+  partes.forEach(x=>{
+    if(ufs.test(x)){ uf=x; return; }
+    const mu=x.match(/^(.*?)[\s,/-]+(AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)$/);
+    if(!endereco){ endereco=x; return; }
+    if(!cidade&&/^[A-Z ]{3,40}$/.test(mu?mu[1]:x)&&!/^(CEP|ABC|SN|S N)$/.test(mu?mu[1]:x)){ cidade=(mu?mu[1]:x).trim(); if(mu) uf=mu[2]; }
+  });
+  endereco=endereco.replace(/\bN[°ºO.]?\s*(\d+)/,'$1').replace(/\s+,/g,',').replace(/\s+/g,' ').trim();
+  if(!/[A-Z]{3}/.test(endereco)) return null;
+  return {endereco:endereco.slice(0,140), cep, cidade, uf};
+}
+window.__coletaDasObs=_coletaDasObs;
 function _lerXmlNFe(texto,tipo){
   const doc=new DOMParser().parseFromString(String(texto).replace(/^﻿/,''),'application/xml');
   if(doc.getElementsByTagName('parsererror').length) throw new Error('XML inválido ou corrompido');
@@ -4136,6 +4170,10 @@ function _camposDanfe(linhas, tipo){
 // entrar na lista com um ponto inventado.
 function _pedidoDoDanfe(c, tipo){
   if(!c.nf&&!c.chave&&!c.ordem) return null;
+  // ordem de coleta com outro endereço de coleta nas observações: é para lá que o veículo vai
+  const oc=c.coleta&&tipo==='coleta'?c.coleta:null;
+  if(oc) c={...c, endRemetente:[c.endereco,c.bairro,[c.cidade,c.uf].filter(Boolean).join('/'),c.cep?c.cep.replace(/^(\d{5})(\d{3})$/,'$1-$2'):''].filter(Boolean).join(', '),
+    endereco:oc.endereco, bairro:'', cidade:oc.cidade||'', uf:oc.uf||'', cep:oc.cep};
   const cidade=c.cidade?_cidadeNorm(c.cidade):'';
   if(!c.cep&&(!cidade||cidade==='Sem cidade')) return null;
   // ordem de coleta: o número da ordem identifica (a NF às vezes não vem)
@@ -4153,6 +4191,7 @@ function _pedidoDoDanfe(c, tipo){
     ...(c.m3>0?{m3:c.m3, m3Fonte:c.m3Fonte||'nota'}:{}),
     ...(c.medidas?{medidas:c.medidas}:{}), ...(c.maiorCm>0?{maiorCm:c.maiorCm}:{}),
     ...(c.obs?{obsNota:c.obs}:{}),
+    ...(oc?{coletaObs:true, endRemetente:c.endRemetente.slice(0,200)}:{}),
     urgente:false, agendado:false, dataAgendada:'', status:'pendente', origem:'pdf',
     lat:coord.lat+(Math.random()-.5)*.015, lng:coord.lng+(Math.random()-.5)*.015,
   };
@@ -4229,12 +4268,28 @@ function _camposOrdemColeta(linhas){
   }
   let m3Fonte=m3?'nota':'', medidas='', maiorCm=0;
   const pm=obs?_m3PorMedidas(obs,volumes):null;
+  const outro=obs?_coletaDasObs(obs):null;
   if(pm){ maiorCm=pm.maiorCm||0; if(!m3&&pm.m3){ m3=pm.m3; m3Fonte='medidas'; medidas=pm.medidas; } }
   return { ordem, chave:'', nf, nome:limpa(nome), endereco:limpa(endereco), bairro:limpa(bairro.txt),
            cep, cidade:limpa(mc?mc[1]:cid), uf:mc?mc[2].toUpperCase():'', volumes:volumes>0?volumes:0, peso, m3,
-           m3Fonte, medidas, maiorCm, obs:limpa(obs).slice(0,500) };
+           m3Fonte, medidas, maiorCm, obs:obs.replace(/[<>]/g,' ').replace(/["']/g,'').replace(/\s+/g,' ').trim().slice(0,500),
+           ...(outro&&outro.cep!==cep?{coleta:outro}:{}) };
 }
 
+// Coleta em outro endereço sem a cidade escrita: a cidade sai do CEP (ViaCEP), já na importação,
+// para o pedido entrar na cidade certa. Sem o serviço agora, fica "Sem cidade" até ser localizado.
+async function _cidadeDaColeta(o){
+  if(!o||!o.coletaObs||o.cidade!=='Sem cidade') return o;
+  try{
+    const d=await Promise.race([_viaCep(o.cep),_sleep(5000).then(()=>null)]);
+    if(d&&d.localidade){
+      o.cidade=_cidadeNorm(d.localidade); o.uf=d.uf||o.uf; o.bairro=d.bairro||'';
+      const k=CITY_COORDS[o.cidade]; if(k){ o.lat=k.lat+(Math.random()-.5)*.015; o.lng=k.lng+(Math.random()-.5)*.015; }
+    }
+  }catch(e){}
+  return o;
+}
+window.__cidadeDaColeta=_cidadeDaColeta;
 async function _parsePDF(file,tipo){
   if(!window.pdfjsLib) throw new Error('Leitor de PDF não carregou. Use CSV ou Excel.');
   const buf=await file.arrayBuffer();
@@ -4261,6 +4316,7 @@ async function _parsePDF(file,tipo){
     vistos.add(id);
     const o=_pedidoDoDanfe(c,oc?'coleta':tipo);
     if(!o){ semEndereco++; continue; }
+    await _cidadeDaColeta(o);
     if(!c.peso) semPeso++;
     orders.push(o);
   }
@@ -4383,6 +4439,8 @@ async function importarArquivo(input){
   if(mudouEnd.length) msg+=` ${_plural(mudouEnd.length,'nota veio','notas vieram')} com outro endereço no arquivo e ${mudouEnd.length===1?'vai ser localizada':'vão ser localizadas'} de novo no mapa.`;
   if(jaEmRota) msg+=` ${_plural(jaEmRota,'nota já estava','notas já estavam')} em rota e não ${jaEmRota===1?'foi alterada':'foram alteradas'}.`;
   if(jaFeitas) msg+=` ${_plural(jaFeitas,'nota já foi concluída','notas já foram concluídas')} (entregue ou coletada) e não ${jaFeitas===1?'foi alterada':'foram alteradas'}.`;
+  const outroEnd=novos.filter(o=>o.coletaObs).length;
+  if(outroEnd) msg+=` ${_plural(outroEnd,'coleta tem','coletas têm')} outro endereço de coleta nas observações: o mapa e a rota usam esse endereço.`;
   const comM3=novos.filter(o=>+o.m3>0&&o.m3Fonte!=='digitado').length;
   if(comM3) msg+=` ${_plural(comM3,'nota veio','notas vieram')} com o m³ no arquivo.`;
   if(semEndereco) msg+=` ${_plural(semEndereco,'nota do PDF ficou de fora','notas do PDF ficaram de fora')}: sem CEP e sem município legíveis — use o XML ${semEndereco===1?'dela':'delas'}.`;

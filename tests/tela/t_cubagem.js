@@ -20,7 +20,8 @@ const seed = seedEmpresa({
     // sem medida nenhuma
     '9104': { nf: '9104', tipo: 'entrega', cidade: 'Guarulhos', peso: 600, itens: 1, status: 'pendente', lat: -23.48, lng: -46.50, dest: 'Cliente D', geoStatus: 'ok' },
     // coleta com m³
-    'C_9105': { nf: '9105', tipo: 'coleta', cidade: 'Guarulhos', peso: 200, itens: 3, status: 'pendente', lat: -23.44, lng: -46.49, dest: 'Fornecedor E', m3: 3, m3Fonte: 'planilha', geoStatus: 'ok' },
+    'C_9105': { nf: '9105', tipo: 'coleta', cidade: 'Guarulhos', peso: 200, itens: 3, status: 'pendente', lat: -23.44, lng: -46.49, dest: 'Fornecedor E', m3: 3, m3Fonte: 'planilha', geoStatus: 'ok',
+      coletaObs: true, endRemetente: 'RUA DO FORNECEDOR 10, CENTRO, GUARULHOS/SP, 07010-000', endereco: 'R. DO PORTO, 45' },
   },
   motoristas: {
     mot_bau: { id: 'mot_bau', nome: 'Motorista Teste', veiculo_id: 'tres4', veiculo_nome: 'Caminhão 3/4', cap_kg: 5000, modelo: 'Accelo 815', placa: 'TST1A11', bau_c: 4.5, bau_l: 2.3, bau_a: 2.5 },
@@ -33,6 +34,7 @@ const emp = (p) => p.evaluate(() => window.__FAKE.db.empresas.emp1);
   const b = await chromium.launch();
   let solveReq = null;
   const { ctx, p, errs } = await open(b, 'index.html', 1280, 900, init, false, seed, async (c) => {
+    await c.route(/viacep\.com\.br\/ws\/09910000/, (r) => r.fulfill({ contentType: 'application/json', body: J({ cep: '09910-000', logradouro: 'Rua do Porto', bairro: 'Centro', localidade: 'Diadema', uf: 'SP' }) }));
     await c.route(/railway\.app\/solve/, async (r) => {
       solveReq = JSON.parse(r.request().postData());
       const ent = solveReq.pedidos.filter((x) => x.tipo !== 'coleta'), col = solveReq.pedidos.filter((x) => x.tipo === 'coleta');
@@ -60,6 +62,32 @@ const emp = (p) => p.evaluate(() => window.__FAKE.db.empresas.emp1);
   ok(ocP.m3 === 1.5 && ocP.m3Fonte === 'medidas' && ocP.medidas === '50 × 50 × 50 cm' && ocP.maiorCm === 50 && ocP.itens === 12,
     'ordem de coleta: "MED 50X50X50 CM" × 12 volumes = 1,5 m³ ' + J([ocP.m3, ocP.m3Fonte, ocP.medidas, ocP.itens]));
   ok(ocP.obsNota === 'MED 50X50X50 CM', 'as observações da ordem ficam no pedido: ' + J(ocP.obsNota));
+
+  // ── endereço de coleta escrito nas observações (formatos reais, endereços inventados) ──
+  const colCasos = [
+    ['COLETAR>R. DO PORTO, 112>COTIA > 06713-140 NFS MED < 10*15*330 METROS < PECA', { endereco: 'R. DO PORTO, 112', cep: '06713140', cidade: 'COTIA', uf: '' }],
+    ['RUA DAS PALMEIRAS, N°65 09623-000 ABC 60 CM . 30 CM . 5M 20CM/TUBOS', { endereco: 'RUA DAS PALMEIRAS, 65', cep: '09623000', cidade: '', uf: '' }],
+    ['ENDEREÇO DE COLETA: ROD. DOS EXEMPLOS, 22 - - SP, 09823-000 ( 60 X 90 X 60/PEDIDO 1', { endereco: 'ROD. DOS EXEMPLOS, 22', cep: '09823000', cidade: '', uf: 'SP' }],
+    ['COLETAR>R. JOSE DA SILVA, 158> CEP 09961-720 30X40X60/FERRAGENS', { endereco: 'R. JOSE DA SILVA, 158', cep: '09961720', cidade: '', uf: '' }],
+    ['MED 50X50X50 CM', null], ['SEXTA ATE AS 16H', null], ['ENTREGAR NA RUA DO CLIENTE, 10 CEP 01001-000', null],
+    ['PALETE PADRAO 1 POR 1,20 > URGENTE <', null],
+  ];
+  const colRes = await p.evaluate((cs) => cs.map(([t]) => window.__coletaDasObs(t)), colCasos);
+  const colErr = colCasos.filter(([t, e], i) => J(colRes[i]) !== J(e)).map(([t], i) => [t, colRes[colCasos.findIndex((c) => c[0] === t)]]);
+  ok(!colErr.length, `endereço de coleta nas observações: ${colCasos.length - colErr.length} de ${colCasos.length} casos ` + J(colErr));
+  const ocOutro = oc.map((it) => (it.s === 'MED 50X50X50 CM' ? { ...it, s: 'COLETAR>R. DO PORTO, 45>DIADEMA > 09910-000 MED 50X50X50 CM' } : it));
+  const ocO = await p.evaluate((it) => { const l = window.__danfe.linhas(it); return window.__danfe.pedido(window.__danfe.ordem(l), 'coleta'); }, ocOutro);
+  ok(ocO.coletaObs && ocO.endereco === 'R. DO PORTO, 45' && ocO.cep === '09910000' && ocO.cidade === 'Diadema' && ocO.bairro === '',
+    'ordem com "COLETAR>" vai para o endereço das observações: ' + J([ocO.endereco, ocO.cep, ocO.cidade]));
+  ok(ocO.endRemetente === 'RUA DAS FLORES 120, CENTRO, GUARULHOS/SP, 07010-000' && ocO.dest === 'TRANSPORTES EXEMPLO ALFA LTDA' && ocO.id === ocP.id,
+    'o endereço do remetente fica guardado, o nome e a chave do pedido não mudam: ' + J([ocO.endRemetente, ocO.dest]));
+  ok(ocO.obsNota === 'COLETAR R. DO PORTO, 45 DIADEMA 09910-000 MED 50X50X50 CM', 'observação fica legível (sem os sinais < >): ' + J(ocO.obsNota));
+  // sem a cidade escrita, a cidade sai do CEP já na importação
+  const semCid = await p.evaluate((it) => { const l = window.__danfe.linhas(it); return window.__danfe.pedido(window.__danfe.ordem(l), 'coleta'); },
+    oc.map((it) => (it.s === 'MED 50X50X50 CM' ? { ...it, s: 'COLETAR>R. DO PORTO, 45> CEP 09910-000' } : it)));
+  ok(semCid.cidade === 'Sem cidade', 'sem a cidade escrita, o pedido sai do arquivo sem cidade');
+  const comCid = await p.evaluate((o) => window.__cidadeDaColeta(o), semCid);
+  ok(comCid.cidade === 'Diadema' && comCid.uf === 'SP', 'e a cidade vem do CEP (ViaCEP) antes de gravar: ' + J([comCid.cidade, comCid.uf]));
 
   // ── Frota: baú ───────────────────────────────────────────────────────────
   await p.evaluate(() => window.irParaPagina('motoristas')); await p.waitForTimeout(300);
@@ -127,6 +155,13 @@ const emp = (p) => p.evaluate(() => window.__FAKE.db.empresas.emp1);
   await p.fill('#ped-m3', '999'); await p.click('#ped-salvar'); await p.waitForTimeout(200);
   ok(/Cubagem em m³/.test(await p.textContent('#ped-msg')), 'm³ fora do razoável é recusado');
   await p.fill('#ped-m3', '5,5'); await p.click('#ped-salvar'); await p.waitForTimeout(400);
+  await p.evaluate(() => window.abrirPedido('C_9105')); await p.waitForTimeout(300);
+  ok((await p.isVisible('#ped-end-nota')) && /tirado das observações da ordem\. O do remetente é RUA DO FORNECEDOR 10/.test(await p.textContent('#ped-end-nota')),
+    'pedido de coleta mostra que o endereço veio das observações e qual é o do remetente');
+  await p.evaluate(() => window.fecharPedido && window.fecharPedido());
+  await p.evaluate(() => window.abrirPedido('9101')); await p.waitForTimeout(200);
+  ok(!(await p.isVisible('#ped-end-nota')), 'pedido comum não mostra esse aviso');
+  await p.evaluate(() => window.fecharPedido && window.fecharPedido());
   ok((await emp(p)).pedidos_rota['9102'].m3Fonte === 'nota', 'salvar sem mudar o m³ mantém a origem (nota)');
 
   // ── Roteirização com o baú ─────────────────────────────────────────────────

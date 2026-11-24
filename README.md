@@ -858,6 +858,30 @@ encaixe 3D de caixas; "40x30x25" solto no texto da nota (sem saber a quantidade,
 (`firebase/database.rules.json`, nó `produtos`). Sem elas, o resto funciona, mas salvar medida de
 produto dá "O banco recusou" e a tela explica o motivo.
 
+## Endereço de coleta nas observações da ordem de coleta (24/11/2026)
+
+Na Ordem de Coleta de Cargas, o endereço impresso é o do **remetente**, mas às vezes a
+transportadora escreve nas observações que a coleta é em **outro lugar**. Num lote real de 17
+ordens, 4 eram assim, uma delas em outra cidade a centenas de km do remetente. Antes, a rota ia
+para o endereço do remetente.
+
+Agora o sistema lê nas observações:
+- com rótulo: "COLETAR>R. DO PORTO, 112>COTIA > 06713-140", "COLETAR>R. X, 158> CEP 09961-720",
+  "ENDEREÇO DE COLETA: ROD. X, 22 - - SP, 09823-000" (também "LOCAL DE COLETA:", "COLETA EM:",
+  "RETIRAR EM:");
+- sem rótulo: um endereço que começa pelo tipo da rua (RUA, R., AV, ROD, ESTRADA, AL...) seguido do
+  CEP ("RUA X, N°65 09623-000 ABC"), desde que o texto não fale em entrega ou destino.
+
+Só vale **com CEP**: é ele que diz onde fica. Igual ao CEP do remetente, nada muda. Quando vale, o
+pedido de coleta passa a ter esse endereço e esse CEP; a cidade vem da observação ("COTIA") ou,
+sem ela, do CEP (ViaCEP), já na importação. O endereço do remetente fica guardado
+(`endRemetente`) e aparece ao abrir o pedido ("Endereço de coleta tirado das observações da
+ordem. O do remetente é..."); o nome do remetente e a chave do pedido não mudam. A importação
+avisa quantas coletas vieram assim. As observações passam a ficar no pedido, legíveis (os sinais
+"<" e ">" viram espaço).
+
+Só a ordem de coleta em PDF. No XML a nota já tem o grupo de retirada, que o sistema já usa.
+
 ## Mapa e endereços do Google (21/11/2026)
 
 **Fundo dos mapas.** Todos os mapas do sistema usam o mapa do Google (Map Tiles API, blocos 2D
