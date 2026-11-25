@@ -589,6 +589,11 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
 .ped-pino{width:26px;height:26px;border-radius:50% 50% 50% 0;background:var(--navy);border:3px solid #f3b62b;transform:rotate(-45deg);box-shadow:0 3px 8px rgba(13,27,46,.35);box-sizing:border-box;}
 .ped-aviso{font-size:12.5px;line-height:1.5;color:#8a5a06;background:#fff8ea;border:1px solid #f6dca6;border-radius:10px;padding:9px 12px;margin-bottom:6px;}
 .ped-excluir{color:#b91c1c;font-weight:700;}
+.ped-lixo{display:inline-flex;align-items:center;gap:6px;margin-left:auto;margin-right:8px;min-height:36px;padding:0 12px;border:1px solid rgba(185,28,28,.35);border-radius:8px;background:#fff;color:#b91c1c;font-family:inherit;font-weight:700;font-size:13px;cursor:pointer;}
+.ped-lixo svg,.bi-lixo svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.ped-lixo[hidden]{display:none;}
+.bi-lixo{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;flex:none;border:1px solid rgba(185,28,28,.35);border-radius:8px;background:#fff;color:#b91c1c;cursor:pointer;}
+.bi-lixo:hover,.ped-lixo:hover{background:#fef2f2;}
 .ped-excluir:hover{text-decoration:underline;}
 .aprox-bt{border:1px solid #f6dca6;background:#fff3df;color:#8a5a06;border-radius:6px;padding:1px 6px;margin-left:7px;font:700 10px var(--body);cursor:pointer;white-space:nowrap;text-decoration:underline;}
 @media(max-width:520px){.trio{grid-template-columns:minmax(0,1fr) 70px;}.trio>:nth-child(2){grid-column:1/-1;order:-1;}.ped-mapa{height:220px;}.modal-overlay{padding:16px 10px;}.modal-box{padding:20px 16px;}}
@@ -1464,7 +1469,7 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
 <!-- ── MODAL: novo pedido / editar pedido / corrigir local ── -->
 <div class="modal-overlay" id="modal-pedido" onclick="if(event.target===this)fecharPedido()">
   <div class="modal-box ped-modal" role="dialog" aria-modal="true" aria-labelledby="ped-tit">
-    <div class="modal-head"><div class="modal-title" id="ped-tit">Novo pedido</div><button type="button" class="modal-close" onclick="fecharPedido()" aria-label="Fechar">✕</button></div>
+    <div class="modal-head"><div class="modal-title" id="ped-tit">Novo pedido</div><button type="button" class="ped-lixo" id="ped-lixo" onclick="excluirPedido()" aria-label="Excluir pedido" title="Excluir pedido" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/><path d="M10 11v6M14 11v6"/></svg><span>Excluir</span></button><button type="button" class="modal-close" onclick="fecharPedido()" aria-label="Fechar">✕</button></div>
     <div class="ped-aviso" id="ped-aviso" hidden></div>
     <form id="ped-form" class="ped-form" novalidate onsubmit="event.preventDefault();salvarPedido()">
       <span class="field-lbl" id="ped-tipo-lbl" style="margin-top:0">Tipo</span>
@@ -2907,14 +2912,16 @@ function abrirPedido(id){
   _pedSetTipo(o?_tipoDe(o):tipoImport);
   $id('ped-tit').textContent=o?`Pedido NF ${o.nf}`:'Novo pedido';
   const bloq=_pedBloq(), avisos=[];
-  if(bloq) avisos.push('Este pedido já saiu em rota. Para mudar alguma coisa, devolva a rota na página Rotas.');
+  const podeExcluir=!!o&&_excluivel(o);
+  if(bloq&&podeExcluir) avisos.push('A rota deste pedido foi apagada: ele não volta para a roteirização, mas pode ser excluído.');
+  else if(bloq) avisos.push('Este pedido está numa rota. Para mudar ou excluir, vá em Rotas e toque em "↩ Devolver ao sistema" (ele volta para a lista de pendentes) ou em "🗑 Apagar rota".');
   else if(o&&_pedSoNaTela(o)) avisos.push(modoDemo&&!demoComNotasReais?'Dados de exemplo: as mudanças ficam só nesta tela e não são salvas.':'Conta de demonstração: as mudanças ficam só nesta tela.');
   else if(!o&&contaDemo&&!EID) avisos.push('Conta de demonstração: o pedido fica só nesta tela.');
   else if(!o&&modoDemo) avisos.push('Ao salvar, os pedidos de exemplo saem da tela e passam a aparecer só os seus.');
   const av=$id('ped-aviso'); av.hidden=!avisos.length; av.textContent=avisos.join(' ');
   $id('ped-form').querySelectorAll('input,#ped-tipo button,#ped-buscar').forEach(el=>{ el.disabled=bloq; });
   $id('ped-salvar').hidden=bloq; $id('ped-salvar').disabled=false; $id('ped-salvar').textContent=o?'Salvar alterações':'Cadastrar pedido';
-  $id('ped-excluir').hidden=!o||bloq;
+  $id('ped-excluir').hidden=!podeExcluir; $id('ped-lixo').hidden=!podeExcluir;
   $id('ped-msg').className='import-msg'; $id('ped-msg').textContent='';
   _pedGeo = o&&Number.isFinite(o.lat)&&Number.isFinite(o.lng) ? {lat:o.lat,lng:o.lng,fonte:'salvo',prec:o.geoManual?'manual':o.geoPrec,exato:o.geoStatus==='ok'&&!_aprox(o)} : null;
   $id('modal-pedido').classList.add('open');
@@ -3162,7 +3169,7 @@ async function _aplicarLocalLembrado(chave,exceto,lat,lng,soTela){
   return alvo.length;
 }
 async function excluirPedido(){
-  const o=_pedEdit; if(!o||_pedBloq()) return;
+  const o=_pedEdit; if(!o||!_excluivel(o)) return;
   if(!confirm(`Excluir o pedido NF ${o.nf}? Ele sai da lista de pendentes.`)) return;
   try{ await _excluirPedidos([o.id]); }
   catch(e){ return _pedErro(null,'Não foi possível excluir: '+e.message); }
@@ -3236,6 +3243,7 @@ function _renderBusca(){
         <div class="bi-txt" onclick="abrirPedido(${esc(JSON.stringify(o.id))})"><div class="bi-nf">NF ${esc(o.nf)}${_tag(o)}${_perigTag(o)}${_chipAgenda(o)}${pend&&!presa?'':`<span class="st-rota">${presa?'rota apagada':esc(_statusTxt(o))}</span>`}</div>
           <div class="bi-sub">${o.dest&&o.dest!==o.cidade?esc(o.dest)+' · ':''}${esc(o.cidade)} · ${(+o.peso||0).toLocaleString('pt-BR')} kg${ch?` · chave …${esc(ch.slice(-8))}`:''}${presa?' · a rota foi apagada: pode excluir':pend?'':' · para excluir, devolva a rota na página Rotas'}</div></div>
         <button type="button" class="btn-sm" onclick="abrirPedido(${esc(JSON.stringify(o.id))})" aria-label="Abrir NF ${esc(o.nf)}">Abrir</button>
+        ${pend?`<button type="button" class="bi-lixo" onclick="excluirUmaNota(${esc(JSON.stringify(o.id))})" aria-label="Excluir NF ${esc(o.nf)}" title="Excluir"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/><path d="M10 11v6M14 11v6"/></svg></button>`:''}
       </div>`;
     }).join('')}</div>
     ${_buscaSel.size?`<div class="busca-acoes" role="region" aria-label="Notas selecionadas"><span>${_plural(_buscaSel.size,'nota selecionada','notas selecionadas')}</span><button type="button" class="btn-del" id="btn-excluir-sel" onclick="excluirSelecionadas()">Excluir ${_buscaSel.size===1?'nota':'notas'}</button></div>`:''}`;
@@ -3293,6 +3301,16 @@ async function excluirSelecionadas(){
   _renderBusca();
 }
 window.excluirSelecionadas=excluirSelecionadas;
+async function excluirUmaNota(id){
+  const o=allOrders.find(x=>x.id===id); if(!o||!_excluivel(o)) return;
+  if(!confirm(`Excluir o pedido NF ${o.nf}? Ele sai da lista de pendentes.\n\nVocê pode desfazer logo em seguida.`)) return;
+  let n=0;
+  try{ n=await _excluirPedidos([id]); }
+  catch(e){ alert('Não foi possível excluir: '+e.message); return; }
+  _msgExclusao(n?`Pedido NF ${o.nf} excluído.`:'Nada foi excluído: o pedido não está mais pendente.');
+  _renderBusca();
+}
+window.excluirUmaNota=excluirUmaNota;
 async function desfazerExclusao(){
   const u=_ultimaExclusao; if(!u) return;
   _ultimaExclusao=null;

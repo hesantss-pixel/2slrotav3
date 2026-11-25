@@ -884,6 +884,16 @@ encaixe 3D de caixas; "40x30x25" solto no texto da nota (sem saber a quantidade,
 (`firebase/database.rules.json`, nós `produtos` e `config/cubagem`). Sem elas, o resto funciona,
 mas salvar medida de produto ou o fator de cubagem dá "O banco recusou" e a tela explica o motivo.
 
+## Excluir pedido mais fácil (25/11/2026)
+
+- A janela do pedido tem a lixeira **Excluir** no topo, ao lado do título (no celular o botão de
+  baixo ficava depois do mapa e ninguém achava).
+- Na busca de notas (Pedidos → Buscar notas), cada nota pendente tem uma lixeira própria, com
+  confirmação e "Desfazer", além do excluir em lote.
+- Pedido de rota apagada (que não volta para a roteirização) pode ser excluído também pela janela
+  do pedido, como já podia pela busca. Pedido numa rota ativa não tem lixeira, e a janela diz o
+  caminho: Rotas → "↩ Devolver ao sistema" ou "🗑 Apagar rota".
+
 ## Plano de carga em 3D, produto perigoso e tipo de carga (24/11/2026)
 
 **Em 3D** (Plano de carga → aba "Em 3D", quando o veículo tem comprimento, largura e altura do

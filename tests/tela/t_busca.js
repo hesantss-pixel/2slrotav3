@@ -92,6 +92,26 @@ const arq = (nome, txt) => { const f = path.join(DIR, nome); fs.writeFileSync(f,
   ok(!(await db(p))['10010'] && (await p.textContent('#busca-msg')).includes('NF 10010 excluído') && await p.isVisible('#busca-msg .btn-lk'), 'excluir pelo pedido aberto: mensagem com "Desfazer"');
   await p.click('#busca-msg .btn-lk'); await p.waitForTimeout(300);
   ok(!!(await db(p))['10010'], 'Desfazer devolve o pedido');
+  // lixeira no topo da janela do pedido (no celular o botão de baixo fica depois do mapa)
+  await p.evaluate(() => window.abrirPedido('10010')); await p.waitForTimeout(300);
+  const lx = await p.$eval('#ped-lixo', (b) => { const r = b.getBoundingClientRect(), t = document.getElementById('ped-tit').getBoundingClientRect(); return [!b.hidden, Math.abs(r.top - t.top) < 30, b.textContent.trim()]; });
+  ok(JSON.stringify(lx) === '[true,true,"Excluir"]', 'pedido aberto: lixeira "Excluir" no topo, ao lado do título ' + JSON.stringify(lx));
+  await p.click('#ped-lixo'); await p.waitForTimeout(400);
+  ok(!(await db(p))['10010'] && (await p.textContent('#busca-msg')).includes('NF 10010 excluído'), 'lixeira do topo exclui o pedido');
+  await p.click('#busca-msg .btn-lk'); await p.waitForTimeout(300);
+  // lixeira em cada nota da busca
+  await p.fill('#busca-notas', '10010'); await p.waitForTimeout(200);
+  ok(await p.isVisible('#busca-res .busca-item >> nth=0 >> .bi-lixo'), 'busca: cada nota pendente tem lixeira');
+  dialogs.length = 0;
+  await p.click('#busca-res .busca-item >> nth=0 >> .bi-lixo'); await p.waitForTimeout(400);
+  ok(dialogs.some((m) => m.includes('Excluir o pedido NF 10010')) && !(await db(p))['10010'] && (await p.textContent('#busca-msg')).includes('NF 10010 excluído'), 'lixeira da busca pede confirmação e exclui, com "Desfazer"');
+  await p.click('#busca-msg .btn-lk'); await p.waitForTimeout(300);
+  ok(!!(await db(p))['10010'], 'Desfazer devolve');
+  await p.fill('#busca-notas', '5005'); await p.waitForTimeout(150);
+  ok(!(await p.$('#busca-res .busca-item >> nth=0 >> .bi-lixo')), 'nota em rota não tem lixeira');
+  await p.evaluate(() => window.abrirPedido(Object.keys(window.__FAKE.db.empresas.emp1.pedidos_rota).find((k) => k.endsWith('50051000000050')))); await p.waitForTimeout(300);
+  ok((await p.isHidden('#ped-lixo')) && /Este pedido está numa rota\. Para mudar ou excluir, vá em Rotas e toque em "↩ Devolver ao sistema"/.test(await p.textContent('#ped-aviso')), 'pedido em rota: sem lixeira e diz como liberar');
+  await p.evaluate(() => window.fecharPedido && window.fecharPedido());
 
   // XML de cancelamento
   dialogs.length = 0;
