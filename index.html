@@ -859,6 +859,30 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
 .m3-orig.ruim{color:#8a5a06;font-weight:600;}
 .plano-err{color:var(--red);}
 .plano-nota{font-size:11.5px;color:var(--text3);margin:12px 0 0;line-height:1.5;}
+.plano-dica{color:var(--text3);}
+.plano-abas{display:inline-flex;border:1px solid var(--border2);border-radius:9px;padding:3px;gap:3px;margin:2px 0 8px;background:var(--bg2,#f3f6fa);}
+.plano-aba{border:0;background:none;border-radius:6px;padding:6px 12px;font-family:inherit;font-weight:600;font-size:12.5px;line-height:1;color:var(--text2);cursor:pointer;min-height:32px;}
+.plano-aba[aria-pressed="true"]{background:#fff;color:var(--text);box-shadow:0 1px 2px rgba(13,27,46,.12);}
+.c3d-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px;}
+.c3d-vistas{display:flex;flex-wrap:wrap;gap:4px;}
+.c3d-v{border:1px solid var(--border2);background:#fff;border-radius:7px;padding:5px 10px;font-family:inherit;font-weight:600;font-size:12px;line-height:1.2;color:var(--text2);cursor:pointer;min-height:32px;}
+.c3d-v[aria-pressed="true"]{border-color:var(--navy,#16305a);color:var(--text);box-shadow:inset 0 0 0 1px var(--navy,#16305a);}
+.c3d-emp{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text2);}
+.c3d-cv{display:block;width:100%;height:320px;border:1px solid var(--border2);border-radius:10px;background:linear-gradient(#fbfcfe,#f1f4f9);touch-action:none;cursor:grab;}
+.c3d-cv:active{cursor:grabbing;}
+.c3d-cv:focus-visible{outline:2px solid var(--navy,#16305a);outline-offset:2px;}
+.c3d-passo{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--text2);margin-top:8px;}
+.c3d-passo input{flex:1;min-width:0;}
+.c3d-passo span{min-width:120px;text-align:right;color:var(--text);font-weight:600;}
+.c3d-info{font-size:12.5px;line-height:1.5;color:var(--text2);margin:8px 0 6px;min-height:19px;}
+.c3d-leg{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0;}
+.c3d-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border2);background:#fff;border-radius:999px;padding:4px 10px;font-family:inherit;font-weight:600;font-size:11.5px;line-height:1.2;color:var(--text2);cursor:pointer;min-height:30px;}
+.c3d-chip i{width:10px;height:10px;border-radius:3px;display:inline-block;}
+.c3d-chip[aria-pressed="true"]{border-color:var(--text);color:var(--text);}
+.perig-tag{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:5px;background:#fff1e8;border:1px solid #f0a476;color:#a8380a;font-family:inherit;font-weight:700;font-size:10.5px;line-height:1.5;white-space:nowrap;vertical-align:1px;}
+.perig-txt{color:#a8380a;}
+.plano-cuid{color:#8a5a06;font-weight:600;}
+@media (max-width:600px){ .c3d-cv{height:260px;} .c3d-passo span{min-width:0;} }
 .prod-sec{max-width:820px;margin:18px 0 26px;}
 .prod-h{font-size:16px;margin:0 0 4px;color:var(--text);}
 .prod-sub{font-size:12.5px;color:var(--text2);line-height:1.55;margin:0 0 10px;}
@@ -1777,6 +1801,8 @@ function gerarDemoOrders(){
   const RUAS=['Rua das Flores','Avenida Brasil','Rua São José','Rua Sete de Setembro','Rua XV de Novembro','Rua Santa Rita','Avenida Industrial','Rua do Comércio','Rua Dom Pedro II','Avenida Getúlio Vargas','Rua Tiradentes','Rua Marechal Deodoro'];
   const orders=[]; let nfBase=300000;
   const rM3=_rng(20261123);   // m³ de exemplo em ~70% dos pedidos, de 120 a 420 kg por m³
+  const rMed=_rng(20261124);  // formato das caixas de exemplo (o m³ continua o de cima)
+  const FORMATOS=[[1.5,1,0.8],[1,1,1],[1.6,1.2,0.5],[1.3,0.9,0.9],[1.2,1,1.3]];
   for(const g of base){
     const coord=CITY_COORDS[g.cidade]||DEPOT;
     for(let i=0;i<g.qtd;i++){
@@ -1789,7 +1815,9 @@ function gerarDemoOrders(){
         status:'pendente', geoStatus:'ok', lat:coord.lat+(r()-.5)*.05, lng:coord.lng+(r()-.5)*.05,
       });
       const o=orders[orders.length-1];
-      if(rM3()<0.7){ o.m3=Math.round(o.peso/(120+rM3()*300)*100)/100||0.05; o.m3Fonte='exemplo'; }
+      if(rM3()<0.7){ o.m3=Math.round(o.peso/(120+rM3()*300)*100)/100||0.05; o.m3Fonte='exemplo';
+        const f=FORMATOS[Math.floor(rMed()*FORMATOS.length)], k=Math.cbrt(o.m3/o.itens/(f[0]*f[1]*f[2]))*100;
+        o.medidas=f.map(v=>_fmtMed(Math.max(5,Math.round(v*k)))).join(' × ')+' cm'; }
     }
   }
   const hoje=new Date();
@@ -1801,6 +1829,10 @@ function gerarDemoOrders(){
       orders[idx].horaEntrega='14:00'; orders[idx].horaFim='16:00';
     }
   });
+  // dois pedidos de exemplo com produto perigoso escrito na observação da nota
+  const comM3=orders.filter(o=>o.tipo==='entrega'&&o.m3Fonte==='exemplo');
+  if(comM3[4]) comM3[4].obsNota='Produto perigoso: tinta, ONU 1263, risco 33. Levar kit de emergência.';
+  if(comM3[22]) comM3[22].obsNota='Líquido inflamável ONU 1993, risco 30.';
   return orders;
 }
 
@@ -2807,6 +2839,7 @@ let _pedGeo=null;       // {lat,lng,fonte,prec,exato}; fonte: salvo | manual | l
 let _pedMap=null, _pedMk=null, _pedFoco=null;
 const PED_CAMPOS=['nf','dest','cep','end','bairro','cidade','uf','peso','itens','m3'];
 let _pedMaiorCm=0;   // maior lado de um volume, quando a pessoa calcula pelas medidas
+let _pedMedTxt='', _pedCalcVal=0;   // medidas de um volume e o m³ que a calculadora deu (o 3D usa o formato)
 function _pedCalcM3(){
   const c=_numBR($id('ped-cc').value), l=_numBR($id('ped-cl').value), a=_numBR($id('ped-ca').value);
   const n=Math.max(1,parseInt($id('ped-itens').value)||1), nota=$id('ped-calc-nota');
@@ -2814,7 +2847,7 @@ function _pedCalcM3(){
   const m3=Math.round(c*l*a/1e6*n*1e4)/1e4;
   if(m3>200){ nota.textContent=`Deu ${_fmtM3(m3)} m³, mais que um baú inteiro. Confira as medidas.`; return; }
   $id('ped-m3').value=String(m3).replace('.',',');
-  _pedMaiorCm=Math.max(c,l,a);
+  _pedMaiorCm=Math.max(c,l,a); _pedMedTxt=[c,l,a].map(_fmtMed).join(' × ')+' cm'; _pedCalcVal=m3;
   nota.textContent=`${_fmtMed(c)} × ${_fmtMed(l)} × ${_fmtMed(a)} cm × ${_plural(n,'volume','volumes')} = ${_fmtM3(m3)} m³.`;
 }
 window._pedCalcM3=_pedCalcM3;
@@ -2865,7 +2898,7 @@ function abrirPedido(id){
   if(pc) $id('ped-m3-nota').textContent=($id('ped-m3-nota').textContent+` Peso cubado: ${pc.toLocaleString('pt-BR')} kg (${_fmtM3(mi.m3)} m³ × ${FATOR_CUB}). Peso taxado: ${Math.max(pc,+o.peso||0).toLocaleString('pt-BR')} kg, o maior entre o real e o cubado.`).trim();
   const dens=o?_densidadeEstranha(o.peso,mi&&mi.m3):0;
   if(dens) $id('ped-m3-nota').textContent=($id('ped-m3-nota').textContent+` Com ${(+o.peso).toLocaleString('pt-BR')} kg, dá ${dens.toLocaleString('pt-BR')} kg por m³: a medida parece errada. Confira.`).trim();
-  _pedMaiorCm=0; ['cc','cl','ca'].forEach(k=>{ $id('ped-'+k).value=''; });
+  _pedMaiorCm=0; _pedMedTxt=''; _pedCalcVal=0; ['cc','cl','ca'].forEach(k=>{ $id('ped-'+k).value=''; });
   $id('ped-calc').open=false; $id('ped-calc-nota').textContent='Medidas em centímetros de uma caixa; o total multiplica pelos volumes.';
   $id('ped-urg').checked=!!o?.urgente;
   _pedSetTipo(o?_tipoDe(o):tipoImport);
@@ -3000,9 +3033,10 @@ async function salvarPedido(){
     bairro:$id('ped-bairro').value.trim(), cidade, uf, cep, peso:Math.round(peso*100)/100, itens, urgente:$id('ped-urg').checked };
   // m³: valor igual ao que já estava guarda a origem (nota, planilha); vazio apaga
   const m3Arred=m3?Math.round(m3*1e4)/1e4:0;
-  if(!m3Arred){ dados.m3=null; dados.m3Fonte=null; dados.maiorCm=null; }
-  else if(o&&Math.abs((+o.m3||0)-m3Arred)<1e-9){ if(_pedMaiorCm) dados.maiorCm=_pedMaiorCm; }
-  else { dados.m3=m3Arred; dados.m3Fonte='digitado'; dados.maiorCm=_pedMaiorCm||null; }
+  const daCalc=!!_pedMedTxt&&Math.abs(_pedCalcVal-m3Arred)<1e-9;
+  if(!m3Arred){ dados.m3=null; dados.m3Fonte=null; dados.maiorCm=null; dados.medidas=null; }
+  else if(o&&Math.abs((+o.m3||0)-m3Arred)<1e-9){ if(_pedMaiorCm) dados.maiorCm=_pedMaiorCm; if(daCalc) dados.medidas=_pedMedTxt; }
+  else { dados.m3=m3Arred; dados.m3Fonte='digitado'; dados.maiorCm=_pedMaiorCm||null; dados.medidas=daCalc?_pedMedTxt:null; }
   // Local: o que a pessoa achou ou marcou vale; sem isso, endereço igual mantém o
   // local salvo; endereço novo volta para o centro da cidade e é localizado pelo CEP.
   const endMudou=!o || (o.cep||'')!==cep || (o.endereco||'')!==dados.endereco || o.cidade!==cidade;
@@ -3196,7 +3230,7 @@ function _renderBusca(){
       const ch=_chaveDe(o);
       return `<div class="busca-item${sel?' sel':''}">
         <input type="checkbox" id="${esc(cid)}" data-id="${esc(o.id)}" ${sel?'checked':''} ${pend?'':'disabled'} onchange="selBusca(this.dataset.id,this.checked)" aria-label="Selecionar NF ${esc(o.nf)}${pend?'':' (em rota, não pode ser excluída)'}">
-        <div class="bi-txt" onclick="abrirPedido(${esc(JSON.stringify(o.id))})"><div class="bi-nf">NF ${esc(o.nf)}${_tag(o)}${_chipAgenda(o)}${pend&&!presa?'':`<span class="st-rota">${presa?'rota apagada':esc(_statusTxt(o))}</span>`}</div>
+        <div class="bi-txt" onclick="abrirPedido(${esc(JSON.stringify(o.id))})"><div class="bi-nf">NF ${esc(o.nf)}${_tag(o)}${_perigTag(o)}${_chipAgenda(o)}${pend&&!presa?'':`<span class="st-rota">${presa?'rota apagada':esc(_statusTxt(o))}</span>`}</div>
           <div class="bi-sub">${o.dest&&o.dest!==o.cidade?esc(o.dest)+' · ':''}${esc(o.cidade)} · ${(+o.peso||0).toLocaleString('pt-BR')} kg${ch?` · chave …${esc(ch.slice(-8))}`:''}${presa?' · a rota foi apagada: pode excluir':pend?'':' · para excluir, devolva a rota na página Rotas'}</div></div>
         <button type="button" class="btn-sm" onclick="abrirPedido(${esc(JSON.stringify(o.id))})" aria-label="Abrir NF ${esc(o.nf)}">Abrir</button>
       </div>`;
@@ -4281,7 +4315,8 @@ function _camposDanfe(linhas, tipo){
   const pmA=txtAd?_m3PorMedidas(txtAd,qtd):null;   // "MED 50X50X50" nos dados adicionais
   if(pmA){ maiorCm=pmA.maiorCm||0; if(!m3&&pmA.m3){ m3=pmA.m3; m3Fonte='medidas'; medidas=pmA.medidas; } }
 
-  return { chave, nf, m3, m3Fonte, medidas, maiorCm, nome:String(nome||'').replace(/[<>"']/g,'').trim(),
+  const obsAd=txtAd.replace(/[<>"']/g,' ').replace(/\s+/g,' ').trim().slice(0,500);
+  return { chave, nf, m3, m3Fonte, medidas, maiorCm, ...(obsAd?{obs:obsAd}:{}), nome:String(nome||'').replace(/[<>"']/g,'').trim(),
            endereco:String(endereco||'').replace(/[<>"']/g,'').trim(),
            bairro:String(bairro||'').replace(/[<>"']/g,'').trim(),
            cep, cidade:String(cidade||'').replace(/[<>"']/g,'').trim(), uf,
@@ -5308,7 +5343,7 @@ function _verNotaHtml(o,varias){
   const ag=_saiHoje(d,rotaCtxD.data)?_textoAgenda(d,rotaCtxD.data):(d.agendado&&d.dataAgendada?`Agendado para ${_dataBR(d.dataAgendada)}`:'');
   return `<section class="ver-nota" aria-label="${col?'Coleta':'Entrega'}, NF ${esc(d.nf)}">
     <div class="ver-cab${varias?'':' so'}">
-      ${varias?`<span class="ver-tag${col?' coleta':''}">${col?'Coleta':'Entrega'}</span><b>NF ${esc(d.nf)}</b>`:''}${d.urgente?'<span class="ver-tag urg">Urgente</span>':''}
+      ${varias?`<span class="ver-tag${col?' coleta':''}">${col?'Coleta':'Entrega'}</span><b>NF ${esc(d.nf)}</b>`:''}${d.urgente?'<span class="ver-tag urg">Urgente</span>':''}${_perigTag(d)}
       <span class="ver-st${ordem?' na':''}">${ordem?`Parada ${ordem} da rota`:'Fora da rota'}</span>
     </div>
     ${ag?`<p class="ver-agenda">📅 ${esc(ag)}</p>`:''}
@@ -5322,6 +5357,7 @@ function _verNotaHtml(o,varias){
       ${linha('Carga',varias?esc(_verKg(d.peso))+liq+' · '+_verVolumes(d):'')}
       ${linha('Emissão',em?`${em[3]}/${em[2]}/${em[1]}`:'')}
       ${linha('Valor da nota',valor)}
+      ${(z=>linha('Produto perigoso',z?`<span class="perig-txt">${esc(_perigTxt(z).replace(/^Produto perigoso,? ?/,'')||'escrito na nota')}</span>. Confira rótulos e placas, kit de emergência, documento fiscal com os dados do produto e motorista com curso MOPP.`:''))(_perigosoDe(d))}
     </dl>
     ${tab}
     ${d.obsNota?`<div class="ver-sec">Observação da nota</div><p class="ver-obs">${esc(d.obsNota)}</p>`:''}
@@ -5336,7 +5372,8 @@ function _fraseM3Ver(lista){
   const pct=capM3D>0?` Ocupa ${Math.max(1,Math.round(m3/capM3D*100))}% do volume da viagem (${_fmtM3(capM3D)} m³).`:'';
   const pc=lista.reduce((s,o)=>s+_pesoCubado(o),0), pr=lista.reduce((s,o)=>s+(+o.peso||0),0);
   const cub=pc>pr?` Peso cubado: <b>${Math.round(pc).toLocaleString('pt-BR')} kg</b>, maior que o real (${Math.round(pr).toLocaleString('pt-BR')} kg).`:'';
-  return `Cubagem: <b>${_fmtM3(m3)} m³</b>${de?` (${esc(de)})`:''}.${pct}${cub}`;
+  const tipo=um&&lista[0]?_tipoCargaTxt({...lista[0], m3:um.m3, m3Fonte:um.fonte}):'';
+  return `Cubagem: <b>${_fmtM3(m3)} m³</b>${de?` (${esc(de)})`:''}.${pct}${cub}${tipo?` Carga ${esc(tipo)}.`:''}`;
 }
 function verPedidoGrupo(g,foco){
   if(!g||$id('modal-ver').classList.contains('open')) return;
@@ -5638,14 +5675,37 @@ function _poolViagemD(){
 }
 // Pontos de atenção da rota (texto simples; quem mostra em HTML escapa)
 // Avisos sobre a medida (não pedem confirmação na saída: muita operação ainda não mede tudo)
-function _avisosM3D(ps){
+function _avisosM3D(ps,r){
   const out=[];
+  const fmt=r?_formatoD(r):null, avCg=fmt?_avisosCg(fmt.cg,_bauDaViagemD()):[];
+  if(avCg.length) out.push(`Centro de gravidade da carga: ${avCg.join('; ')}. Veja o plano de carga.`);
   const semMed=ps.filter(p=>!(+p.m3>0));
   if(capM3D&&semMed.length) out.push(`${semMed.length===ps.length?'Nenhuma parada tem':(semMed.length===1?'1 parada não tem':semMed.length+' paradas não têm')} medida (${semMed.length<=4?'NF '+semMed.map(p=>p.nf).join(', '):'veja a lista'}): o volume a bordo pode ser maior do que aparece. Digite o m³ no pedido ou ligue a estimativa pelo peso.`);
+  const pg=ps.map((p,i)=>({p,n:i+1,z:_perigosoDe(p)})).filter(x=>x.z);
+  if(pg.length) out.push(`Produto perigoso ${pg.length===1?'na parada':'nas paradas'} ${pg.map(x=>`${x.n} (NF ${x.p.nf}${x.z.onu?', ONU '+x.z.onu:''})`).join(', ')}: confira rótulos e placas, kit de emergência, documento fiscal com os dados do produto e motorista com curso MOPP antes de sair.`);
   const estranhas=ps.filter(p=>_densidadeEstranha(p.peso,p.m3));
   if(estranhas.length) out.push(`Medida que não combina com o peso em ${estranhas.length===1?'NF '+estranhas[0].nf+` (${_densidadeEstranha(estranhas[0].peso,estranhas[0].m3).toLocaleString('pt-BR')} kg por m³)`:'NF '+estranhas.map(p=>p.nf).join(', ')}: confira o m³.`);
   return out;
 }
+// Arruma as entregas da rota com o formato das caixas (só o que tem formato) para conferir se cabem
+// e onde fica o centro de gravidade. Guarda as últimas contas: o resultado redesenha muitas vezes.
+const _formatoMemo=new Map();
+function _formatoRota(paradas,bau){
+  if(!bau||!(+bau.c>0&&+bau.l>0&&+bau.a>0)) return null;
+  const ent=paradas.map((p,i)=>({p,n:i+1})).filter(x=>_tipoDe(x.p)==='entrega').reverse();
+  const grupos=ent.map(c=>({n:c.n, nf:c.p.nf, caixas:_caixasDe(c.p).filter(x=>!x.aprox), kg:+c.p.peso||0, regras:_regrasCarga(c.p)}));
+  if(!grupos.some(g=>g.caixas.length)) return null;
+  const chave=JSON.stringify([bau.c,bau.l,bau.a,grupos.map(g=>[g.n,g.kg,g.caixas,g.regras])]);
+  if(_formatoMemo.has(chave)) return _formatoMemo.get(chave);
+  const res=_arrumarCarga(bau,grupos,true);
+  const fora=[...new Set(res.fora.map(f=>f.g))].map(k=>({n:grupos[k].n, nf:grupos[k].nf, q:res.fora.filter(f=>f.g===k).reduce((s,f)=>s+(f.q||0),0)}));
+  const out={fora, cg:_cgCarga(res.pos)};
+  if(_formatoMemo.size>20) _formatoMemo.delete(_formatoMemo.keys().next().value);
+  _formatoMemo.set(chave,out);
+  return out;
+}
+window.__formatoRota=_formatoRota;
+function _formatoD(r){ return carrocD==='aberta'?null:_formatoRota(_paradasD(r),_bauDaViagemD()); }
 function _problemasRotaD(r){
   const ps=_paradasD(r), out=[];
   if(!ps.length) return out;
@@ -5656,6 +5716,9 @@ function _problemasRotaD(r){
   const comp=_compBauCmD();
   const longos=comp?ps.filter(p=>_maiorLadoCm(p)>comp):[];
   if(longos.length) out.push(`${longos.length===1?'A NF '+longos[0].nf+' tem um volume':'As NF '+longos.map(p=>p.nf).join(', ')+' têm volumes'} maior que o comprimento do baú (${_fmtMed(_bauSelD.c)} m).`);
+  const fmt=_formatoD(r);
+  if(fmt&&fmt.fora.length){ const q=fmt.fora.reduce((s,f)=>s+f.q,0);
+    out.push(`Pelo formato das caixas, ${q===1?'1 volume não cabe':q+' volumes não cabem'} no baú (${fmt.fora.map(f=>`parada ${f.n}, NF ${f.nf}`).join('; ')}), mesmo empilhando. Veja o plano de carga em 3D.`); }
   if(maxPedD&&ps.length>maxPedD) out.push(`${ps.length} paradas: mais que o limite de ${maxPedD} que você escolheu.`);
   const tarde=ps.filter(p=>p.janela_fim!=null&&p.chegada_min!=null&&p.chegada_min>p.janela_fim);
   if(tarde.length) out.push(`${_plural(tarde.length,'parada chega','paradas chegam')} depois do horário marcado (NF ${tarde.map(p=>p.nf).join(', ')}).`);
@@ -5892,6 +5955,9 @@ async function confirmarRotaD(){
       const paradas=(r.pedidos||r.paradas||[]).map(p=>({ id:_idDe(p), nf:String(p.nf), tipo:_tipoDe(p), dest:p.dest||'', endereco:p.endereco||'', bairro:p.bairro||'', cidade:p.cidade||'', uf:p.uf||'', cep:p.cep||'',
         peso:p.peso||0, itens:p.itens||1, lat:Number.isFinite(p.lat)?p.lat:null, lng:Number.isFinite(p.lng)?p.lng:null,
         ...(+p.m3>0?{m3:+p.m3, m3Fonte:p.m3Fonte||''}:{}),
+        ...(()=>{ const cx=_caixasDe(p).filter(c=>!c.aprox), z=_perigosoDe(p), cm=v=>Math.round(v*1000)/10;
+          const rg=_regrasCarga(p);
+          return {...(cx.length?{cx:cx.map(c=>({c:cm(c.c),l:cm(c.l),a:cm(c.a),q:c.q}))}:{}), ...(z?{perigoso:z}:{}), ...(rg?{regras:rg}:{})}; })(),
         chegada_min:p.chegada_min??null, janela_ini:p.janela_ini??null, janela_fim:p.janela_fim??null }));
       const nP=_contarTipos(paradas);
       const m3Tot=Math.round(paradas.reduce((s,p)=>s+(+p.m3||0),0)*1000)/1000;
@@ -6080,7 +6146,8 @@ function _linkMotoristaDemo(r){
   const n=(v,c)=>Number.isFinite(v)?+v.toFixed(c):null;
   const d={ i:{v:r.veiculo||'',m:r.motorista||'',d:r.data||'',s:r.saida??null,c:DEPOT.name},
     p:(r.paradas||[]).map(p=>[String(p.nf),_tipoDe(p)==='coleta'?1:0,p.dest||'',p.endereco||'',p.bairro||'',p.cidade||'',p.uf||'',p.cep||'',
-      n(p.lat,5),n(p.lng,5),p.peso||0,p.itens||1,p.chegada_min??null,p.janela_ini??null,p.janela_fim??null]) };
+      n(p.lat,5),n(p.lng,5),p.peso||0,p.itens||1,p.chegada_min??null,p.janela_ini??null,p.janela_fim??null,
+      (z=>z?(z.onu||'sim'):null)(_perigosoDe(p))]) };
   return _linkSistema()+'motorista.html#demo='+_b64url(JSON.stringify(d));
 }
 function abrirMotoristaDemo(rid){ const r=_rotaPorId(rid); if(r) window.open(_linkMotoristaDemo(r),'_blank','noopener'); }
@@ -7038,7 +7105,7 @@ function selRotaTabD(idx){
   const km=r.km||r.distancia_km||0, peso=r.peso_total||paradas.reduce((s,p)=>s+(p.peso||0),0);
   const fonte=r._fonte||fonteDistanciaD, calc=r._calc||'ok';
   const nT=_contarTipos(paradas), carga=_perfilCarga(paradas);
-  const probs=_problemasRotaD(r), avisosM3=_avisosM3D(_paradasD(r));
+  const probs=_problemasRotaD(r), avisosM3=_avisosM3D(_paradasD(r),r);
   const outras=rotaGeradaD.map((x,k)=>k).filter(k=>k!==idx);
   const notaFonte = calc==='calculando' ? '<div class="calc-st" role="status">Recalculando km e horários na ordem nova…</div>'
     : calc==='otimizando' ? '<div class="calc-st" role="status">Otimizando a ordem das paradas…</div>'
@@ -7053,7 +7120,7 @@ function selRotaTabD(idx){
         ${outras.length?`<select data-foco="${esc(pid)}|rota" aria-label="Mover NF ${esc(p.nf)} para outra viagem" onchange="moverParaRotaD(${idx},${i},this.value)"><option value="">Viagem…</option>${outras.map(k=>`<option value="${k}">Rota ${k+1}</option>`).join('')}</select>`:''}
         <button type="button" class="tirar" data-foco="${esc(pid)}|tirar" onclick="tirarParadaD(${idx},${i})" aria-label="Tirar NF ${esc(p.nf)} desta rota" title="Tirar da rota">✕</button>
       </div>`:'';
-    return `<div class="delivery-mini${ajusteD?' ajuste':''}"><div class="delivery-mini-num${_tipoDe(p)==='coleta'?' c':''}">${i+1}</div><div class="dm-txt"><div style="font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text)">NF ${esc(p.nf)}${_tag(p)}${p.chegada_min!=null&&p.janela_ini!=null?`<span class="cheg" title="Horário marcado: ${_hhmm(p.janela_ini)}–${_hhmm(p.janela_fim??p.janela_ini)}">chega ~${_hhmm(p.chegada_min)}</span>`:''}${tarde?'<span class="atraso">depois do horário</span>':''}${aprox?`<button type="button" class="aprox-bt" data-foco="${esc(pid)}|local" onclick="abrirPedido(${esc(JSON.stringify(pid))})">confirmar ponto</button>`:''}</div><div style="font-size:11px;color:var(--text3)">${p.janela_ini!=null?`Horário ${_hhmm(p.janela_ini)}–${_hhmm(p.janela_fim)} · `:''}${p.dest&&p.dest!==p.cidade?esc(p.dest)+' · ':''}${p.endereco?esc(p.endereco)+' · ':''}${esc(p.cidade||'')} · ${(+p.peso||0).toLocaleString('pt-BR')} kg${+p.m3>0?` · ${_fmtM3(p.m3)} m³ <span class="m3-orig${_densidadeEstranha(p.peso,p.m3)?' ruim':''}">(${esc(_origemM3(p))})</span>`:(capM3D>0?' · <span class="m3-orig ruim">sem medida</span>':'')}</div></div>${acoes}</div>`;
+    return `<div class="delivery-mini${ajusteD?' ajuste':''}"><div class="delivery-mini-num${_tipoDe(p)==='coleta'?' c':''}">${i+1}</div><div class="dm-txt"><div style="font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text)">NF ${esc(p.nf)}${_tag(p)}${_perigTag(p)}${p.chegada_min!=null&&p.janela_ini!=null?`<span class="cheg" title="Horário marcado: ${_hhmm(p.janela_ini)}–${_hhmm(p.janela_fim??p.janela_ini)}">chega ~${_hhmm(p.chegada_min)}</span>`:''}${tarde?'<span class="atraso">depois do horário</span>':''}${aprox?`<button type="button" class="aprox-bt" data-foco="${esc(pid)}|local" onclick="abrirPedido(${esc(JSON.stringify(pid))})">confirmar ponto</button>`:''}</div><div style="font-size:11px;color:var(--text3)">${p.janela_ini!=null?`Horário ${_hhmm(p.janela_ini)}–${_hhmm(p.janela_fim)} · `:''}${p.dest&&p.dest!==p.cidade?esc(p.dest)+' · ':''}${p.endereco?esc(p.endereco)+' · ':''}${esc(p.cidade||'')} · ${(+p.peso||0).toLocaleString('pt-BR')} kg${+p.m3>0?` · ${_fmtM3(p.m3)} m³ <span class="m3-orig${_densidadeEstranha(p.peso,p.m3)?' ruim':''}">(${esc(_origemM3(p))})</span>`:(capM3D>0?' · <span class="m3-orig ruim">sem medida</span>':'')}</div></div>${acoes}</div>`;
   };
   document.getElementById('rota-detail-d').innerHTML=`
     <div id="rota-map"></div>
@@ -7094,7 +7161,8 @@ function _bauDaViagemD(){ return _bauSelD&&Math.abs(_m3Bau(_bauSelD)-bauM3D)<0.0
 // (perto da cabine); a primeira fica na porta. O desenho é por volume: cada parada
 // ocupa o comprimento proporcional ao m³ dela, como se a carga fosse até o teto.
 let _planoAtual=null;
-function _planoCargaHtml(paradas,o){
+function _planoCargaHtml(paradas,o,opts){
+  opts=opts||{};
   const ent=paradas.map((p,i)=>({p,n:i+1})).filter(x=>_tipoDe(x.p)==='entrega');
   const col=paradas.map((p,i)=>({p,n:i+1})).filter(x=>_tipoDe(x.p)==='coleta');
   const carregar=ent.slice().reverse();
@@ -7132,8 +7200,10 @@ function _planoCargaHtml(paradas,o){
     <text x="${(X0+WB-4).toFixed(1)}" y="${Y+H+34}" text-anchor="end" font-size="11" fill="#5b6b82">porta</text>
   </svg>`;
   const kg=v=>Math.round(+v||0).toLocaleString('pt-BR');
-  const m3Cel=p=>+p.m3>0?`${_fmtM3(p.m3)} m³${_origemM3(p)?` <small class="plano-orig">${esc(_origemM3(p))}</small>`:''}`:'<span class="plano-sem">sem medida</span>';
-  const fila=(c,k)=>`<tr><td>${k+1}º</td><td>${c.n}</td><td>NF ${esc(c.p.nf)}</td><td>${esc(c.p.dest||c.p.cidade||'')}</td><td>${Math.max(1,Math.round(+c.p.itens||1))}</td><td>${kg(c.p.peso)} kg</td><td>${m3Cel(c.p)}</td></tr>`;
+  const m3Cel=p=>{ const t=_tipoCargaTxt(p);
+    const cu=_regrasTxt(_regrasCarga(p));
+    return (+p.m3>0?`${_fmtM3(p.m3)} m³${_origemM3(p)?` <small class="plano-orig">${esc(_origemM3(p))}</small>`:''}`:'<span class="plano-sem">sem medida</span>')+(t?`<small class="plano-orig">carga ${esc(t)}</small>`:'')+(cu.length?`<small class="plano-orig plano-cuid">${esc(cu.join(', '))}</small>`:''); };
+  const fila=(c,k)=>`<tr><td>${k+1}º</td><td>${c.n}</td><td>NF ${esc(c.p.nf)}${_perigTag(c.p)}</td><td>${esc(c.p.dest||c.p.cidade||'')}</td><td>${Math.max(1,Math.round(+c.p.itens||1))}</td><td>${kg(c.p.peso)} kg</td><td>${m3Cel(c.p)}</td></tr>`;
   const vol=_perfilVolume(paradas);
   const resumo=[
     o.bauM3>0?`Entregas: <b>${_fmtM3(m3E)} m³</b> de ${_fmtM3(o.bauM3)} m³ do baú (${Math.round(m3E/o.bauM3*100)}%)${o.capM3>0?`; o limite da viagem é ${_fmtM3(o.capM3)} m³`:''}.`
@@ -7141,55 +7211,513 @@ function _planoCargaHtml(paradas,o){
     ent.some(x=>x.p.m3Fonte==='estimado')?`m³ estimado pelo peso (conta aproximada) nas NF ${ent.filter(x=>x.p.m3Fonte==='estimado').map(x=>esc(x.p.nf)).join(', ')}.`:'',
     semMed.length?`${_plural(semMed.length,'entrega sem medida não aparece','entregas sem medida não aparecem')} no desenho (NF ${semMed.map(x=>esc(x.p.nf)).join(', ')}): reserve espaço para ${semMed.length===1?'ela':'elas'}.`:'',
     passa?'<b class="plano-err">As entregas passam do volume do baú.</b>':'',
+    (()=>{ const pg=paradas.map((p,i)=>({n:i+1,z:_perigosoDe(p)})).filter(x=>x.z);
+      return pg.length?`<b class="perig-txt">⚠ Produto perigoso</b> ${pg.length===1?'na parada':'nas paradas'} ${pg.map(x=>x.n+(x.z.onu?` (ONU ${esc(x.z.onu)})`:'')).join(', ')}: confira rótulos e placas, kit de emergência, documento fiscal com os dados do produto e motorista com curso MOPP antes de sair.`:''; })(),
     col.length?`Coletas: ${_fmtM3(m3C)} m³, no espaço que as entregas liberam. O máximo a bordo na viagem é ${_fmtM3(vol.max)} m³${o.bauM3>0?` (${Math.round(vol.max/o.bauM3*100)}% do baú)`:''}.`:'',
   ].filter(Boolean).map(t=>`<p class="plano-p">${t}</p>`).join('');
+  const tem3d=_planoPode3D(o)&&carregar.length>0;
+  const desenho=!carregar.length?''
+    : opts.print?`${opts.img?`<img class="plano-3d" src="${opts.img}" alt="Baú em 3D com as caixas de cada parada">`:''}${svg}`
+    : tem3d?`<div class="plano-abas" role="group" aria-label="Desenho do baú"><button type="button" class="plano-aba" data-aba="3d" aria-pressed="true" onclick="_planoAba('3d')">Em 3D</button><button type="button" class="plano-aba" data-aba="lado" aria-pressed="false" onclick="_planoAba('lado')">De lado (m³)</button></div>
+      <div id="plano-p3d">${_c3dHtml(carregar.length)}</div><div id="plano-plado" hidden>${svg}</div>`
+    : `${svg}<p class="plano-p plano-dica">Para ver as caixas em 3D, o veículo precisa do comprimento, da largura e da altura do baú (Motoristas → veículo).</p>`;
   return `<p class="plano-cab">${esc(o.titulo||'')}</p>
-    ${carregar.length?svg:''}
+    ${desenho}
     ${resumo}
     ${carregar.length?`<h3 class="plano-h">Ordem para carregar</h3>
     <p class="plano-p">A última entrega entra primeiro e vai para o fundo. A primeira entrega sai pela porta.</p>
     <div class="plano-tab-wrap"><table class="plano-tab"><thead><tr><th>Carregar</th><th>Parada</th><th>Nota</th><th>Destinatário</th><th>Vol.</th><th>Peso</th><th>m³</th></tr></thead>
     <tbody>${carregar.map(fila).join('')}</tbody></table></div>`:'<p class="plano-p">Esta viagem só tem coletas: o veículo sai vazio.</p>'}
     ${col.length?`<h3 class="plano-h">Coletas na volta</h3><div class="plano-tab-wrap"><table class="plano-tab"><thead><tr><th>Parada</th><th>Nota</th><th>Remetente</th><th>Vol.</th><th>Peso</th><th>m³</th></tr></thead>
-    <tbody>${col.map(c=>`<tr><td>${c.n}</td><td>NF ${esc(c.p.nf)}</td><td>${esc(c.p.dest||c.p.cidade||'')}</td><td>${Math.max(1,Math.round(+c.p.itens||1))}</td><td>${kg(c.p.peso)} kg</td><td>${m3Cel(c.p)}</td></tr>`).join('')}</tbody></table></div>`:''}
-    <p class="plano-nota">Desenho por volume: não considera o formato das caixas nem o que pode ir por cima. Confira na hora de carregar.</p>`;
+    <tbody>${col.map(c=>`<tr><td>${c.n}</td><td>NF ${esc(c.p.nf)}${_perigTag(c.p)}</td><td>${esc(c.p.dest||c.p.cidade||'')}</td><td>${Math.max(1,Math.round(+c.p.itens||1))}</td><td>${kg(c.p.peso)} kg</td><td>${m3Cel(c.p)}</td></tr>`).join('')}</tbody></table></div>`:''}
+    <p class="plano-nota">${tem3d?'O 3D usa as medidas de cada volume, mas não sabe o peso de cada caixa, o que é frágil nem o que pode ir por cima. O desenho de lado é só por m³.':'Desenho por volume: não considera o formato das caixas nem o que pode ir por cima.'} Confira na hora de carregar.</p>`;
 }
 function _abrirPlano(paradas,o){
   _planoAtual={paradas,o};
   $id('plano-tit').textContent=o.tituloCurto||'Plano de carga';
   $id('plano-corpo').innerHTML=_planoCargaHtml(paradas,o);
   $id('modal-plano').classList.add('open');
+  _c3dIniciar(paradas,o);
   const cx=$id('modal-plano').querySelector('.modal-box'); if(cx) cx.scrollTop=0;
   setTimeout(()=>{ const b=$id('modal-plano').querySelector('.modal-close'); if(b) b.focus({preventScroll:true}); },30);
 }
 function abrirPlanoCargaD(idx){
   const r=rotaGeradaD[idx]; if(!r) return;
   const veic=(motoristaSelecionadoD&&_rotuloVeic(motoristaSelecionadoD))||vehSel?.nome||'Veículo';
-  _abrirPlano(_paradasD(r),{capM3:capM3D, bauM3:bauM3D,
+  const bau=_bauDaViagemD();
+  _abrirPlano(_paradasD(r),{capM3:capM3D, bauM3:bauM3D, ...(bau?{bau:{c:bau.c,l:bau.l,a:bau.a}}:{}), carroc:carrocD,
     tituloCurto:rotaGeradaD.length>1?`Plano de carga · Rota ${idx+1}`:'Plano de carga',
     titulo:`${veic} · ${_dataBR(rotaCtxD.data)} saindo ${_hhmm(rotaCtxD.saida)}`});
 }
 window.abrirPlanoCargaD=abrirPlanoCargaD;
 function abrirPlanoCargaRota(id){
   const r=(rotasFirebase&&rotasFirebase[id])||(rotasConfirmadasDemo||[]).find(x=>x.id===id); if(!r) return;
-  _abrirPlano(_verLista(r.paradas),{capM3:+r.cap_m3||0, bauM3:+r.bau_m3||0, tituloCurto:'Plano de carga',
-    titulo:`${r.veiculo||'Veículo'}${r.placa?' · '+_placaFmt(r.placa):''} · ${_dataBR(r.data)}${r.saida!=null?' saindo '+_hhmm(r.saida):''}`});
+  _abrirPlano(_verLista(r.paradas),{capM3:+r.cap_m3||0, bauM3:+r.bau_m3||0, ...(r.bau?{bau:r.bau}:{}), carroc:r.carroceria||'bau', tituloCurto:'Plano de carga',
+    titulo:`${r.veiculo||'Veículo'}${r.placa&&!String(r.veiculo||'').includes(_placaFmt(r.placa))?' · '+_placaFmt(r.placa):''} · ${_dataBR(r.data)}${r.saida!=null?' saindo '+_hhmm(r.saida):''}`});
 }
 window.abrirPlanoCargaRota=abrirPlanoCargaRota;
-function fecharPlanoCarga(){ $id('modal-plano').classList.remove('open'); _planoAtual=null; }
+function fecharPlanoCarga(){ $id('modal-plano').classList.remove('open'); _planoAtual=null; _c3d=null; }
 window.fecharPlanoCarga=fecharPlanoCarga;
 function imprimirPlanoCarga(){
   if(!_planoAtual) return;
+  let img=''; try{ const cv=$id('c3d-cv'); if(_c3d&&cv&&cv.width&&!$id('plano-p3d')?.hidden) img=cv.toDataURL('image/png'); }catch(e){}
   const w=window.open('','_blank'); if(!w){ alert('O navegador bloqueou a janela de impressão. Libere pop-ups para este site.'); return; }
   w.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Plano de carga</title><style>
     body{font-family:system-ui,Arial,sans-serif;color:#0d1b2e;margin:24px;font-size:13px}
     h1{font-size:19px;margin:0 0 4px}.plano-cab{color:#5b6b82;margin:0 0 12px}.plano-svg{width:100%;max-width:720px;height:auto}
     .plano-h{font-size:14px;margin:18px 0 6px}.plano-p,.plano-nota{margin:4px 0;line-height:1.5}.plano-nota{color:#5b6b82;font-size:11.5px;margin-top:14px}
     table{border-collapse:collapse;width:100%}th,td{border:1px solid #c8d1de;padding:5px 7px;text-align:left}th{background:#eef2f8}
-    .plano-sem{color:#8a5a06}.plano-err{color:#b42323}.plano-orig{display:block;font-size:10px;color:#5b6b82}</style></head><body><h1>${esc($id('plano-tit').textContent)}</h1>${_planoCargaHtml(_planoAtual.paradas,_planoAtual.o)}</body></html>`);
+    .plano-sem{color:#8a5a06}.plano-err{color:#b42323}.plano-orig{display:block;font-size:10px;color:#5b6b82}
+    .plano-3d{display:block;width:100%;max-width:720px;border:1px solid #c8d1de;border-radius:6px;margin:4px 0 10px}.perig-tag,.perig-txt{color:#b42323;font-weight:700}.plano-cuid{color:#8a5a06;font-weight:600}.perig-tag{margin-left:6px;font-size:11px}</style></head><body><h1>${esc($id('plano-tit').textContent)}</h1>${_planoCargaHtml(_planoAtual.paradas,_planoAtual.o,{print:true,img})}</body></html>`);
   w.document.close(); w.focus(); setTimeout(()=>{ try{ w.print(); }catch(e){} },250);
 }
 window.imprimirPlanoCarga=imprimirPlanoCarga;
+
+// ── PRODUTO PERIGOSO E TIPO DE CARGA ───────────────────────────────────────
+// Número ONU escrito nas observações da ordem de coleta, nas informações complementares ou na
+// descrição do produto ("QUIMICO CLASSIFICADO (ONU 3082 RISCO 90)", "Nº ONU: 1263"). "UN 1993"
+// só vale com "risco", "classe" ou "perigoso" no texto ("UN" sozinho costuma ser unidade). Sem
+// número, "produto perigoso" escrito também marca, menos quando vem negado ("não é produto perigoso").
+// {onu, risco?} (onu '' quando só a frase) ou null.
+function _perigosoDoTexto(txt){
+  const t=_semAcento(txt).toUpperCase().replace(/\s+/g,' ');
+  if(!t.trim()) return null;
+  const m=t.match(/\bONU\s*(?:N[O°º]?\.?\s*)?[:\-]?\s*(\d{4})(?!\d)/)
+       ||(/\bRISCO\b|\bCLASSE\b|PERIGOS/.test(t)?t.match(/\bUN\s?(\d{4})(?!\d)/):null);
+  if(m){
+    const r=t.match(/\bRISCO\s*(?:N[O°º]?\.?\s*)?[:\-]?\s*(\d{2,3}X?)(?![\dA-Z])/);
+    return {onu:m[1], ...(r?{risco:r[1]}:{})};
+  }
+  const re=/\b(?:PRODUTOS?|CARGAS?|MERCADORIAS?) PERIGOS[OA]S?\b/g;
+  let f;
+  while((f=re.exec(t))){ if(!/\bNAO\b|\bSEM\b|\bISENT/.test(t.slice(Math.max(0,f.index-40),f.index))) return {onu:''}; }
+  return null;
+}
+window.__perigosoDoTexto=_perigosoDoTexto;
+// Do pedido (ou da parada): o que a rota confirmada guardou, ou lido do texto da nota agora
+function _perigosoDe(p){
+  if(!p) return null;
+  if(p.perigoso&&typeof p.perigoso==='object') return p.perigoso;
+  const d=_dadosPed(p);
+  if(d.perigoso&&typeof d.perigoso==='object') return d.perigoso;
+  return _perigosoDoTexto([d.obsNota,d.obs,..._verLista(d.produtos).map(x=>x&&x.d)].filter(Boolean).join(' | '));
+}
+function _perigTxt(z){ return z?`Produto perigoso${z.onu?' ONU '+z.onu:''}${z.risco?', risco '+z.risco:''}`:''; }
+function _perigTag(p){
+  const z=_perigosoDe(p);
+  return z?`<span class="perig-tag" title="${esc(_perigTxt(z))}: confira rótulos e placas, kit de emergência, documento fiscal com os dados do produto e motorista com curso MOPP">⚠ ${z.onu?'ONU '+esc(z.onu):'Perigoso'}</span>`:'';
+}
+// Tipo de carga pelo formato de um volume e pelo peso por m³. Conta aproximada, para orientar:
+// leve e volumosa (< 100 kg/m³) enche o baú antes de pesar; pesada e compacta (≥ 700) pesa antes de encher.
+function _tipoCarga(p){
+  const m3=+p.m3||0, kg=+p.peso||0, tags=[];
+  const cx=_caixasDe(p).find(c=>!c.aprox);
+  if(cx){ const s=[cx.c,cx.l,cx.a].sort((a,b)=>b-a);
+    if(s[0]>=2&&s[0]>=4*s[1]) tags.push('comprida'); else if(s[2]<=0.05&&s[2]*8<=s[1]) tags.push('chata'); }
+  else if(_maiorLadoCm(p)>=200) tags.push('comprida');
+  let dens=0;
+  if(m3>0&&kg>0&&p.m3Fonte!=='estimado'&&!_densidadeEstranha(kg,m3)){
+    dens=Math.round(kg/m3);
+    if(dens<100) tags.push('leve e volumosa'); else if(dens>=700) tags.push('pesada e compacta'); else if(!tags.length) tags.push('comum');
+  }
+  return {tags, dens};
+}
+function _tipoCargaTxt(p){ const t=_tipoCarga(p); return t.tags.length?t.tags.join(', ')+(t.dens?` (${t.dens.toLocaleString('pt-BR')} kg por m³)`:''):''; }
+window.__tipoCarga=p=>_tipoCargaTxt(p);
+
+// ── CARGA EM 3D ────────────────────────────────────────────────────────────
+// Caixas de um pedido, em metros: [{c,l,a,q}] com o formato de cada volume; [{aprox:true,m3}]
+// quando só se sabe o m³; [] sem medida. Vem da rota confirmada (cx, em cm), das medidas escritas
+// na nota ou calculadas no pedido (medidas × volumes) ou das medidas dos produtos cadastrados.
+const MAX_CAIXAS_PARADA=400;
+function _caixasDe(p){
+  const m3=+p.m3||0;
+  const cx=_verLista(p.cx).map(x=>({c:+x.c/100,l:+x.l/100,a:+x.a/100,q:Math.max(1,Math.round(+x.q||1))})).filter(x=>x.c>0&&x.l>0&&x.a>0);
+  if(cx.length) return cx;
+  const d=_dadosPed(p);
+  if(d.medidas){
+    const md=_medidasDoTexto(String(d.medidas));
+    if(md&&md.cm){
+      const u=md.cm[0]*md.cm[1]*md.cm[2]/1e6;
+      const n=m3>0?Math.max(1,Math.round(m3/u)):Math.max(1,Math.round(+d.itens||1));
+      if(u>0&&n<=MAX_CAIXAS_PARADA&&(!(m3>0)||Math.abs(u*n-m3)<=m3*0.25)) return [{c:md.cm[0]/100,l:md.cm[1]/100,a:md.cm[2]/100,q:n}];
+    }
+  }
+  const prods=_verLista(d.produtos).filter(x=>x&&x.d);
+  if(prods.length&&!(+d.m3>0)&&!(+d.produtosTotal>prods.length)){
+    const forn=_fornDe(d), cat=_catalogo(), out=[]; let tot=0;
+    for(const x of prods){ const cm=cat[_chaveProd(forn,x)]?.cm, q=Math.ceil(+x.q||0);
+      if(!cm||!(q>0)||!cm.every(v=>+v>0)){ out.length=0; break; }
+      out.push({c:+cm[0]/100,l:+cm[1]/100,a:+cm[2]/100,q}); tot+=q; }
+    if(out.length&&tot<=MAX_CAIXAS_PARADA) return out;
+  }
+  return m3>0?[{aprox:true,m3}]:[];
+}
+window.__caixasDe=_caixasDe;
+// Cuidados escritos na nota ou na ordem de coleta: "FRÁGIL", "NÃO EMPILHAR", "ESTE LADO PARA CIMA".
+// Na descrição do produto só as palavras fortes (FRÁGIL, CRISTAL, PORCELANA, CERÂMICA): "limpa vidros"
+// não é frágil. {fragil, naoEmp, ladoCima} só com o que achou, ou null.
+function _regrasDoTexto(obs,desc){
+  const n=t=>_semAcento(t).toUpperCase().replace(/\s+/g,' ');
+  const o=n(obs), d=n(desc), r={};
+  const sem=(t,re)=>{ const m=re.exec(t); return m&&!/\bNAO\s*$|\bSEM\s*$/.test(t.slice(Math.max(0,m.index-6),m.index)); };
+  if(sem(o,/\bFRAGIL\b|\bFRAGEIS\b|\bVIDROS?\b|\bCRISTA(?:L|IS)\b|\bPORCELANA|\bCERAMICA|\bESPELHOS?\b/)||sem(d,/\bFRAGIL\b|\bFRAGEIS\b|\bCRISTA(?:L|IS)\b|\bPORCELANA|\bCERAMICA/)) r.fragil=true;
+  if(/\bN[AO]O (?:EMPILHAR|EMPILHE|SOBREPOR)|\bPROIBIDO EMPILHAR|\bEMPILHAMENTO MAX(?:IMO)?\.?:? ?1\b/.test(o)) r.naoEmp=true;
+  if(/\bLADO PARA CIMA\b|\bESTE LADO P\/? ?CIMA|↑|\bNAO (?:TOMBAR|VIRAR|DEITAR)\b/.test(o)) r.ladoCima=true;
+  return Object.keys(r).length?r:null;
+}
+window.__regrasDoTexto=_regrasDoTexto;
+function _regrasCarga(p){
+  if(!p) return null;
+  if(p.regras&&typeof p.regras==='object') return p.regras;
+  const d=_dadosPed(p);
+  return _regrasDoTexto([d.obsNota,d.obs].filter(Boolean).join(' | '),_verLista(d.produtos).map(x=>x&&x.d).filter(Boolean).join(' | '));
+}
+function _regrasTxt(r){ return r?[r.fragil&&'frágil',r.naoEmp&&'não empilhar',r.ladoCima&&'este lado para cima'].filter(Boolean):[]; }
+// Peças que entram juntas: caixas iguais em pilha (até o teto, se pode empilhar); muitas pilhas
+// iguais viram fileiras da largura do baú. Peça comprida em pé (o maior lado é a altura) vai deitada,
+// menos com "este lado para cima". Só gira no chão: a altura escrita fica na altura.
+// O peso do pedido é dividido pelos volumes na proporção do tamanho (conta aproximada: a nota não
+// traz o peso de cada volume). Frágil ou "não empilhar" não aguenta nada em cima.
+function _blocosCarga(caixas,W,H,empilhar,kgPed,regras){
+  const out=[], E=1e-9, semTopo=!!(regras&&(regras.fragil||regras.naoEmp)), emPe=!!(regras&&regras.ladoCima);
+  const volTot=caixas.reduce((s,c)=>s+(c.aprox?+c.m3||0:c.c*c.l*c.a*Math.max(1,Math.round(c.q||1))),0);
+  const kgDe=v=>kgPed>0&&volTot>0?kgPed*v/volTot:0;
+  for(const cx of caixas){
+    if(cx.aprox){
+      const v=+cx.m3; if(!(v>0)) continue;
+      const s=Math.cbrt(v), dz=Math.min(s,H), dy=Math.min(s,W);
+      out.push({ori:[[v/(dy*dz),dy,dz]], q:0, aprox:true, m3:v, vol:v, grid:[1,1,1], kg:kgDe(v), kgU:kgDe(v), semTopo:true});
+      continue;
+    }
+    const {c,l,a}=cx, q=Math.max(1,Math.round(cx.q||1)), s=[c,l,a].sort((x,y)=>y-x), u=c*l*a, kgU=kgDe(u);
+    const base=!emPe&&a>=s[0]-E&&a>1.2?[[s[0],s[1],s[2]],[s[1],s[0],s[2]]]:[[c,l,a],[l,c,a]];
+    const ori=Math.abs(base[0][0]-base[1][0])<E?[base[0]]:base;
+    const it=(o,n,grid)=>({ori:o, q:n, vol:u*n, grid, kg:kgU*n, kgU, semTopo});
+    // poucas caixas vão uma a uma: a arrumação monta a parede (largura, depois altura) como na doca
+    if(q<=24){ for(let i=0;i<q;i++) out.push(it(ori,1,[1,1,1])); continue; }
+    const k=empilhar&&!semTopo?Math.max(1,Math.min(q,Math.floor((H+E)/ori[0][2]))):1;
+    const colunas=[]; for(let i=0;i*k<q;i++) colunas.push(Math.min(k,q-i*k));
+    const o0=ori[0], m=Math.max(1,Math.floor((W+E)/o0[1]));
+    let cheias=colunas.filter(n=>n===k).length;
+    if(cheias>24&&m>1){
+      const fil=Math.floor(cheias/m);
+      for(let i=0;i<fil;i++) out.push(it([[o0[0],o0[1]*m,o0[2]*k]],m*k,[1,m,k]));
+      cheias-=fil*m;
+      colunas.splice(0,colunas.length,...Array(cheias).fill(k),...colunas.filter(n=>n!==k));
+    }
+    for(const n of colunas) out.push(it(ori.map(o=>[o[0],o[1],o[2]*n]),n,[1,1,n]));
+  }
+  // o mais pesado por volume entra primeiro: fica no chão e no fundo da parte da parada
+  const dens=x=>x.kgU/Math.max(1e-9,x.q>0?x.vol/x.q:x.vol);
+  return out.sort((a,b)=>dens(b)-dens(a)||b.vol-a.vol);
+}
+// Arruma as peças no baú na ordem de carregar (a última entrega primeiro, no fundo). Pontos
+// extremos (Crainic, Perboli e Tadei, 2008), sem otimizar: cada peça vai no primeiro lugar livre
+// mais perto da cabine, no chão antes de subir, com 70% da base apoiada. Uma parada nunca vai
+// mais para o fundo que a frente da anterior: nada dela fica atrás de carga que sai depois.
+// Em cima só vai o que pesa até 1,5 vez a caixa de baixo (pesado não esmaga leve), e nada vai em
+// cima de frágil, de "não empilhar" ou de bloco só com o m³ (formato desconhecido).
+// bau {c,l,a} em metros; grupos [{caixas, kg, regras}]; devolve {pos:[{x,y,z,dx,dy,dz,g,q,grid,aprox,kg}], fora:[{g,q,ori,aprox,kg}]}
+function _arrumarCarga(bau,grupos,empilhar){
+  const C=+bau.c, W=+bau.l, H=+bau.a, E=1e-6, pos=[], fora=[];
+  let pts=[[0,0,0]], minX=0;
+  const colide=(x,y,z,o)=>pos.some(b=>x<b.x+b.dx-E&&x+o[0]>b.x+E&&y<b.y+b.dy-E&&y+o[1]>b.y+E&&z<b.z+b.dz-E&&z+o[2]>b.z+E);
+  const apoio=(x,y,z,o,it)=>{ let a=0;
+    for(const b of pos){ if(Math.abs(b.z+b.dz-z)>1e-4) continue;
+      const ix=Math.min(x+o[0],b.x+b.dx)-Math.max(x,b.x), iy=Math.min(y+o[1],b.y+b.dy)-Math.max(y,b.y);
+      if(!(ix>E&&iy>E)) continue;
+      if(b.semTopo||(it.kgU>0&&b.kgU>=0&&it.kgU>b.kgU*1.5+1e-6)) return false;
+      a+=ix*iy; }
+    return a>=o[0]*o[1]*0.7-E; };
+  const unico=l=>{ const v=new Set(); return l.filter(p=>{ const k=p.map(n=>n.toFixed(4)).join(); if(v.has(k)) return false; v.add(k); return true; }); };
+  grupos.forEach((g,gi)=>{
+    if(pos.length){ const mx=Math.max(...pos.map(b=>b.x)); if(mx>minX+E){ minX=mx; pts=pts.concat(pts.filter(p=>p[0]<minX).map(p=>[minX,p[1],p[2]])); } }
+    pts.push([minX,0,0]);
+    let livre=(C-minX)*W*H-pos.reduce((s,b)=>s+Math.max(0,b.x+b.dx-Math.max(b.x,minX))*b.dy*b.dz,0);
+    for(const it of _blocosCarga(g.caixas||[],W,H,empilhar,+g.kg||0,g.regras)){
+      let ach=null;
+      if(it.vol<=livre+E){
+        pts=unico(pts).sort((a,b)=>a[0]-b[0]||a[2]-b[2]||a[1]-b[1]);
+        for(const p of pts){
+          if(p[0]<minX-E||((!empilhar||it.aprox)&&p[2]>E)) continue;
+          for(const o of it.ori){
+            if(p[0]+o[0]>C+E||p[1]+o[1]>W+E||p[2]+o[2]>H+E) continue;
+            if(colide(p[0],p[1],p[2],o)||(p[2]>E&&!apoio(p[0],p[1],p[2],o,it))) continue;
+            ach={p,o}; break;
+          }
+          if(ach) break;
+        }
+      }
+      if(!ach){ fora.push({g:gi, q:it.q, ori:it.ori[0], grid:it.grid, aprox:!!it.aprox, m3:it.m3||0, kg:it.kg}); continue; }
+      const [x,y,z]=ach.p, [dx,dy,dz]=ach.o;
+      pos.push({x,y,z,dx,dy,dz,g:gi,q:it.q,grid:it.grid,aprox:!!it.aprox,m3:it.m3||0,kg:it.kg,kgU:it.kgU,semTopo:it.semTopo});
+      livre-=dx*dy*dz;
+      pts=pts.filter(p=>!(p[0]>=x-E&&p[0]<x+dx-E&&p[1]>=y-E&&p[1]<y+dy-E&&p[2]>=z-E&&p[2]<z+dz-E));
+      pts.push([x+dx,y,z],[x,y+dy,z],[x,y,z+dz]);
+    }
+  });
+  return {pos,fora};
+}
+// Centro de gravidade da carga arrumada (pelo peso de cada peça): {x, y, kg} ou null
+function _cgCarga(pos){
+  const kg=pos.reduce((s,b)=>s+(+b.kg||0),0); if(!(kg>0)) return null;
+  return {kg, x:pos.reduce((s,b)=>s+(+b.kg||0)*(b.x+b.dx/2),0)/kg, y:pos.reduce((s,b)=>s+(+b.kg||0)*(b.y+b.dy/2),0)/kg};
+}
+// Avisos do centro de gravidade: perto da porta (eixo dianteiro pode ficar leve), colado na cabine,
+// ou de um lado. Sem as medidas de eixo do veículo, é aviso para conferir, não conta de balança.
+function _avisosCg(cg,bau){
+  if(!cg||!bau) return [];
+  const out=[], fx=cg.x/bau.c, dl=cg.y-bau.l/2;
+  if(fx>0.65) out.push('o peso está concentrado perto da porta: o eixo dianteiro pode ficar leve e o traseiro pesado');
+  else if(fx<0.25) out.push('o peso está concentrado junto à cabine: confira o eixo dianteiro');
+  if(Math.abs(dl)>bau.l*0.1) out.push(`a carga pesa mais do lado ${dl>0?'direito':'esquerdo'} (olhando da porta para a cabine): equilibre os lados`);
+  return out;
+}
+window.__arrumarCarga=_arrumarCarga;
+
+// cores bem diferentes entre paradas vizinhas (12 antes de repetir)
+const _COR_PARADA=['#2a4f86','#d4a12a','#2f8a7e','#7a5a9e','#c0623a','#4f8a3a','#5aa0d8','#a8475f','#6b7a90','#8c6a2e','#2aa6a6','#b07ac0'];
+let _c3d=null;
+function _planoPode3D(o){ const b=o&&o.bau; return !!(b&&+b.c>0&&+b.l>0&&+b.a>0); }
+function _c3dHtml(n){
+  return `<div class="c3d">
+    <div class="c3d-bar">
+      <div class="c3d-vistas" role="group" aria-label="Ponto de vista">
+        ${[['3d','3D'],['porta','Pela porta'],['lado','De lado'],['cima','De cima']].map(([v,t])=>`<button type="button" class="c3d-v" data-v="${v}" aria-pressed="${v==='3d'}" onclick="_c3dVista('${v}')">${t}</button>`).join('')}
+      </div>
+      <label class="c3d-emp"><input type="checkbox" id="c3d-emp" checked onchange="_c3dEmpilhar(this.checked)"> Empilhar</label>
+    </div>
+    <canvas id="c3d-cv" class="c3d-cv" tabindex="0" role="img" aria-label="Baú em 3D com as caixas de cada parada. Use as setas para girar; a lista abaixo do desenho tem cada parada."></canvas>
+    ${n>1?`<div class="c3d-passo"><label for="c3d-ate">Carregar até</label><input type="range" id="c3d-ate" min="1" max="${n}" value="${n}" step="1" oninput="_c3dAte(+this.value)"><span id="c3d-ate-txt" aria-live="polite"></span></div>`:''}
+    <p class="c3d-info" id="c3d-info" aria-live="polite">Arraste para girar. Toque numa caixa (ou numa parada abaixo) para ver o pedido.</p>
+    <div class="c3d-leg" id="c3d-leg"></div>
+    <p class="plano-p" id="c3d-resumo"></p>
+  </div>`;
+}
+const _VISTAS={'3d':[-0.9,0.5],porta:[-0.3,0.3],lado:[-Math.PI/2,0.12],cima:[-Math.PI/2,1.55]};
+function _c3dIniciar(paradas,o){
+  _c3d=null;
+  const cv=$id('c3d-cv'); if(!cv||!_planoPode3D(o)) return;
+  const ent=paradas.map((p,i)=>({p,n:i+1})).filter(x=>_tipoDe(x.p)==='entrega').reverse();
+  const grupos=ent.map((c,k)=>({n:c.n, p:c.p, k, cor:_COR_PARADA[k%_COR_PARADA.length], caixas:_caixasDe(c.p), perig:_perigosoDe(c.p), kg:+c.p.peso||0, regras:_regrasCarga(c.p)}));
+  _c3d={bau:{c:+o.bau.c,l:+o.bau.l,a:+o.bau.a}, aberta:o.carroc==='aberta', grupos, empilhar:true, yaw:_VISTAS['3d'][0], pitch:_VISTAS['3d'][1],
+    ate:grupos.length, foco:-1, sel:null, faces:[]};
+  _c3dArrumar();
+  $id('c3d-leg').innerHTML=grupos.map(g=>`<button type="button" class="c3d-chip" data-g="${g.k}" aria-pressed="false" onclick="_c3dFoco(${g.k})"><i style="background:${g.cor}"></i>${g.k+1}º · Parada ${g.n}${g.perig?' ⚠':''}${g.regras&&(g.regras.fragil||g.regras.naoEmp)?' · frágil':''}${g.caixas.length?'':' (sem medida)'}</button>`).join('');
+  _c3dEventos(cv);
+  _c3dDesenhar();
+}
+function _c3dArrumar(){
+  const st=_c3d;
+  st.res=_arrumarCarga(st.bau,st.grupos,st.empilhar);
+  st.sel=null;
+  const vol=g=>g.caixas.reduce((s,c)=>s+(c.aprox?0:c.q),0);
+  const desenh=st.grupos.filter(g=>g.caixas.length), semMed=st.grupos.filter(g=>!g.caixas.length), aprox=st.grupos.filter(g=>g.caixas.some(c=>c.aprox));
+  const comp=st.res.pos.reduce((m,b)=>Math.max(m,b.x+b.dx),0);
+  const foraG=[...new Set(st.res.fora.map(f=>f.g))].map(k=>st.grupos[k]);
+  const nVol=desenh.reduce((s,g)=>s+vol(g),0);
+  $id('c3d-resumo').innerHTML=[
+    desenh.length?`${_plural(desenh.length,'parada desenhada','paradas desenhadas')}${nVol?`, ${_plural(nVol,'volume','volumes')}`:''}. A carga vai até <b>${_fmtMed(comp)} m</b> dos ${_fmtMed(st.bau.c)} m do baú.`:'Nenhuma entrega tem medida para desenhar.',
+    aprox.length?`Só com o m³, sem o formato das caixas (bloco tracejado): parada ${aprox.map(g=>g.n).join(', ')}.`:'',
+    semMed.length?`Sem medida, fora do desenho: parada ${semMed.map(g=>g.n).join(', ')}. Reserve espaço.`:'',
+    foraG.length?`<b class="plano-err">Não couberam ${st.empilhar?'':'sem empilhar '}pelo formato: parada ${foraG.map(g=>g.n).join(', ')}</b> (em vermelho, atrás da porta). Pelo m³ pode até caber: o que sobra são vãos entre as caixas.`:'',
+    (()=>{ const r=st.grupos.filter(g=>_regrasTxt(g.regras).length); return r.length?`Cuidados escritos na nota: ${r.map(g=>`parada ${g.n} (${_regrasTxt(g.regras).join(', ')})`).join('; ')}. Nada vai em cima de frágil ou de "não empilhar".`:''; })(),
+    (()=>{ const cg=_cgCarga(st.res.pos); if(!cg) return '';
+      const dl=cg.y-st.bau.l/2, av=_avisosCg(cg,st.bau);
+      return `Centro de gravidade da carga (círculo dourado): a <b>${_fmtMed(cg.x)} m</b> da cabine (${Math.round(cg.x/st.bau.c*100)}% do baú)${Math.abs(dl)>=0.05?`, ${Math.round(Math.abs(dl)*100)} cm para a ${dl>0?'direita':'esquerda'} do meio`:', no meio da largura'}. O peso de cada volume é o da nota dividido pelo tamanho.${av.length?` <b class="plano-err">Atenção: ${av.join('; ')}.</b>`:''}`; })(),
+  ].filter(Boolean).join(' ');
+  _c3dAteTxt();
+}
+function _c3dAteTxt(){
+  const el=$id('c3d-ate-txt'); if(!el||!_c3d) return;
+  const st=_c3d, g=st.grupos[st.ate-1];
+  el.textContent=st.ate>=st.grupos.length?'tudo carregado':`${st.ate}º: parada ${g.n}`;
+}
+function _c3dVista(v){
+  if(!_c3d||!_VISTAS[v]) return;
+  [_c3d.yaw,_c3d.pitch]=_VISTAS[v];
+  document.querySelectorAll('.c3d-v').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===v)));
+  _c3dDesenhar();
+}
+function _c3dEmpilhar(on){ if(!_c3d) return; _c3d.empilhar=!!on; _c3dArrumar(); _c3dDesenhar(); _c3dInfo(); }
+function _c3dAte(n){ if(!_c3d) return; _c3d.ate=Math.max(1,Math.min(_c3d.grupos.length,n|0)); _c3d.sel=null; _c3dAteTxt(); _c3dDesenhar(); }
+function _c3dFoco(k){
+  if(!_c3d) return;
+  _c3d.foco=_c3d.foco===k?-1:k; _c3d.sel=null;
+  document.querySelectorAll('.c3d-chip').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.g===_c3d.foco)));
+  _c3dDesenhar(); _c3dInfo(_c3d.foco>=0?{g:_c3d.foco}:null);
+}
+Object.assign(window,{_c3dVista,_c3dEmpilhar,_c3dAte,_c3dFoco});
+function _c3dInfo(obj){
+  const el=$id('c3d-info'); if(!el||!_c3d) return;
+  if(!obj){ el.textContent='Arraste para girar. Toque numa caixa (ou numa parada abaixo) para ver o pedido.'; return; }
+  const g=_c3d.grupos[obj.g], p=g.p, med=g.caixas.filter(c=>!c.aprox);
+  const qtd=med.reduce((s,c)=>s+c.q,0);
+  const forma=med.length===1?`${_plural(med[0].q,'volume','volumes')} de ${[med[0].c,med[0].l,med[0].a].map(v=>_fmtMed(v*100)).join(' × ')} cm`
+    :med.length?`${_plural(qtd,'volume','volumes')} de ${med.length} tamanhos`:(g.caixas.length?'só o m³, sem o formato das caixas':'sem medida');
+  const tipo=_tipoCargaTxt(p), cuid=_regrasTxt(g.regras), kgU=obj.kgU>0?obj.kgU:(obj.kg>0&&obj.q>0?obj.kg/obj.q:0);
+  el.innerHTML=`<b>Parada ${g.n}</b> (${g.k+1}º a carregar) · NF ${esc(p.nf)}${p.dest?' · '+esc(p.dest):''} · ${esc(forma)}${+p.m3>0?` · ${_fmtM3(p.m3)} m³`:''} · ${Math.round(+p.peso||0).toLocaleString('pt-BR')} kg${kgU&&obj.q?` · ~${Math.round(kgU).toLocaleString('pt-BR')} kg cada volume`:''}${tipo?` · carga ${esc(tipo)}`:''}${cuid.length?` · <b>${esc(cuid.join(', '))}</b>`:''}${obj.fora?' · <b class="plano-err">não coube</b>':''}${g.perig?` · <b class="perig-txt">⚠ ${esc(_perigTxt(g.perig))}</b>`:''}`;
+}
+function _c3dCam(yaw,pitch){
+  const cy=Math.cos(yaw), sy=Math.sin(yaw), cp=Math.cos(pitch), sp=Math.sin(pitch);
+  return {cam:[cp*cy,cp*sy,sp], r:[-sy,cy,0], u:[-sp*cy,-sp*sy,cp]};
+}
+function _c3dTom(hex,f){
+  const n=parseInt(hex.slice(1),16), t=f>0?255:0, k=Math.abs(f);
+  return `rgb(${[n>>16,n>>8&255,n&255].map(v=>Math.round(v+(t-v)*k)).join(',')})`;
+}
+// Ordem de desenho (o de trás primeiro): duas caixas que não se tocam são separadas em algum eixo;
+// a que está do lado oposto ao da câmera vai antes. Ciclo (raro) cai na ordem pela distância.
+function _c3dOrdem(objs,cam){
+  const n=objs.length, dep=objs.map(b=>(b.x+b.dx/2)*cam[0]+(b.y+b.dy/2)*cam[1]+(b.z+b.dz/2)*cam[2]);
+  const depois=Array.from({length:n},()=>[]), grau=new Array(n).fill(0);
+  const sep=(A,B)=>{
+    for(const [k,dk,i] of [['x','dx',0],['y','dy',1],['z','dz',2]]){
+      if(Math.abs(cam[i])<1e-6) continue;
+      if(A[k]+A[dk]<=B[k]+1e-6) return cam[i]>0?-1:1;
+      if(B[k]+B[dk]<=A[k]+1e-6) return cam[i]>0?1:-1;
+    }
+    return 0;
+  };
+  for(let i=0;i<n;i++) for(let j=i+1;j<n;j++){
+    const a=objs[i].bb, b=objs[j].bb;
+    if(a[2]<b[0]||b[2]<a[0]||a[3]<b[1]||b[3]<a[1]) continue;
+    const s=sep(objs[i],objs[j]);
+    if(s<0){ depois[i].push(j); grau[j]++; } else if(s>0){ depois[j].push(i); grau[i]++; }
+  }
+  const out=[], usado=new Array(n).fill(false);
+  let fila=[...Array(n).keys()].filter(i=>!grau[i]);
+  while(out.length<n){
+    if(!fila.length){ const r=[...Array(n).keys()].filter(i=>!usado[i]).sort((a,b)=>dep[a]-dep[b])[0]; grau[r]=0; fila=[r]; }
+    fila.sort((a,b)=>dep[a]-dep[b]);
+    const i=fila.shift(); if(usado[i]) continue;
+    usado[i]=true; out.push(objs[i]);
+    for(const j of depois[i]) if(!usado[j]&&--grau[j]===0) fila.push(j);
+  }
+  return out;
+}
+const _C3D_FACES=[[0,[1,3,7,5],[0,4,6,2]],[1,[2,6,7,3],[0,1,5,4]],[2,[4,5,7,6],[0,2,3,1]]];
+function _c3dDesenhar(){
+  const st=_c3d, cv=$id('c3d-cv'); if(!st||!cv||!cv.clientWidth) return;
+  const dpr=Math.min(2,window.devicePixelRatio||1), w=cv.clientWidth, h=cv.clientHeight;
+  if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){ cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr); }
+  const ctx=cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,w,h);
+  const {cam,r,u}=_c3dCam(st.yaw,st.pitch), {c:C,l:W,a:H}=st.bau, tudo=st.ate>=st.grupos.length;
+  // cabine, chassi e o que não coube (atrás da porta)
+  const cabC=Math.min(1.7,Math.max(1,W*0.6)), cabH=Math.min(H,2.4)*0.85;
+  const objs=[{x:-cabC-0.08,y:0,z:-0.4,dx:cabC,dy:W,dz:cabH+0.4,cor:'#16243a',fixo:true},
+    {x:-cabC-0.08,y:0.12,z:-0.4,dx:C+cabC+0.08,dy:Math.max(0.1,W-0.24),dz:0.36,cor:'#2b3a52',fixo:true}];
+  st.res.pos.forEach((b,i)=>{ if(b.g<st.ate) objs.push({...b, id:'p'+i, cor:st.grupos[b.g].cor}); });
+  if(tudo){ let fx=C+0.5; st.res.fora.forEach((f,i)=>{ objs.push({x:fx,y:0,z:0,dx:f.ori[0],dy:f.ori[1],dz:f.ori[2],g:f.g,q:f.q,grid:f.grid,aprox:f.aprox,fora:true,id:'f'+i,cor:'#d64545'}); fx+=f.ori[0]+0.2; }); }
+  // enquadra tudo no desenho
+  const pr=(x,y,z)=>[x*r[0]+y*r[1]+z*r[2], -(x*u[0]+y*u[1]+z*u[2])];
+  const cantos=b=>[0,1,2,3,4,5,6,7].map(k=>pr(b.x+(k&1)*b.dx,b.y+(k>>1&1)*b.dy,b.z+(k>>2&1)*b.dz));
+  let mnx=Infinity,mny=Infinity,mxx=-Infinity,mxy=-Infinity;
+  [{x:0,y:0,z:0,dx:C,dy:W,dz:H},...objs].forEach(b=>cantos(b).forEach(([a,c])=>{ mnx=Math.min(mnx,a); mxx=Math.max(mxx,a); mny=Math.min(mny,c); mxy=Math.max(mxy,c); }));
+  const pad=22, s=Math.min((w-2*pad)/Math.max(0.1,mxx-mnx),(h-2*pad-10)/Math.max(0.1,mxy-mny));
+  const ox=(w-(mxx-mnx)*s)/2-mnx*s, oy=(h-(mxy-mny)*s)/2-mny*s+4;
+  const P=(x,y,z)=>{ const [a,c]=pr(x,y,z); return [ox+a*s, oy+c*s]; };
+  const poly=(pts,fill,stroke,lw,dash)=>{ ctx.beginPath(); pts.forEach(([a,c],i)=>i?ctx.lineTo(a,c):ctx.moveTo(a,c)); ctx.closePath();
+    if(fill){ ctx.fillStyle=fill; ctx.fill(); } if(stroke){ ctx.strokeStyle=stroke; ctx.lineWidth=lw||1; ctx.setLineDash(dash||[]); ctx.stroke(); ctx.setLineDash([]); } };
+  const linha=(a,b,cor,lw,dash)=>{ ctx.beginPath(); ctx.moveTo(...a); ctx.lineTo(...b); ctx.strokeStyle=cor; ctx.lineWidth=lw||1; ctx.setLineDash(dash||[]); ctx.stroke(); ctx.setLineDash([]); };
+  // chão (uma linha a cada metro) e as paredes do fundo: entram logo depois do assoalho
+  const parede=(q,fill)=>poly(q.map(v=>P(...v)),fill,'rgba(91,107,130,.55)',1);
+  const fundo=()=>{
+    for(let k=1;k<C;k++) linha(P(k,0,0),P(k,W,0),'rgba(141,157,181,.4)',1);
+    const paredes=[[[0,0,0],[0,W,0],[0,W,H],[0,0,H],0,1],[[0,0,0],[C,0,0],[C,0,H],[0,0,H],1,1],[[0,W,0],[C,W,0],[C,W,H],[0,W,H],1,-1]];
+    if(!st.aberta) paredes.forEach(([a,b,c,d,eixo,lado])=>{ if(cam[eixo]*lado>0) parede([a,b,c,d],'rgba(42,79,134,.06)'); });
+    else if(cam[0]>0) parede([[0,0,0],[0,W,0],[0,W,H*0.5],[0,0,H*0.5]],'rgba(42,79,134,.06)');
+  };
+  objs.push({x:0,y:0,z:-0.04,dx:C,dy:W,dz:0.04,cor:'#dfe6f0',fixo:true,chao:true});
+  // caixas
+  objs.forEach(b=>{ const cs=cantos(b).map(([a,c])=>[ox+a*s,oy+c*s]); b.cs=cs;
+    b.bb=[Math.min(...cs.map(p=>p[0])),Math.min(...cs.map(p=>p[1])),Math.max(...cs.map(p=>p[0])),Math.max(...cs.map(p=>p[1]))]; });
+  const ordem=_c3dOrdem(objs,cam), faces=[];
+  for(const b of ordem){
+    const apag=st.foco>=0&&!b.fixo&&b.g!==st.foco, sel=st.sel&&st.sel===b.id;
+    ctx.globalAlpha=apag?0.16:(b.aprox?0.55:1);
+    for(const [eixo,fMax,fMin] of _C3D_FACES){
+      if(Math.abs(cam[eixo])<1e-6) continue;
+      const f=cam[eixo]>0?fMax:fMin, pts=f.map(k=>b.cs[k]);
+      const cor=eixo===2?_c3dTom(b.cor,0.2):eixo===1?_c3dTom(b.cor,-0.18):b.cor;
+      poly(pts,cor,b.fixo?'rgba(0,0,0,.25)':(b.fora?'#8f1d1d':'rgba(13,27,46,.6)'),b.fixo?0.8:1,b.aprox||b.fora?[4,3]:null);
+      // linhas de cada caixa dentro da pilha ou da fileira
+      if(!b.fixo&&b.grid){ const g=b.grid, out=[0,1,2].filter(i=>i!==eixo);
+        for(const i of out) for(let t=1;t<g[i];t++){ const fr=t/g[i];
+          const pt=(sel2)=>{ const v=[b.x,b.y,b.z], dd=[b.dx,b.dy,b.dz]; v[eixo]+=cam[eixo]>0?dd[eixo]:0; v[i]+=dd[i]*fr; const o2=out.find(j=>j!==i); v[o2]+=dd[o2]*sel2; return P(...v); };
+          linha(pt(0),pt(1),'rgba(255,255,255,.55)',0.8); } }
+      if(!b.fixo) faces.push({pts,b});
+    }
+    if(b.chao){ ctx.globalAlpha=1; fundo(); }
+    if(sel){ ctx.globalAlpha=1; for(const [eixo,fMax,fMin] of _C3D_FACES){ if(Math.abs(cam[eixo])<1e-6) continue; poly((cam[eixo]>0?fMax:fMin).map(k=>b.cs[k]),null,'#e0a91b',2.6); } }
+  }
+  ctx.globalAlpha=1;
+  // contorno de cima e das paredes da frente (vidro)
+  if(!st.aberta){
+    const t=[[0,0,H],[C,0,H],[C,W,H],[0,W,H]].map(v=>P(...v));
+    for(let i=0;i<4;i++) linha(t[i],t[(i+1)%4],'rgba(91,107,130,.75)',1.1);
+    [[0,0],[C,0],[C,W],[0,W]].forEach(([x,y])=>linha(P(x,y,0),P(x,y,H),'rgba(91,107,130,.75)',1.1));
+  }
+  // centro de gravidade do que está carregado (muda no passo a passo)
+  const cgD=_cgCarga(objs.filter(b=>!b.fixo&&!b.fora));
+  if(cgD){ const a0=P(cgD.x,cgD.y,0), a1=P(cgD.x,cgD.y,H*0.95);
+    linha(a0,a1,'rgba(201,154,46,.95)',1.6,[4,3]);
+    ctx.beginPath(); ctx.arc(a0[0],a0[1],6.5,0,Math.PI*2); ctx.fillStyle='#e0a91b'; ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle='#0d1b2e'; ctx.stroke();
+    ctx.font='700 10.5px system-ui,sans-serif'; ctx.textAlign='center'; ctx.fillStyle='#8a6514'; ctx.fillText('CG',a1[0],a1[1]-7); }
+  // número da parada em cima da peça mais alta de cada uma; ⚠ no produto perigoso
+  ctx.font='700 11px system-ui,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  const rot={};
+  ordem.forEach(b=>{ if(b.fixo||b.fora) return; const r0=rot[b.g]; if(!r0||b.z+b.dz>r0.z+r0.dz+1e-6||(Math.abs(b.z+b.dz-r0.z-r0.dz)<1e-6&&b.dx*b.dy>r0.dx*r0.dy)) rot[b.g]=b; });
+  Object.values(rot).forEach(b=>{
+    const g=st.grupos[b.g]; if(st.foco>=0&&b.g!==st.foco) return;
+    const [a,c]=P(b.x+b.dx/2,b.y+b.dy/2,b.z+b.dz);
+    ctx.beginPath(); ctx.arc(a,c,10,0,Math.PI*2); ctx.fillStyle='#0d1b2e'; ctx.fill(); ctx.lineWidth=1.5; ctx.strokeStyle='#fff'; ctx.stroke();
+    ctx.fillStyle='#fff'; ctx.fillText(String(g.n),a,c+0.5);
+    if(g.perig){ const x=a+17, y=c; ctx.beginPath(); ctx.moveTo(x,y-9); ctx.lineTo(x+9,y); ctx.lineTo(x,y+9); ctx.lineTo(x-9,y); ctx.closePath();
+      ctx.fillStyle='#e8590c'; ctx.fill(); ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke(); ctx.fillStyle='#fff'; ctx.fillText('!',x,y+0.5); }
+  });
+  ctx.font='600 11px system-ui,sans-serif'; ctx.fillStyle='#5b6b82';
+  const [cx0,cy0]=P(-cabC/2-0.08,W/2,cabH); ctx.fillText('cabine',cx0,cy0-10);
+  const [px0,py0]=P(C,W/2,H); ctx.fillText('porta',px0,py0-10);
+  if(tudo&&st.res.fora.length){ const f=objs.find(b=>b.fora); if(f){ const [a,c]=P(f.x+f.dx/2,f.y+f.dy/2,f.z+f.dz); ctx.fillStyle='#b42323'; ctx.fillText('não coube',a,c-12); } }
+  st.faces=faces;
+}
+function _c3dTocar(px,py){
+  const st=_c3d; if(!st) return;
+  const dentro=(pts)=>{ let o=false; for(let i=0,j=pts.length-1;i<pts.length;j=i++){ const [xi,yi]=pts[i],[xj,yj]=pts[j];
+    if((yi>py)!==(yj>py)&&px<(xj-xi)*(py-yi)/(yj-yi)+xi) o=!o; } return o; };
+  const f=[...st.faces].reverse().find(f=>dentro(f.pts));
+  st.sel=f?f.b.id:null;
+  _c3dDesenhar(); _c3dInfo(f?f.b:null);
+}
+function _c3dEventos(cv){
+  let ini=null;
+  cv.addEventListener('pointerdown',e=>{ ini={x:e.clientX,y:e.clientY,yaw:_c3d?.yaw,pitch:_c3d?.pitch,mov:false}; try{ cv.setPointerCapture(e.pointerId); }catch(_){} });
+  cv.addEventListener('pointermove',e=>{
+    if(!ini||!_c3d) return;
+    const dx=e.clientX-ini.x, dy=e.clientY-ini.y;
+    if(!ini.mov&&Math.abs(dx)+Math.abs(dy)<5) return;
+    ini.mov=true;
+    _c3d.yaw=ini.yaw-dx*0.01; _c3d.pitch=Math.max(0.05,Math.min(1.55,ini.pitch+dy*0.01));
+    document.querySelectorAll('.c3d-v').forEach(b=>b.setAttribute('aria-pressed','false'));
+    _c3dDesenhar();
+  });
+  cv.addEventListener('pointerup',e=>{ if(ini&&!ini.mov){ const r=cv.getBoundingClientRect(); _c3dTocar(e.clientX-r.left,e.clientY-r.top); } ini=null; });
+  cv.addEventListener('pointercancel',()=>{ ini=null; });
+  cv.addEventListener('keydown',e=>{
+    if(!_c3d) return;
+    const k={ArrowLeft:[0.15,0],ArrowRight:[-0.15,0],ArrowUp:[0,0.12],ArrowDown:[0,-0.12]}[e.key]; if(!k) return;
+    e.preventDefault(); _c3d.yaw+=k[0]; _c3d.pitch=Math.max(0.05,Math.min(1.55,_c3d.pitch+k[1])); _c3dDesenhar();
+  });
+}
+window.addEventListener('resize',()=>{ if(_c3d) _c3dDesenhar(); });
+function _planoAba(v){
+  document.querySelectorAll('.plano-aba').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.aba===v)));
+  const p3=$id('plano-p3d'), pl=$id('plano-plado'); if(p3) p3.hidden=v!=='3d'; if(pl) pl.hidden=v!=='lado';
+  if(v==='3d') _c3dDesenhar();
+}
+window._planoAba=_planoAba;
 
 // Peso e volume a bordo da viagem, com o botão do plano de carga
 function _blocoCargaD(paradas,idx){

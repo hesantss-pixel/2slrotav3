@@ -884,6 +884,57 @@ encaixe 3D de caixas; "40x30x25" solto no texto da nota (sem saber a quantidade,
 (`firebase/database.rules.json`, nós `produtos` e `config/cubagem`). Sem elas, o resto funciona,
 mas salvar medida de produto ou o fator de cubagem dá "O banco recusou" e a tela explica o motivo.
 
+## Plano de carga em 3D, produto perigoso e tipo de carga (24/11/2026)
+
+**Em 3D** (Plano de carga → aba "Em 3D", quando o veículo tem comprimento, largura e altura do
+baú; sem isso fica só o desenho de lado e a tela diz o que falta). Desenho em canvas, sem
+biblioteca. Arrastar gira; setas do teclado também; vistas prontas (3D, pela porta, de lado, de
+cima); "Carregar até" mostra o carregamento passo a passo; tocar numa caixa ou numa parada da
+legenda mostra o pedido. "Imprimir" leva a imagem do 3D junto com o desenho de lado e a tabela.
+
+- **Caixas de cada pedido:** medidas de um volume × volumes (observações da ordem de coleta,
+  informações da nota ou a calculadora do pedido, que agora guarda as medidas), medidas dos
+  produtos cadastrados ou, na rota confirmada, o que ela guardou (`cx`, em cm). Pedido só com o m³
+  vira um bloco tracejado no chão (formato desconhecido, nada vai em cima); sem medida fica fora
+  do desenho e a tela avisa.
+- **Arrumação** (`_arrumarCarga`): pontos extremos (Crainic, Perboli e Tadei, 2008), na ordem de
+  carregar (a última entrega primeiro, no fundo). Cada peça vai no primeiro lugar livre mais perto
+  da cabine, no chão antes de subir (monta a parede como na doca), com 70% da base apoiada. Uma
+  parada nunca vai mais para o fundo que a frente das que entraram antes. Gira só no chão; peça
+  comprida em pé vai deitada. Mais de 24 caixas iguais viram pilhas e fileiras (desenho leve).
+  "Empilhar" liga e desliga. O que não cabe aparece em vermelho atrás da porta.
+- **Peso de cada volume:** o da nota dividido pelos volumes na proporção do tamanho (a nota não
+  traz o peso de cada um). Em cima só vai o que pesa até 1,5 vez a caixa de baixo.
+- **Cuidados escritos na nota** (`_regrasDoTexto`): "FRÁGIL", "VIDRO", "PORCELANA" → nada vai em
+  cima; "NÃO EMPILHAR" → idem; "ESTE LADO PARA CIMA" → não deita. Negado ("não frágil") não conta;
+  na descrição do produto só as palavras fortes ("limpa vidros" não é frágil).
+- **Centro de gravidade** da carga (círculo dourado no 3D, muda no passo a passo): distância da
+  cabine e desvio para um lado. Avisa peso perto da porta (eixo dianteiro leve), colado na
+  cabine ou de um lado. Sem as medidas de eixo do veículo, é aviso para conferir, não conta de
+  balança.
+- **Rota confere o formato** (`_formatoRota`): com o baú medido, o resultado arruma as caixas que
+  têm formato e avisa "Pelo formato das caixas, N volumes não cabem" antes de confirmar (o m³ pode
+  caber e a caixa não). Bloco só com o m³ não entra nessa conta.
+- A rota confirmada guarda em cada parada `cx`, `perigoso` e `regras`.
+
+**Produto perigoso** (`_perigosoDoTexto`): número ONU nas observações, nas informações da nota ou
+na descrição do produto ("ONU 3082 RISCO 90", "Nº ONU: 1263"; "UN 1993" só com classe ou risco no
+texto); "produto perigoso" escrito também marca, menos negado. Marca ⚠ na lista de pedidos, na
+parada, no pedido, no plano e no 3D; aviso na rota com o que conferir (rótulos e placas, kit de
+emergência, documento fiscal com os dados do produto, motorista com curso MOPP). A tela do
+motorista mostra "Produto perigoso · ONU". Ainda não confere a compatibilidade entre classes nem
+com alimento ou remédio (Res. ANTT 5.998/2022, art. 17): precisa da tabela de classes por ONU.
+
+**Tipo de carga** (`_tipoCarga`): comprida (um lado ≥ 2 m e 4 vezes o segundo), chata (≤ 5 cm),
+leve e volumosa (< 100 kg por m³), pesada e compacta (≥ 700), comum. No pedido, no plano e no 3D.
+
+**Demonstração:** os pedidos de exemplo com m³ ganharam medidas de caixa (fictícias) e dois têm
+produto perigoso na observação, para mostrar o 3D e o aviso.
+
+**Ainda não:** peso por eixo (precisa de entre-eixos, tara e posição do baú de cada veículo),
+mexer a caixa à mão no 3D, coletas entrando na arrumação ao longo da rota, paletes como unidade,
+link do plano para o celular do conferente sem login.
+
 ## Endereço de coleta nas observações da ordem de coleta (24/11/2026)
 
 Na Ordem de Coleta de Cargas, o endereço impresso é o do **remetente**, mas às vezes a

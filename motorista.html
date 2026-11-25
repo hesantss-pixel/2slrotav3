@@ -49,6 +49,7 @@ main{max-width:640px;margin:0 auto;padding:16px 16px 40px;}
 .meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;color:var(--text3);margin-top:8px;}
 .chip{display:inline-flex;align-items:center;height:24px;padding:0 8px;border-radius:7px;background:#f1f5f9;border:1px solid var(--line);font-size:12.5px;font-weight:600;color:var(--text2);}
 .chip.hora{background:#fff3df;border-color:#f6dca6;color:#8a5a06;}
+.chip.perig{background:#fff1e8;border-color:#f0a476;color:#a8380a;font-weight:700;}
 .acoes{display:flex;gap:8px;margin-top:12px;}
 .acoes>*{flex:1;}
 .btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:0 12px;border-radius:12px;border:1px solid var(--line2);background:#fff;color:var(--text);font:700 15px Inter,sans-serif;text-decoration:none;cursor:pointer;-webkit-tap-highlight-color:transparent;}
@@ -241,7 +242,7 @@ function lerRotaDemo() {
     const i = d.i || {};
     return {
       info: { veiculo: i.v || 'Rota', motorista: i.m || '', data: i.d || hojeISO(), saida: i.s ?? null, deposito: { nome: i.c || 'Centro de distribuição' } },
-      paradas: (d.p || []).map((x) => ({ nf: x[0], tipo: x[1] ? 'coleta' : 'entrega', dest: x[2], endereco: x[3], bairro: x[4], cidade: x[5], uf: x[6], cep: x[7], lat: x[8], lng: x[9], peso: x[10], itens: x[11], chegada_min: x[12], janela_ini: x[13], janela_fim: x[14] })),
+      paradas: (d.p || []).map((x) => ({ nf: x[0], tipo: x[1] ? 'coleta' : 'entrega', dest: x[2], endereco: x[3], bairro: x[4], cidade: x[5], uf: x[6], cep: x[7], lat: x[8], lng: x[9], peso: x[10], itens: x[11], chegada_min: x[12], janela_ini: x[13], janela_fim: x[14], ...(x[15] ? { perigoso: { onu: x[15] === 'sim' ? '' : String(x[15]) } } : {}) })),
     };
   } catch (e) { return null; }
 }
@@ -470,6 +471,7 @@ function card(p, i, prox) {
   // número engana (atrasa com o trânsito e com a espera de quem tem hora marcada).
   const cheg = p.chegada_min != null && p.janela_ini != null ? `<span class="chip">chega ~${hhmm(p.chegada_min)}</span>` : '';
   const jan = p.janela_ini != null && p.janela_fim != null ? `<span class="chip hora">Horário ${hhmm(p.janela_ini)}–${hhmm(p.janela_fim)}</span>` : '';
+  const pg = p.perigoso && typeof p.perigoso === 'object' ? `<span class="chip perig">⚠ Produto perigoso${p.perigoso.onu ? ' · ONU ' + esc(p.perigoso.onu) : ''}</span>` : '';
   let corpo;
   if (aberto && aberto.i === i) corpo = form(p, i);
   else if (b) {
@@ -487,7 +489,7 @@ function card(p, i, prox) {
     <div class="p-top"><span class="num">${i + 1}</span><span class="tag ${col ? 'c' : 'e'}">${col ? 'Coleta' : 'Entrega'}</span><span class="nf">NF ${esc(p.nf)}</span>${prox ? '<span class="prox-lbl">PRÓXIMA</span>' : ''}</div>
     <div class="dest">${esc(p.dest || p.cidade || '')}</div>
     <div class="end">${esc(endereco(p))}</div>
-    <div class="meta">${p.peso ? esc(Number(p.peso).toLocaleString('pt-BR')) + ' kg' : ''}${p.itens ? ' · ' + esc(p.itens) + ' vol.' : ''}${cheg}${jan}</div>
+    <div class="meta">${p.peso ? esc(Number(p.peso).toLocaleString('pt-BR')) + ' kg' : ''}${p.itens ? ' · ' + esc(p.itens) + ' vol.' : ''}${cheg}${jan}${pg}</div>
     ${corpo}</li>`;
 }
 
