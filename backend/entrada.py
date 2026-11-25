@@ -269,18 +269,130 @@ def _fmt_med(v: float) -> str:
     return s.replace(".", ",")
 
 
-def _medidas_da_obs(p: dict) -> None:
-    """m³ pelas medidas de um volume × volumes, quando a nota não diz o m³."""
-    md = medidas_do_texto(p.get("obsNota", "")) if p.get("obsNota") else None
-    if not md:
-        return
-    p["maiorCm"] = md["maiorCm"]
-    if md.get("cm") and not (p.get("m3") or 0) > 0:
+_QTD_UN = (r"CXS?|CAIXAS?|VOL(?:UME)?S?|PCS?|PECAS?|UN(?:IDADES?)?|UNDS?|PALETES?|PLTS?|FARDOS?|ROLOS?"
+           r"|BOMBONAS?|TAMBOR(?:ES)?|SACOS?|ITENS?|VEZES")
+_UNI = r"\d+(?:[.,]\d+)?(?:\s*(?:MM|CM|MTS|METROS?|M)(?![A-Z0-9]))?" + _R
+_MED_VARIAS = re.compile(_UNI + r"(?:X\s*" + _UNI + r"){2,3}")
+_MED_PARTE = re.compile(r"^(\d+(?:[.,]\d+)?)(?:\s*(MM|CM|MTS|METROS?|M)(?![A-Z0-9]))?")
+_QTD_ANTES = re.compile(r"(?:^|[^\d.,])(\d{1,4})\s*(?:" + _QTD_UN + r")\.?\s*(?:DE|COM|C/)?\s*(?:MED(?:IDAS?)?\.?\s*:?)?\s*$"
+                        r"|QTDE?\.?\s*:?\s*(\d{1,4})\s*(?:[-/,;]\s*)?(?:MED(?:IDAS?)?\.?\s*:?)?\s*$")
+_QTD_DEPOIS = re.compile(r"^\s*(?:\(\s*(\d{1,4})\s*(?:X|" + _QTD_UN + r")?\s*\)|[-=:]\s*(\d{1,4})\s*(?:" + _QTD_UN + r")\b"
+                         r"|(\d{1,4})\s*(?:" + _QTD_UN + r")\b(?!\.?\s*(?:DE|COM|C/)?\s*(?:MED(?:IDAS?)?\.?\s*:?)?\s*\d))")
+
+
+def medidas_varias_do_texto(txt: str) -> list:
+    """Vários tamanhos na mesma observação, cada um com a quantidade: "2X 50X50X50 + 3X 80X60X40",
+    "2 CX 50X50X50 / 3 CX 80X60X40", "50X50X50 (2) 80X60X40 (3)", "QTD 2 MED 1,15X1,15X0,60".
+    Igual a _medidasVariasDoTexto do index.html. [{"cm": [c, l, a], "q": int | None}]"""
+    t = unicodedata.normalize("NFD", str(txt or ""))
+    t = re.sub(r"[̀-ͯ]", "", t).upper()
+    t = re.sub(r"[*×]", "X", t)
+    t = re.sub(r"\s+", " ", t)
+    t = re.sub(r"(\d+)\s*M\s+(\d{1,2})\s*CM\b", lambda m: m.group(1) + "," + m.group(2).zfill(2) + "M", t)
+    t = re.sub(r"(\d)(\s*(?:MM|CM|M))?\s+\.\s+(?=\d)", lambda m: m.group(1) + (m.group(2) or "") + " X ", t)
+    out, fim, pos = [], 0, 0
+    while True:
+        m = _MED_VARIAS.search(t, pos)
+        if not m:
+            break
+        pos = m.end() if m.end() > m.start() else m.start() + 1
+        ps = [mp.groups() for mp in (_MED_PARTE.match(x.strip()) for x in m.group(0).split("X")) if mp]
+        if len(ps) < 3:
+            continue
+        dims, q = ps[:3], None
+        if len(ps) == 4:   # a quantidade é bem menor que o menor lado (em cm): "2X50X50X50", "1,15X1,15X0,60X2"
+            v = [_num_br_txt(n) for n, _ in ps]
+            inteiro = lambda k: re.fullmatch(r"\d+", ps[k][0]) and not ps[k][1] and 1 <= v[k] <= 999
+            c0 = _lados_cm(ps[1:]) if inteiro(0) else None
+            c3 = _lados_cm(ps[:3]) if inteiro(3) else None
+            if c0 and v[0] * 2 <= min(c0):
+                q, dims = int(v[0]), ps[1:]
+            elif c3 and v[3] * 2 <= min(c3):
+                q = int(v[3])
+        cm = _lados_cm(dims)
+        if not cm:
+            continue
+        if q is None:
+            a = _QTD_ANTES.search(t[fim:m.start()][-40:])
+            if a:
+                q = int(a.group(1) or a.group(2))
+        fim_q = m.end()
+        if q is None:
+            d = _QTD_DEPOIS.match(t[fim_q:])
+            if d:
+                q = int(d.group(1) or d.group(2) or d.group(3))
+                fim_q += d.end()
+        out.append({"cm": cm, "q": q if q and q > 0 else None})
+        fim = fim_q
+        pos = max(pos, fim_q)
+    # o mesmo tamanho repetido sem quantidade (a nota repete a medida) conta uma vez
+    return [x for i, x in enumerate(out)
+            if x["q"] is not None or not any(y["q"] is None and y["cm"] == x["cm"] for y in out[:i])]
+
+
+def _txt_tamanhos(lista: list) -> str:
+    return "; ".join((f'{x["q"]} de ' if x.get("q") is not None else "") + " × ".join(_fmt_med(n) for n in x["cm"]) + " cm"
+                     for x in lista)
+
+
+def m3_por_medidas(txt: str, volumes) -> dict | None:
+    """m³ pelas medidas das observações (igual a _m3PorMedidasVarias do index.html): um tamanho →
+    medida × volumes; vários → cada tamanho × a quantidade dele. Sem a quantidade de algum, só fecha
+    quando os volumes dizem (um de cada, ou o que sobra para o único sem quantidade); senão só avisa.
+    {"m3", "maiorCm", "medidas", "cx"?, "aviso"?}, {"maiorCm", "aviso"?} ou None."""
+    lista = medidas_varias_do_texto(txt)
+    vol = max(0, int(math.floor((float(volumes or 0)) + 0.5)))
+    if len(lista) < 2:   # um tamanho só: medida × volumes ("2X50X50X50" é 2 de 50 × 50 × 50)
+        md = {"cm": lista[0]["cm"], "maiorCm": max(lista[0]["cm"])} if lista else medidas_do_texto(txt)
+        if not md:
+            return None
+        if not md.get("cm"):
+            return {"maiorCm": md["maiorCm"]}
         c = md["cm"]
-        m3 = math.floor(c[0] * c[1] * c[2] / 1e6 * max(1, int(p.get("itens") or 1)) * 1e4 + 0.5) / 1e4
-        if 0 < m3 <= 200:
-            p["m3"], p["m3Fonte"] = m3, "medidas"
-            p["medidas"] = " × ".join(_fmt_med(n) for n in c) + " cm"
+        m3 = math.floor(c[0] * c[1] * c[2] / 1e6 * max(1, vol) * 1e4 + 0.5) / 1e4
+        if not 0 < m3 <= 200:
+            return {"maiorCm": md["maiorCm"]}
+        r = {"m3": m3, "maiorCm": md["maiorCm"], "medidas": " × ".join(_fmt_med(n) for n in c) + " cm"}
+        q = lista[0]["q"] if len(lista) == 1 else None
+        if q and vol > 0 and q != vol:
+            r["aviso"] = f"As observações falam em {q} volume{'s' if q > 1 else ''} e a nota tem {vol}: confira."
+        return r
+    maior = max(n for x in lista for n in x["cm"])
+    sem = [x for x in lista if x["q"] is None]
+    conh = sum(x["q"] or 0 for x in lista)
+    qs = [x["q"] for x in lista]
+    if len(sem) == len(lista) and vol == len(lista):
+        qs = [1] * len(lista)
+    elif len(sem) == 1 and vol > conh:
+        qs = [x["q"] if x["q"] is not None else vol - conh for x in lista]
+    elif sem:
+        return {"maiorCm": maior, "aviso": f"As observações têm {len(lista)} tamanhos ({_txt_tamanhos(lista)}) sem a quantidade "
+                                            "de cada um: digite o m³ ou use a calculadora."}
+    cx = [{"c": x["cm"][0], "l": x["cm"][1], "a": x["cm"][2], "q": q} for x, q in zip(lista, qs)]
+    m3 = math.floor(sum(x["c"] * x["l"] * x["a"] / 1e6 * x["q"] for x in cx) * 1e4 + 0.5) / 1e4
+    if not 0 < m3 <= 200:
+        return {"maiorCm": maior}
+    r = {"m3": m3, "maiorCm": maior, "medidas": _txt_tamanhos([{**x, "q": q} for x, q in zip(lista, qs)]), "cx": cx}
+    tot = sum(qs)
+    if vol > 0 and tot != vol:
+        r["aviso"] = f"As quantidades das observações ({tot}) não batem com os volumes ({vol}): confira."
+    return r
+
+
+def _medidas_da_obs(p: dict) -> None:
+    """m³ pelas medidas escritas nas observações, quando a nota não diz o m³."""
+    r = m3_por_medidas(p.get("obsNota", ""), p.get("itens") or 1) if p.get("obsNota") else None
+    if not r:
+        return
+    p["maiorCm"] = r["maiorCm"]
+    if (p.get("m3") or 0) > 0:
+        return
+    if r.get("aviso"):
+        p["medidasAviso"] = r["aviso"]
+    if r.get("m3"):
+        p["m3"], p["m3Fonte"], p["medidas"] = r["m3"], "medidas", r["medidas"]
+        if r.get("cx"):
+            p["cx"] = r["cx"]
 
 
 def _detalhes_nota(inf) -> dict:

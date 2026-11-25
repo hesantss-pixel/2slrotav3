@@ -79,6 +79,23 @@ const emp = (p) => p.evaluate(() => window.__FAKE.db.empresas.emp1);
   await p.evaluate(() => window.abrirPedido('A3')); await p.waitForTimeout(300);
   ok(/3\.600 kg por m³: a medida parece errada\. Confira\./.test(await p.textContent('#ped-m3-nota')), 'medida que não combina com o peso pede conferência');
   await p.evaluate(() => window.fecharPedido());
+  // nota com vários tamanhos nas observações: um com as quantidades, outro sem
+  const base = require('fs').readFileSync(__dirname + '/xml/nfe-12345.xml', 'utf8');
+  const nfeV = (ch, nnf, obs) => ({ name: `nfe-${nnf}.xml`, mimeType: 'text/xml', buffer: Buffer.from(base.replace(/35261012345678000199550010000123451000000000/g, ch)
+    .replace('<nNF>12345</nNF>', `<nNF>${nnf}</nNF>`).replace('</infNFe>', `<infAdic><infCpl>${obs}</infCpl></infAdic></infNFe>`)) });
+  const CV1 = '35261012345678000199550010000999011000000011', CV2 = '35261012345678000199550010000999021000000019';
+  await p.setInputFiles('#file-input', [nfeV(CV1, '99901', '2 CX 50X50X50 / 1 CX 80X60X40'), nfeV(CV2, '99902', 'MED 50X50X50 E 80X60X40')]); await p.waitForTimeout(900);
+  const msgV = await p.textContent('#import-msg-pedidos');
+  d = (await emp(p)).pedidos_rota;
+  ok(d[CV1] && d[CV1].m3 === 0.442 && d[CV1].medidas === '2 de 50 × 50 × 50 cm; 1 de 80 × 60 × 40 cm' && J(d[CV1].cx) === J([{ c: 50, l: 50, a: 50, q: 2 }, { c: 80, l: 60, a: 40, q: 1 }]),
+    'XML com "2 CX 50X50X50 / 1 CX 80X60X40" e 3 volumes: 0,442 m³ e os dois tamanhos guardados ' + J(d[CV1] && [d[CV1].m3, d[CV1].cx]));
+  ok(d[CV2] && !(d[CV2].m3 > 0) && /sem a quantidade de cada um/.test(d[CV2].medidasAviso || '') && /Confira as medidas da nota 99902: a observação tem vários tamanhos/.test(msgV),
+    'dois tamanhos sem quantidade: sem m³ inventado, e a importação pede para conferir ' + msgV);
+  await p.evaluate((c) => window.abrirPedido(c), CV2); await p.waitForTimeout(300);
+  ok(/As observações têm 2 tamanhos \(50 × 50 × 50 cm; 80 × 60 × 40 cm\) sem a quantidade de cada um/.test(await p.textContent('#ped-m3-nota')), 'o pedido mostra o aviso com os tamanhos');
+  await p.evaluate(() => window.fecharPedido());
+  await p.evaluate(([a, b]) => { const x = window.__FAKE.db.empresas.emp1.pedidos_rota; delete x[a]; delete x[b]; window.__FAKE.fire(); }, [CV1, CV2]); await p.waitForTimeout(200);
+  await p.evaluate(() => window.fecharPedido());
 
   // ── rota com baú: peça de 6 m fica fora, com o motivo ───────────────────────
   await p.click('.sb-item[data-page="roteirizacao"]'); await p.waitForTimeout(300);

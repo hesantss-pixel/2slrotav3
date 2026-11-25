@@ -106,6 +106,20 @@ function confere(bau, res, empilhar) {
   const cx = await p.evaluate(() => ['A1', 'A2', 'A3', 'A4', 'A5'].map((id) => window.__caixasDe({ id, ...window.__FAKE.db.empresas.emp1.pedidos_rota[id] })));
   ok(J(cx) === J([[{ c: 0.5, l: 0.4, a: 0.3, q: 8 }], [{ c: 1.15, l: 1.15, a: 0.6, q: 4 }], [{ aprox: true, m3: 1.2 }], [], [{ c: 4, l: 0.15, a: 0.1, q: 20 }]]),
     'caixas do pedido: medidas × volumes; só m³ vira bloco; sem medida, nada ' + J(cx));
+  const T2 = [{ c: 50, l: 50, a: 50, q: 2 }, { c: 80, l: 60, a: 40, q: 3 }];
+  // pedidos gravados no banco com os tamanhos lidos das observações (o pedido na memória não leva o cx)
+  await p.evaluate((T2) => { const d = window.__FAKE.db.empresas.emp1.pedidos_rota, b = { tipo: 'entrega', cidade: 'Guarulhos', peso: 60, itens: 5, status: 'cancelado', m3Fonte: 'medidas', medidas: '2 de 50 × 50 × 50 cm; 3 de 80 × 60 × 40 cm' };
+    d.Z1 = { ...b, nf: 'Z1', m3: 0.826, cx: T2 }; d.Z2 = { ...b, nf: 'Z2', m3: 2, m3Fonte: 'cte', cx: T2 }; d.Z3 = { ...b, nf: 'Z3', m3: 0.826 }; window.__FAKE.fire(); }, T2);
+  await p.waitForTimeout(250);
+  const cxV = await p.evaluate(() => [window.__caixasDe({ id: 'Z1', m3: 0.826 }), window.__caixasDe({ id: 'Z2', m3: 2 }), window.__caixasDe({ id: 'Z3', m3: 0.826, itens: 5 })]);
+  await p.evaluate(() => { const d = window.__FAKE.db.empresas.emp1.pedidos_rota; delete d.Z1; delete d.Z2; delete d.Z3; window.__FAKE.fire(); }); await p.waitForTimeout(250);
+  ok(J(cxV) === J([[{ c: 0.5, l: 0.5, a: 0.5, q: 2 }, { c: 0.8, l: 0.6, a: 0.4, q: 3 }], [{ aprox: true, m3: 2 }], [{ aprox: true, m3: 0.826 }]]),
+    'pedido com 2 tamanhos vira caixas de cada tamanho; com o m³ trocado depois, ou sem os tamanhos guardados, não inventa o formato ' + J(cxV));
+  const bauF = { c: 1.87, l: 1.29, a: 1.25 };
+  const fiV = await p.evaluate(([b, cx]) => window.__arrumarCarga(b, [{ caixas: cx, kg: 60 }], true), [bauF, cxV[0]]);
+  const formas = fiV.pos.map((x) => [x.dx, x.dy, x.dz].map((v) => Math.round(v * 100)).sort((a, b) => a - b).join('×')).sort();
+  ok(fiV.fora.length === 0 && J(formas) === J(['40×60×80', '40×60×80', '40×60×80', '50×50×50', '50×50×50']) && confere(bauF, fiV, true).length === 0,
+    'na Fiorino, cada caixa é desenhada com o tamanho dela (2 de 50 cm e 3 de 80 × 60 × 40) ' + J(formas));
   const tipos = await p.evaluate(() => ['A1', 'A2', 'A3', 'A5'].map((id) => window.__tipoCarga({ id, ...window.__FAKE.db.empresas.emp1.pedidos_rota[id] })));
   ok(J(tipos) === J(['comum (200 kg por m³)', 'comum (599 kg por m³)', 'leve e volumosa (33 kg por m³)', 'comprida (250 kg por m³)']), 'tipo de carga pelo formato e pelo peso por m³ ' + J(tipos));
 
@@ -263,6 +277,15 @@ function confere(bau, res, empilhar) {
   await p.evaluate(() => window.abrirPlanoCargaRota('rota_velha_1')); await p.waitForTimeout(250);
   ok(/Sem o 3D: esta rota foi confirmada sem as medidas do baú/.test(await p.textContent('#plano-corpo')) && !(await p.$('#c3d-cv')), 'rota antiga sem medidas do baú diz por que não tem 3D');
   await p.click('#modal-plano .btn-modal-sec'); await p.waitForTimeout(100);
+  // pedido com dois tamanhos de caixa: o desenho e o texto mostram cada um
+  await p.evaluate(() => { const d = window.__FAKE.db.empresas.emp1; d.rotas_confirmadas.rota_var_1 = { id: 'rota_var_1', data: '2026-11-25', saida: 420, veiculo: 'Fiorino', status: 'em_rota', cap_kg: 650, bau: { c: 1.87, l: 1.29, a: 1.25 },
+    paradas: [{ id: 'v1', nf: 'V1', tipo: 'entrega', dest: 'Cli V', peso: 60, itens: 5, m3: 0.826, m3Fonte: 'medidas', medidas: '2 de 50 × 50 × 50 cm; 3 de 80 × 60 × 40 cm', cx: [{ c: 50, l: 50, a: 50, q: 2 }, { c: 80, l: 60, a: 40, q: 3 }] }] }; });
+  await p.evaluate(() => window.__FAKE.fire()); await p.waitForTimeout(250);
+  await p.evaluate(() => window.abrirPlanoCargaRota('rota_var_1')); await p.waitForTimeout(300);
+  await p.click('.c3d-chip'); await p.waitForTimeout(120);
+  const vInfo = (await p.textContent('#c3d-info')).replace(/\s+/g, ' '), vRes = await p.textContent('#c3d-resumo');
+  ok(/NF V1 · Cli V · 2 de 50 × 50 × 50 cm e 3 de 80 × 60 × 40 cm · 0,83 m³/.test(vInfo) && /1 parada desenhada, 5 volumes/.test(vRes), 'plano da rota mostra os dois tamanhos da parada: ' + vInfo.slice(0, 120));
+  await p.click('#modal-plano .btn-modal-sec'); await p.waitForTimeout(100);
   // volume digitado à mão diferente do baú
   await p.evaluate(() => { const d = window.__FAKE.db.empresas.emp1.pedidos_rota; Object.values(d).forEach((x) => { x.status = 'pendente'; x.rota_atual = ''; }); });
   await p.evaluate(() => window.__FAKE.fire()); await p.waitForTimeout(300);
@@ -290,6 +313,19 @@ function confere(bau, res, empilhar) {
   await p.fill('#ped-m3', '0,5'); await p.click('#ped-salvar'); await p.waitForTimeout(400);
   o = (await emp(p)).pedidos_rota.A4;
   ok(o.m3 === 0.5 && o.medidas == null, 'm³ digitado à mão depois apaga as medidas antigas (não batem mais)');
+  // pedido com 2 tamanhos lidos das observações: a nota mostra os dois; m³ digitado apaga os tamanhos
+  await p.evaluate(() => { const d = window.__FAKE.db.empresas.emp1.pedidos_rota; Object.assign(d.A4, { m3: 0.826, m3Fonte: 'medidas', itens: 5, medidas: '2 de 50 × 50 × 50 cm; 3 de 80 × 60 × 40 cm',
+    cx: [{ c: 50, l: 50, a: 50, q: 2 }, { c: 80, l: 60, a: 40, q: 3 }] }); window.__FAKE.fire(); }); await p.waitForTimeout(250);
+  await p.evaluate(() => window.abrirPedido('A4')); await p.waitForTimeout(250);
+  const notaV = await p.textContent('#ped-m3-nota');
+  ok(/^Veio das observações: 2 de 50 × 50 × 50 cm; 3 de 80 × 60 × 40 cm\. Confira\./.test(notaV), 'pedido mostra os dois tamanhos lidos das observações: ' + notaV);
+  await p.click('#ped-salvar'); await p.waitForTimeout(400);
+  o = (await emp(p)).pedidos_rota.A4;
+  ok(o.cx && o.cx.length === 2 && o.m3 === 0.826, 'salvar sem mexer no m³ guarda os tamanhos');
+  await p.evaluate(() => window.abrirPedido('A4')); await p.waitForTimeout(250);
+  await p.fill('#ped-m3', '1,2'); await p.click('#ped-salvar'); await p.waitForTimeout(400);
+  o = (await emp(p)).pedidos_rota.A4;
+  ok(o.m3 === 1.2 && o.cx == null && o.medidas == null, 'm³ digitado à mão apaga os tamanhos lidos (não batem mais) ' + J([o.m3, o.cx, o.medidas]));
 
   // ── tela do motorista mostra o produto perigoso ───────────────────────────
   const d = { i: { v: '3/4', m: 'Teste', d: '2026-11-24', s: 480, c: 'CD' }, p: [['7002', 0, 'Indústria B', 'Rua Teste, 1', 'Centro', 'Guarulhos', 'SP', '07000000', -23.46, -46.52, 1900, 4, 500, null, null, '3082'], ['7001', 0, 'Loja A', 'Rua Teste, 2', 'Centro', 'Guarulhos', 'SP', '07000000', -23.45, -46.53, 96, 8, 520, null, null, null]] };

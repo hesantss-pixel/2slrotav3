@@ -62,6 +62,22 @@ const emp = (p) => p.evaluate(() => window.__FAKE.db.empresas.emp1);
   ok(ocP.m3 === 1.5 && ocP.m3Fonte === 'medidas' && ocP.medidas === '50 × 50 × 50 cm' && ocP.maiorCm === 50 && ocP.itens === 12,
     'ordem de coleta: "MED 50X50X50 CM" × 12 volumes = 1,5 m³ ' + J([ocP.m3, ocP.m3Fonte, ocP.medidas, ocP.itens]));
   ok(ocP.obsNota === 'MED 50X50X50 CM', 'as observações da ordem ficam no pedido: ' + J(ocP.obsNota));
+  // vários tamanhos na mesma observação, cada um com a quantidade (mesmos casos do servidor)
+  const varCasos = JSON.parse(require('fs').readFileSync(__dirname + '/xml/medidas-varias-casos.json', 'utf8'));
+  const varRes = await p.evaluate((cs) => cs.map(([t, v]) => { const r = window.__m3PorMedidas(t, v) || {};
+    return { m3: r.m3 ?? null, cx: r.cx ? r.cx.map(x => [x.c, x.l, x.a, x.q]) : null, aviso: !!r.aviso }; }), varCasos);
+  const varErr = varCasos.filter(([t, v, e], i) => J(varRes[i]) !== J(e)).map(([t, v], i) => t + ' / ' + v + ' → ' + J(varRes[varCasos.findIndex(c => c[0] === t && c[1] === v)]));
+  ok(!varErr.length, `vários tamanhos nas observações: ${varCasos.length - varErr.length} de ${varCasos.length} casos, igual ao servidor ` + J(varErr));
+  const umSo = await p.evaluate((cs) => cs.filter(([t, e]) => { const L = window.__medidasVariasDoTexto(t); return L.length > 1 || (L.length && JSON.stringify(L[0].cm) !== JSON.stringify(e)); }).map(([t]) => t), medCasos);
+  ok(!umSo.length, 'os formatos de um tamanho só continuam um tamanho só ' + J(umSo));
+  const ocV = await p.evaluate((it) => { it = it.map(x => x.s === 'MED 50X50X50 CM' ? { ...x, s: '2 CX 50X50X50 / 10 CX 80X60X40' } : x);
+    const l = window.__danfe.linhas(it); return window.__danfe.pedido(window.__danfe.ordem(l), 'coleta'); }, oc);
+  ok(ocV.m3 === 2.17 && ocV.medidas === '2 de 50 × 50 × 50 cm; 10 de 80 × 60 × 40 cm' && J(ocV.cx) === J([{ c: 50, l: 50, a: 50, q: 2 }, { c: 80, l: 60, a: 40, q: 10 }]) && ocV.maiorCm === 80 && !ocV.medidasAviso,
+    'ordem de coleta com 2 tamanhos: 2 × 50 cm + 10 × 80 × 60 × 40 = 2,17 m³, cada tamanho guardado ' + J([ocV.m3, ocV.medidas, ocV.cx, ocV.medidasAviso]));
+  const ocI = await p.evaluate((it) => { it = it.map(x => x.s === 'MED 50X50X50 CM' ? { ...x, s: 'MED 50X50X50 E 80X60X40' } : x);
+    const l = window.__danfe.linhas(it); return window.__danfe.pedido(window.__danfe.ordem(l), 'coleta'); }, oc);
+  ok(!(ocI.m3 > 0) && !ocI.cx && /2 tamanhos .* sem a quantidade/.test(ocI.medidasAviso || ''),
+    'dois tamanhos sem a quantidade de cada um e 12 volumes: não inventa o m³, avisa ' + J([ocI.m3, ocI.medidasAviso]));
 
   // ── endereço de coleta escrito nas observações (formatos reais, endereços inventados) ──
   const colCasos = [

@@ -164,6 +164,33 @@ class TesteLeituraNFe(unittest.TestCase):
         p = entrada.ler_xml_nfe(xml)["pedidos"][0]
         self.assertEqual((p["m3"], p["m3Fonte"], p["medidas"], p["maiorCm"]), (round(0.125 * p["itens"], 4), "medidas", "50 × 50 × 50 cm", 50))
 
+    def test_varios_tamanhos_nas_observacoes(self):
+        # mesmos casos de tests/tela/t_cubagem.js: cada tamanho com a quantidade dele
+        base = os.path.join(os.path.dirname(__file__), "..", "..", "tests", "tela", "xml")
+        for txt, vol, esp in json.load(open(os.path.join(base, "medidas-varias-casos.json"), encoding="utf-8")):
+            r = entrada.m3_por_medidas(txt, vol) or {}
+            cx = [[x["c"], x["l"], x["a"], x["q"]] for x in r["cx"]] if r.get("cx") else None
+            self.assertEqual((r.get("m3"), cx, bool(r.get("aviso"))), (esp["m3"], esp["cx"], esp["aviso"]), txt)
+        # os formatos de um tamanho só continuam um tamanho só
+        for txt, esp in json.load(open(os.path.join(base, "medidas-casos.json"), encoding="utf-8")):
+            lista = entrada.medidas_varias_do_texto(txt)
+            self.assertTrue(len(lista) <= 1 and (not lista or lista[0]["cm"] == esp), txt)
+        cinco = "<vol><qVol>5</qVol><pesoL>10</pesoL></vol>"
+        xml = nfe(vols=cinco).replace("</infNFe>", "<infAdic><infCpl>2 CX 50X50X50 / 3 CX 80X60X40</infCpl></infAdic></infNFe>")
+        p = entrada.ler_xml_nfe(xml)["pedidos"][0]
+        self.assertEqual(p["itens"], 5)
+        self.assertNotIn("medidasAviso", p)
+        self.assertEqual((p["m3"], p["m3Fonte"], p["medidas"]), (0.826, "medidas", "2 de 50 × 50 × 50 cm; 3 de 80 × 60 × 40 cm"))
+        self.assertEqual(p["cx"], [{"c": 50, "l": 50, "a": 50, "q": 2}, {"c": 80, "l": 60, "a": 40, "q": 3}])
+        xml = nfe(vols=cinco).replace("</infNFe>", "<infAdic><infCpl>MED 50X50X50 E 80X60X40</infCpl></infAdic></infNFe>")
+        p = entrada.ler_xml_nfe(xml)["pedidos"][0]   # sem a quantidade de cada tamanho: não inventa o m³, avisa
+        self.assertFalse(p.get("m3"))
+        self.assertIn("sem a quantidade", p["medidasAviso"])
+        xml = nfe(vols=cinco).replace("</infNFe>", "<infAdic><infCpl>Cubagem: 1,8 m³ 2 CX 50X50X50 / 3 CX 80X60X40</infCpl></infAdic></infNFe>")
+        p = entrada.ler_xml_nfe(xml)["pedidos"][0]
+        self.assertEqual((p["m3"], p["m3Fonte"]), (1.8, "nota"))   # m³ escrito na nota vale mais
+        self.assertNotIn("cx", p)
+
     def test_m3_escrito_na_nota(self):
         casos = {
             "Cubagem: 1,250 m3": 1.25, "CUBAGEM TOTAL 0,85 M3": 0.85, "M3: 2,5": 2.5,

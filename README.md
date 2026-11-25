@@ -884,6 +884,26 @@ encaixe 3D de caixas; "40x30x25" solto no texto da nota (sem saber a quantidade,
 (`firebase/database.rules.json`, nós `produtos` e `config/cubagem`). Sem elas, o resto funciona,
 mas salvar medida de produto ou o fator de cubagem dá "O banco recusou" e a tela explica o motivo.
 
+## Vários tamanhos de caixa na mesma observação (25/11/2026)
+
+- A observação da nota ou da ordem de coleta pode ter mais de um tamanho, cada um com a quantidade:
+  `2X 50X50X50 + 3X 80X60X40`, `2 CX 50X50X50 / 3 CX 80X60X40`, `2 CAIXAS DE 50X50X50 E 3 CAIXAS DE 80X60X40`,
+  `50X50X50 (2) 80X60X40 (3)`, `50X50X50 - 2 VOLUMES`, `QTD 2 MED 1,15X1,15X0,60 / QTD 1 MED 0,58X0,49X0,49`,
+  `1,15X1,15X0,60X2` (o número pequeno na ponta é a quantidade).
+- O m³ é a soma de cada tamanho × a quantidade dele. O pedido guarda os tamanhos (`cx`, em cm) e o texto
+  `medidas` fica "2 de 50 × 50 × 50 cm; 3 de 80 × 60 × 40 cm". O plano de carga em 3D desenha cada caixa
+  com o tamanho dela, e tocar na parada mostra os tamanhos.
+- Sem a quantidade de algum tamanho, o sistema só fecha a conta quando os volumes da nota dizem:
+  dois tamanhos e 2 volumes é um de cada; "2 CX 50X50X50 E 80X60X40" com 5 volumes dá 3 para o segundo.
+  Fora disso **não inventa o m³**: grava `medidasAviso`, a importação diz "Confira as medidas da nota..."
+  e o pedido mostra o aviso. Quantidades que não somam os volumes também avisam (o m³ sai das quantidades).
+- Um tamanho só continua igual: medida × volumes. As 22 medidas das ordens reais testadas dão o mesmo
+  resultado de antes.
+- Digitar outro m³ no pedido, usar a calculadora ou chegar o m³ pelo CT-e apaga os tamanhos lidos
+  (não batem mais). A rota confirmada guarda os tamanhos de cada parada.
+- Servidor (entrada por e-mail) lê igual: `medidas_varias_do_texto` e `m3_por_medidas` em
+  `backend/entrada.py`. Casos em comum: `tests/tela/xml/medidas-varias-casos.json` (tela e servidor).
+
 ## Excluir pedido mais fácil (25/11/2026)
 
 - A janela do pedido tem a lixeira **Excluir** no topo, ao lado do título (no celular o botão de

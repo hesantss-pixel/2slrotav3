@@ -2896,12 +2896,14 @@ function abrirPedido(id){
   const endNota=$id('ped-end-nota');
   endNota.hidden=!dO.coletaObs;
   endNota.textContent=dO.coletaObs?`Endereço de coleta tirado das observações da ordem. O do remetente é ${dO.endRemetente||'outro'}.`:'';
-  $id('ped-m3-nota').textContent = propio&&o.m3Fonte==='medidas'&&dO.medidas ? `Veio das observações: ${dO.medidas} × ${_plural(+o.itens||1,'volume','volumes')}. Confira.`
+  const varios=_verLista(dO.cx).length>1||String(dO.medidas||'').includes(';');
+  $id('ped-m3-nota').textContent = propio&&o.m3Fonte==='medidas'&&dO.medidas ? (varios?`Veio das observações: ${dO.medidas}. Confira.`:`Veio das observações: ${dO.medidas} × ${_plural(+o.itens||1,'volume','volumes')}. Confira.`)
     : propio&&o.m3Fonte==='cte' ? `Veio do CT-e${dO.cteNum?' '+dO.cteNum:''}${dO.m3DeCubado?`, pelo peso cubado ÷ ${FATOR_CUB}`:''}${dO.m3Rateio?', dividido pelo peso entre as notas dele':''}.`
     : propio&&o.m3Fonte&&o.m3Fonte!=='digitado' ? `Veio ${_ROTULO_M3[o.m3Fonte]||'do arquivo'}.`
     : mi&&!propio&&mi.fonte==='produtos' ? 'Vazio, o m³ sai das medidas dos produtos da nota.'
     : mi&&!propio&&mi.fonte==='parcial' ? `Só parte dos produtos tem medida (${_fmtM3(mi.m3)} m³ até agora). Digite o total ou complete em Produtos.`
     : '';
+  if(dO.medidasAviso&&(!propio||o.m3Fonte==='medidas')) $id('ped-m3-nota').textContent=($id('ped-m3-nota').textContent+' '+dO.medidasAviso).trim();
   const pc=o?_pesoCubado(o):0;
   if(pc) $id('ped-m3-nota').textContent=($id('ped-m3-nota').textContent+` Peso cubado: ${pc.toLocaleString('pt-BR')} kg (${_fmtM3(mi.m3)} m³ × ${FATOR_CUB}). Peso taxado: ${Math.max(pc,+o.peso||0).toLocaleString('pt-BR')} kg, o maior entre o real e o cubado.`).trim();
   const dens=o?_densidadeEstranha(o.peso,mi&&mi.m3):0;
@@ -3044,9 +3046,10 @@ async function salvarPedido(){
   // m³: valor igual ao que já estava guarda a origem (nota, planilha); vazio apaga
   const m3Arred=m3?Math.round(m3*1e4)/1e4:0;
   const daCalc=!!_pedMedTxt&&Math.abs(_pedCalcVal-m3Arred)<1e-9;
-  if(!m3Arred){ dados.m3=null; dados.m3Fonte=null; dados.maiorCm=null; dados.medidas=null; }
-  else if(o&&Math.abs((+o.m3||0)-m3Arred)<1e-9){ if(_pedMaiorCm) dados.maiorCm=_pedMaiorCm; if(daCalc) dados.medidas=_pedMedTxt; }
-  else { dados.m3=m3Arred; dados.m3Fonte='digitado'; dados.maiorCm=_pedMaiorCm||null; dados.medidas=daCalc?_pedMedTxt:null; }
+  // os tamanhos lidos das observações (cx) só ficam enquanto o m³ continua o que veio delas
+  if(!m3Arred){ dados.m3=null; dados.m3Fonte=null; dados.maiorCm=null; dados.medidas=null; dados.cx=null; dados.medidasAviso=null; }
+  else if(o&&Math.abs((+o.m3||0)-m3Arred)<1e-9){ if(_pedMaiorCm) dados.maiorCm=_pedMaiorCm; if(daCalc){ dados.medidas=_pedMedTxt; dados.cx=null; dados.medidasAviso=null; } }
+  else { dados.m3=m3Arred; dados.m3Fonte='digitado'; dados.maiorCm=_pedMaiorCm||null; dados.medidas=daCalc?_pedMedTxt:null; dados.cx=null; dados.medidasAviso=null; }
   // Local: o que a pessoa achou ou marcou vale; sem isso, endereço igual mantém o
   // local salvo; endereço novo volta para o centro da cidade e é localizado pelo CEP.
   const endMudou=!o || (o.cep||'')!==cep || (o.endereco||'')!==dados.endereco || o.cidade!==cidade;
@@ -3550,6 +3553,72 @@ function _m3PorMedidas(txt,volumes){
 }
 window.__medidasDoTexto=_medidasDoTexto;
 
+// Vários tamanhos na mesma observação, cada um com a quantidade: "2X 50X50X50 + 3X 80X60X40",
+// "2 CX 50X50X50 / 3 CX 80X60X40", "50X50X50 (2) 80X60X40 (3)", "50X50X50 - 2 VOLUMES",
+// "QTD 2 MED 1,15X1,15X0,60". A quantidade pode vir antes ("2X", "2 CX", "QTD 2") ou depois
+// ("(2)", "- 2 VOLUMES", "2 CX"). Quatro números ("2X50X50X50", "50X50X50X4"): o pequeno da ponta é
+// a quantidade. Igual a medidas_varias_do_texto do backend/entrada.py. [{cm:[c,l,a], q|null}]
+const _QTD_UN='CXS?|CAIXAS?|VOL(?:UME)?S?|PCS?|PECAS?|UN(?:IDADES?)?|UNDS?|PALETES?|PLTS?|FARDOS?|ROLOS?|BOMBONAS?|TAMBOR(?:ES)?|SACOS?|ITENS?|VEZES';
+function _medidasVariasDoTexto(txt){
+  let t=_semAcento(txt).toUpperCase().replace(/[*×]/g,'X').replace(/\s+/g,' ');
+  t=t.replace(/(\d+)\s*M\s+(\d{1,2})\s*CM\b/g,(m,a,b)=>a+','+b.padStart(2,'0')+'M');
+  t=t.replace(/(\d)(\s*(?:MM|CM|M))?\s+\.\s+(?=\d)/g,(m,d,u)=>d+(u||'')+' X ');
+  const N0='\\d+(?:[.,]\\d+)?', U0='(?:\\s*(?:MM|CM|MTS|METROS?|M)(?![A-Z0-9]))?';
+  const R0='\\s*(?:\\((?:COMPRIMENTO|LARGURA|ALTURA|COMP|LARG|ALT)\\.?\\))?\\s*';
+  const UNI=N0+U0+R0, re=new RegExp(UNI+'(?:X\\s*'+UNI+'){2,3}','g');
+  const parte=x=>{ const m=x.trim().match(new RegExp('^(\\d+(?:[.,]\\d+)?)(?:\\s*(MM|CM|MTS|METROS?|M)(?![A-Z0-9]))?')); return m?[m[1],m[2]]:null; };
+  const antes=new RegExp('(?:^|[^\\d.,])(\\d{1,4})\\s*(?:'+_QTD_UN+')\\.?\\s*(?:DE|COM|C\\/)?\\s*(?:MED(?:IDAS?)?\\.?\\s*:?)?\\s*$|QTDE?\\.?\\s*:?\\s*(\\d{1,4})\\s*(?:[-\\/,;]\\s*)?(?:MED(?:IDAS?)?\\.?\\s*:?)?\\s*$');
+  const depois=new RegExp('^\\s*(?:\\(\\s*(\\d{1,4})\\s*(?:X|'+_QTD_UN+')?\\s*\\)|[-=:]\\s*(\\d{1,4})\\s*(?:'+_QTD_UN+')\\b|(\\d{1,4})\\s*(?:'+_QTD_UN+')\\b(?!\\.?\\s*(?:DE|COM|C\\/)?\\s*(?:MED(?:IDAS?)?\\.?\\s*:?)?\\s*\\d))');
+  const out=[]; let fim=0, m;
+  while((m=re.exec(t))){
+    const ps=m[0].split('X').map(parte).filter(Boolean); if(ps.length<3) continue;
+    let dims=ps.slice(0,3), q=null;
+    if(ps.length===4){   // a quantidade é bem menor que o menor lado (em cm): "2X50X50X50", "1,15X1,15X0,60X2"
+      const v=ps.map(([n])=>_numBR(n)), int=k=>/^\d+$/.test(ps[k][0])&&!ps[k][1]&&v[k]>=1&&v[k]<=999;
+      const c0=int(0)?_ladosCm(ps.slice(1)):null, c3=int(3)?_ladosCm(ps.slice(0,3)):null;
+      if(c0&&v[0]*2<=Math.min(...c0)){ q=v[0]; dims=ps.slice(1); }
+      else if(c3&&v[3]*2<=Math.min(...c3)) q=v[3];
+    }
+    const cm=_ladosCm(dims); if(!cm) continue;
+    if(q==null){ const a=t.slice(fim,m.index).slice(-40).match(antes); if(a) q=+(a[1]||a[2]); }
+    let fimQ=m.index+m[0].length;
+    if(q==null){ const d=t.slice(fimQ).match(depois); if(d){ q=+(d[1]||d[2]||d[3]); fimQ+=d[0].length; } }
+    out.push({cm, q:q>0?q:null}); fim=fimQ; re.lastIndex=Math.max(re.lastIndex,fimQ);
+  }
+  // o mesmo tamanho repetido sem quantidade (a nota repete a medida) conta uma vez
+  return out.filter((x,i)=>x.q!=null||!out.slice(0,i).some(y=>y.q==null&&y.cm.join()===x.cm.join()));
+}
+window.__medidasVariasDoTexto=_medidasVariasDoTexto;
+// m³ pelas medidas: um tamanho → medida × volumes (como antes); vários → cada tamanho × a quantidade
+// dele. Sem a quantidade de algum, só dá para fechar quando os volumes da ordem dizem (um de cada,
+// ou o que sobra para o único sem quantidade); senão não calcula e avisa. {m3, maiorCm, medidas, cx?, aviso?}
+function _m3PorMedidasVarias(txt,volumes){
+  const L=_medidasVariasDoTexto(txt);
+  const vol=Math.max(0,Math.round(+volumes||0));
+  if(L.length<2){   // um tamanho só: medida × volumes ("2X50X50X50" é 2 de 50 × 50 × 50, não 2 × 50 × 50)
+    let r;
+    if(L.length===1){ const cm=L[0].cm, mx=Math.max(...cm), m3=Math.round(cm[0]*cm[1]*cm[2]/1e6*Math.max(1,vol)*1e4)/1e4;
+      r=m3>0&&m3<=200?{m3, maiorCm:mx, medidas:cm.map(_fmtMed).join(' × ')+' cm'}:{maiorCm:mx}; }
+    else r=_m3PorMedidas(txt,volumes);
+    if(r&&r.m3&&L.length===1&&L[0].q&&vol>0&&L[0].q!==vol) r.aviso=`As observações falam em ${L[0].q} volume${L[0].q>1?'s':''} e a nota tem ${vol}: confira.`;
+    return r;
+  }
+  const maiorCm=Math.max(...L.flatMap(x=>x.cm));
+  const sem=L.filter(x=>x.q==null), conh=L.reduce((s,x)=>s+(x.q||0),0);
+  const txtMed=l=>l.map(x=>`${x.q!=null?x.q+' de ':''}${x.cm.map(_fmtMed).join(' × ')} cm`).join('; ');
+  let qs=L.map(x=>x.q);
+  if(sem.length===L.length&&vol===L.length) qs=L.map(()=>1);
+  else if(sem.length===1&&vol>conh) qs=L.map(x=>x.q!=null?x.q:vol-conh);
+  else if(sem.length) return {maiorCm, aviso:`As observações têm ${L.length} tamanhos (${txtMed(L)}) sem a quantidade de cada um: digite o m³ ou use a calculadora.`};
+  const cx=L.map((x,i)=>({c:x.cm[0],l:x.cm[1],a:x.cm[2],q:qs[i]}));
+  const m3=Math.round(cx.reduce((s,x)=>s+x.c*x.l*x.a/1e6*x.q,0)*1e4)/1e4;
+  if(!(m3>0&&m3<=200)) return {maiorCm};
+  const tot=qs.reduce((s,q)=>s+q,0);
+  return {m3, maiorCm, medidas:txtMed(L.map((x,i)=>({...x,q:qs[i]}))), cx,
+    ...(vol>0&&tot!==vol?{aviso:`As quantidades das observações (${tot}) não batem com os volumes (${vol}): confira.`}:{})};
+}
+window.__m3PorMedidas=_m3PorMedidasVarias;
+
 // Endereço de coleta diferente do remetente, escrito nas observações da ordem de coleta:
 // "COLETAR>R. DAS FLORES, 112>COTIA > 06713-140", "ENDEREÇO DE COLETA: ROD. EXEMPLO, 22 - - SP, 09823-000",
 // "RUA EXEMPLO, N°65 09623-000 ABC". Só vale com CEP (é ele que diz onde fica); sem rótulo, só um
@@ -3608,7 +3677,7 @@ async function _aplicarCtes(ctes){
     livres.forEach(o=>{
       const m3=Math.round(c.m3*(pt>0?(+o.peso||0)/pt:1/livres.length)*1e4)/1e4;
       if(!(m3>0)) return;
-      upd[o.id]={m3, m3Fonte:'cte', medidas:null, cteNum:c.n||'', ...(livres.length>1?{m3Rateio:true}:{m3Rateio:null}), ...(c.deCubado?{m3DeCubado:true}:{m3DeCubado:null})};
+      upd[o.id]={m3, m3Fonte:'cte', medidas:null, cx:null, medidasAviso:null, cteNum:c.n||'', ...(livres.length>1?{m3Rateio:true}:{m3Rateio:null}), ...(c.deCubado?{m3DeCubado:true}:{m3DeCubado:null})};
       r.pedidos++;
     });
   }
@@ -3681,8 +3750,9 @@ function _lerXmlNFe(texto,tipo){
     };
   }).map(o=>{
     // "MED 50X50X50" nas informações complementares: medidas de um volume × volumes
-    const pm=o.obsNota?_m3PorMedidas(o.obsNota,o.itens):null;
-    if(pm){ if(pm.maiorCm) o.maiorCm=pm.maiorCm; if(!(+o.m3>0)&&pm.m3){ o.m3=pm.m3; o.m3Fonte='medidas'; o.medidas=pm.medidas; } }
+    const pm=o.obsNota?_m3PorMedidasVarias(o.obsNota,o.itens):null;
+    if(pm){ if(pm.maiorCm) o.maiorCm=pm.maiorCm; if(pm.aviso&&!(+o.m3>0)) o.medidasAviso=pm.aviso;
+      if(!(+o.m3>0)&&pm.m3){ o.m3=pm.m3; o.m3Fonte='medidas'; o.medidas=pm.medidas; if(pm.cx) o.cx=pm.cx; } }
     return o;
   });
   return {orders, semPeso};
@@ -4333,11 +4403,13 @@ function _camposDanfe(linhas, tipo){
   const yAd=_acharY(linhas,/DADOS ADICIONAIS|INFORMACOES COMPLEMENTARES/);
   const txtAd=yAd==null?'':linhas.filter(l=>l.y<yAd).map(l=>l.itens.map(i=>i.s).join(' ')).join(' ');
   let m3=_m3DoTexto(txtAd,true)||_m3DoTexto(plano), m3Fonte=m3?'nota':'', medidas='', maiorCm=0;
-  const pmA=txtAd?_m3PorMedidas(txtAd,qtd):null;   // "MED 50X50X50" nos dados adicionais
-  if(pmA){ maiorCm=pmA.maiorCm||0; if(!m3&&pmA.m3){ m3=pmA.m3; m3Fonte='medidas'; medidas=pmA.medidas; } }
+  const pmA=txtAd?_m3PorMedidasVarias(txtAd,qtd):null;   // "MED 50X50X50" nos dados adicionais
+  let cxA=null, avisoA='';
+  if(pmA){ maiorCm=pmA.maiorCm||0; avisoA=!m3&&pmA.aviso||'';
+    if(!m3&&pmA.m3){ m3=pmA.m3; m3Fonte='medidas'; medidas=pmA.medidas; cxA=pmA.cx||null; } }
 
   const obsAd=txtAd.replace(/[<>"']/g,' ').replace(/\s+/g,' ').trim().slice(0,500);
-  return { chave, nf, m3, m3Fonte, medidas, maiorCm, ...(obsAd?{obs:obsAd}:{}), nome:String(nome||'').replace(/[<>"']/g,'').trim(),
+  return { chave, nf, m3, m3Fonte, medidas, maiorCm, ...(cxA?{cx:cxA}:{}), ...(avisoA?{medidasAviso:avisoA}:{}), ...(obsAd?{obs:obsAd}:{}), nome:String(nome||'').replace(/[<>"']/g,'').trim(),
            endereco:String(endereco||'').replace(/[<>"']/g,'').trim(),
            bairro:String(bairro||'').replace(/[<>"']/g,'').trim(),
            cep, cidade:String(cidade||'').replace(/[<>"']/g,'').trim(), uf,
@@ -4369,6 +4441,7 @@ function _pedidoDoDanfe(c, tipo){
     peso:c.peso?Math.round(c.peso*100)/100:100, itens:c.volumes||1,
     ...(c.m3>0?{m3:c.m3, m3Fonte:c.m3Fonte||'nota'}:{}),
     ...(c.medidas?{medidas:c.medidas}:{}), ...(c.maiorCm>0?{maiorCm:c.maiorCm}:{}),
+    ...(Array.isArray(c.cx)&&c.cx.length?{cx:c.cx}:{}), ...(c.medidasAviso?{medidasAviso:c.medidasAviso}:{}),
     ...(c.obs?{obsNota:c.obs}:{}),
     ...(oc?{coletaObs:true, endRemetente:c.endRemetente.slice(0,200)}:{}),
     urgente:false, agendado:false, dataAgendada:'', status:'pendente', origem:'pdf',
@@ -4446,12 +4519,14 @@ function _camposOrdemColeta(linhas){
       .map(l=>l.itens.map(i=>i.s).join(' ')).join(' ').replace(/\s+/g,' ').trim();
   }
   let m3Fonte=m3?'nota':'', medidas='', maiorCm=0;
-  const pm=obs?_m3PorMedidas(obs,volumes):null;
+  const pm=obs?_m3PorMedidasVarias(obs,volumes):null;
   const outro=obs?_coletaDasObs(obs):null;
-  if(pm){ maiorCm=pm.maiorCm||0; if(!m3&&pm.m3){ m3=pm.m3; m3Fonte='medidas'; medidas=pm.medidas; } }
+  let cx=null, aviso='';
+  if(pm){ maiorCm=pm.maiorCm||0; aviso=!m3&&pm.aviso||'';
+    if(!m3&&pm.m3){ m3=pm.m3; m3Fonte='medidas'; medidas=pm.medidas; cx=pm.cx||null; } }
   return { ordem, chave:'', nf, nome:limpa(nome), endereco:limpa(endereco), bairro:limpa(bairro.txt),
            cep, cidade:limpa(mc?mc[1]:cid), uf:mc?mc[2].toUpperCase():'', volumes:volumes>0?volumes:0, peso, m3,
-           m3Fonte, medidas, maiorCm, obs:obs.replace(/[<>]/g,' ').replace(/["']/g,'').replace(/\s+/g,' ').trim().slice(0,500),
+           m3Fonte, medidas, maiorCm, ...(cx?{cx}:{}), ...(aviso?{medidasAviso:aviso}:{}), obs:obs.replace(/[<>]/g,' ').replace(/["']/g,'').replace(/\s+/g,' ').trim().slice(0,500),
            ...(outro&&outro.cep!==cep?{coleta:outro}:{}) };
 }
 
@@ -4552,7 +4627,7 @@ function _mesclarReimportada(o,cru){
   // m³ digitado aqui vale mais que a falta dele no arquivo novo
   // m³ digitado aqui ou vindo do CT-e vale mais que a falta dele no arquivo novo
   if(!(+r.m3>0)&&+cru.m3>0&&(cru.m3Fonte==='digitado'||cru.m3Fonte==='cte')){
-    r.m3=+cru.m3; r.m3Fonte=cru.m3Fonte; if(+cru.maiorCm>0) r.maiorCm=+cru.maiorCm;
+    r.m3=+cru.m3; r.m3Fonte=cru.m3Fonte; if(+cru.maiorCm>0) r.maiorCm=+cru.maiorCm; delete r.cx; delete r.medidasAviso;
     ['cteNum','m3Rateio','m3DeCubado'].forEach(k=>{ if(cru[k]!==undefined) r[k]=cru[k]; });
   }
   r._localMantido = cru.geoStatus==='ok' && Number.isFinite(+cru.lat) && Number.isFinite(+cru.lng) && _mesmoEndereco(o,cru);
@@ -4640,6 +4715,8 @@ async function importarArquivo(input){
   if(outroEnd) msg+=` ${_plural(outroEnd,'coleta tem','coletas têm')} outro endereço de coleta nas observações: o mapa e a rota usam esse endereço.`;
   const comM3=novos.filter(o=>+o.m3>0&&o.m3Fonte!=='digitado').length;
   if(comM3) msg+=` ${_plural(comM3,'nota veio','notas vieram')} com o m³ no arquivo.`;
+  const confMed=novos.filter(o=>o.medidasAviso).map(o=>o.nf);
+  if(confMed.length) msg+=` Confira as medidas da${confMed.length>1?'s notas':' nota'} ${confMed.slice(0,5).join(', ')}${confMed.length>5?'...':''}: ${confMed.length>1?'as observações têm':'a observação tem'} vários tamanhos sem a quantidade de cada um, ou quantidades que não batem com os volumes (abra o pedido para ver).`;
   if(semEndereco) msg+=` ${_plural(semEndereco,'nota do PDF ficou de fora','notas do PDF ficaram de fora')}: sem CEP e sem município legíveis — use o XML ${semEndereco===1?'dela':'delas'}.`;
   msg+=await msgCte();
   if(erros.length) msg+=` Não deu para ler: ${erros.join(' · ')}.`;
@@ -7370,10 +7447,14 @@ window.__tipoCarga=p=>_tipoCargaTxt(p);
 const MAX_CAIXAS_PARADA=400;
 function _caixasDe(p){
   const m3=+p.m3||0;
-  const cx=_verLista(p.cx).map(x=>({c:+x.c/100,l:+x.l/100,a:+x.a/100,q:Math.max(1,Math.round(+x.q||1))})).filter(x=>x.c>0&&x.l>0&&x.a>0);
-  if(cx.length) return cx;
   const d=_dadosPed(p);
-  if(d.medidas){
+  // cx da parada (rota confirmada) vale como está; o do pedido (tamanhos lidos das observações)
+  // só enquanto o m³ continua batendo com ele
+  const daRota=_verLista(p.cx).length>0;
+  const cx=_verLista(daRota?p.cx:d.cx).map(x=>({c:+x.c/100,l:+x.l/100,a:+x.a/100,q:Math.max(1,Math.round(+x.q||1))})).filter(x=>x.c>0&&x.l>0&&x.a>0);
+  const volCx=cx.reduce((s,x)=>s+x.c*x.l*x.a*x.q,0);
+  if(cx.length&&(daRota||!(m3>0)||Math.abs(volCx-m3)<=m3*0.25)) return cx;
+  if(d.medidas&&!String(d.medidas).includes(';')){   // "2 de 50 × 50 × 50 cm; 3 de ..." só vale pelo cx
     const md=_medidasDoTexto(String(d.medidas));
     if(md&&md.cm){
       const u=md.cm[0]*md.cm[1]*md.cm[2]/1e6;
@@ -7668,6 +7749,7 @@ function _c3dInfo(obj){
   const p=g.p, med=g.caixas.filter(c=>!c.aprox);
   const qtd=med.reduce((s,c)=>s+c.q,0);
   const forma=med.length===1?`${_plural(med[0].q,'volume','volumes')} de ${[med[0].c,med[0].l,med[0].a].map(v=>_fmtMed(v*100)).join(' × ')} cm`
+    :med.length>1&&med.length<=3?med.map(c=>`${c.q} de ${[c.c,c.l,c.a].map(v=>_fmtMed(v*100)).join(' × ')} cm`).join(' e ')
     :med.length?`${_plural(qtd,'volume','volumes')} de ${med.length} tamanhos`:(g.caixas.length?'só o m³, sem o formato das caixas':'sem medida');
   const tipo=_tipoCargaTxt(p), cuid=_regrasTxt(g.regras), kgU=obj.kgU>0?obj.kgU:(obj.kg>0&&obj.q>0?obj.kg/obj.q:0);
   el.innerHTML=`<b>Parada ${g.n}</b> (${st3dOrd(g)}) · NF ${esc(p.nf)}${p.dest?' · '+esc(p.dest):''} · ${esc(forma)}${+p.m3>0?` · ${_fmtM3(p.m3)} m³`:''} · ${Math.round(+p.peso||0).toLocaleString('pt-BR')} kg${kgU&&obj.q?` · ~${Math.round(kgU).toLocaleString('pt-BR')} kg cada volume`:''}${tipo?` · carga ${esc(tipo)}`:''}${cuid.length?` · <b>${esc(cuid.join(', '))}</b>`:''}${obj.fora?' · <b class="plano-err">não coube</b>':''}${g.perig?` · <b class="perig-txt">⚠ ${esc(_perigTxt(g.perig))}</b>`:''}`;
