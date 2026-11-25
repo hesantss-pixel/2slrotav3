@@ -890,7 +890,7 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
 .perig-tag{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:5px;background:#fff1e8;border:1px solid #f0a476;color:#a8380a;font-family:inherit;font-weight:700;font-size:10.5px;line-height:1.5;white-space:nowrap;vertical-align:1px;}
 .perig-txt{color:#a8380a;}
 .plano-cuid{color:#8a5a06;font-weight:600;}
-@media (max-width:600px){ .c3d-cv{height:260px;} .c3d-passo span{min-width:0;} }
+@media (max-width:600px){ .c3d-cv{height:260px;} .c3d-passo{flex-wrap:wrap;} .c3d-passo span{min-width:0;flex-basis:100%;text-align:left;} }
 .prod-sec{max-width:820px;margin:18px 0 26px;}
 .prod-h{font-size:16px;margin:0 0 4px;color:var(--text);}
 .prod-sub{font-size:12.5px;color:var(--text2);line-height:1.55;margin:0 0 10px;}
@@ -5714,12 +5714,18 @@ function _avisosM3D(ps,r){
 const _formatoMemo=new Map();
 function _formatoRota(paradas,bau,modo){
   if(!bau||!(+bau.c>0&&+bau.l>0&&+bau.a>0)) return null;
-  const grupos=_gruposCarga(paradas,modo).map(g=>({...g, caixas:g.caixas.filter(x=>!x.aprox)}));
-  if(!grupos.some(g=>g.caixas.length)) return null;
-  const chave=JSON.stringify([modo||'saida',bau.c,bau.l,bau.a,grupos.map(g=>[g.n,g.kg,g.caixas,g.regras])]);
+  const col=modo==='coletas';
+  const grupos=(col?_gruposViagem(paradas):_gruposCarga(paradas,'saida')).map(g=>({...g, caixas:g.caixas.filter(x=>!x.aprox)}));
+  if(!grupos.some(g=>g.caixas.length&&(!col||g.tipo==='coleta'))) return null;
+  const chave=JSON.stringify([modo||'saida',bau.c,bau.l,bau.a,grupos.map(g=>[g.n,g.tipo,g.kg,g.caixas,g.regras])]);
   if(_formatoMemo.has(chave)) return _formatoMemo.get(chave);
-  const res=_arrumarCarga(bau,grupos,true);
-  const fora=[...new Set(res.fora.map(f=>f.g))].map(k=>({n:grupos[k].n, nf:grupos[k].nf, q:res.fora.filter(f=>f.g===k).reduce((s,f)=>s+(f.q||0),0)}));
+  // coletas: simula a viagem (entram na frente do que ainda está a bordo); vale o que nunca coube
+  let res;
+  if(col){ const est=_estadosViagem(bau,grupos,true), ult=est[est.length-1], pico=est.reduce((m,e)=>e.vol>m.vol?e:m,est[0]);
+    res={pos:pico.pos, fora:ult.fora.filter(f=>grupos.find(g=>g.k===f.g)?.tipo==='coleta')}; }
+  else res=_arrumarCarga(bau,grupos,true);
+  const gr=k=>grupos.find(g=>g.k===k);
+  const fora=[...new Set(res.fora.map(f=>f.g))].map(k=>({n:gr(k).n, nf:gr(k).nf, q:res.fora.filter(f=>f.g===k).reduce((s,f)=>s+(f.q||0),0)}));
   const out={fora, cg:_cgCarga(res.pos)};
   if(_formatoMemo.size>20) _formatoMemo.delete(_formatoMemo.keys().next().value);
   _formatoMemo.set(chave,out);
@@ -7451,9 +7457,10 @@ function _blocosCarga(caixas,W,H,empilhar,kgPed,regras){
 // Em cima só vai o que pesa até 1,5 vez a caixa de baixo (pesado não esmaga leve), e nada vai em
 // cima de frágil, de "não empilhar" ou de bloco só com o m³ (formato desconhecido).
 // bau {c,l,a} em metros; grupos [{caixas, kg, regras}]; devolve {pos:[{x,y,z,dx,dy,dz,g,q,grid,aprox,kg}], fora:[{g,q,ori,aprox,kg}]}
-function _arrumarCarga(bau,grupos,empilhar){
-  const C=+bau.c, W=+bau.l, H=+bau.a, E=1e-6, pos=[], fora=[];
+function _arrumarCarga(bau,grupos,empilhar,inicial){
+  const C=+bau.c, W=+bau.l, H=+bau.a, E=1e-6, pos=(inicial||[]).map(b=>({...b})), fora=[];
   let pts=[[0,0,0]], minX=0;
+  pos.forEach(b=>pts.push([b.x+b.dx,b.y,b.z],[b.x,b.y+b.dy,b.z],[b.x,b.y,b.z+b.dz]));
   const colide=(x,y,z,o)=>pos.some(b=>x<b.x+b.dx-E&&x+o[0]>b.x+E&&y<b.y+b.dy-E&&y+o[1]>b.y+E&&z<b.z+b.dz-E&&z+o[2]>b.z+E);
   const apoio=(x,y,z,o,it)=>{ let a=0;
     for(const b of pos){ if(Math.abs(b.z+b.dz-z)>1e-4) continue;
@@ -7514,9 +7521,8 @@ const _COR_PARADA=['#2a4f86','#d4a12a','#2f8a7e','#7a5a9e','#c0623a','#4f8a3a','
 let _c3d=null;
 function _planoPode3D(o){ const b=o&&o.bau; return !!(b&&+b.c>0&&+b.l>0&&+b.a>0); }
 function _c3dHtml(nEnt,nCol){
-  const n=Math.max(nEnt||0,nCol||0);
   return `<div class="c3d">
-    ${nEnt&&nCol?`<div class="c3d-modos" role="group" aria-label="Momento da viagem"><button type="button" class="c3d-m" data-m="saida" aria-pressed="true" onclick="_c3dModo('saida')">Na saída do CD</button><button type="button" class="c3d-m" data-m="coletas" aria-pressed="false" onclick="_c3dModo('coletas')">Com as coletas</button></div>`:''}
+    ${nEnt&&nCol?`<div class="c3d-modos" role="group" aria-label="Momento da viagem"><button type="button" class="c3d-m" data-m="saida" aria-pressed="true" onclick="_c3dModo('saida')">Na saída do CD</button><button type="button" class="c3d-m" data-m="viagem" aria-pressed="false" onclick="_c3dModo('viagem')">Ao longo da viagem</button></div>`:''}
     <div class="c3d-bar">
       <div class="c3d-vistas" role="group" aria-label="Ponto de vista">
         ${[['3d','3D'],['porta','Pela porta'],['lado','De lado'],['cima','De cima']].map(([v,t])=>`<button type="button" class="c3d-v" data-v="${v}" aria-pressed="${v==='3d'}" onclick="_c3dVista('${v}')">${t}</button>`).join('')}
@@ -7524,70 +7530,115 @@ function _c3dHtml(nEnt,nCol){
       <label class="c3d-emp"><input type="checkbox" id="c3d-emp" checked onchange="_c3dEmpilhar(this.checked)"> Empilhar</label>
     </div>
     <canvas id="c3d-cv" class="c3d-cv" tabindex="0" role="img" aria-label="Baú em 3D com as caixas de cada parada. Use as setas para girar; a lista abaixo do desenho tem cada parada."></canvas>
-    <div class="c3d-passo"${n>1?'':' hidden'}><label for="c3d-ate">Carregar até</label><input type="range" id="c3d-ate" min="1" max="${n}" value="${n}" step="1" oninput="_c3dAte(+this.value)"><span id="c3d-ate-txt" aria-live="polite"></span></div>
+    <div class="c3d-passo" hidden><label for="c3d-ate">Carregar até</label><input type="range" id="c3d-ate" min="1" max="1" value="1" step="1" oninput="_c3dAte(+this.value)"><span id="c3d-ate-txt" aria-live="polite"></span></div>
     <p class="c3d-info" id="c3d-info" aria-live="polite">Arraste para girar. Toque numa caixa (ou numa parada abaixo) para ver o pedido.</p>
     <div class="c3d-leg" id="c3d-leg"></div>
     <p class="plano-p" id="c3d-resumo"></p>
   </div>`;
 }
 const _VISTAS={'3d':[-0.9,0.5],porta:[-0.3,0.3],lado:[-Math.PI/2,0.12],cima:[-Math.PI/2,1.55]};
+function _grupoDe(p,i,k,cor){ return {n:i+1, nf:p.nf, p, k, tipo:_tipoDe(p), cor, caixas:_caixasDe(p), perig:_perigosoDe(p), kg:+p.peso||0, regras:_regrasCarga(p)}; }
 // Grupos de uma arrumação: "saida" = entregas, da última para a primeira (a última vai no fundo);
 // "coletas" = coletas na ordem em que são feitas (a primeira vai no fundo), com o baú vazio
 function _gruposCarga(paradas,modo){
-  const l=paradas.map((p,i)=>({p,n:i+1})).filter(x=>_tipoDe(x.p)===(modo==='coletas'?'coleta':'entrega'));
-  return (modo==='coletas'?l:l.reverse()).map((c,k)=>({n:c.n, nf:c.p.nf, p:c.p, k, cor:_COR_PARADA[k%_COR_PARADA.length], caixas:_caixasDe(c.p), perig:_perigosoDe(c.p), kg:+c.p.peso||0, regras:_regrasCarga(c.p)}));
+  const l=paradas.map((p,i)=>({p,i})).filter(x=>_tipoDe(x.p)===(modo==='coletas'?'coleta':'entrega'));
+  return (modo==='coletas'?l:l.reverse()).map((c,k)=>_grupoDe(c.p,c.i,k,_COR_PARADA[k%_COR_PARADA.length]));
 }
+// Todas as paradas na ordem da rota (para a viagem): a cor é a da parada
+function _gruposViagem(paradas){ return paradas.map((p,i)=>_grupoDe(p,i,i,_COR_PARADA[i%_COR_PARADA.length])); }
+// O baú depois de cada parada: sai do CD com as entregas (a última no fundo); cada entrega tira
+// as caixas dela; cada coleta entra no espaço livre na frente do que já está a bordo (não dá para
+// pôr carga atrás da que já entrou). O que não cabe naquele momento fica de fora, em vermelho.
+// grupos = _gruposViagem; devolve [{apos (0 = saída), pos, fora, vol}]
+function _estadosViagem(bau,grupos,empilhar){
+  const ent=grupos.filter(g=>g.tipo==='entrega').reverse();
+  const r0=_arrumarCarga(bau,ent,empilhar);
+  let bordo=r0.pos.map(b=>({...b,g:ent[b.g].k})), fora=r0.fora.map(f=>({...f,g:ent[f.g].k}));
+  const vol=l=>l.reduce((s,b)=>s+b.dx*b.dy*b.dz,0);
+  const est=[{apos:0, pos:bordo, fora:fora.slice(), vol:vol(bordo)}];
+  grupos.forEach(g=>{
+    if(g.tipo==='entrega'){ bordo=bordo.filter(b=>b.g!==g.k); fora=fora.filter(f=>f.g!==g.k); }
+    else if(g.caixas.length){
+      const r=_arrumarCarga(bau,[g],empilhar,bordo);
+      bordo=bordo.concat(r.pos.slice(bordo.length).map(b=>({...b,g:g.k})));
+      fora=fora.concat(r.fora.map(f=>({...f,g:g.k})));
+    }
+    est.push({apos:g.n, pos:bordo, fora:fora.slice(), vol:vol(bordo)});
+  });
+  return est;
+}
+window.__estadosViagem=(bau,paradas,emp)=>_estadosViagem(bau,_gruposViagem(paradas),emp!==false);
 function _c3dIniciar(paradas,o){
   _c3d=null;
   const cv=$id('c3d-cv'); if(!cv||!_planoPode3D(o)) return;
-  const temEnt=paradas.some(p=>_tipoDe(p)==='entrega');
-  // entrega depois de alguma coleta: o desenho das coletas não conta o que ainda está a bordo
-  const ultCol=paradas.map(_tipoDe).indexOf('coleta'), misturada=ultCol>=0&&paradas.slice(ultCol).some(p=>_tipoDe(p)==='entrega');
-  _c3d={paradas, bau:{c:+o.bau.c,l:+o.bau.l,a:+o.bau.a}, capKg:+o.capKg||0, aberta:o.carroc==='aberta', modo:temEnt?'saida':'coletas', misturada,
+  const tipos=paradas.map(_tipoDe), temEnt=tipos.includes('entrega');
+  // coleta antes de alguma entrega: a carga coletada entra na frente das entregas que ainda vão sair
+  const i1=tipos.indexOf('coleta'), misturada=i1>=0&&tipos.slice(i1).includes('entrega');
+  _c3d={paradas, bau:{c:+o.bau.c,l:+o.bau.l,a:+o.bau.a}, capKg:+o.capKg||0, aberta:o.carroc==='aberta', modo:temEnt?'saida':'viagem', misturada,
     empilhar:true, yaw:_VISTAS['3d'][0], pitch:_VISTAS['3d'][1], foco:-1, sel:null, faces:[]};
   _c3dEventos(cv);
   _c3dModo(_c3d.modo);
 }
 function _c3dModo(m){
   const st=_c3d; if(!st) return;
-  st.modo=m==='coletas'?'coletas':'saida';
-  st.grupos=_gruposCarga(st.paradas,st.modo); st.ate=st.grupos.length; st.foco=-1; st.sel=null;
+  st.modo=m==='viagem'?'viagem':'saida';
+  st.grupos=st.modo==='viagem'?_gruposViagem(st.paradas):_gruposCarga(st.paradas,'saida');
+  st.ate=st.grupos.length; st.foco=-1; st.sel=null; st.passo=null;
   document.querySelectorAll('.c3d-m').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.m===st.modo)));
-  const r=$id('c3d-ate'); if(r){ r.max=String(Math.max(1,st.grupos.length)); r.value=r.max; r.closest('.c3d-passo').hidden=st.grupos.length<2; }
-  const lp=document.querySelector('.c3d-passo label'); if(lp) lp.textContent=st.modo==='coletas'?'Coletar até':'Carregar até';
   _c3dArrumar();
-  const ord=st.modo==='coletas'?'ª':'º';
-  $id('c3d-leg').innerHTML=st.grupos.map(g=>`<button type="button" class="c3d-chip" data-g="${g.k}" aria-pressed="false" onclick="_c3dFoco(${g.k})"><i style="background:${g.cor}"></i>${g.k+1}${ord} · Parada ${g.n}${g.perig?' ⚠':''}${g.regras&&(g.regras.fragil||g.regras.naoEmp)?' · frágil':''}${g.caixas.length?'':' (sem medida)'}</button>`).join('');
-  _c3dInfo(); _c3dDesenhar();
+  const r=$id('c3d-ate'), box=r&&r.closest('.c3d-passo');
+  if(r){
+    if(st.modo==='viagem'){ r.min='0'; r.max=String(st.estados.length-1); r.value=String(st.passo); box.hidden=st.estados.length<2; }
+    else { r.min='1'; r.max=String(Math.max(1,st.grupos.length)); r.value=r.max; box.hidden=st.grupos.length<2; }
+    box.querySelector('label').textContent=st.modo==='viagem'?'Viagem':'Carregar até';
+  }
+  const rot=g=>st.modo==='viagem'?`Parada ${g.n} · ${g.tipo}`:`${g.k+1}º · Parada ${g.n}`;
+  $id('c3d-leg').innerHTML=st.grupos.map(g=>`<button type="button" class="c3d-chip" data-g="${g.k}" aria-pressed="false" onclick="_c3dFoco(${g.k})"><i style="background:${g.cor}"></i>${rot(g)}${g.perig?' ⚠':''}${g.regras&&(g.regras.fragil||g.regras.naoEmp)?' · frágil':''}${g.caixas.length?'':' (sem medida)'}</button>`).join('');
+  _c3dAteTxt(); _c3dInfo(); _c3dDesenhar();
 }
 window._c3dModo=_c3dModo;
 function _c3dArrumar(){
   const st=_c3d;
-  st.res=_arrumarCarga(st.bau,st.grupos,st.empilhar);
   st.sel=null;
+  if(st.modo==='viagem'){
+    st.estados=_estadosViagem(st.bau,st.grupos,st.empilhar);
+    // começa no momento mais cheio: o primeiro em que algo não cabe, senão o de mais volume a bordo
+    const novoFora=st.estados.findIndex((e,i)=>i>0&&e.fora.length>st.estados[i-1].fora.length);
+    st.pico=novoFora>0?novoFora:st.estados.reduce((m,e,i)=>e.vol>st.estados[m].vol+1e-9?i:m,0);
+    if(st.passo==null||st.passo>=st.estados.length) st.passo=st.pico;
+    st.res=st.estados[st.passo];
+  } else st.res=_arrumarCarga(st.bau,st.grupos,st.empilhar);
+  _c3dResumo();
+}
+function _c3dResumo(){
+  const st=_c3d, viagem=st.modo==='viagem';
   const vol=g=>g.caixas.reduce((s,c)=>s+(c.aprox?0:c.q),0);
   const desenh=st.grupos.filter(g=>g.caixas.length), semMed=st.grupos.filter(g=>!g.caixas.length), aprox=st.grupos.filter(g=>g.caixas.some(c=>c.aprox));
   const comp=st.res.pos.reduce((m,b)=>Math.max(m,b.x+b.dx),0);
-  const foraG=[...new Set(st.res.fora.map(f=>f.g))].map(k=>st.grupos[k]);
-  const nVol=desenh.reduce((s,g)=>s+vol(g),0);
-  const col=st.modo==='coletas';
+  const foraG=[...new Set(st.res.fora.map(f=>f.g))].map(k=>st.grupos.find(g=>g.k===k)).filter(Boolean);
+  const nVol=desenh.reduce((s,g)=>s+vol(g),0), bauM3=st.bau.c*st.bau.l*st.bau.a;
+  const e=viagem?st.estados[st.passo]:null, pico=viagem?st.estados[st.pico]:null;
+  const quando=i=>i===0?'na saída do CD':`depois da parada ${st.estados[i].apos}`;
   $id('c3d-resumo').innerHTML=[
-    col?`<b>Coletas na ordem em que são feitas:</b> a primeira entra primeiro e vai para o fundo; nada fica atrás de carga que entrou antes.${st.misturada?' Nesta rota há entrega depois de coleta: o desenho considera o baú vazio, sem as entregas que ainda estariam a bordo.':''}`:'',
-    !st.grupos.length?'':desenh.length?`${_plural(desenh.length,'parada desenhada','paradas desenhadas')}${nVol?`, ${_plural(nVol,'volume','volumes')}`:''}. A carga vai até <b>${_fmtMed(comp)} m</b> dos ${_fmtMed(st.bau.c)} m do baú.`:`Nenhuma ${col?'coleta':'entrega'} tem medida para desenhar.`,
+    viagem?`<b>Ao longo da viagem:</b> cada entrega tira as caixas dela; cada coleta entra no espaço livre, na frente do que já está a bordo. Agora: <b>${_fmtM3(e.vol)} m³ a bordo</b> ${quando(st.passo)} (${Math.round(e.vol/bauM3*100)}% do baú). O momento mais cheio é ${quando(st.pico)} (${_fmtM3(pico.vol)} m³).`:'',
+    viagem&&st.misturada?'<b class="plano-err">Esta rota faz coleta antes de entrega:</b> a carga coletada entra na frente das entregas que ainda vão sair, e vai ser preciso tirar carga para entregar.':'',
+    !st.grupos.length?'':desenh.length?(viagem?'':`${_plural(desenh.length,'parada desenhada','paradas desenhadas')}${nVol?`, ${_plural(nVol,'volume','volumes')}`:''}. A carga vai até <b>${_fmtMed(comp)} m</b> dos ${_fmtMed(st.bau.c)} m do baú.`):'Nenhuma parada tem medida para desenhar.',
     aprox.length?`Só com o m³, sem o formato das caixas (bloco tracejado): parada ${aprox.map(g=>g.n).join(', ')}.`:'',
     semMed.length?`Sem medida, fora do desenho: parada ${semMed.map(g=>g.n).join(', ')}. Reserve espaço.`:'',
-    foraG.length?`<b class="plano-err">Não couberam ${st.empilhar?'':'sem empilhar '}pelo formato: parada ${foraG.map(g=>g.n).join(', ')}</b> (em vermelho, atrás da porta). Pelo m³ pode até caber: o que sobra são vãos entre as caixas.`:'',
+    foraG.length?`<b class="plano-err">${viagem?`Não cabem ${quando(st.passo)}`:`Não couberam ${st.empilhar?'':'sem empilhar '}`} pelo formato: parada ${foraG.map(g=>g.n).join(', ')}</b> (em vermelho, atrás da porta).${viagem?'':' Pelo m³ pode até caber: o que sobra são vãos entre as caixas.'}`:'',
     (()=>{ const r=st.grupos.filter(g=>_regrasTxt(g.regras).length); return r.length?`Cuidados escritos na nota: ${r.map(g=>`parada ${g.n} (${_regrasTxt(g.regras).join(', ')})`).join('; ')}. Nada vai em cima de frágil ou de "não empilhar".`:''; })(),
     (()=>{ const cg=_cgCarga(st.res.pos); if(!cg) return '';
       const dl=cg.y-st.bau.l/2, av=_avisosCg(cg,st.bau,st.capKg);
       return `Centro de gravidade da carga (círculo dourado): a <b>${_fmtMed(cg.x)} m</b> da cabine (${Math.round(cg.x/st.bau.c*100)}% do baú)${Math.abs(dl)>=0.05?`, ${Math.round(Math.abs(dl)*100)} cm para a ${dl>0?'direita':'esquerda'} do meio`:', no meio da largura'}. O peso de cada volume é o da nota dividido pelo tamanho.${av.length?` <b class="plano-err">Atenção: ${av.join('; ')}.</b>`:''}`; })(),
   ].filter(Boolean).join(' ');
-  _c3dAteTxt();
 }
 function _c3dAteTxt(){
   const el=$id('c3d-ate-txt'); if(!el||!_c3d) return;
-  const st=_c3d, g=st.grupos[st.ate-1];
-  el.textContent=st.ate>=st.grupos.length?(st.modo==='coletas'?'todas coletadas':'tudo carregado'):`${st.ate}${st.modo==='coletas'?'ª':'º'}: parada ${g.n}`;
+  const st=_c3d;
+  if(st.modo==='viagem'){ const e=st.estados[st.passo], g=st.grupos.find(x=>x.n===e.apos);
+    el.textContent=(st.passo===0?'saída do CD':`depois da parada ${e.apos} (${g?g.tipo:''})`)+(st.passo===st.pico?' · mais cheio':''); return; }
+  const g=st.grupos[st.ate-1];
+  el.textContent=st.ate>=st.grupos.length?'tudo carregado':`${st.ate}º: parada ${g.n}`;
 }
 function _c3dVista(v){
   if(!_c3d||!_VISTAS[v]) return;
@@ -7595,8 +7646,13 @@ function _c3dVista(v){
   document.querySelectorAll('.c3d-v').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===v)));
   _c3dDesenhar();
 }
-function _c3dEmpilhar(on){ if(!_c3d) return; _c3d.empilhar=!!on; _c3dArrumar(); _c3dDesenhar(); _c3dInfo(); }
-function _c3dAte(n){ if(!_c3d) return; _c3d.ate=Math.max(1,Math.min(_c3d.grupos.length,n|0)); _c3d.sel=null; _c3dAteTxt(); _c3dDesenhar(); }
+function _c3dEmpilhar(on){ if(!_c3d) return; _c3d.empilhar=!!on; _c3dArrumar(); _c3dAteTxt(); _c3dDesenhar(); _c3dInfo(); }
+function _c3dAte(n){
+  const st=_c3d; if(!st) return; st.sel=null;
+  if(st.modo==='viagem'){ st.passo=Math.max(0,Math.min(st.estados.length-1,n|0)); st.res=st.estados[st.passo]; _c3dResumo(); }
+  else st.ate=Math.max(1,Math.min(st.grupos.length,n|0));
+  _c3dAteTxt(); _c3dDesenhar();
+}
 function _c3dFoco(k){
   if(!_c3d) return;
   _c3d.foco=_c3d.foco===k?-1:k; _c3d.sel=null;
@@ -7604,16 +7660,17 @@ function _c3dFoco(k){
   _c3dDesenhar(); _c3dInfo(_c3d.foco>=0?{g:_c3d.foco}:null);
 }
 Object.assign(window,{_c3dVista,_c3dEmpilhar,_c3dAte,_c3dFoco});
-function st3dOrd(k){ return _c3d&&_c3d.modo==='coletas'?`${k+1}ª coleta`:`${k+1}º a carregar`; }
+function st3dOrd(g){ return _c3d&&_c3d.modo==='viagem'?g.tipo:`${g.k+1}º a carregar`; }
 function _c3dInfo(obj){
   const el=$id('c3d-info'); if(!el||!_c3d) return;
   if(!obj){ el.textContent='Arraste para girar. Toque numa caixa (ou numa parada abaixo) para ver o pedido.'; return; }
-  const g=_c3d.grupos[obj.g], p=g.p, med=g.caixas.filter(c=>!c.aprox);
+  const g=_c3d.grupos.find(x=>x.k===obj.g); if(!g) return;
+  const p=g.p, med=g.caixas.filter(c=>!c.aprox);
   const qtd=med.reduce((s,c)=>s+c.q,0);
   const forma=med.length===1?`${_plural(med[0].q,'volume','volumes')} de ${[med[0].c,med[0].l,med[0].a].map(v=>_fmtMed(v*100)).join(' × ')} cm`
     :med.length?`${_plural(qtd,'volume','volumes')} de ${med.length} tamanhos`:(g.caixas.length?'só o m³, sem o formato das caixas':'sem medida');
   const tipo=_tipoCargaTxt(p), cuid=_regrasTxt(g.regras), kgU=obj.kgU>0?obj.kgU:(obj.kg>0&&obj.q>0?obj.kg/obj.q:0);
-  el.innerHTML=`<b>Parada ${g.n}</b> (${st3dOrd(g.k)}) · NF ${esc(p.nf)}${p.dest?' · '+esc(p.dest):''} · ${esc(forma)}${+p.m3>0?` · ${_fmtM3(p.m3)} m³`:''} · ${Math.round(+p.peso||0).toLocaleString('pt-BR')} kg${kgU&&obj.q?` · ~${Math.round(kgU).toLocaleString('pt-BR')} kg cada volume`:''}${tipo?` · carga ${esc(tipo)}`:''}${cuid.length?` · <b>${esc(cuid.join(', '))}</b>`:''}${obj.fora?' · <b class="plano-err">não coube</b>':''}${g.perig?` · <b class="perig-txt">⚠ ${esc(_perigTxt(g.perig))}</b>`:''}`;
+  el.innerHTML=`<b>Parada ${g.n}</b> (${st3dOrd(g)}) · NF ${esc(p.nf)}${p.dest?' · '+esc(p.dest):''} · ${esc(forma)}${+p.m3>0?` · ${_fmtM3(p.m3)} m³`:''} · ${Math.round(+p.peso||0).toLocaleString('pt-BR')} kg${kgU&&obj.q?` · ~${Math.round(kgU).toLocaleString('pt-BR')} kg cada volume`:''}${tipo?` · carga ${esc(tipo)}`:''}${cuid.length?` · <b>${esc(cuid.join(', '))}</b>`:''}${obj.fora?' · <b class="plano-err">não coube</b>':''}${g.perig?` · <b class="perig-txt">⚠ ${esc(_perigTxt(g.perig))}</b>`:''}`;
 }
 function _c3dCam(yaw,pitch){
   const cy=Math.cos(yaw), sy=Math.sin(yaw), cp=Math.cos(pitch), sp=Math.sin(pitch);
@@ -7661,10 +7718,16 @@ function _c3dDesenhar(){
   const ctx=cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,w,h);
   const {cam,r,u}=_c3dCam(st.yaw,st.pitch), {c:C,l:W,a:H}=st.bau, tudo=st.ate>=st.grupos.length;
   // cabine, chassi e o que não coube (atrás da porta)
-  const cabC=Math.min(1.7,Math.max(1,W*0.6)), cabH=Math.min(H,2.4)*0.85;
-  const objs=[{x:-cabC-0.08,y:0,z:-0.4,dx:cabC,dy:W,dz:cabH+0.4,cor:'#16243a',fixo:true},
-    {x:-cabC-0.08,y:0.12,z:-0.4,dx:C+cabC+0.08,dy:Math.max(0.1,W-0.24),dz:0.36,cor:'#2b3a52',fixo:true}];
-  st.res.pos.forEach((b,i)=>{ if(b.g<st.ate) objs.push({...b, id:'p'+i, cor:st.grupos[b.g].cor}); });
+  // utilitário (Fiorino, van): cabine baixa com capô e assoalho fino; caminhão: cabine alta e chassi
+  const util=H<=1.6||C<=2.6;
+  const cabC=util?0.9:Math.min(1.7,Math.max(1,W*0.6)), cabH=util?H*0.9:Math.min(H,2.4)*0.85, cabZ=util?-0.18:-0.4;
+  const objs=util?[{x:-cabC-0.04,y:0,z:cabZ,dx:cabC,dy:W,dz:cabH-cabZ,cor:'#16243a',fixo:true},
+      {x:-cabC-0.74,y:0.05,z:cabZ,dx:0.7,dy:Math.max(0.1,W-0.1),dz:H*0.4-cabZ,cor:'#1f3150',fixo:true},
+      {x:-cabC-0.74,y:0.1,z:-0.2,dx:C+cabC+0.74,dy:Math.max(0.1,W-0.2),dz:0.16,cor:'#2b3a52',fixo:true}]
+    :[{x:-cabC-0.08,y:0,z:cabZ,dx:cabC,dy:W,dz:cabH-cabZ,cor:'#16243a',fixo:true},
+      {x:-cabC-0.08,y:0.12,z:-0.4,dx:C+cabC+0.08,dy:Math.max(0.1,W-0.24),dz:0.36,cor:'#2b3a52',fixo:true}];
+  const corDe=g=>(st.grupos.find(x=>x.k===g)||{}).cor||'#6b7a90';
+  st.res.pos.forEach((b,i)=>{ if(b.g<st.ate) objs.push({...b, id:'p'+i, cor:corDe(b.g)}); });
   if(tudo){ let fx=C+0.5; st.res.fora.forEach((f,i)=>{ objs.push({x:fx,y:0,z:0,dx:f.ori[0],dy:f.ori[1],dz:f.ori[2],g:f.g,q:f.q,grid:f.grid,aprox:f.aprox,fora:true,id:'f'+i,cor:'#d64545'}); fx+=f.ori[0]+0.2; }); }
   // enquadra tudo no desenho
   const pr=(x,y,z)=>[x*r[0]+y*r[1]+z*r[2], -(x*u[0]+y*u[1]+z*u[2])];
@@ -7726,7 +7789,7 @@ function _c3dDesenhar(){
   const rot={};
   ordem.forEach(b=>{ if(b.fixo||b.fora) return; const r0=rot[b.g]; if(!r0||b.z+b.dz>r0.z+r0.dz+1e-6||(Math.abs(b.z+b.dz-r0.z-r0.dz)<1e-6&&b.dx*b.dy>r0.dx*r0.dy)) rot[b.g]=b; });
   Object.values(rot).forEach(b=>{
-    const g=st.grupos[b.g]; if(st.foco>=0&&b.g!==st.foco) return;
+    const g=st.grupos.find(x=>x.k===b.g); if(!g||(st.foco>=0&&b.g!==st.foco)) return;
     const [a,c]=P(b.x+b.dx/2,b.y+b.dy/2,b.z+b.dz);
     ctx.beginPath(); ctx.arc(a,c,10,0,Math.PI*2); ctx.fillStyle='#0d1b2e'; ctx.fill(); ctx.lineWidth=1.5; ctx.strokeStyle='#fff'; ctx.stroke();
     ctx.fillStyle='#fff'; ctx.fillText(String(g.n),a,c+0.5);
@@ -7734,7 +7797,7 @@ function _c3dDesenhar(){
       ctx.fillStyle='#e8590c'; ctx.fill(); ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke(); ctx.fillStyle='#fff'; ctx.fillText('!',x,y+0.5); }
   });
   ctx.font='600 11px system-ui,sans-serif'; ctx.fillStyle='#5b6b82';
-  const [cx0,cy0]=P(-cabC/2-0.08,W/2,cabH); ctx.fillText('cabine',cx0,cy0-10);
+  const [cx0,cy0]=P(-cabC/2-0.06,W/2,cabH); ctx.fillText('cabine',cx0,cy0-10);
   const [px0,py0]=P(C,W/2,H); ctx.fillText('porta',px0,py0-10);
   if(tudo&&st.res.fora.length){ const f=objs.find(b=>b.fora); if(f){ const [a,c]=P(f.x+f.dx/2,f.y+f.dy/2,f.z+f.dz); ctx.fillStyle='#b42323'; ctx.fillText('não coube',a,c-12); } }
   st.faces=faces;

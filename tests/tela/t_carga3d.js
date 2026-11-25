@@ -168,10 +168,17 @@ function confere(bau, res, empilhar) {
   ok(/Não couberam sem empilhar pelo formato: parada \d/.test(await p.textContent('#c3d-resumo')) || /paradas desenhadas/.test(await p.textContent('#c3d-resumo')), 'desligar "Empilhar" arruma de novo: ' + (await p.textContent('#c3d-resumo')).slice(0, 120));
   await p.check('#c3d-emp'); await p.waitForTimeout(100);
   // coletas: o mesmo baú na volta, na ordem em que são feitas
-  ok(J(await p.$$eval('.c3d-m', (e) => e.map((b) => b.textContent + ':' + b.getAttribute('aria-pressed')))) === J(['Na saída do CD:true', 'Com as coletas:false']), 'rota com entregas e coletas: escolhe o momento da viagem');
-  await p.click('.c3d-m[data-m="coletas"]'); await p.waitForTimeout(150);
-  const mc = await p.evaluate(() => ({ chips: [...document.querySelectorAll('.c3d-chip')].map((x) => x.textContent), res: document.getElementById('c3d-resumo').textContent, passo: document.querySelector('.c3d-passo').hidden }));
-  ok(J(mc.chips) === J(['1ª · Parada 6']) && /^Coletas na ordem em que são feitas: a primeira entra primeiro e vai para o fundo/.test(mc.res) && /Só com o m³.*parada 6/.test(mc.res) && mc.passo, '"Com as coletas" desenha as coletas: ' + J(mc));
+  ok(J(await p.$$eval('.c3d-m', (e) => e.map((b) => b.textContent + ':' + b.getAttribute('aria-pressed')))) === J(['Na saída do CD:true', 'Ao longo da viagem:false']), 'rota com entregas e coletas: escolhe o momento da viagem');
+  await p.click('.c3d-m[data-m="viagem"]'); await p.waitForTimeout(150);
+  const mc = await p.evaluate(() => ({ chips: [...document.querySelectorAll('.c3d-chip')].map((x) => x.textContent), res: document.getElementById('c3d-resumo').textContent,
+    passo: document.querySelector('.c3d-passo').hidden, lbl: document.querySelector('.c3d-passo label').textContent, max: document.getElementById('c3d-ate').max, txt: document.getElementById('c3d-ate-txt').textContent }));
+  ok(mc.chips.length === 6 && mc.chips[5] === 'Parada 6 · coleta' && /^Parada 1 · entrega/.test(mc.chips[0]) && !mc.passo && mc.lbl === 'Viagem' && mc.max === '6',
+    '"Ao longo da viagem": todas as paradas na ordem, com o passo por parada ' + J(mc.chips));
+  ok(/^Ao longo da viagem: cada entrega tira as caixas dela; cada coleta entra no espaço livre/.test(mc.res) && /Agora: [\d,]+ m³ a bordo na saída do CD .*O momento mais cheio é na saída do CD/.test(mc.res) && /saída do CD · mais cheio/.test(mc.txt),
+    'começa no momento mais cheio (aqui, a saída: as entregas saem antes da coleta) ' + mc.res.slice(0, 200));
+  await p.fill('#c3d-ate', '6'); await p.dispatchEvent('#c3d-ate', 'input'); await p.waitForTimeout(120);
+  const fim = await p.evaluate(() => ({ txt: document.getElementById('c3d-ate-txt').textContent, res: document.getElementById('c3d-resumo').textContent }));
+  ok(fim.txt === 'depois da parada 6 (coleta)' && /Agora: 1 m³ a bordo depois da parada 6/.test(fim.res), 'no fim da viagem só a coleta está a bordo ' + J(fim));
   await p.click('.c3d-m[data-m="saida"]'); await p.waitForTimeout(100);
   ok((await p.$$eval('.c3d-chip', (e) => e.length)) === 5 && (await p.textContent('#c3d-ate-txt')) === 'tudo carregado', 'volta para a saída do CD');
   await p.click('.plano-aba[data-aba="lado"]'); await p.waitForTimeout(80);
@@ -228,10 +235,30 @@ function confere(bau, res, empilhar) {
   const so = await p.evaluate(() => ({ abas: document.querySelectorAll('.plano-aba').length, modos: document.querySelectorAll('.c3d-m').length, cv: !!document.getElementById('c3d-cv'),
     chips: [...document.querySelectorAll('.c3d-chip')].map((x) => x.textContent), passo: document.getElementById('c3d-ate-txt').textContent,
     corpo: document.getElementById('plano-corpo').textContent.replace(/\s+/g, ' ') }));
-  ok(so.cv && so.abas === 0 && so.modos === 0 && J(so.chips) === J(['1ª · Parada 1 ⚠', '2ª · Parada 2']) && so.passo === 'todas coletadas',
+  ok(so.cv && so.abas === 0 && so.modos === 0 && J(so.chips) === J(['Parada 1 · coleta ⚠', 'Parada 2 · coleta']) && so.passo === 'depois da parada 2 (coleta) · mais cheio',
     'rota só de coletas abre direto o 3D das coletas, na ordem: ' + J([so.chips, so.passo]));
   ok(/só tem coletas: o veículo sai vazio e o 3D mostra como as coletas entram no baú/.test(so.corpo) && /Ordem das coletas\s*A primeira coleta entra primeiro e vai para o fundo/.test(so.corpo) && /1ª\s*1\s*NF 8101⚠ ONU 3082/.test(so.corpo) && !/junto à cabine/.test(so.corpo) && /Coletas: 3,53 m³ de 25,88 m³ do baú/.test(so.corpo),
     'tabela "Ordem das coletas" e o volume das coletas no baú ' + so.corpo.slice(-900));
+  await p.click('#modal-plano .btn-modal-sec'); await p.waitForTimeout(100);
+  // Fiorino com coleta antes de entrega: a coleta entra na frente da entrega que ainda está a bordo
+  const fio = { c: 1.87, l: 1.29, a: 1.25 };
+  const ev = await p.evaluate(([b]) => window.__estadosViagem(b, [
+    { id: 'm1', nf: 'M1', tipo: 'coleta', peso: 60, m3: 0.576, cx: [{ c: 60, l: 40, a: 40, q: 6 }] },
+    { id: 'm2', nf: 'M2', tipo: 'coleta', peso: 60, m3: 0.576, cx: [{ c: 60, l: 40, a: 40, q: 6 }] },
+    { id: 'm3', nf: 'M3', tipo: 'entrega', peso: 380, m3: 0.96, cx: [{ c: 60, l: 40, a: 40, q: 10 }] }]).map((e) => ({ apos: e.apos, n: e.pos.length, fora: e.fora.length,
+      colX: Math.min(...e.pos.filter((x) => x.g !== 2).map((x) => x.x).concat([9])), vol: Math.round(e.vol * 1000) / 1000 })), [fio]);
+  ok(J(ev.map((e) => e.apos)) === J([0, 1, 2, 3]) && ev[0].n === 10 && ev[1].n === 16 && ev[2].n === 22 && ev[3].n === 12 && ev[1].colX >= 0.6 - 1e-9 && ev.every((e) => e.fora === 0),
+    'viagem: sai com a entrega; as coletas entram na frente dela (x ≥ 0,6 m); a entrega sai na parada 3 ' + J(ev));
+  await p.evaluate(() => { const d = window.__FAKE.db.empresas.emp1; d.rotas_confirmadas.rota_mist_1 = { id: 'rota_mist_1', data: '2026-11-25', saida: 420, veiculo: 'Fiorino', status: 'em_rota', cap_kg: 650, bau: { c: 1.87, l: 1.29, a: 1.25 },
+    paradas: [{ id: 'm1', nf: 'M1', tipo: 'coleta', dest: 'Rem 1', peso: 60, itens: 6, m3: 0.576, cx: [{ c: 60, l: 40, a: 40, q: 6 }] }, { id: 'm2', nf: 'M2', tipo: 'coleta', dest: 'Rem 2', peso: 60, itens: 6, m3: 0.576, cx: [{ c: 60, l: 40, a: 40, q: 6 }] },
+      { id: 'm3', nf: 'M3', tipo: 'entrega', dest: 'Cli 3', peso: 380, itens: 10, m3: 0.96, cx: [{ c: 60, l: 40, a: 40, q: 10 }] }] }; });
+  await p.evaluate(() => window.__FAKE.fire()); await p.waitForTimeout(250);
+  await p.evaluate(() => window.abrirPlanoCargaRota('rota_mist_1')); await p.waitForTimeout(300);
+  await p.click('.c3d-m[data-m="viagem"]'); await p.waitForTimeout(150);
+  const mi = await p.evaluate(() => ({ res: document.getElementById('c3d-resumo').textContent, txt: document.getElementById('c3d-ate-txt').textContent }));
+  ok(/Esta rota faz coleta antes de entrega: a carga coletada entra na frente das entregas que ainda vão sair/.test(mi.res) && mi.txt === 'depois da parada 2 (coleta) · mais cheio' && /2,11 m³ a bordo depois da parada 2/.test(mi.res),
+    'rota mista na Fiorino: mostra o momento mais cheio (coletas + entrega a bordo) e avisa a coleta antes da entrega ' + J(mi));
+  if (process.env.FOTOS) { await p.setViewportSize({ width: 390, height: 844 }); await p.waitForTimeout(200); await p.evaluate(() => { const m = document.getElementById('modal-plano'); m.scrollTop = 0; const bx = m.querySelector('.modal-box'); if (bx) bx.scrollTop = 0; }); await p.screenshot({ path: 'c3d-fiorino-390.png' }); await p.setViewportSize({ width: 1280, height: 900 }); }
   await p.click('#modal-plano .btn-modal-sec'); await p.waitForTimeout(100);
   await p.evaluate(() => window.abrirPlanoCargaRota('rota_velha_1')); await p.waitForTimeout(250);
   ok(/Sem o 3D: esta rota foi confirmada sem as medidas do baú/.test(await p.textContent('#plano-corpo')) && !(await p.$('#c3d-cv')), 'rota antiga sem medidas do baú diz por que não tem 3D');

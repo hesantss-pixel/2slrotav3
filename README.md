@@ -926,11 +926,17 @@ legenda mostra o pedido. "Imprimir" leva a imagem do 3D junto com o desenho de l
   têm formato e avisa "Pelo formato das caixas, N volumes não cabem" antes de confirmar (o m³ pode
   caber e a caixa não). Bloco só com o m³ não entra nessa conta.
 - A rota confirmada guarda em cada parada `cx`, `perigoso` e `regras`.
-- **Coletas (25/11/2026):** rota só de coletas (como a ordem de coleta da Via Verde) abre o 3D
-  das coletas na ordem em que são feitas: a primeira entra primeiro e vai para o fundo. Rota com
-  entregas e coletas tem "Na saída do CD" e "Com as coletas" (baú vazio, como na regra entregas
-  antes das coletas; se houver entrega depois de coleta, a tela avisa que o desenho não conta o
-  que ainda está a bordo). A conferência pelo formato também vale para as coletas.
+- **Ao longo da viagem (25/11/2026):** rota com coletas tem "Ao longo da viagem": o baú depois de
+  cada parada (`_estadosViagem`). Sai do CD com as entregas; cada entrega tira as caixas dela; cada
+  coleta entra no espaço livre na frente do que já está a bordo (não dá para pôr carga atrás da
+  que já entrou). Abre no momento mais cheio (o primeiro em que algo não cabe, senão o de mais m³
+  a bordo) e diz quantos m³ estão a bordo em cada momento. Rota que faz coleta antes de entrega
+  (montada à mão) é avisada: a carga coletada fica na frente da entrega que ainda vai sair.
+  Rota só de coletas abre direto nessa vista. A conferência pelo formato das coletas usa a mesma
+  simulação. (Substituiu "Com as coletas", que desenhava as coletas com o baú vazio e escondia o
+  momento em que a entrega e as coletas estão juntas.)
+- **Frente do veículo:** baú baixo ou curto (Fiorino, van) é desenhado como utilitário (cabine
+  baixa com capô); o resto como caminhão (cabine alta e chassi).
 - **Quando não tem 3D, a tela diz por quê:** carroceria aberta; veículo sem medidas do baú;
   volume do baú digitado à mão diferente das medidas do veículo (ou vazio); rota confirmada antes
   de 24/11 sem as medidas do baú.
