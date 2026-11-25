@@ -167,6 +167,13 @@ function confere(bau, res, empilhar) {
   await p.uncheck('#c3d-emp'); await p.waitForTimeout(150);
   ok(/Não couberam sem empilhar pelo formato: parada \d/.test(await p.textContent('#c3d-resumo')) || /paradas desenhadas/.test(await p.textContent('#c3d-resumo')), 'desligar "Empilhar" arruma de novo: ' + (await p.textContent('#c3d-resumo')).slice(0, 120));
   await p.check('#c3d-emp'); await p.waitForTimeout(100);
+  // coletas: o mesmo baú na volta, na ordem em que são feitas
+  ok(J(await p.$$eval('.c3d-m', (e) => e.map((b) => b.textContent + ':' + b.getAttribute('aria-pressed')))) === J(['Na saída do CD:true', 'Com as coletas:false']), 'rota com entregas e coletas: escolhe o momento da viagem');
+  await p.click('.c3d-m[data-m="coletas"]'); await p.waitForTimeout(150);
+  const mc = await p.evaluate(() => ({ chips: [...document.querySelectorAll('.c3d-chip')].map((x) => x.textContent), res: document.getElementById('c3d-resumo').textContent, passo: document.querySelector('.c3d-passo').hidden }));
+  ok(J(mc.chips) === J(['1ª · Parada 6']) && /^Coletas na ordem em que são feitas: a primeira entra primeiro e vai para o fundo/.test(mc.res) && /Só com o m³.*parada 6/.test(mc.res) && mc.passo, '"Com as coletas" desenha as coletas: ' + J(mc));
+  await p.click('.c3d-m[data-m="saida"]'); await p.waitForTimeout(100);
+  ok((await p.$$eval('.c3d-chip', (e) => e.length)) === 5 && (await p.textContent('#c3d-ate-txt')) === 'tudo carregado', 'volta para a saída do CD');
   await p.click('.plano-aba[data-aba="lado"]'); await p.waitForTimeout(80);
   ok(!(await p.isVisible('#c3d-cv')) && (await p.isVisible('#plano-plado svg')), 'aba "De lado" mostra o desenho por m³');
   await p.click('.plano-aba[data-aba="3d"]'); await p.waitForTimeout(80);
@@ -209,6 +216,37 @@ function confere(bau, res, empilhar) {
   ok(dialogs.some((t) => /Pelo formato das caixas/.test(t)), 'confirmar pede confirmação quando não cabe pelo formato');
   const rc2 = Object.values((await emp(p)).rotas_confirmadas || {}).find((x) => x.paradas.some((y) => y.nf === '7003' && y.cx));
   ok(rc2 && J(rc2.paradas.find((y) => y.nf === '7003').regras) === J({ fragil: true }), 'a parada guarda o cuidado "frágil" na rota confirmada ' + J(rc2 && rc2.paradas.find((y) => y.nf === '7003')) + J(Object.keys((await emp(p)).rotas_confirmadas || {})));
+
+  // ── rota só de coletas (como a ordem de coleta da Via Verde) ───────────────
+  await p.evaluate(() => { const d = window.__FAKE.db.empresas.emp1; d.rotas_confirmadas = d.rotas_confirmadas || {};
+    d.rotas_confirmadas.rota_col_1 = { id: 'rota_col_1', data: '2026-11-25', saida: 420, veiculo: 'Caminhão 3/4', status: 'em_rota', cap_kg: 5000, cap_m3: 21.99, bau_m3: 25.88, bau: { c: 4.5, l: 2.3, a: 2.5 },
+      paradas: [{ id: 'C1', nf: '8101', tipo: 'coleta', dest: 'Fornecedor X', cidade: 'Guarulhos', peso: 1900, itens: 4, m3: 3.174, m3Fonte: 'medidas', cx: [{ c: 115, l: 115, a: 60, q: 4 }], perigoso: { onu: '3082', risco: '90' } },
+        { id: 'C2', nf: '8102', tipo: 'coleta', dest: 'Fornecedor Y', cidade: 'Cotia', peso: 80, itens: 6, m3: 0.36, m3Fonte: 'medidas', cx: [{ c: 50, l: 40, a: 30, q: 6 }] }] };
+    d.rotas_confirmadas.rota_velha_1 = { id: 'rota_velha_1', data: '2026-11-20', saida: 420, veiculo: 'VUC', status: 'em_rota', paradas: [{ id: 'V1', nf: '8201', tipo: 'entrega', dest: 'Cliente Z', cidade: 'Guarulhos', peso: 50, itens: 1, m3: 0.5 }] }; });
+  await p.evaluate(() => window.__FAKE.fire()); await p.waitForTimeout(300);
+  await p.evaluate(() => window.abrirPlanoCargaRota('rota_col_1')); await p.waitForTimeout(350);
+  const so = await p.evaluate(() => ({ abas: document.querySelectorAll('.plano-aba').length, modos: document.querySelectorAll('.c3d-m').length, cv: !!document.getElementById('c3d-cv'),
+    chips: [...document.querySelectorAll('.c3d-chip')].map((x) => x.textContent), passo: document.getElementById('c3d-ate-txt').textContent,
+    corpo: document.getElementById('plano-corpo').textContent.replace(/\s+/g, ' ') }));
+  ok(so.cv && so.abas === 0 && so.modos === 0 && J(so.chips) === J(['1ª · Parada 1 ⚠', '2ª · Parada 2']) && so.passo === 'todas coletadas',
+    'rota só de coletas abre direto o 3D das coletas, na ordem: ' + J([so.chips, so.passo]));
+  ok(/só tem coletas: o veículo sai vazio e o 3D mostra como as coletas entram no baú/.test(so.corpo) && /Ordem das coletas\s*A primeira coleta entra primeiro e vai para o fundo/.test(so.corpo) && /1ª\s*1\s*NF 8101⚠ ONU 3082/.test(so.corpo) && !/junto à cabine/.test(so.corpo) && /Coletas: 3,53 m³ de 25,88 m³ do baú/.test(so.corpo),
+    'tabela "Ordem das coletas" e o volume das coletas no baú ' + so.corpo.slice(-900));
+  await p.click('#modal-plano .btn-modal-sec'); await p.waitForTimeout(100);
+  await p.evaluate(() => window.abrirPlanoCargaRota('rota_velha_1')); await p.waitForTimeout(250);
+  ok(/Sem o 3D: esta rota foi confirmada sem as medidas do baú/.test(await p.textContent('#plano-corpo')) && !(await p.$('#c3d-cv')), 'rota antiga sem medidas do baú diz por que não tem 3D');
+  await p.click('#modal-plano .btn-modal-sec'); await p.waitForTimeout(100);
+  // volume digitado à mão diferente do baú
+  await p.evaluate(() => { const d = window.__FAKE.db.empresas.emp1.pedidos_rota; Object.values(d).forEach((x) => { x.status = 'pendente'; x.rota_atual = ''; }); });
+  await p.evaluate(() => window.__FAKE.fire()); await p.waitForTimeout(300);
+  await p.click('.sb-item[data-page="roteirizacao"]'); await p.waitForTimeout(300);
+  await p.click('#motoristas-atalho .veh-card:has-text("TST3D11")'); await p.waitForTimeout(300);
+  await p.fill('#cap-m3-d', '30');
+  await p.click('text=Continuar →'); await p.waitForTimeout(200);
+  await p.click('text=Gerar Rota Agora'); await p.waitForTimeout(900);
+  await p.click('text=Plano de carga'); await p.waitForTimeout(300);
+  ok(/Sem o 3D: o volume do baú foi digitado à mão \(30 m³\) e não bate com as medidas do veículo \(25,88 m³\)/.test(await p.textContent('#plano-corpo')), 'volume digitado à mão: diz por que não tem 3D e como resolver');
+  await p.click('#modal-plano .btn-modal-sec'); await p.waitForTimeout(100);
 
   // ── pedido: calculadora guarda as medidas; lista marca o perigoso ─────────
   await p.evaluate(() => { const d = window.__FAKE.db.empresas.emp1.pedidos_rota; d.A4.status = 'pendente'; d.A4.rota_atual = ''; });

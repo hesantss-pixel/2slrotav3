@@ -916,6 +916,16 @@ legenda mostra o pedido. "Imprimir" leva a imagem do 3D junto com o desenho de l
   têm formato e avisa "Pelo formato das caixas, N volumes não cabem" antes de confirmar (o m³ pode
   caber e a caixa não). Bloco só com o m³ não entra nessa conta.
 - A rota confirmada guarda em cada parada `cx`, `perigoso` e `regras`.
+- **Coletas (25/11/2026):** rota só de coletas (como a ordem de coleta da Via Verde) abre o 3D
+  das coletas na ordem em que são feitas: a primeira entra primeiro e vai para o fundo. Rota com
+  entregas e coletas tem "Na saída do CD" e "Com as coletas" (baú vazio, como na regra entregas
+  antes das coletas; se houver entrega depois de coleta, a tela avisa que o desenho não conta o
+  que ainda está a bordo). A conferência pelo formato também vale para as coletas.
+- **Quando não tem 3D, a tela diz por quê:** carroceria aberta; veículo sem medidas do baú;
+  volume do baú digitado à mão diferente das medidas do veículo (ou vazio); rota confirmada antes
+  de 24/11 sem as medidas do baú.
+- Aviso do centro de gravidade só quando a carga passa de 40% do peso que o veículo leva (carga
+  leve não pesa nos eixos).
 
 **Produto perigoso** (`_perigosoDoTexto`): número ONU nas observações, nas informações da nota ou
 na descrição do produto ("ONU 3082 RISCO 90", "Nº ONU: 1263"; "UN 1993" só com classe ou risco no
