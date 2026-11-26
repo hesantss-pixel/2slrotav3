@@ -8,9 +8,10 @@ regra das dimensões do OR-Tools:
 
 (trânsito "unário" é avaliado no nó de onde sai; folga de 0 até slack_max, usada
 para esperar a janela abrir), cumul <= capacidade em todos os nós e dentro do
-SetRange de cada nó. Resolve por força bruta (1 veículo, poucos
-pedidos): testa todas as sequências e devolve a de menor custo (km + multa dos
-pedidos que ficaram de fora). Serve para conferir se o MODELO montado pelo
+SetRange de cada nó. Resolve por força bruta (poucos veículos, poucos
+pedidos): testa todas as divisões e sequências e devolve a de menor custo (km + custo
+fixo de cada veículo usado + multa dos pedidos que ficaram de fora), respeitando os
+veículos permitidos de cada nó. Serve para conferir se o MODELO montado pelo
 vrp_solver diz o que deveria dizer — não testa o desempenho do OR-Tools de verdade.
 """
 
@@ -75,6 +76,7 @@ class RoutingModel:
         self.arc_cb = None
         self._status = 0
         self.chamadas = []
+        self.fixos, self.permitidos = {}, {}
 
     def RegisterTransitCallback(self, fn):
         self.cbs.append((fn, False))
@@ -86,6 +88,15 @@ class RoutingModel:
 
     def SetArcCostEvaluatorOfAllVehicles(self, cb):
         self.arc_cb = cb
+
+    def SetFixedCostOfVehicle(self, cost, v):
+        self.chamadas.append(("SetFixedCostOfVehicle", v, cost))
+        self.fixos[v] = cost
+
+    def SetAllowedVehiclesForIndex(self, vehicles, index):
+        self.chamadas.append(("SetAllowedVehiclesForIndex", index, tuple(vehicles)))
+        if vehicles:   # como no OR-Tools: lista vazia = todos os veículos
+            self.permitidos[index] = set(vehicles)
 
     def AddDimension(self, cb, slack_max, capacity, fix_start, name):
         self.chamadas.append(("AddDimension", name))
@@ -120,7 +131,7 @@ class RoutingModel:
         fn, unario = self.cbs[cb]
         return fn(a) if unario else fn(a, b)
 
-    def _viavel(self, path):
+    def _viavel(self, path, v=0):
         for d in self.dims.values():
             assert d.fix_start, "teste só cobre fix_start_cumul_to_zero=True"
             cumul = 0
@@ -130,36 +141,61 @@ class RoutingModel:
                     cumul += self._transito(d.cb, path[k - 1], idx)
                     if var and cumul < var.lo and var.lo - cumul <= d.slack:
                         cumul = var.lo  # espera (folga) até a janela abrir
-                if cumul < 0 or cumul > d.caps[0]:
+                if cumul < 0 or cumul > d.caps[v]:
                     return False
                 if var and not (var.lo <= cumul <= var.hi):
                     return False
         return True
 
+    def _melhor_seq(self, v, nos):
+        """Melhor ordem para o veículo v visitar todos os nós (ou None se não dá)."""
+        if any(v not in self.permitidos.get(c, {v}) for c in nos):
+            return None
+        melhor = None
+        for seq in itertools.permutations(nos):
+            path = [self.Start(v), *seq, self.m.end(v)]
+            if not self._viavel(path, v):
+                continue
+            custo = sum(self._transito(self.arc_cb, path[i], path[i + 1]) for i in range(len(path) - 1))
+            if melhor is None or custo < melhor[0]:
+                melhor = (custo, path)
+        return melhor
+
     def SolveWithParameters(self, params):
-        if self.m.v != 1:
-            raise NotImplementedError("OR-Tools de teste: só 1 veículo")
         clientes = list(range(1, self.m.n))
         multa = {idx[0]: p for idx, p in self.disj}
+        V = self.m.v
         melhor = None
-        for k in range(len(clientes) + 1):
-            for seq in itertools.permutations(clientes, k):
-                # como no OR-Tools: nó sem AddDisjunction é obrigatório
-                if any(c not in multa and c not in seq for c in clientes):
+        # cada cliente vai para um veículo (0..V-1) ou fica de fora (V)
+        for divisao in itertools.product(range(V + 1), repeat=len(clientes)):
+            # como no OR-Tools: nó sem AddDisjunction é obrigatório
+            if any(dv == V and c not in multa for c, dv in zip(clientes, divisao)):
+                continue
+            custo, paths, ok = 0, {}, True
+            for v in range(V):
+                nos = [c for c, dv in zip(clientes, divisao) if dv == v]
+                if not nos:
                     continue
-                path = [self.Start(0), *seq, self.m.end(0)]
-                if not self._viavel(path):
-                    continue
-                custo = sum(self._transito(self.arc_cb, path[i], path[i + 1]) for i in range(len(path) - 1))
-                custo += sum(p for c, p in multa.items() if c not in seq)
-                if melhor is None or custo < melhor[0]:
-                    melhor = (custo, path)
+                m = self._melhor_seq(v, nos)
+                if m is None:
+                    ok = False
+                    break
+                custo += m[0] + self.fixos.get(v, 0)
+                paths[v] = m[1]
+            if not ok:
+                continue
+            custo += sum(p for c, p in multa.items() if divisao[clientes.index(c)] == V)
+            if melhor is None or custo < melhor[0]:
+                melhor = (custo, paths)
         if melhor is None:
             self._status = 3
             return None
         self._status = 1
-        path = melhor[1]
-        return _Solution({path[i]: path[i + 1] for i in range(len(path) - 1)})
+        nxt = {}
+        for v in range(V):
+            path = melhor[1].get(v, [self.Start(v), self.m.end(v)])
+            nxt.update({path[i]: path[i + 1] for i in range(len(path) - 1)})
+        return _Solution(nxt)
 
 
 def DefaultRoutingSearchParameters():

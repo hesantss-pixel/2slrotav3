@@ -245,6 +245,26 @@ button{font-family:inherit;}
 #mot-veh-grid .veh-card.on{border-color:var(--vc);box-shadow:0 0 0 2px var(--vc) inset;}
 @media (max-width:400px){ .frota-2col{grid-template-columns:1fr;} }
 .cap-form-box{background:var(--s2);border:1px solid var(--border2);border-radius:18px;padding:26px;max-width:420px;}
+/* Vários veículos de uma vez (frota do dia) */
+.fm-btn{display:flex;align-items:center;gap:14px;width:100%;max-width:720px;margin:0 0 22px;padding:16px 18px;text-align:left;cursor:pointer;
+  background:var(--s2);border:1px solid var(--border2);border-left:4px solid var(--vv2);border-radius:14px;font:inherit;color:var(--text);}
+.fm-btn:hover{border-color:var(--vv2);}
+.fm-btn svg{flex:none;width:30px;height:30px;stroke:var(--ac);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;}
+.fm-btn b{display:block;font:800 15px var(--sans);}
+.fm-btn span{display:block;font-size:12px;color:var(--text2);line-height:1.45;margin-top:3px;}
+.fm-item{display:flex;align-items:center;gap:10px;min-height:48px;padding:6px 0;border-bottom:1px solid var(--border);}
+.fm-item:last-of-type{border-bottom:none;}
+.fm-item input[type=checkbox]{width:20px;height:20px;flex:none;accent-color:var(--vv2);}
+.fm-item .t{flex:1;min-width:0;font-size:13px;line-height:1.35;}
+.fm-item .t small{display:block;font-size:11.5px;color:var(--text3);}
+label.fm-item{cursor:pointer;}
+.fm-qtd{display:flex;align-items:center;gap:4px;flex:none;}
+.fm-qtd button{width:40px;height:40px;border-radius:10px;border:1px solid var(--border2);background:var(--s3);color:var(--text);font:700 18px var(--sans);cursor:pointer;}
+.fm-qtd button:disabled{opacity:.4;cursor:default;}
+.fm-qtd output{min-width:26px;text-align:center;font:800 15px var(--mono);}
+.fm-resumo{margin-top:10px;font-size:12.5px;color:var(--text2);}
+.fm-resumo.err{color:#b3263f;font-weight:700;}
+.fm-lista{margin:2px 0 0;padding-left:18px;line-height:1.7;}
 .presets-row{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap;}
 .preset-chip{background:var(--s3);border:1px solid var(--border2);border-radius:20px;padding:7px 14px;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;font-family:var(--mono);}
 .preset-chip:hover,.preset-chip.on{background:rgba(243,182,43,.15);border-color:var(--mid);color:var(--ac);}
@@ -1184,14 +1204,17 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
         <div class="rot-nota">Agendados de outro dia ficam de fora. Os do dia entram com o horário marcado.</div>
         <label class="rot-volta"><input type="checkbox" id="rot-volta-d"> Voltar ao CD no fim da rota</label>
         <div class="rot-nota" id="rot-volta-nota">Desmarcado, a rota termina na última parada: km, tempo e desenho param ali.</div>
-        <span class="field-lbl">Capacidade máxima (kg)</span>
-        <div><input type="number" class="field-inp" id="cap-kg-d" placeholder="0"></div>
-        <div class="presets-row" id="presets-row-d"></div>
-        <label class="field-lbl" for="cap-carroc-d">Carroceria</label>
-        <select class="field-inp field-inp-text" id="cap-carroc-d" onchange="_carrocMudouD()">
-          <option value="bau">Baú fechado</option><option value="sider">Sider (lona na lateral)</option><option value="aberta">Aberta (sem teto)</option>
-        </select>
-        <label class="field-lbl" for="cap-m3-d">Volume do baú (m³)</label>
+        <div id="cap-frota-d" hidden></div>
+        <div id="cap-um-d">
+          <span class="field-lbl">Capacidade máxima (kg)</span>
+          <div><input type="number" class="field-inp" id="cap-kg-d" placeholder="0"></div>
+          <div class="presets-row" id="presets-row-d"></div>
+          <label class="field-lbl" for="cap-carroc-d">Carroceria</label>
+          <select class="field-inp field-inp-text" id="cap-carroc-d" onchange="_carrocMudouD()">
+            <option value="bau">Baú fechado</option><option value="sider">Sider (lona na lateral)</option><option value="aberta">Aberta (sem teto)</option>
+          </select>
+        </div>
+        <label class="field-lbl" for="cap-m3-d" id="cap-m3-lbl">Volume do baú (m³)</label>
         <div class="cub-linha">
           <input type="text" class="field-inp" id="cap-m3-d" inputmode="decimal" autocomplete="off" placeholder="Sem limite de volume" oninput="_renderCubNota()" aria-describedby="cap-m3-nota">
           <label class="cub-aprov">Usar até <select class="field-inp" id="cap-aprov-d" onchange="_renderCubNota()"></select></label>
@@ -1200,9 +1223,9 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
         <label class="rot-volta"><input type="checkbox" id="cap-estimar-d" onchange="_renderCubNota()"> Pedido sem medida: estimar o m³ pelo peso</label>
         <div class="cub-dens" id="cap-dens-wrap" hidden>Considerar <input type="text" class="field-inp" id="cap-dens-d" inputmode="numeric" autocomplete="off" value="300" oninput="_renderCubNota()" aria-label="Quilos por metro cúbico"> kg em cada m³</div>
         <div class="rot-nota cub-cob" id="cap-cob-nota" aria-live="polite"></div>
-        <span class="field-lbl">Máximo de paradas nesta viagem (1 a 20)</span>
+        <label class="field-lbl" for="cap-maxped-d" id="cap-maxped-lbl">Máximo de paradas nesta viagem (1 a 20)</label>
         <div><input type="number" class="field-inp" id="cap-maxped-d" value="8" min="1" max="20"></div>
-        <div style="font-size:11px;color:var(--text3);margin-top:6px">O sistema monta a melhor rota possível com até esse número — pode gerar menos se for mais eficiente.</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:6px" id="cap-maxped-nota">O sistema monta a melhor rota possível com até esse número — pode gerar menos se for mais eficiente.</div>
         <button class="btn-modal-primary" onclick="irConfirmD()">Continuar →</button>
         <button class="btn-modal-sec" onclick="voltarVeiculosD()">← Escolher outro veículo</button>
       </div>
@@ -1212,8 +1235,10 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
         <div class="veh-card-name" id="confirm-veh-name" style="font-size:19px;margin-bottom:14px;"></div>
         <div style="font-size:12.5px;color:var(--text2);line-height:2;" id="confirm-details-d"></div>
         <button class="btn-modal-primary" onclick="executarVRPD()">✔ Gerar Rota Agora</button>
-        <button class="btn-modal-alt" type="button" onclick="abrirMapaManualD()">🗺️ Montar eu mesmo no mapa</button>
-        <div style="font-size:11.5px;color:var(--text3);margin-top:7px;text-align:center;line-height:1.5">Você toca nos pontos e escolhe a ordem. O peso vai somando contra a capacidade do veículo.</div>
+        <div id="confirm-manual-d">
+          <button class="btn-modal-alt" type="button" onclick="abrirMapaManualD()">🗺️ Montar eu mesmo no mapa</button>
+          <div style="font-size:11.5px;color:var(--text3);margin-top:7px;text-align:center;line-height:1.5">Você toca nos pontos e escolhe a ordem. O peso vai somando contra a capacidade do veículo.</div>
+        </div>
         <button class="btn-modal-sec" onclick="voltarCapD()">← Voltar</button>
       </div>
     </div>
@@ -4765,6 +4790,15 @@ const VEICULOS=[
 let vehSel=null, capKgD=0, maxPedD=6, rotaGeradaD=[], fonteDistanciaD='—';
 // Volume que esta viagem pode usar (m³, já com o aproveitamento) e o baú inteiro. 0 = sem limite de volume.
 let capM3D=0, bauM3D=0;
+// Vários veículos de uma vez: a pessoa escolhe a frota do dia e o motor de rotas divide os
+// pedidos entre eles. Cada veículo tem um custo de uso (em segundos de rota) que cresce com o
+// tamanho: o motor só põe mais um veículo na rua, ou um maior, quando isso compensa.
+// frotaD = [{id, tipo, tipoNome, nome, capKg, maxPed, bauSel, bauM3, capM3, carroc, compCm, custoFixo, motorista, frota:true}]
+let frotaModoD=false, frotaD=[], frotaSelD={iniciado:false, tipos:{}, mots:{}};
+const CUSTO_VEIC={fiorino:1800, vuc:2700, tres4:3300, toco:3900, bitruck:4800, carreta:6000};
+const MAX_FROTA=40, MAX_POR_TIPO=10;
+// Ajuste feito pelo formato das caixas depois da primeira divisão: {mudancas:[texto], ainda:n}
+let ajusteFmtD=null, longosCmD=0, longosPadraoD=false;
 
 // ══════════════════════════════════════════════════════════════════════════
 // CUBAGEM — volume do baú (m³) e dos pedidos
@@ -4952,7 +4986,7 @@ function renderRotCidadeD(inicial){
     ? `⚠️ <b>${_plural(n,'pedido entra','pedidos entram')} neste cálculo.</b> Acima de ${LIMITE_RUAS} o km sai em <b>linha reta</b>, não pelas ruas. Escolha uma cidade, ou confirme as primeiras rotas antes de montar as próximas.`
     : rotCidadeD==='todas' ? `${_plural(n,'pedido entra','pedidos entram')} neste cálculo, de ${_plural(cidades.length,'cidade','cidades')}.`
     : `Só os ${n===1?'pedidos':''}${n===1?'':_plural(n,'pedido','pedidos')} de ${esc(rotCidadeD)}. Os outros continuam pendentes para a próxima viagem.`;
-  if($id('cap-m3-nota')&&vehSel) _renderCubNota();
+  if($id('cap-m3-nota')&&(vehSel||frotaModoD)) _renderCubNota();
 }
 let motoristasFirebase={}, motoristasDemo=[], motoristaSelecionadoD=null;
 let chatSessionId='';
@@ -4977,6 +5011,7 @@ function renderVeiculosD(){
   const stMan=$id('rot-step-manual'); if(stMan) stMan.style.display='none';
   manSel=[];
   motoristaSelecionadoD=null;
+  frotaModoD=false; ajusteFmtD=null;
   // começar de novo descarta a rota que não foi confirmada (os pedidos continuam pendentes)
   Object.keys(_avTimer).forEach(k=>{ clearTimeout(_avTimer[k]); _avSeq[k]=(_avSeq[k]||0)+1; });
   Object.keys(_avPend).forEach(k=>delete _avPend[k]);
@@ -4985,7 +5020,11 @@ function renderVeiculosD(){
   // Atalho: motoristas fixos cadastrados (clica → pula direto pra confirmação)
   const mots = _listaFrota();
   const veicMap=Object.fromEntries(VEICULOS.map(v=>[v.id,v]));
-  const atalhoHtml = mots.length ? `
+  const frotaBtn=`<button type="button" class="fm-btn" id="btn-frota-d" onclick="selFrotaD()">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 7h10v8H2zM12 10h4l3 3v2h-7z"/><circle cx="6" cy="16.5" r="1.6"/><circle cx="16" cy="16.5" r="1.6"/><path d="M14 4h8M18 1v6"/></svg>
+      <div><b>Vários veículos de uma vez</b><span>Você escolhe os veículos disponíveis hoje e o sistema divide os pedidos entre eles, usando o mínimo de veículos e os menores que derem conta.</span></div>
+    </button>`;
+  const atalhoHtml = frotaBtn + (mots.length ? `
     <div class="sec-title" style="font-family:var(--sans);font-weight:700;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text2);margin-bottom:12px">Veículos cadastrados — clique pra usar direto</div>
     <div class="veh-grid" style="margin-bottom:26px">${_frotaOrdenada(mots).map(m=>{
       const v=veicMap[m.veiculo_id];
@@ -4996,7 +5035,7 @@ function renderVeiculosD(){
         <div class="veh-card-desc">${m.nome?'Motorista: '+esc(m.nome):'Sem motorista definido'}</div>
       </div>`;
     }).join('')}</div>
-    <div class="sec-title" style="font-family:var(--sans);font-weight:700;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text2);margin-bottom:12px">Ou escolha o veículo manualmente</div>` : '';
+    <div class="sec-title" style="font-family:var(--sans);font-weight:700;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text2);margin-bottom:12px">Ou escolha o veículo manualmente</div>` : '');
 
   document.getElementById('veh-grid').innerHTML=VEICULOS.map(v=>
     `<div class="veh-card" style="--vc:${v.cor}" onclick="selVeicD('${v.id}')">
@@ -5020,6 +5059,7 @@ function usarMotoristaD(motId){
   const m=_listaFrota().find(x=>x.id===motId);
   if(!m) return;
   motoristaSelecionadoD=m;
+  _modoCapD(false);
   vehSel=VEICULOS.find(v=>v.id===m.veiculo_id)||VEICULOS[0];
   document.getElementById('cap-veh-name').textContent=_rotuloVeic(m)+(m.nome?' — '+m.nome:'');
   document.getElementById('cap-kg-d').value=m.cap_kg;
@@ -5033,6 +5073,7 @@ function usarMotoristaD(motId){
 window.usarMotoristaD=usarMotoristaD;
 function selVeicD(id){
   vehSel=VEICULOS.find(v=>v.id===id);
+  _modoCapD(false);
   document.getElementById('cap-veh-name').textContent=vehSel.nome;
   document.getElementById('cap-kg-d').value='';
   document.getElementById('cap-maxped-d').value='6';
@@ -5045,6 +5086,118 @@ function selVeicD(id){
 }
 window.selVeicD=selVeicD;
 let _bauSelD=null, carrocD='bau', longosD=[];
+
+// ── Vários veículos de uma vez ────────────────────────────────────────────
+// Uma viagem com um veículo esconde a escolha da frota; com vários, esconde a capacidade
+// e o baú de um veículo só (cada veículo usa os dele).
+function _modoCapD(frota){
+  frotaModoD=!!frota;
+  $id('cap-frota-d').hidden=!frota;
+  $id('cap-um-d').hidden=!!frota;
+  $id('cap-m3-lbl').hidden=!!frota;
+  $id('cap-m3-d').hidden=!!frota;
+  $id('cap-maxped-lbl').textContent=frota?'Máximo de paradas por veículo (1 a 20)':'Máximo de paradas nesta viagem (1 a 20)';
+  $id('cap-maxped-nota').textContent=frota?'Vale para cada veículo. O sistema pode usar menos paradas, e menos veículos, se for mais eficiente.'
+    :'O sistema monta a melhor rota possível com até esse número — pode gerar menos se for mais eficiente.';
+}
+function _capTipo(v){ return v.presets[v.presets.length-1]; }
+function selFrotaD(){
+  vehSel=null; motoristaSelecionadoD=null;
+  const mots=_listaFrota();
+  // começa com todos os veículos cadastrados; sem cadastro, um Fiorino e um VUC para mostrar a ideia
+  if(!frotaSelD.iniciado){
+    frotaSelD={iniciado:true, tipos:{}, mots:{}};
+    if(mots.length) mots.forEach(m=>{ if(+m.cap_kg>0) frotaSelD.mots[m.id]=true; });
+    else { frotaSelD.tipos.fiorino=1; frotaSelD.tipos.vuc=1; }
+  }
+  _modoCapD(true);
+  $id('cap-veh-name').textContent='Vários veículos';
+  $id('cap-maxped-d').value='8';
+  _prepararCubD(null,'bau');
+  $id('cap-m3-d').value='';
+  _renderFrotaD();
+  $id('rot-step-veiculo').style.display='none';
+  $id('rot-step-cap').style.display='block';
+  renderRotTipoD(true);
+}
+window.selFrotaD=selFrotaD;
+function _txtBauV(carroc,bau){ return carroc==='aberta'?'carroceria aberta':bau?`baú ${_fmtM3(_m3Bau(bau))} m³`:'sem medida do baú'; }
+function _renderFrotaD(){
+  const mots=_frotaOrdenada(_listaFrota());
+  const veicMap=Object.fromEntries(VEICULOS.map(v=>[v.id,v]));
+  const mot=m=>{
+    const v=veicMap[m.veiculo_id], sem=!(+m.cap_kg>0);
+    return `<label class="fm-item"><input type="checkbox" data-id="${esc(m.id)}" ${frotaSelD.mots[m.id]&&!sem?'checked':''} ${sem?'disabled':''} onchange="frotaMotD(this.dataset.id,this.checked)">
+      <span class="t"><b>${esc(_rotuloVeic(m)||v?.nome||'Veículo')}</b><small>${esc(v?.nome||m.veiculo_nome||'')}${sem?' · sem capacidade cadastrada':` · ${(+m.cap_kg).toLocaleString('pt-BR')} kg · ${_txtBauV(_carrocDe(m),_bauDe(m))}`}${m.nome?' · '+esc(m.nome):''}</small></span></label>`;
+  };
+  const tipo=v=>{
+    const n=frotaSelD.tipos[v.id]||0, b=_bauDe(null,v.id);
+    return `<div class="fm-item"><span class="t"><b>${esc(v.nome)}</b><small>até ${_capTipo(v).toLocaleString('pt-BR')} kg · ${_txtBauV('bau',b)} (medida típica)</small></span>
+      <div class="fm-qtd" role="group" aria-label="Quantos ${esc(v.nome)}">
+        <button type="button" data-t="${v.id}" onclick="frotaTipoD(this.dataset.t,-1)" aria-label="Um ${esc(v.nome)} a menos" ${n?'':'disabled'}>−</button>
+        <output id="fm-n-${v.id}" aria-live="polite">${n}</output>
+        <button type="button" data-t="${v.id}" onclick="frotaTipoD(this.dataset.t,1)" aria-label="Um ${esc(v.nome)} a mais" ${n>=MAX_POR_TIPO?'disabled':''}>+</button>
+      </div></div>`;
+  };
+  $id('cap-frota-d').innerHTML=(mots.length?`<span class="field-lbl">Veículos cadastrados</span>${mots.map(mot).join('')}`:'')
+    +`<span class="field-lbl">${mots.length?'Veículos sem cadastro':'Quais veículos podem sair hoje'}</span>${VEICULOS.map(tipo).join('')}
+    <div class="rot-nota">Sem cadastro, o sistema usa a capacidade máxima do tipo e a medida típica do baú. Para usar a medida real do seu veículo, cadastre em Motoristas.</div>
+    <div class="fm-resumo" id="fm-resumo" aria-live="polite"></div>`;
+  _resumoFrotaD();
+}
+function frotaMotD(id,on){ if(on) frotaSelD.mots[id]=true; else delete frotaSelD.mots[id]; _resumoFrotaD(); }
+window.frotaMotD=frotaMotD;
+function frotaTipoD(id,d){
+  const n=Math.min(MAX_POR_TIPO,Math.max(0,(frotaSelD.tipos[id]||0)+d));
+  frotaSelD.tipos[id]=n;
+  const out=$id('fm-n-'+id); if(out){ out.textContent=String(n);
+    const bts=out.parentNode.querySelectorAll('button'); bts[0].disabled=!n; bts[1].disabled=n>=MAX_POR_TIPO; }
+  _resumoFrotaD();
+}
+window.frotaTipoD=frotaTipoD;
+// Monta a frota escolhida. aprov = % do baú que cada veículo usa.
+function _montarFrotaD(aprov,maxPed){
+  const out=[], veicMap=Object.fromEntries(VEICULOS.map(v=>[v.id,v]));
+  const ent=(o)=>{
+    const bau=o.carroc==='aberta'?null:o.bau, bauM3=bau?_m3Bau(bau):0;
+    return { id:o.id, tipo:o.tipo, tipoNome:o.tipoNome, nome:o.nome, capKg:o.capKg, maxPed,
+      bauSel:bau, bauM3, capM3:bauM3?Math.floor(bauM3*aprov)/100:0, carroc:o.carroc, compCm:bau?Math.round(bau.c*100):0,
+      custoFixo:(CUSTO_VEIC[o.tipo]||2700)+Math.round(o.capKg/100), motorista:o.motorista||null, frota:true };
+  };
+  _frotaOrdenada(_listaFrota()).filter(m=>frotaSelD.mots[m.id]&&+m.cap_kg>0).forEach(m=>{
+    const v=veicMap[m.veiculo_id];
+    out.push(ent({id:'m_'+m.id, tipo:m.veiculo_id||'', tipoNome:v?.nome||m.veiculo_nome||'Veículo', nome:_rotuloVeic(m)||v?.nome||'Veículo',
+      capKg:+m.cap_kg, bau:_bauDe(m), carroc:_carrocDe(m), motorista:m}));
+  });
+  VEICULOS.forEach(v=>{
+    const n=frotaSelD.tipos[v.id]||0;
+    for(let k=1;k<=n;k++) out.push(ent({id:`${v.id}_${k}`, tipo:v.id, tipoNome:v.nome, nome:n>1?`${v.nome} ${k}`:v.nome,
+      capKg:_capTipo(v), bau:_bauDe(null,v.id), carroc:'bau'}));
+  });
+  return out;
+}
+function _resumoFrotaD(){
+  const el=$id('fm-resumo'); if(!el) return;
+  const f=_montarFrotaD(85,8);
+  el.classList.toggle('err',!f.length||f.length>MAX_FROTA);
+  el.textContent = !f.length ? 'Escolha ao menos um veículo.'
+    : f.length>MAX_FROTA ? `São ${f.length} veículos: o limite é ${MAX_FROTA} por vez.`
+    : f.length===1 ? `1 veículo escolhido, que leva até ${f[0].capKg.toLocaleString('pt-BR')} kg.`
+    : `${f.length} veículos escolhidos, que juntos levam até ${f.reduce((s,v)=>s+v.capKg,0).toLocaleString('pt-BR')} kg. O sistema usa só os que precisar.`;
+}
+// Veículo de uma rota da tela: o da frota, ou o escolhido no começo (uma viagem com um veículo)
+function _vUnicoD(){
+  return { id:vehSel?.id||'v1', tipo:vehSel?.id||'', tipoNome:vehSel?.nome||'Veículo',
+    nome:(motoristaSelecionadoD&&_rotuloVeic(motoristaSelecionadoD))||vehSel?.nome||'Veículo',
+    capKg:capKgD, maxPed:maxPedD, bauSel:_bauSelD, bauM3:bauM3D, capM3:capM3D, carroc:carrocD,
+    compCm:_compBauCmD(), custoFixo:0, motorista:motoristaSelecionadoD||null, frota:false };
+}
+function _vD(r){ return (r&&r._v)||_vUnicoD(); }
+// Baú que vale para o formato das caixas e o 3D: só com as medidas, e se o volume da viagem é o dele
+function _bauV(v){ return v&&v.carroc!=='aberta'&&v.bauSel&&Math.abs(_m3Bau(v.bauSel)-v.bauM3)<0.01?v.bauSel:null; }
+function _compV(v){ return v&&v.carroc!=='aberta'&&v.bauSel?Math.round(v.bauSel.c*100):0; }
+function _mesmoBau(a,b){ const x=_bauV(a), y=_bauV(b); return !!(x&&y&&Math.abs(x.c-y.c)<0.005&&Math.abs(x.l-y.l)<0.005&&Math.abs(x.a-y.a)<0.005); }
+window.__frota={montar:(a,m)=>_montarFrotaD(a,m), sel:()=>frotaSelD, vD:r=>_vD(r)};   // testes de tela
 function _prepararCubD(bau,carroc){
   _bauSelD=bau;
   $id('cap-carroc-d').value=carroc||'bau';
@@ -5062,7 +5215,8 @@ function _renderCubNota(){
   const ok=bau>0&&bau<=200;
   const tipo=vehSel?vehSel.nome:'veículo';
   const aberta=$id('cap-carroc-d').value==='aberta';
-  nota.innerHTML = aberta&&!txt ? 'Carroceria aberta: o volume e o comprimento do baú não limitam esta viagem.'
+  nota.innerHTML = frotaModoD ? `Cada veículo usa até <b>${aprov}%</b> do próprio baú; o resto é a folga para arrumar a carga. Peça mais comprida que um baú só vai no veículo em que cabe. Carroceria aberta não limita pelo volume.`
+    : aberta&&!txt ? 'Carroceria aberta: o volume e o comprimento do baú não limitam esta viagem.'
     : !txt ? 'Sem volume, a rota limita só pelo peso.'
     : !ok ? '<span class="cub-err">Escreva o volume em m³, como 21,6.</span>'
     : `A rota usa até <b>${_fmtM3(Math.floor(bau*aprov)/100)} m³</b> (${aprov}% de ${_fmtM3(bau)} m³). O resto é a folga para arrumar a carga.`
@@ -5096,16 +5250,23 @@ window.setPresetD=setPresetD;
 function voltarVeiculosD(){ renderVeiculosD(); }
 window.voltarVeiculosD=voltarVeiculosD;
 function irConfirmD(){
-  const kg=parseInt(document.getElementById('cap-kg-d').value);
-  if(!kg||kg<=0){ alert('Informe a capacidade em kg'); return; }
-  const bauTxt=$id('cap-m3-d').value.trim(), bau=bauTxt?_numBR(bauTxt):0;
+  const kg=frotaModoD?0:parseInt(document.getElementById('cap-kg-d').value);
+  if(!frotaModoD&&(!kg||kg<=0)){ alert('Informe a capacidade em kg'); return; }
+  const bauTxt=frotaModoD?'':$id('cap-m3-d').value.trim(), bau=bauTxt?_numBR(bauTxt):0;
   if(bauTxt&&!(bau>0&&bau<=200)){ alert('Volume do baú: escreva em m³, como 21,6. Deixe vazio para não limitar pelo volume.'); return; }
   const aprov=+$id('cap-aprov-d').value||85, estimar=$id('cap-estimar-d').checked, dens=_numBR($id('cap-dens-d').value);
   if(estimar&&!(dens>=50&&dens<=2000)){ alert('Para estimar pelo peso, informe quantos kg cabem em 1 m³ (entre 50 e 2.000).'); return; }
+  const maxPed=Math.min(20,Math.max(1,parseInt(document.getElementById('cap-maxped-d').value)||8));
+  if(frotaModoD){
+    frotaD=_montarFrotaD(aprov,maxPed);
+    if(!frotaD.length){ alert('Escolha ao menos um veículo.'); return; }
+    if(frotaD.length>MAX_FROTA){ alert(`São ${frotaD.length} veículos: o limite é ${MAX_FROTA} por vez.`); return; }
+  }
   _salvarCfgCubagem({aprov, estimar, dens:estimar?dens:_cfgCubagem().dens});
   bauM3D=bau>0?bau:0; capM3D=bau>0?Math.floor(bau*aprov)/100:0;
-  carrocD=$id('cap-carroc-d').value||'bau';
-  capKgD=kg; maxPedD=Math.min(20,Math.max(1,parseInt(document.getElementById('cap-maxped-d').value)||8));
+  carrocD=frotaModoD?'bau':($id('cap-carroc-d').value||'bau');
+  if(frotaModoD) _bauSelD=null;
+  capKgD=kg; maxPedD=maxPed;
   const saidaTxt=document.getElementById('rot-saida-d').value||'07:00';
   rotaCtxD={ data:document.getElementById('rot-data-d').value||_hojeISO(), saida:_min(saidaTxt)??420,
     volta:!!document.getElementById('rot-volta-d')?.checked };
@@ -5121,8 +5282,12 @@ function irConfirmD(){
     : `${_plural(nV.entrega,'entrega','entregas')} e ${_plural(nV.coleta,'coleta','coletas')}`;
   const comHora=viagem.filter(o=>o.janela_ini!=null).length;
   const semLocal=viagem.filter(_aprox).length;
-  document.getElementById('confirm-veh-name').textContent=vehSel.nome;
-  document.getElementById('confirm-details-d').innerHTML=`Capacidade: <b style="color:var(--ac)">${kg.toLocaleString('pt-BR')} kg</b><br>${carrocD!=='bau'?`Carroceria: <b>${esc(_CARROC[carrocD])}</b><br>`:''}${capM3D?`Volume: <b style="color:var(--ac)">${_fmtM3(capM3D)} m³</b> <span style="color:var(--text3)">(${Math.round(capM3D/bauM3D*100)}% do baú de ${_fmtM3(bauM3D)} m³)</span><br>`:''}Máx. de paradas: <b>${maxPedD}</b>${rotCidadeD!=='todas'?`<br>Só de: <b>${esc(rotCidadeD)}</b>`:''}<br>Nesta viagem: <b>${oque} pendentes</b>${rotTipoD==='todos'?' <span style="color:var(--text3)">(entregas primeiro, coletas depois)</span>':''}<br>Saída: <b>${esc(DEPOT.name)}</b> às <b>${_hhmm(rotaCtxD.saida)}</b> de <b>${_dataBR(rotaCtxD.data)}</b><br>Fim: <b>${rotaCtxD.volta?'volta ao CD':'na última parada'}</b>${FATOR_TEMPO!==1?`<br>Tempos ajustados ao trânsito: <b>×${FATOR_TEMPO.toLocaleString('pt-BR',{maximumFractionDigits:2})}</b> <span style="color:var(--text3)">(calibrado pelas suas rotas)</span>`:''}${comHora?`<br>Com horário marcado: <b>${comHora}</b>`:''}${outroDia?`<br><span style="color:var(--text3)">${_plural(outroDia,'agendado para outro dia fica','agendados para outro dia ficam')} de fora.</span>`:''}${semLocal?`<br><span style="color:var(--text3)">📍 ${_plural(semLocal,'pedido com ponto a confirmar','pedidos com ponto a confirmar')} no mapa.</span>`:''}`;
+  document.getElementById('confirm-veh-name').textContent=frotaModoD?`Vários veículos (${frotaD.length})`:vehSel.nome;
+  $id('confirm-manual-d').hidden=frotaModoD;   // montar no mapa é com um veículo só
+  const cabVeic = frotaModoD
+    ? `Veículos que podem sair <span style="color:var(--text3)">(o sistema usa só os que precisar, dando preferência aos menores)</span>:<ul class="fm-lista">${frotaD.map(v=>`<li><b>${esc(v.nome)}</b> · ${v.capKg.toLocaleString('pt-BR')} kg${v.capM3?` · ${_fmtM3(v.capM3)} m³ (${aprov}% do baú)`:v.carroc==='aberta'?' · aberta':''}${v.motorista?.nome?' · '+esc(v.motorista.nome):''}</li>`).join('')}</ul>Máx. de paradas por veículo: <b>${maxPedD}</b>`
+    : `Capacidade: <b style="color:var(--ac)">${kg.toLocaleString('pt-BR')} kg</b><br>${carrocD!=='bau'?`Carroceria: <b>${esc(_CARROC[carrocD])}</b><br>`:''}${capM3D?`Volume: <b style="color:var(--ac)">${_fmtM3(capM3D)} m³</b> <span style="color:var(--text3)">(${Math.round(capM3D/bauM3D*100)}% do baú de ${_fmtM3(bauM3D)} m³)</span><br>`:''}Máx. de paradas: <b>${maxPedD}</b>`;
+  document.getElementById('confirm-details-d').innerHTML=`${cabVeic}${rotCidadeD!=='todas'?`<br>Só de: <b>${esc(rotCidadeD)}</b>`:''}<br>Nesta viagem: <b>${oque} pendentes</b>${rotTipoD==='todos'?' <span style="color:var(--text3)">(entregas primeiro, coletas depois)</span>':''}<br>Saída: <b>${esc(DEPOT.name)}</b> às <b>${_hhmm(rotaCtxD.saida)}</b> de <b>${_dataBR(rotaCtxD.data)}</b><br>Fim: <b>${rotaCtxD.volta?'volta ao CD':'na última parada'}</b>${FATOR_TEMPO!==1?`<br>Tempos ajustados ao trânsito: <b>×${FATOR_TEMPO.toLocaleString('pt-BR',{maximumFractionDigits:2})}</b> <span style="color:var(--text3)">(calibrado pelas suas rotas)</span>`:''}${comHora?`<br>Com horário marcado: <b>${comHora}</b>`:''}${outroDia?`<br><span style="color:var(--text3)">${_plural(outroDia,'agendado para outro dia fica','agendados para outro dia ficam')} de fora.</span>`:''}${semLocal?`<br><span style="color:var(--text3)">📍 ${_plural(semLocal,'pedido com ponto a confirmar','pedidos com ponto a confirmar')} no mapa.</span>`:''}`;
   document.getElementById('rot-step-cap').style.display='none';
   document.getElementById('rot-step-confirm').style.display='block';
 }
@@ -5130,31 +5295,96 @@ window.irConfirmD=irConfirmD;
 function voltarCapD(){ document.getElementById('rot-step-confirm').style.display='none'; document.getElementById('rot-step-cap').style.display='block'; }
 window.voltarCapD=voltarCapD;
 
+// ── Carga → rota ──────────────────────────────────────────────────────────
+// O motor de rotas divide pelo peso e pelo m³. O m³ cabe e mesmo assim as caixas podem não
+// caber pelo formato (comprida demais, alta demais, sem como empilhar). Depois da divisão, a tela
+// arruma as caixas de cada rota no baú; se sobra caixa, diminui o volume que aquele veículo (e os
+// de baú igual) pode levar para menos do que coube e pede a divisão de novo, no máximo 2 vezes.
+// Assim o pedido passa para outro veículo ou fica para a próxima viagem, em vez de só avisar.
+function _m3ForaD(ps,fora){
+  return fora.reduce((s,f)=>{ const p=ps[f.n-1]; if(!p) return s;
+    const cx=_caixasDe(p).filter(c=>!c.aprox), q=cx.reduce((a,c)=>a+c.q,0), v=cx.reduce((a,c)=>a+c.c*c.l*c.a*c.q,0);
+    return s+(q>0?v/q*f.q:0); },0);
+}
+function _sobraFormatoD(r,v){
+  const bau=_bauV(v); if(!bau) return 0;
+  const ps=_paradasD(r); let m3=0;
+  for(const modo of ['saida','coletas']){ const f=_formatoRota(ps,bau,modo); if(f&&f.fora.length) m3=Math.max(m3,_m3ForaD(ps,f.fora)); }
+  return m3;
+}
+// Frota com o volume reduzido onde a carga não coube pelo formato, ou null se coube tudo
+function _ajusteFormatoD(rotas,frota){
+  const nova=frota.map(v=>({...v})); let mudou=false;
+  rotas.forEach(r=>{
+    const v=nova.find(x=>x.id===String(r.veiculo_id)); if(!v) return;
+    const sobra=_sobraFormatoD(r,v); if(!(sobra>0)) return;
+    const atual=v.capM3>0?v.capM3:v.bauM3;
+    let lim=Math.floor(Math.max(0,_perfilVolume(_paradasD(r)).max-sobra)*1000)/1000;
+    if(!(lim<atual)) lim=Math.floor(atual*0.95*1000)/1000;
+    lim=Math.max(0.01,lim);
+    nova.forEach(x=>{ if(x===v||_mesmoBau(x,v)){ const a=x.capM3>0?x.capM3:x.bauM3; if(lim<a){ x.capM3=lim; mudou=true; } } });
+  });
+  return mudou?nova:null;
+}
+function _rotasDoSolveD(data,base){
+  const rotas=data.routes||data.rotas||[];
+  rotas.forEach(r=>{ r._tracado=r.tracado||null; delete r.tracado;
+    r._v=base.find(v=>v.id===String(r.veiculo_id))||base[0]; });
+  return rotas;
+}
+function _ondeD(rotas){ const m=new Map(); rotas.forEach(r=>_paradasD(r).forEach(p=>m.set(_idDe(p),{nf:p.nf, v:r._v}))); return m; }
+const _veicPayloadD=v=>({ id:v.id, nome:v.nome, capKg:v.capKg, maxPed:v.maxPed, ...(v.capM3>0?{capM3:v.capM3}:{}),
+  ...(v.custoFixo>0?{custoFixo:v.custoFixo}:{}), ...(v.compCm>0?{compCm:v.compCm}:{}) });
 async function executarVRPD(){
   document.getElementById('rot-step-confirm').style.display='none';
   document.getElementById('rot-step-loading').style.display='block';
+  $id('load-txt-d').textContent='Calculando rotas...';
+  ajusteFmtD=null;
+  const base=frotaModoD?frotaD.map(v=>({...v})):[_vUnicoD()];
   const todos=_pedidosDaViagem();
-  const comp=_compBauCmD();
+  // peça mais comprida que todos os baús fica de fora; carroceria aberta ou sem medida não limita
+  const comps=base.map(_compV);
+  const comp=comps.every(c=>c>0)?Math.max(...comps):0;
   const longos=comp?todos.filter(o=>_maiorLadoCm(o)>comp):[];
   longosD=longos.map(o=>({id:o.id, nf:o.nf, cm:_maiorLadoCm(o)}));
+  longosCmD=comp; longosPadraoD=base.some(v=>_compV(v)===comp&&v.bauSel&&v.bauSel.padrao);
   const pend=longos.length?todos.filter(o=>!longos.includes(o)):todos;
   if(!pend.length){
     document.getElementById('rot-step-loading').style.display='none';
     document.getElementById('rot-step-results').style.display='block';
-    document.getElementById('rot-step-results').innerHTML=`<div class="import-msg show warn">Nenhum pedido desta viagem cabe no comprimento do baú (${_fmtMed(comp/100)} m). Escolha um veículo maior ou de carroceria aberta.</div><button class="btn-modal-sec" onclick="renderVeiculosD()">← Voltar</button>`;
+    document.getElementById('rot-step-results').innerHTML=`<div class="import-msg show warn">Nenhum pedido desta viagem cabe no comprimento ${base.length>1?'do maior baú escolhido':'do baú'} (${_fmtMed(comp/100)} m). Escolha um veículo maior ou de carroceria aberta.</div><button class="btn-modal-sec" onclick="renderVeiculosD()">← Voltar</button>`;
     return;
   }
-  try{
-    const data=await apiPost('/solve',{
+  const pedidos=pend.map(o=>{ const mc=_maiorLadoCm(o); return mc>0?{...o, maiorCm:mc}:o; });
+  const resolver=(frota,limite)=>apiPost('/solve',{
       hora_saida: rotaCtxD.saida,
-      volta: !!rotaCtxD.volta, fator_tempo: FATOR_TEMPO,
-      veiculos: [{ id:vehSel.id, nome:vehSel.nome, capKg:capKgD, maxPed:maxPedD, ...(capM3D>0?{capM3:capM3D}:{}) }],
-      time_limit_s: 30,
-      pedidos: pend,
+      volta: !!rotaCtxD.volta, fator_tempo: FATOR_TEMPO, analise:false,
+      veiculos: frota.map(_veicPayloadD),
+      time_limit_s: limite,
+      pedidos,
       deposito: { lat:DEPOT.lat, lng:DEPOT.lng, nome:DEPOT.name },
     });
-    rotaGeradaD=data.routes||data.rotas||[];
-    rotaGeradaD.forEach(r=>{ r._tracado=r.tracado||null; delete r.tracado; });
+  try{
+    let data=await resolver(base,30);
+    let rotas=_rotasDoSolveD(data,base);
+    // carga → rota: refaz a divisão quando as caixas não cabem pelo formato
+    const antes=_ondeD(rotas);
+    let frota=base, refez=false;
+    for(let i=0;i<2;i++){
+      const nova=_ajusteFormatoD(rotas,frota); if(!nova) break;
+      $id('load-txt-d').textContent='A carga não coube pelo formato das caixas. Refazendo a divisão...';
+      let d2; try{ d2=await resolver(nova,15); }catch(e){ break; }   // sem resposta: fica a primeira divisão, com o aviso
+      data=d2; rotas=_rotasDoSolveD(d2,base); frota=nova; refez=true;
+    }
+    if(refez){
+      const depois=_ondeD(rotas), mud=[];
+      antes.forEach((a,id)=>{ const d=depois.get(id);
+        if(!d) mud.push(`NF ${a.nf} ficou para a próxima viagem`);
+        else if(d.v.id!==a.v.id) mud.push(`NF ${a.nf} mudou de veículo: ${a.v.nome} → ${d.v.nome}`); });
+      const ainda=rotas.filter(r=>_sobraFormatoD(r,r._v)>0).length;
+      ajusteFmtD={mudancas:mud, ainda};
+    }
+    rotaGeradaD=rotas;
     fonteDistanciaD=data.fonte_distancia||'—';
     regraCargaD=data.regra_carga||'';
     naoAlocD=(data.nao_alocados||[]).map(String); foraJanelaD=(data.fora_da_janela||[]).map(String);
@@ -5249,7 +5479,7 @@ function _manAnunciar(txt){ const el=$id('man-anuncio'); if(el) el.textContent=t
 
 function abrirMapaManualD(){
   manSel=[]; manHist=[]; manMarc=new Map(); manLinha=null;
-  naoAlocD=[]; foraJanelaD=[]; regraCargaD=''; longosD=[];
+  naoAlocD=[]; foraJanelaD=[]; regraCargaD=''; longosD=[]; ajusteFmtD=null;
   manSemHover = !!(window.matchMedia && window.matchMedia('(hover: none)').matches);
   manPool=_pedidosDaViagem();
   ['rot-step-veiculo','rot-step-cap','rot-step-confirm','rot-step-loading','rot-step-results']
@@ -5826,10 +6056,11 @@ function _poolViagemD(){
 function _avisosM3D(ps,r){
   const out=[];
   const soCol=!ps.some(p=>_tipoDe(p)==='entrega');
-  const fmt=r?_formatoD(r,soCol?'coletas':'saida'):null, avCg=fmt?_avisosCg(fmt.cg,_bauDaViagemD(),capKgD):[];
+  const v=_vD(r);
+  const fmt=r?_formatoD(r,soCol?'coletas':'saida'):null, avCg=fmt?_avisosCg(fmt.cg,_bauV(v),v.capKg):[];
   if(avCg.length) out.push(`Centro de gravidade da carga: ${avCg.join('; ')}. Veja o plano de carga.`);
   const semMed=ps.filter(p=>!(+p.m3>0));
-  if(capM3D&&semMed.length) out.push(`${semMed.length===ps.length?'Nenhuma parada tem':(semMed.length===1?'1 parada não tem':semMed.length+' paradas não têm')} medida (${semMed.length<=4?'NF '+semMed.map(p=>p.nf).join(', '):'veja a lista'}): o volume a bordo pode ser maior do que aparece. Digite o m³ no pedido ou ligue a estimativa pelo peso.`);
+  if(v.capM3&&semMed.length) out.push(`${semMed.length===ps.length?'Nenhuma parada tem':(semMed.length===1?'1 parada não tem':semMed.length+' paradas não têm')} medida (${semMed.length<=4?'NF '+semMed.map(p=>p.nf).join(', '):'veja a lista'}): o volume a bordo pode ser maior do que aparece. Digite o m³ no pedido ou ligue a estimativa pelo peso.`);
   const pg=ps.map((p,i)=>({p,n:i+1,z:_perigosoDe(p)})).filter(x=>x.z);
   if(pg.length) out.push(`Produto perigoso ${pg.length===1?'na parada':'nas paradas'} ${pg.map(x=>`${x.n} (NF ${x.p.nf}${x.z.onu?', ONU '+x.z.onu:''})`).join(', ')}: confira rótulos e placas, kit de emergência, documento fiscal com os dados do produto e motorista com curso MOPP antes de sair.`);
   const estranhas=ps.filter(p=>_densidadeEstranha(p.peso,p.m3));
@@ -5859,23 +6090,23 @@ function _formatoRota(paradas,bau,modo){
   return out;
 }
 window.__formatoRota=_formatoRota;
-function _formatoD(r,modo){ return carrocD==='aberta'?null:_formatoRota(_paradasD(r),_bauDaViagemD(),modo); }
+function _formatoD(r,modo){ const b=_bauV(_vD(r)); return b?_formatoRota(_paradasD(r),b,modo):null; }
 function _problemasRotaD(r){
-  const ps=_paradasD(r), out=[];
+  const ps=_paradasD(r), out=[], v=_vD(r);
   if(!ps.length) return out;
   const carga=_perfilCarga(ps);
-  if(capKgD&&carga.max>capKgD) out.push(`Passa da capacidade: chega a ${carga.max.toLocaleString('pt-BR')} kg a bordo, e o veículo leva ${capKgD.toLocaleString('pt-BR')} kg.`);
+  if(v.capKg&&carga.max>v.capKg) out.push(`Passa da capacidade: chega a ${carga.max.toLocaleString('pt-BR')} kg a bordo, e o veículo leva ${v.capKg.toLocaleString('pt-BR')} kg.`);
   const vol=_perfilVolume(ps);
-  if(capM3D&&vol.max>capM3D+1e-9) out.push(`Passa do volume: chega a ${_fmtM3(vol.max)} m³ a bordo, e a viagem usa até ${_fmtM3(capM3D)} m³ do baú.`);
-  const comp=_compBauCmD();
+  if(v.capM3&&vol.max>v.capM3+1e-9) out.push(`Passa do volume: chega a ${_fmtM3(vol.max)} m³ a bordo, e a viagem usa até ${_fmtM3(v.capM3)} m³ do baú.`);
+  const comp=_compV(v);
   const longos=comp?ps.filter(p=>_maiorLadoCm(p)>comp):[];
-  if(longos.length) out.push(`${longos.length===1?'A NF '+longos[0].nf+' tem um volume':'As NF '+longos.map(p=>p.nf).join(', ')+' têm volumes'} maior que o comprimento do baú (${_fmtMed(_bauSelD.c)} m).`);
+  if(longos.length) out.push(`${longos.length===1?'A NF '+longos[0].nf+' tem um volume':'As NF '+longos.map(p=>p.nf).join(', ')+' têm volumes'} maior que o comprimento do baú (${_fmtMed(v.bauSel.c)} m).`);
   for(const modo of ['saida','coletas']){
     const fmt=_formatoD(r,modo);
     if(fmt&&fmt.fora.length){ const q=fmt.fora.reduce((s,f)=>s+f.q,0);
       out.push(`Pelo formato das caixas, ${q===1?'1 volume':q+' volumes'}${modo==='coletas'?' das coletas':''} não ${q===1?'cabe':'cabem'} no baú (${fmt.fora.map(f=>`parada ${f.n}, NF ${f.nf}`).join('; ')}), mesmo empilhando. Veja o plano de carga em 3D.`); }
   }
-  if(maxPedD&&ps.length>maxPedD) out.push(`${ps.length} paradas: mais que o limite de ${maxPedD} que você escolheu.`);
+  if(v.maxPed&&ps.length>v.maxPed) out.push(`${ps.length} paradas: mais que o limite de ${v.maxPed} que você escolheu.`);
   const tarde=ps.filter(p=>p.janela_fim!=null&&p.chegada_min!=null&&p.chegada_min>p.janela_fim);
   if(tarde.length) out.push(`${_plural(tarde.length,'parada chega','paradas chegam')} depois do horário marcado (NF ${tarde.map(p=>p.nf).join(', ')}).`);
   return out;
@@ -5971,7 +6202,7 @@ function desfazerAjusteD(){
 window.desfazerAjusteD=desfazerAjusteD;
 async function otimizarRotaD(ri){
   const r=rotaGeradaD[ri]; if(!r) return;
-  const ps=_paradasD(r); if(ps.length<2) return;
+  const ps=_paradasD(r), v=_vD(r); if(ps.length<2) return;
   clearTimeout(_avTimer[ri]); _avSeq[ri]=(_avSeq[ri]||0)+1; const seq=_avSeq[ri];
   r._calc='otimizando'; _renderResultadoD();
   const pesoE=ps.filter(p=>_tipoDe(p)==='entrega').reduce((s,p)=>s+(+p.peso||0),0);
@@ -5981,8 +6212,8 @@ async function otimizarRotaD(ri){
   try{
     // todas as paradas que estão na rota continuam nela: o motor só escolhe a ordem
     const d=await apiPost('/solve',{
-      hora_saida:rotaCtxD.saida, volta:!!rotaCtxD.volta, fator_tempo:FATOR_TEMPO, time_limit_s:10, pedidos:ps,
-      veiculos:[{id:vehSel?.id||'v1', nome:vehSel?.nome||'Veículo', capKg:Math.max(capKgD||0,Math.ceil(Math.max(pesoE,pesoC))), maxPed:ps.length}],
+      hora_saida:rotaCtxD.saida, volta:!!rotaCtxD.volta, fator_tempo:FATOR_TEMPO, time_limit_s:10, pedidos:ps, analise:false,
+      veiculos:[{id:v.id, nome:v.nome, capKg:Math.max(v.capKg||0,Math.ceil(Math.max(pesoE,pesoC))), maxPed:ps.length}],
       deposito:{lat:DEPOT.lat,lng:DEPOT.lng,nome:DEPOT.name},
     });
     if(seq!==_avSeq[ri]||rotaGeradaD[ri]!==r) return;
@@ -6045,21 +6276,26 @@ function _renderResultadoD(){
   const tT=_contarTipos(rotas.flatMap(r=>_paradasD(r)));
   const ajustada=rotas.some(r=>r._ajustada||r._manual);
   const fora=ajustada?_poolViagemD().length:naoAlocD.length;
+  const frotaVarios=rotas.some(r=>r._v&&r._v.frota);
   const msgLongos = !longosD.length||ajustada ? ''
-    : `<div class="import-msg show warn" style="max-width:640px;margin:0 0 16px">${longosD.length===1?'1 pedido ficou':longosD.length+' pedidos ficaram'} fora porque ${longosD.length===1?'é maior':'são maiores'} que o baú (${_fmtMed(_compBauCmD()/100)} m${_bauSelD&&_bauSelD.padrao?', medida típica':''}): ${longosD.map(x=>`NF ${esc(x.nf)} (${_fmtMed(x.cm/100)} m)`).join(', ')}. ${longosD.length===1?'Ele continua':'Eles continuam'} pendentes: use um veículo maior ou de carroceria aberta.</div>`;
+    : `<div class="import-msg show warn" style="max-width:640px;margin:0 0 16px">${longosD.length===1?'1 pedido ficou':longosD.length+' pedidos ficaram'} fora porque ${longosD.length===1?'é maior':'são maiores'} que ${frotaVarios?'o maior baú escolhido':'o baú'} (${_fmtMed(longosCmD/100)} m${longosPadraoD?', medida típica':''}): ${longosD.map(x=>`NF ${esc(x.nf)} (${_fmtMed(x.cm/100)} m)`).join(', ')}. ${longosD.length===1?'Ele continua':'Eles continuam'} pendentes: use um veículo maior ou de carroceria aberta.</div>`;
+  const nMud=ajusteFmtD?ajusteFmtD.mudancas.length:0;
+  const msgFmt = !ajusteFmtD||ajustada||(!nMud&&!ajusteFmtD.ainda) ? ''
+    : `<div class="import-msg show info" style="max-width:640px;margin:0 0 16px">Pelo formato das caixas, a primeira divisão não cabia ${frotaVarios?'nos baús':'no baú'}. O sistema refez a conta${nMud?`: ${esc(ajusteFmtD.mudancas.slice(0,6).join('; '))}${nMud>6?` e mais ${nMud-6}`:''}.`:'.'}${ajusteFmtD.ainda?` ${_plural(ajusteFmtD.ainda,'rota ainda tem','rotas ainda têm')} caixa que não cabe: veja o aviso na rota e o desenho em 3D.`:''}</div>`;
   const msgFora = !fora ? ''
     : ajustada ? `<div class="import-msg show info" style="max-width:640px;margin:0 0 16px">${_plural(fora,'pedido pendente ficou','pedidos pendentes ficaram')} fora desta viagem. ${fora===1?'Ele continua':'Eles continuam'} na lista para a próxima.</div>`
+    : frotaVarios ? `<div class="import-msg show info" style="max-width:640px;margin:0 0 16px">Os veículos levaram <b>${totalE} de ${totalE+naoAlocD.length}</b> pedidos: o limite foi de ${maxPedD} paradas por veículo e a capacidade de cada um. Os outros ${naoAlocD.length} continuam pendentes para a próxima viagem.${foraJanelaD.length?` Atenção: ${_plural(foraJanelaD.length,'pedido tem','pedidos têm')} horário que não dá para cumprir saindo às ${_hhmm(rotaCtxD.saida)} (NF ${foraJanelaD.slice(0,8).map(esc).join(', ')}).`:''}</div>`
     : `<div class="import-msg show info" style="max-width:640px;margin:0 0 16px">Esta viagem levou <b>${totalE} de ${totalE+naoAlocD.length}</b> pedidos: o limite foi de ${maxPedD} paradas e ${capKgD.toLocaleString('pt-BR')} kg. Os outros ${naoAlocD.length} continuam pendentes para a próxima viagem (gere outra com o próximo veículo).${foraJanelaD.length?` Atenção: ${_plural(foraJanelaD.length,'pedido tem','pedidos têm')} horário que não dá para cumprir saindo às ${_hhmm(rotaCtxD.saida)} (NF ${foraJanelaD.slice(0,8).map(esc).join(', ')}).`:''}</div>`;
   res.innerHTML=`
     <button class="btn-voltar-topo" onclick="renderVeiculosD()"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Gerar outra rota</button>
     <div class="kpis" style="max-width:640px;margin-bottom:18px">
-      <div class="kpi"><div class="kpi-lbl">VIAGENS</div><div class="kpi-val">${rotas.length}</div></div>
+      <div class="kpi"><div class="kpi-lbl">${frotaVarios?'VEÍCULOS':'VIAGENS'}</div><div class="kpi-val">${rotas.length}</div>${frotaVarios?`<div class="kpi-split">de ${frotaD.length} ${frotaD.length===1?'escolhido':'escolhidos'}</div>`:''}</div>
       <div class="kpi"><div class="kpi-lbl">PARADAS</div><div class="kpi-val">${totalE}</div><div class="kpi-split">${_resumoTipos(tT)}</div></div>
       <div class="kpi"><div class="kpi-lbl">KM TOTAL</div><div class="kpi-val">${totalKm.toFixed(0)}</div></div>
     </div>
     ${regraCargaD==='soma_entregas_e_coletas'&&!ajustada?'<div class="import-msg show warn" style="max-width:640px;margin:0 0 16px">Nesta rota o peso das entregas e das coletas foi somado para caber no veículo (regra mais conservadora).</div>':''}
-    ${msgLongos}${msgFora}
-    <div class="rota-tabs-d" id="rota-tabs-d" role="tablist">${rotas.map((r,i)=>`<div class="rota-tab-d ${i===rotaSelD?'active':''}" role="tab" tabindex="0" aria-selected="${i===rotaSelD}" onclick="selRotaTabD(${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selRotaTabD(${i})}">Rota ${i+1} · ${_paradasD(r).length} paradas${r._manual?' · montada no mapa':''}${r._ajustada?' · ajustada':''}</div>`).join('')}</div>
+    ${msgLongos}${msgFmt}${msgFora}
+    <div class="rota-tabs-d" id="rota-tabs-d" role="tablist">${rotas.map((r,i)=>`<div class="rota-tab-d ${i===rotaSelD?'active':''}" role="tab" tabindex="0" aria-selected="${i===rotaSelD}" onclick="selRotaTabD(${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selRotaTabD(${i})}">Rota ${i+1}${r._v&&r._v.frota?` · ${esc(r._v.nome)}${r._v.motorista?.nome?' · '+esc(r._v.motorista.nome):''}`:''} · ${_plural(_paradasD(r).length,'parada','paradas')}${r._manual?' · montada no mapa':''}${r._ajustada?' · ajustada':''}</div>`).join('')}</div>
     <div id="rota-detail-d"></div>
     <div id="confirmar-rota-wrap" style="margin-top:18px;max-width:640px">
       <button class="btn-modal-primary" id="btn-confirmar-rota" onclick="confirmarRotaD()" style="margin-top:0">✔ Confirmar saída do veículo</button>
@@ -6117,15 +6353,16 @@ async function confirmarRotaD(){
         chegada_min:p.chegada_min??null, janela_ini:p.janela_ini??null, janela_fim:p.janela_fim??null }));
       const nP=_contarTipos(paradas);
       const m3Tot=Math.round(paradas.reduce((s,p)=>s+(+p.m3||0),0)*1000)/1000;
+      const v=_vD(r), bauV=_bauV(v);
       return { id:`${rotaId}_${i+1}`, criada_em:agora, data:rotaCtxD.data||_hojeISO(), saida:rotaCtxD.saida??null,
-        veiculo:(motoristaSelecionadoD&&_rotuloVeic(motoristaSelecionadoD))||vehSel?.nome||'', motorista:motoristaSelecionadoD?.nome||'', cap_kg:capKgD,
-        ...(motoristaSelecionadoD?.placa?{placa:_placaNorm(motoristaSelecionadoD.placa)}:{}),
+        veiculo:v.nome||'', motorista:v.motorista?.nome||'', cap_kg:v.capKg,
+        ...(v.motorista?.placa?{placa:_placaNorm(v.motorista.placa)}:{}),
         km:r.km||r.distancia_km||0, tempo_min:r.mins||r.tempo_min||0,
         peso_total:r.peso_total||paradas.reduce((s,p)=>s+(p.peso||0),0),
         ...(m3Tot>0?{m3_total:m3Tot}:{}),
-        ...(capM3D>0?{cap_m3:capM3D, bau_m3:bauM3D}:{}),
-        ...(carrocD!=='bau'?{carroceria:carrocD}:{}),
-        ...(_bauDaViagemD()?{bau:{c:_bauSelD.c,l:_bauSelD.l,a:_bauSelD.a}}:{}),
+        ...(v.capM3>0?{cap_m3:v.capM3, bau_m3:v.bauM3}:{}),
+        ...(v.carroc!=='bau'?{carroceria:v.carroc}:{}),
+        ...(bauV?{bau:{c:bauV.c,l:bauV.l,a:bauV.a}}:{}),
         num_paradas:paradas.length, entregas:nP.entrega, coletas:nP.coleta, status:'em_rota', paradas,
         fonte_dist:r._fonte||fonteDistanciaD||'—',   // como o km e os horários foram medidos
         ...(r._tracado?{tracado:r._tracado}:{}),          // linha pelas ruas (polyline6), para não pedir de novo
@@ -7266,7 +7503,7 @@ function selRotaTabD(idx){
   const km=r.km||r.distancia_km||0, peso=r.peso_total||paradas.reduce((s,p)=>s+(p.peso||0),0);
   const fonte=r._fonte||fonteDistanciaD, calc=r._calc||'ok';
   const nT=_contarTipos(paradas), carga=_perfilCarga(paradas);
-  const probs=_problemasRotaD(r), avisosM3=_avisosM3D(_paradasD(r),r);
+  const probs=_problemasRotaD(r), avisosM3=_avisosM3D(_paradasD(r),r), vr=_vD(r);
   const outras=rotaGeradaD.map((x,k)=>k).filter(k=>k!==idx);
   const notaFonte = calc==='calculando' ? '<div class="calc-st" role="status">Recalculando km e horários na ordem nova…</div>'
     : calc==='otimizando' ? '<div class="calc-st" role="status">Otimizando a ordem das paradas…</div>'
@@ -7278,15 +7515,15 @@ function selRotaTabD(idx){
     const acoes=ajusteD?`<div class="dm-acoes">
         <button type="button" data-foco="${esc(pid)}|up" onclick="moverParadaD(${idx},${i},-1)" ${i===0?'disabled':''} aria-label="Subir NF ${esc(p.nf)}" title="Subir">↑</button>
         <button type="button" data-foco="${esc(pid)}|down" onclick="moverParadaD(${idx},${i},1)" ${i===paradas.length-1?'disabled':''} aria-label="Descer NF ${esc(p.nf)}" title="Descer">↓</button>
-        ${outras.length?`<select data-foco="${esc(pid)}|rota" aria-label="Mover NF ${esc(p.nf)} para outra viagem" onchange="moverParaRotaD(${idx},${i},this.value)"><option value="">Viagem…</option>${outras.map(k=>`<option value="${k}">Rota ${k+1}</option>`).join('')}</select>`:''}
+        ${outras.length?`<select data-foco="${esc(pid)}|rota" aria-label="Mover NF ${esc(p.nf)} para outra viagem" onchange="moverParaRotaD(${idx},${i},this.value)"><option value="">Viagem…</option>${outras.map(k=>`<option value="${k}">Rota ${k+1}${rotaGeradaD[k]._v&&rotaGeradaD[k]._v.frota?' · '+esc(rotaGeradaD[k]._v.nome):''}</option>`).join('')}</select>`:''}
         <button type="button" class="tirar" data-foco="${esc(pid)}|tirar" onclick="tirarParadaD(${idx},${i})" aria-label="Tirar NF ${esc(p.nf)} desta rota" title="Tirar da rota">✕</button>
       </div>`:'';
-    return `<div class="delivery-mini${ajusteD?' ajuste':''}"><div class="delivery-mini-num${_tipoDe(p)==='coleta'?' c':''}">${i+1}</div><div class="dm-txt"><div style="font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text)">NF ${esc(p.nf)}${_tag(p)}${_perigTag(p)}${p.chegada_min!=null&&p.janela_ini!=null?`<span class="cheg" title="Horário marcado: ${_hhmm(p.janela_ini)}–${_hhmm(p.janela_fim??p.janela_ini)}">chega ~${_hhmm(p.chegada_min)}</span>`:''}${tarde?'<span class="atraso">depois do horário</span>':''}${aprox?`<button type="button" class="aprox-bt" data-foco="${esc(pid)}|local" onclick="abrirPedido(${esc(JSON.stringify(pid))})">confirmar ponto</button>`:''}</div><div style="font-size:11px;color:var(--text3)">${p.janela_ini!=null?`Horário ${_hhmm(p.janela_ini)}–${_hhmm(p.janela_fim)} · `:''}${p.dest&&p.dest!==p.cidade?esc(p.dest)+' · ':''}${p.endereco?esc(p.endereco)+' · ':''}${esc(p.cidade||'')} · ${(+p.peso||0).toLocaleString('pt-BR')} kg${+p.m3>0?` · ${_fmtM3(p.m3)} m³ <span class="m3-orig${_densidadeEstranha(p.peso,p.m3)?' ruim':''}">(${esc(_origemM3(p))})</span>`:(capM3D>0?' · <span class="m3-orig ruim">sem medida</span>':'')}</div></div>${acoes}</div>`;
+    return `<div class="delivery-mini${ajusteD?' ajuste':''}"><div class="delivery-mini-num${_tipoDe(p)==='coleta'?' c':''}">${i+1}</div><div class="dm-txt"><div style="font-family:var(--mono);font-weight:700;font-size:13px;color:var(--text)">NF ${esc(p.nf)}${_tag(p)}${_perigTag(p)}${p.chegada_min!=null&&p.janela_ini!=null?`<span class="cheg" title="Horário marcado: ${_hhmm(p.janela_ini)}–${_hhmm(p.janela_fim??p.janela_ini)}">chega ~${_hhmm(p.chegada_min)}</span>`:''}${tarde?'<span class="atraso">depois do horário</span>':''}${aprox?`<button type="button" class="aprox-bt" data-foco="${esc(pid)}|local" onclick="abrirPedido(${esc(JSON.stringify(pid))})">confirmar ponto</button>`:''}</div><div style="font-size:11px;color:var(--text3)">${p.janela_ini!=null?`Horário ${_hhmm(p.janela_ini)}–${_hhmm(p.janela_fim)} · `:''}${p.dest&&p.dest!==p.cidade?esc(p.dest)+' · ':''}${p.endereco?esc(p.endereco)+' · ':''}${esc(p.cidade||'')} · ${(+p.peso||0).toLocaleString('pt-BR')} kg${+p.m3>0?` · ${_fmtM3(p.m3)} m³ <span class="m3-orig${_densidadeEstranha(p.peso,p.m3)?' ruim':''}">(${esc(_origemM3(p))})</span>`:(vr.capM3>0?' · <span class="m3-orig ruim">sem medida</span>':'')}</div></div>${acoes}</div>`;
   };
   document.getElementById('rota-detail-d').innerHTML=`
     <div id="rota-map"></div>
     ${paradas.length?`<div class="nav-btns-d"><a href="${gmaps}" target="_blank" rel="noopener" class="btn-nav-d gmaps">📍 Google Maps</a>${last?`<a href="https://waze.com/ul?ll=${last.lat},${last.lng}&navigate=yes" target="_blank" rel="noopener" class="btn-nav-d waze">🚗 Waze</a>`:''}</div>`:''}
-    <div class="card" style="margin-bottom:14px"><div style="display:flex;gap:20px;font-size:13px;color:var(--text2);flex-wrap:wrap"><span>📦 <b style="color:var(--text)">${peso.toLocaleString('pt-BR')} kg</b></span><span>📍 <b style="color:var(--text)">${paradas.length}</b> paradas</span>${nT.coleta&&nT.entrega?`<span>🚚 sai com <b style="color:var(--text)">${carga.saida.toLocaleString('pt-BR')} kg</b> · no máximo <b style="color:var(--text)">${carga.max.toLocaleString('pt-BR')} kg</b> a bordo</span>`:''}<span>🛣️ <b style="color:var(--text)">${_x(km)}</b> km</span></div>
+    <div class="card" style="margin-bottom:14px"><div style="display:flex;gap:20px;font-size:13px;color:var(--text2);flex-wrap:wrap">${vr.frota?`<span>🚚 <b style="color:var(--text)">${esc(vr.nome)}</b>${vr.motorista?.nome?' · '+esc(vr.motorista.nome):''}</span>`:''}<span>📦 <b style="color:var(--text)">${peso.toLocaleString('pt-BR')} kg</b></span><span>📍 <b style="color:var(--text)">${paradas.length}</b> paradas</span>${nT.coleta&&nT.entrega?`<span>🚚 sai com <b style="color:var(--text)">${carga.saida.toLocaleString('pt-BR')} kg</b> · no máximo <b style="color:var(--text)">${carga.max.toLocaleString('pt-BR')} kg</b> a bordo</span>`:''}<span>🛣️ <b style="color:var(--text)">${_x(km)}</b> km</span></div>
       ${notaFonte}
     </div>
     ${paradas.length?_blocoCargaD(paradas,idx):''}
@@ -7406,18 +7643,19 @@ function _abrirPlano(paradas,o){
   const cx=$id('modal-plano').querySelector('.modal-box'); if(cx) cx.scrollTop=0;
   setTimeout(()=>{ const b=$id('modal-plano').querySelector('.modal-close'); if(b) b.focus({preventScroll:true}); },30);
 }
-function _motivoSem3dD(){
-  const bau=_bauDaViagemD();
-  return carrocD==='aberta'?'carroceria aberta não tem baú para desenhar.'
-    : !_bauSelD?'o veículo não tem as medidas do baú. Cadastre comprimento, largura e altura por dentro em Motoristas → veículo.'
-    : !bau?(bauM3D>0?`o volume do baú foi digitado à mão (${_fmtM3(bauM3D)} m³) e não bate com as medidas do veículo (${_fmtM3(_m3Bau(_bauSelD))} m³). Volte e deixe o volume que o sistema preenche.`
+function _motivoSem3dD(v){
+  v=v||_vUnicoD();
+  const bau=_bauV(v);
+  return v.carroc==='aberta'?'carroceria aberta não tem baú para desenhar.'
+    : !v.bauSel?'o veículo não tem as medidas do baú. Cadastre comprimento, largura e altura por dentro em Motoristas → veículo.'
+    : !bau?(v.bauM3>0?`o volume do baú foi digitado à mão (${_fmtM3(v.bauM3)} m³) e não bate com as medidas do veículo (${_fmtM3(_m3Bau(v.bauSel))} m³). Volte e deixe o volume que o sistema preenche.`
       :'o volume do baú ficou vazio na roteirização. Volte e deixe o volume que o sistema preenche ao escolher o veículo.'):'';
 }
 function abrirPlanoCargaD(idx){
   const r=rotaGeradaD[idx]; if(!r) return;
-  const veic=(motoristaSelecionadoD&&_rotuloVeic(motoristaSelecionadoD))||vehSel?.nome||'Veículo';
-  const bau=_bauDaViagemD(), motivo3d=_motivoSem3dD();
-  _abrirPlano(_paradasD(r),{capM3:capM3D, bauM3:bauM3D, capKg:capKgD, ...(bau?{bau:{c:bau.c,l:bau.l,a:bau.a}}:{motivo3d}), carroc:carrocD,
+  const v=_vD(r), veic=v.nome||'Veículo';
+  const bau=_bauV(v), motivo3d=_motivoSem3dD(v);
+  _abrirPlano(_paradasD(r),{capM3:v.capM3, bauM3:v.bauM3, capKg:v.capKg, ...(bau?{bau:{c:bau.c,l:bau.l,a:bau.a}}:{motivo3d}), carroc:v.carroc,
     tituloCurto:rotaGeradaD.length>1?`Plano de carga · Rota ${idx+1}`:'Plano de carga',
     titulo:`${veic} · ${_dataBR(rotaCtxD.data)} saindo ${_hhmm(rotaCtxD.saida)}`});
 }
@@ -8068,7 +8306,7 @@ window._planoAba=_planoAba;
 
 // Peso e volume a bordo da viagem, com o botão do plano de carga
 function _blocoCargaD(paradas,idx){
-  const carga=_perfilCarga(paradas), vol=_perfilVolume(paradas);
+  const carga=_perfilCarga(paradas), vol=_perfilVolume(paradas), v=_vD(rotaGeradaD[idx]), capKg=v.capKg, capM3=v.capM3;
   const semMed=paradas.filter(p=>!(+p.m3>0)).length, estM=paradas.filter(p=>p.m3Fonte==='estimado').length, temM3=paradas.some(p=>+p.m3>0);
   const linha=(rot,val,cap,un,fmt)=>{
     const pct=cap>0?val/cap*100:0, nivel=cap>0&&val>cap+1e-9?'cheio':(pct>=90?'quase':'');
@@ -8078,10 +8316,10 @@ function _blocoCargaD(paradas,idx){
   };
   const kg=v=>Math.round(v).toLocaleString('pt-BR');
   return `<div class="carga-box">
-    ${linha('Peso',carga.max,capKgD,'kg',kg)}
-    ${capM3D>0||temM3?linha('Volume',vol.max,capM3D,'m³',_fmtM3):''}
+    ${linha('Peso',carga.max,capKg,'kg',kg)}
+    ${capM3>0||temM3?linha('Volume',vol.max,capM3,'m³',_fmtM3):''}
     <div class="carga-pe">
-      <span>${capM3D>0||temM3?([semMed?`${_plural(semMed,'parada sem medida não conta','paradas sem medida não contam')} no volume.`:'',
+      <span>${capM3>0||temM3?([semMed?`${_plural(semMed,'parada sem medida não conta','paradas sem medida não contam')} no volume.`:'',
         estM?`${_plural(estM,'parada tem','paradas têm')} m³ estimado pelo peso.`:''].filter(Boolean).join(' ')||'Todas as paradas têm m³.'):'Sem volume do baú: a rota limitou só pelo peso.'}</span>
       <button type="button" class="btn-sm" onclick="abrirPlanoCargaD(${idx})">Plano de carga</button>
     </div>
@@ -8136,8 +8374,8 @@ async function enviarChatD(){
       mensagem: msg,
       session_id: chatSessionId,
       rotas:    rotaGeradaD.length ? rotaGeradaD : null,
-      veiculo:  vehSel?.nome || null,
-      cap_kg:   capKgD || null,
+      veiculo:  frotaModoD ? 'Vários veículos' : (vehSel?.nome || null),
+      cap_kg:   frotaModoD ? null : (capKgD || null),
       pedidos:  pend,
     });
     chatSessionId=data.session_id||chatSessionId;

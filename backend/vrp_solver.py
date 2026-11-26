@@ -50,6 +50,10 @@ class Veiculo(TypedDict, total=False):
     capKg: float
     capM3: float       # volume útil do baú em m³ (opcional; sem ele o volume não limita)
     maxPed: int
+    custoFixo: int     # custo de usar o veículo (em segundos de rota); com a frota do dia, o motor
+                       # usa o mínimo de veículos e, entre os que levam, o menor. 0 = sem custo fixo
+    compCm: float      # comprimento do baú por dentro (cm); peça maior só vai em veículo que comporte.
+                       # Sem valor (ou carroceria aberta) = não limita
 
 class RotaResultado(TypedDict):
     veiculo: str
@@ -182,12 +186,16 @@ def conferir_motor() -> bool:
         from ortools.constraint_solver import routing_enums_pb2
         from ortools.constraint_solver import pywrapcp
         mx = [[0, 5, 9], [5, 0, 4], [9, 4, 0]]
-        manager = pywrapcp.RoutingIndexManager(3, 1, 0)
+        manager = pywrapcp.RoutingIndexManager(3, 2, 0)
         routing = pywrapcp.RoutingModel(manager)
         cb = routing.RegisterTransitCallback(
             lambda a, b: mx[manager.IndexToNode(a)][manager.IndexToNode(b)])
         routing.SetArcCostEvaluatorOfAllVehicles(cb)
         routing.AddDimension(cb, 0, 100, True, "Teste")
+        # frota do dia: o veículo 1 custa caro e o nó 2 só pode ir no veículo 0
+        routing.SetFixedCostOfVehicle(1, 0)
+        routing.SetFixedCostOfVehicle(1000, 1)
+        routing.SetAllowedVehiclesForIndex([0], manager.NodeToIndex(2))
         params = pywrapcp.DefaultRoutingSearchParameters()
         params.first_solution_strategy = routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC
         params.local_search_metaheuristic = (
@@ -437,6 +445,21 @@ def _litros(p: dict) -> int:
         return 0
 
 
+def _maior_cm(p: dict) -> float:
+    try:
+        return max(0.0, float(p.get("maiorCm") or 0))
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _comp_cm(v: dict) -> float | None:
+    try:
+        c = float(v.get("compCm") or 0)
+    except (TypeError, ValueError):
+        return None
+    return c if c > 0 else None
+
+
 def _cap_litros(v: dict) -> int | None:
     """Volume útil do veículo em litros, arredondado para baixo; None = sem baú medido."""
     try:
@@ -643,9 +666,23 @@ def solve_vrp(
                 cabem.append(p)
         pedidos = cabem
 
+    # Peça maior que o baú de TODOS os veículos (nenhum de carroceria aberta): não entra no modelo
+    # (no OR-Tools, "nenhum veículo permitido" quer dizer "todos").
+    maior_que_bau: list[str] = []
+    comps = [_comp_cm(v) for v in veiculos]
+    if comps and all(c is not None for c in comps):
+        maior = max(comps)
+        cabem = []
+        for p in pedidos:
+            if _maior_cm(p) > maior:
+                maior_que_bau.append(p["nf"])
+            else:
+                cabem.append(p)
+        pedidos = cabem
+
     if not pedidos:
-        return {"routes": [], "nao_alocados": list(fora_janela), "fora_da_janela": fora_janela,
-                "fonte_distancia": "—", "solver_status": "vazio", "regra_carga": "—"}
+        return {"routes": [], "nao_alocados": list(fora_janela) + maior_que_bau, "fora_da_janela": fora_janela,
+                "maior_que_bau": maior_que_bau, "fonte_distancia": "—", "solver_status": "vazio", "regra_carga": "—"}
 
     dep = deposito if deposito and deposito.get("lat") is not None and deposito.get("lng") is not None else DEPOT
 
@@ -682,8 +719,9 @@ def solve_vrp(
 
     res["fonte_distancia"] = fonte
     res["regra_carga"] = regra
-    res["nao_alocados"] = res["nao_alocados"] + fora_janela
+    res["nao_alocados"] = res["nao_alocados"] + fora_janela + maior_que_bau
     res["fora_da_janela"] = fora_janela
+    res["maior_que_bau"] = maior_que_bau
     return res
 
 
@@ -796,6 +834,21 @@ def _resolver(pywrapcp, routing_enums_pb2, pedidos, tipos, janelas, saida_min, v
         True,
         "Paradas",
     )
+
+    # ── Frota do dia: custo de usar cada veículo e quem leva peça comprida ─────
+    for v_idx, v in enumerate(veiculos):
+        cf = int(v.get("custoFixo") or 0)
+        if cf > 0:
+            routing.SetFixedCostOfVehicle(cf, v_idx)
+    comps = [_comp_cm(v) for v in veiculos]
+    if any(c is not None for c in comps):
+        for node in range(1, n_nodes):
+            mc = _maior_cm(pedidos[node - 1])
+            if mc <= 0:
+                continue
+            ok = [k for k, c in enumerate(comps) if c is None or mc <= c]
+            if ok and len(ok) < n_veics:
+                routing.SetAllowedVehiclesForIndex(ok, manager.NodeToIndex(node))
 
     # ── Penalidade por pedido não atendido ────────────────────────────────────
     for node in range(1, n_nodes):

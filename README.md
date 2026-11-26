@@ -884,6 +884,41 @@ encaixe 3D de caixas; "40x30x25" solto no texto da nota (sem saber a quantidade,
 (`firebase/database.rules.json`, nós `produtos` e `config/cubagem`). Sem elas, o resto funciona,
 mas salvar medida de produto ou o fator de cubagem dá "O banco recusou" e a tela explica o motivo.
 
+## Vários veículos de uma vez e carga → rota (26/11/2026)
+
+**Vários veículos de uma vez.** Na Roteirização, o botão **Vários veículos de uma vez** abre a
+frota do dia: os veículos cadastrados (marcados no começo, com capacidade, baú, carroceria e
+motorista reais) e os tipos sem cadastro (− e + para a quantidade; capacidade máxima do tipo e
+baú típico). O máximo de paradas e o "Usar até X% do baú" valem para cada veículo. Até 40 veículos.
+- O motor de rotas recebe todos numa conta só. Cada veículo tem um **custo de uso** em segundos de
+  rota (Fiorino 1.800, VUC 2.700, 3/4 3.300, Toco 3.900, Bitruck 4.800, Carreta 6.000, mais 1 s a
+  cada 100 kg de capacidade). Com isso o motor só põe mais um veículo na rua, ou um maior, quando
+  economiza mais tempo de rota do que esse custo. São números de partida, não custos reais da
+  empresa: dá para trocar em `CUSTO_VEIC` no `index.html`. Deixar pedido de fora custa muito mais
+  (100.000), então o motor sempre prefere levar o pedido.
+- **Peça comprida:** cada veículo leva o comprimento do baú (`compCm`) e cada pedido o maior lado
+  (`maiorCm`). O motor só põe a peça num veículo em que ela cabe; mais comprida que todos os baús,
+  fica de fora (`maior_que_bau`). Carroceria aberta não limita.
+- Cada rota do resultado mostra o veículo e o motorista na aba; peso, volume, avisos, plano de carga
+  em 3D, "Otimizar a ordem" e a rota confirmada (veículo, placa, motorista, capacidade, baú) são do
+  veículo daquela rota. "Montar eu mesmo no mapa" continua sendo com um veículo só.
+- A tela manda `analise: false` ao `/solve`: o texto da IA sobre a rota não aparece na tela e cada
+  chamada esperava por ele.
+
+**Carga → rota.** Depois da divisão, a tela arruma as caixas de cada rota no baú (o mesmo cálculo
+do plano de carga em 3D). Se alguma caixa não cabe pelo formato (alta demais, larga demais, sem
+como empilhar), a tela diminui o volume que aquele veículo, e os de baú igual, pode levar para o que
+coube, e pede a divisão de novo (até 2 vezes, 15 s cada). O resultado diz o que mudou: "NF 1234
+mudou de veículo: VUC → Truck Toco" ou "NF 1234 ficou para a próxima viagem". Se ainda sobrar
+caixa, o aviso de sempre continua na rota. Vale também com um veículo só (a parada que não cabe
+fica para a próxima viagem). A rota confirmada guarda o volume normal do veículo, não o reduzido.
+
+Testes: `backend/tests/test_vrp_frota.py` (motor com o OR-Tools simulado: menor veículo, um maior
+sozinho em vez de dois, divisão quando precisa, peça comprida, carroceria aberta) e
+`tests/tela/t_frota_mista.js` (frota na tela, pedido ao motor, carga → rota com um e com vários
+veículos, rotas confirmadas, celular). O `conferir_motor` do `/health` usa as chamadas novas no
+OR-Tools de verdade.
+
 ## Segurança: revisão de 26/11/2026 (os 14 pontos de "app feito com IA")
 
 **Achado e corrigido (grave): foto do link do motorista rodava código no escritório.** O link do

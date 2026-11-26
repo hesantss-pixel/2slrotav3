@@ -340,6 +340,9 @@ class Veiculo(BaseModel):
     capKg:  float
     capM3:  Optional[float] = Field(None, ge=0, le=200)   # volume útil do baú (m³); sem ele o volume não limita
     maxPed: int = 10
+    # frota do dia: custo de usar o veículo (segundos de rota) e comprimento do baú por dentro (cm)
+    custoFixo: int = Field(0, ge=0, le=100000)
+    compCm:    Optional[float] = Field(None, ge=0, le=5000)
 
 class SolveRequest(BaseModel):
     """
@@ -350,7 +353,7 @@ class SolveRequest(BaseModel):
     """
     model_config = {"extra": "ignore"}
 
-    veiculos:     Optional[list[Veiculo]] = None
+    veiculos:     Optional[list[Veiculo]] = Field(None, max_length=40)
     time_limit_s: int = 30
     pedidos:      Optional[list[dict]] = None
     deposito:     Optional[Deposito] = None
@@ -359,6 +362,7 @@ class SolveRequest(BaseModel):
     hora_saida:   Optional[int] = None
     volta:        bool = False   # True = a rota volta ao CD no fim
     fator_tempo:  float = Field(1.0, ge=0.5, le=3.0)   # calibração: tempo real ÷ planejado
+    analise:      bool = True   # texto da IA sobre as rotas; a tela não usa e manda False (mais rápido)
 
     # Campos legado (frontend antigo)
     capacidade_kg: Optional[float] = None
@@ -576,11 +580,11 @@ def solve(body: SolveRequest, quem: tuple = Depends(exigir_login_ou_demo)):
         # várias previews (com veículos/capacidades diferentes) sem "queimar"
         # os pedidos pendentes.
 
-        # 5. Análise automática da IA
+        # 5. Análise automática da IA (só quando pedida: a tela não usa e cada uma espera a IA)
         try:
             analise = analisar_rotas_geradas(
                 routes, pendentes, n_aloc, veiculo_nome, int(cap_kg_val)
-            )
+            ) if body.analise else ""
         except Exception as e:
             logger.warning("IA indisponível: %s", e)
             analise = (
@@ -594,6 +598,7 @@ def solve(body: SolveRequest, quem: tuple = Depends(exigir_login_ou_demo)):
             "rotas":             routes,
             "nao_alocados":      n_aloc,
             "fora_da_janela":    resultado.get("fora_da_janela", []),
+            "maior_que_bau":     resultado.get("maior_que_bau", []),
             "fonte_distancia":   fonte,
             "solver_status":     status_vp,
             "regra_carga":       resultado.get("regra_carga", "—"),
