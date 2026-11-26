@@ -265,6 +265,16 @@ label.fm-item{cursor:pointer;}
 .fm-resumo{margin-top:10px;font-size:12.5px;color:var(--text2);}
 .fm-resumo.err{color:#b3263f;font-weight:700;}
 .fm-lista{margin:2px 0 0;padding-left:18px;line-height:1.7;}
+/* Conferir colunas da planilha / relatório de TMS */
+.col-modal{max-width:560px;}
+.col-intro{font-size:13px;color:var(--text2);line-height:1.5;margin:0 0 12px;}
+.col-lista{display:grid;gap:8px;max-height:52vh;overflow:auto;padding-right:4px;}
+.col-linha{display:grid;grid-template-columns:150px 1fr;align-items:center;gap:10px;font-size:13px;}
+.col-linha select{min-width:0;width:100%;}
+.col-erro{color:#b3263f;font-weight:700;font-size:12.5px;min-height:1em;margin:8px 0 0;}
+.imp-colunas{max-width:760px;margin:8px 0 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--text2);line-height:1.5;}
+.imp-colunas span{flex:1 1 300px;}
+@media (max-width:520px){ .col-linha{grid-template-columns:1fr;gap:4px;} }
 .presets-row{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap;}
 .preset-chip{background:var(--s3);border:1px solid var(--border2);border-radius:20px;padding:7px 14px;font-size:12px;font-weight:700;color:var(--text2);cursor:pointer;font-family:var(--mono);}
 .preset-chip:hover,.preset-chip.on{background:rgba(243,182,43,.15);border-color:var(--mid);color:var(--ac);}
@@ -1154,7 +1164,7 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
           </button>
         </div>
       </div>
-      <div class="imp-help" id="imp-help">XML da NF-e, Excel, CSV ou PDF. Pode escolher vários arquivos de uma vez. <b>Entrega:</b> o sistema usa o endereço do <b>destinatário</b> (ou o local de entrega, se a nota tiver). Na planilha, uma coluna <b>tipo</b> com "coleta" ou "entrega" vale linha a linha, e as colunas <b>endereço</b> e <b>número</b> ajudam a achar o ponto certo. O <b>XML de cancelamento</b> da nota tira ela dos pendentes. No <b>PDF</b> do DANFE ou da Ordem de Coleta de Cargas, o sistema lê nome, endereço, bairro, CEP, município, volumes e peso.</div>
+      <div class="imp-help" id="imp-help">XML da NF-e, Excel, CSV ou PDF. Pode escolher vários arquivos de uma vez. <b>Entrega:</b> o sistema usa o endereço do <b>destinatário</b> (ou o local de entrega, se a nota tiver). Na planilha, uma coluna <b>tipo</b> com "coleta" ou "entrega" vale linha a linha, e as colunas <b>endereço</b> e <b>número</b> ajudam a achar o ponto certo. Relatório de sistema de transporte também entra: no <b>SSW</b>, exporte a <b>opção 081</b> em CSV e importe aqui (na primeira vez, confira as colunas). O <b>XML de cancelamento</b> da nota tira ela dos pendentes. No <b>PDF</b> do DANFE ou da Ordem de Coleta de Cargas, o sistema lê nome, endereço, bairro, CEP, município, volumes e peso.</div>
       <details class="auto-ent" id="auto-ent">
         <summary><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/></svg><span><b>Receber pedidos automaticamente</b><small>Por e-mail ou pelo sistema da sua empresa, sem subir arquivo</small></span></summary>
         <div class="auto-ent__corpo" id="auto-ent-corpo" aria-live="polite">Carregando…</div>
@@ -1162,6 +1172,7 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
     </div>
     <input type="file" id="file-input" accept=".xml,.csv,.xlsx,.xls,.pdf" multiple hidden onchange="importarArquivo(this)">
     <div id="import-msg-pedidos" class="import-msg" role="status" style="max-width:760px;"></div>
+    <div id="imp-colunas" class="imp-colunas" hidden></div>
     <div id="busca-msg" class="import-msg" role="status" style="max-width:760px;"></div>
     <div class="busca-box">
       <label class="field-lbl" for="busca-notas" style="margin-top:0">Buscar notas</label>
@@ -1339,6 +1350,8 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
       <div class="rel-acoes">
         <button class="btn-sm" id="rel-csv" type="button">Baixar planilha</button>
         <button class="btn-sm" id="rel-imp" type="button">Imprimir / PDF</button>
+        <button class="btn-sm" id="rel-ssw" type="button">Baixas para o SSW</button>
+        <button class="btn-sm" id="rel-ssw-cod" type="button">Códigos do SSW</button>
       </div>
     </div>
     <div id="rel-corpo"></div>
@@ -1577,6 +1590,30 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
     <div id="plano-corpo"></div>
     <button type="button" class="btn-modal-primary" onclick="imprimirPlanoCarga()">Imprimir</button>
     <button type="button" class="btn-modal-sec" onclick="fecharPlanoCarga()">Fechar</button>
+  </div>
+</div>
+
+<!-- ── MODAL: conferir as colunas de uma planilha ou relatório de TMS (ex.: SSW opção 081) ── -->
+<div class="modal-overlay" id="modal-colunas" onclick="if(event.target===this)_colunasResp(null)">
+  <div class="modal-box col-modal" role="dialog" aria-modal="true" aria-labelledby="col-tit">
+    <div class="modal-head"><h2 class="modal-title" id="col-tit">Conferir colunas</h2><button type="button" class="modal-close" onclick="_colunasResp(null)" aria-label="Fechar">✕</button></div>
+    <p class="col-intro" id="col-intro"></p>
+    <div id="col-lista" class="col-lista"></div>
+    <p class="col-erro" id="col-erro" role="alert"></p>
+    <button type="button" class="btn-modal-primary" onclick="_colunasOk()">Importar com estas colunas</button>
+    <button type="button" class="btn-modal-sec" onclick="_colunasResp(null)">Cancelar</button>
+  </div>
+</div>
+
+<!-- ── MODAL: códigos de ocorrência do SSW (de-para das baixas do motorista) ── -->
+<div class="modal-overlay" id="modal-ssw" onclick="if(event.target===this)fecharSsw()">
+  <div class="modal-box col-modal" role="dialog" aria-modal="true" aria-labelledby="ssw-tit">
+    <div class="modal-head"><h2 class="modal-title" id="ssw-tit">Códigos de ocorrência do SSW</h2><button type="button" class="modal-close" onclick="fecharSsw()" aria-label="Fechar">✕</button></div>
+    <p class="col-intro">Cada baixa do motorista sai na planilha <b>Baixas para o SSW</b> com o código de ocorrência que a sua empresa usa no SSW. Copie os códigos da tabela de ocorrências do SSW. Em branco, a coluna do código sai vazia.</p>
+    <div id="ssw-lista" class="col-lista"></div>
+    <p class="col-erro" id="ssw-erro" role="alert"></p>
+    <button type="button" class="btn-modal-primary" onclick="salvarSsw()">Salvar códigos</button>
+    <button type="button" class="btn-modal-sec" onclick="fecharSsw()">Cancelar</button>
   </div>
 </div>
 
@@ -1998,7 +2035,7 @@ function setTipoImport(v){
   document.getElementById('imp-help').innerHTML = 'XML da NF-e, Excel, CSV ou PDF. Pode escolher vários arquivos de uma vez. ' + (tipoImport==='coleta'
     ? '<b>Coleta:</b> o sistema usa o endereço do <b>remetente</b>, quem emitiu a nota (ou o local de retirada, se a nota tiver).'
     : '<b>Entrega:</b> o sistema usa o endereço do <b>destinatário</b> (ou o local de entrega, se a nota tiver).')
-    + ' Na planilha, uma coluna <b>tipo</b> com "coleta" ou "entrega" vale linha a linha, e as colunas <b>endereço</b> e <b>número</b> ajudam a achar o ponto certo. O <b>XML de cancelamento</b> da nota tira ela dos pendentes. No <b>PDF</b> do DANFE ou da Ordem de Coleta de Cargas, o sistema lê nome, endereço, bairro, CEP, município, volumes e peso.';
+    + ' Na planilha, uma coluna <b>tipo</b> com "coleta" ou "entrega" vale linha a linha, e as colunas <b>endereço</b> e <b>número</b> ajudam a achar o ponto certo. Relatório de sistema de transporte também entra: no <b>SSW</b>, exporte a <b>opção 081</b> em CSV e importe aqui (na primeira vez, confira as colunas). O <b>XML de cancelamento</b> da nota tira ela dos pendentes. No <b>PDF</b> do DANFE ou da Ordem de Coleta de Cargas, o sistema lê nome, endereço, bairro, CEP, município, volumes e peso.';
 }
 document.addEventListener('click',e=>{
   const f=e.target.closest('[data-filtro] button'); if(f){ setFiltroTipo(f.dataset.v); return; }
@@ -2664,8 +2701,94 @@ function _relCSV(){
   _toast('Planilha baixada: '+nome);
 }
 
+// ── Baixas para o SSW ───────────────────────────────────────────────────────
+// Ida: o relatório da opção 081 entra pela importação (CSV). Volta: cada baixa do motorista
+// (entregue, coletado ou não realizado com o motivo) sai numa planilha com a chave da NF-e, o
+// CTRC e o código de ocorrência do SSW da empresa (de-para). O envio direto pela WebAPI de
+// ocorrências do SSW depende da documentação dela e de acesso liberado pela transportadora.
+const SSW_SITUACOES=[['entregue','Entregue'],['coletado','Coletado'],['ausente','Cliente ausente'],['endereco','Endereço não encontrado'],
+  ['recusado','Recusado pelo cliente'],['fechado','Estabelecimento fechado'],['avaria','Mercadoria com avaria'],['tempo','Não deu tempo na rota'],['outro','Outro motivo']];
+const _MOTIVO_SSW={'cliente ausente':'ausente','endereco nao encontrado':'endereco','recusado pelo cliente':'recusado',
+  'estabelecimento fechado':'fechado','mercadoria com avaria':'avaria','nao deu tempo na rota':'tempo'};
+let sswCodigos={};
+const _sswLS=()=>'rv3_ssw_codigos_'+(EID||'local');
+async function _sswCarregar(){
+  let c=null;
+  if(_modNoBanco()){ try{ const sn=await get(ref(db,TP('config/ssw/codigos'))); if(sn.exists()) c=sn.val(); }catch(e){} }
+  if(!c){ try{ c=JSON.parse(localStorage.getItem(_sswLS())||'null'); }catch(e){} }
+  sswCodigos=c&&typeof c==='object'?c:{};
+  return sswCodigos;
+}
+async function abrirSsw(){
+  await _sswCarregar();
+  $id('ssw-lista').innerHTML=SSW_SITUACOES.map(([k,t])=>`<label class="col-linha"><span>${t}</span><input type="text" class="field-inp" data-k="${k}" maxlength="6" autocomplete="off" placeholder="código" value="${esc(sswCodigos[k]||'')}"></label>`).join('');
+  $id('ssw-erro').textContent='';
+  $id('modal-ssw').classList.add('open');
+  setTimeout(()=>$id('ssw-lista').querySelector('input')?.focus(),60);
+}
+window.abrirSsw=abrirSsw;
+function fecharSsw(){ $id('modal-ssw').classList.remove('open'); }
+window.fecharSsw=fecharSsw;
+async function salvarSsw(){
+  const c={}; let ruim='';
+  $id('ssw-lista').querySelectorAll('input').forEach(i=>{ const v=i.value.trim(); if(v&&!/^[A-Za-z0-9]{1,6}$/.test(v)) ruim=i.closest('label').querySelector('span').textContent; if(v) c[i.dataset.k]=v; });
+  if(ruim){ $id('ssw-erro').textContent=`Código de "${ruim}": use só letras e números, até 6.`; return; }
+  try{ localStorage.setItem(_sswLS(),JSON.stringify(c)); }catch(e){}
+  sswCodigos=c;
+  let onde='neste aparelho';
+  if(_modNoBanco()){ try{ await set(ref(db,TP('config/ssw/codigos')),c); onde='para a empresa'; }catch(e){} }
+  fecharSsw(); _toast(`Códigos do SSW salvos ${onde}.`);
+}
+window.salvarSsw=salvarSsw;
+function _sswLinhas(ini,fim){
+  const rotas=rotasFirebase||{}, out=[];
+  const pad=n=>String(n).padStart(2,'0');
+  Object.values(pedidosCrus||{}).forEach(p=>{
+    if(!p) return;
+    const ch=_chaveValida(String(p.chave||''))?p.chave:'';
+    const ev=[];
+    if(p.baixa&&(p.status==='entregue'||p.status==='coletado')) ev.push({hora:+p.baixa.hora, k:p.status, sit:p.status==='coletado'?'Coletado':'Entregue', motivo:'', rec:p.baixa.recebedor||'', obs:'', rota:p.baixa.rota});
+    if(p.ocorrencia){ const k=_MOTIVO_SSW[_semAcento(p.ocorrencia.motivo).trim()]||'outro';
+      ev.push({hora:+p.ocorrencia.hora, k, sit:'Não realizado', motivo:p.ocorrencia.motivo||'', rec:'', obs:p.ocorrencia.obs||'', rota:p.ocorrencia.rota}); }
+    ev.forEach(e=>{
+      if(!Number.isFinite(e.hora)||e.hora<+ini||e.hora>=+fim) return;
+      const dt=new Date(e.hora), r=rotas[e.rota]||{};
+      out.push({t:e.hora, l:[`${pad(dt.getDate())}/${pad(dt.getMonth()+1)}/${dt.getFullYear()}`, `${pad(dt.getHours())}:${pad(dt.getMinutes())}`, e.sit, e.motivo, sswCodigos[e.k]||'',
+        ch, ch?ch.slice(6,20):'', ch?String(+ch.slice(22,25)):'', p.nf||'', p.ctrc||'', p.setor||'', p.dest||'', p.cidade||'', e.rec, e.obs,
+        r.data?`${_dataBR(r.data)} · ${r.veiculo||''}`:'', r.motorista||'']});
+    });
+  });
+  return out.sort((a,b)=>a.t-b.t).map(x=>x.l);
+}
+async function baixasSsw(){
+  await _sswCarregar();
+  const [ini,fim]=_relIntervalo(relPeriodo);
+  const linhas=_sswLinhas(ini,fim);
+  if(!linhas.length){ _toast(`Nenhuma baixa em ${_relTitulo(relPeriodo).toLowerCase()}.`); return; }
+  const cab=['Data','Hora','Situação','Motivo','Código SSW','Chave NF-e','CNPJ do remetente','Série','NF','CT-e / CTRC','Setor','Cliente','Cidade','Quem recebeu','Observação','Rota','Motorista'];
+  // chave e CNPJ entre aspas com ="" para o Excel não virar número (44 dígitos perdem o final)
+  const csv=[cab,...linhas].map((l,i)=>l.map((c,j)=>{
+    const t=String(c==null?'':c);
+    if(i&&(j===5||j===6)&&t) return `="${t}"`;
+    // texto que veio de nota ou do motorista não vira fórmula no Excel (=, +, -, @ no começo)
+    const u=/^[=+\-@\t\r]/.test(t)?"'"+t:t;
+    return /[;"\n\r]/.test(u)?'"'+u.replace(/"/g,'""')+'"':u;
+  }).join(';')).join('\r\n');
+  const nome='rotav3-baixas-ssw-'+relPeriodo+'-'+_hojeISO()+'.csv';
+  const blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=nome;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },0);
+  _toast(`Planilha baixada: ${_plural(linhas.length,'baixa','baixas')}${Object.keys(sswCodigos).length?'':' (sem códigos do SSW: preencha em "Códigos do SSW")'}.`);
+}
+window.baixasSsw=baixasSsw;
+window.__ssw={linhas:(i,f)=>_sswLinhas(i,f)};   // testes de tela
+
 function _relLigarBotoes(){
   if(_relLigado) return; _relLigado=true;
+  $id('rel-ssw')?.addEventListener('click',baixasSsw);
+  $id('rel-ssw-cod')?.addEventListener('click',abrirSsw);
   const seg=document.getElementById('rel-periodo');
   if(seg) seg.addEventListener('click',e=>{
     const b=e.target.closest('button[data-p]'); if(!b) return;
@@ -2946,6 +3069,7 @@ function abrirPedido(id){
   const varios=_verLista(dO.cx).length>1||String(dO.medidas||'').includes(';');
   $id('ped-m3-nota').textContent = propio&&o.m3Fonte==='medidas'&&dO.medidas ? (varios?`Veio das observações: ${dO.medidas}. Confira.`:`Veio das observações: ${dO.medidas} × ${_plural(+o.itens||1,'volume','volumes')}. Confira.`)
     : propio&&o.m3Fonte==='cte' ? `Veio do CT-e${dO.cteNum?' '+dO.cteNum:''}${dO.m3DeCubado?`, pelo peso cubado ÷ ${FATOR_CUB}`:''}${dO.m3Rateio?', dividido pelo peso entre as notas dele':''}.`
+    : propio&&o.m3Fonte==='planilha'&&dO.m3DeCubado ? `Veio da planilha, pelo peso cubado${+dO.pesoCubado>0?' de '+(+dO.pesoCubado).toLocaleString('pt-BR')+' kg':''} ÷ ${FATOR_CUB}.`
     : propio&&o.m3Fonte&&o.m3Fonte!=='digitado' ? `Veio ${_ROTULO_M3[o.m3Fonte]||'do arquivo'}.`
     : mi&&!propio&&mi.fonte==='produtos' ? 'Vazio, o m³ sai das medidas dos produtos da nota.'
     : mi&&!propio&&mi.fonte==='parcial' ? `Só parte dos produtos tem medida (${_fmtM3(mi.m3)} m³ até agora). Digite o total ou complete em Produtos.`
@@ -3419,17 +3543,97 @@ const COL_MAP={
   fone:['telefone','celular','whatsapp','fone','tel'],
   // m³ do pedido. "Peso cubado" é peso (kg), não volume: fica de fora
   m3:['m3','metroscubicos','metrocubico','volumem','cubagem'],
+  // relatórios de TMS (ex.: SSW opção 081): chave da NF-e, CT-e/CTRC, setor e peso cubado
+  chave:['chavedeacesso','chaveacesso','chavenfe','chavedanfe','chavenf','chave'],
+  ctrc:['ctrc','cte','conhecimento'],
+  setor:['setor'],
+  pesocub:['pesocubado','pesocub','cubado'],
 };
 function _colM3(headers){
   const h=headers.map(_norm);
   for(const k of COL_MAP.m3){ const i=h.findIndex(x=>x.includes(k)&&!x.includes('peso')&&!x.includes('kg')); if(i>=0) return i; }
   return -1;
 }
-function _norm(s){return String(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');}
+// cabeçalho sem acento, minúsculo, só letras e números: "Município" = "municipio"
+function _norm(s){return _semAcento(s).replace(/[^a-z0-9]/g,'');}
 function _findCol(headers,keys){
   const h=headers.map(_norm);
   for(const k of keys){ const i=h.findIndex(x=>x.includes(_norm(k))); if(i>=0) return i; }
   return -1;
+}
+// Relatório com remetente e destinatário (o do SSW, por exemplo) tem duas colunas de cidade, de CEP...
+// Na entrega vale a do destinatário; na coleta, a do remetente. Sem essas palavras, vale a primeira.
+const _LADO={entrega:/dest|entreg|receb/, coleta:/remet|colet|origem|emit|retir/};
+function _colLado(headers,keys,tipo,excl,ruim){
+  const h=headers.map(_norm), meu=_LADO[tipo==='coleta'?'coleta':'entrega'], outro=_LADO[tipo==='coleta'?'entrega':'coleta'];
+  let melhor=-1, nota=-99;
+  for(const k of keys){ const kk=_norm(k);
+    h.forEach((x,i)=>{ if((excl||[]).includes(i)||!x.includes(kk)||(ruim&&ruim.test(x))) return;
+      const n=(meu.test(x)?2:0)-(outro.test(x)?2:0);
+      if(n>nota){ nota=n; melhor=i; } }); }
+  return melhor;
+}
+// coluna sem nome de chave, mas com chaves de 44 números (ao menos 80% das linhas)
+function _colChaveConteudo(rows,ncol){
+  for(let j=0;j<ncol;j++){ let tot=0, ok=0;
+    for(const r of rows.slice(0,60)){ const v=String(r&&r[j]!=null?r[j]:'').trim(); if(!v) continue; tot++;
+      if(/^[\d\s.\-]+$/.test(v)&&_chaveValida(v.replace(/\D/g,''))) ok++; }
+    if(tot&&ok/tot>=0.8) return j; }
+  return -1;
+}
+function _colNF(headers,excl){
+  const h=headers.map(_norm), exatos=['nf','nfe','nota','notafiscal','numeronf','nronf','nnf','numnf','numeronota','nfnumero','nfiscal'];
+  let i=h.findIndex((x,j)=>!excl.includes(j)&&exatos.includes(x)); if(i>=0) return i;
+  const ruim=/valor|chave|peso|data|emis/;
+  for(const k of COL_MAP.nf){ i=h.findIndex((x,j)=>!excl.includes(j)&&!ruim.test(x)&&x.includes(k)); if(i>=0) return i; }
+  return -1;
+}
+// peso real: "Peso real" ou "Peso bruto" antes de "Peso"; peso cubado e taxado não são o real
+function _colPeso(headers,excl){
+  const h=headers.map(_norm);
+  for(const k of ['pesoreal','pesobruto','peso','kg','massa','pesoliquido']){
+    const i=h.findIndex((x,j)=>!excl.includes(j)&&!/cub|tax/.test(x)&&x.includes(k)); if(i>=0) return i; }
+  return -1;
+}
+// Qual coluna da planilha é cada campo do pedido (-1 = não tem)
+function _colunasAuto(headers,rows,tipo){
+  const F=(keys,excl,ruim)=>_colLado(headers,keys,tipo,excl,ruim);
+  const ci={};
+  ci.chave=F(COL_MAP.chave); if(ci.chave<0) ci.chave=_colChaveConteudo(rows||[],headers.length);
+  ci.ctrc=F(COL_MAP.ctrc,[ci.chave]);
+  ci.pesocub=F(COL_MAP.pesocub);
+  ci.m3=_colM3(headers);
+  ci.peso=_colPeso(headers,[ci.pesocub,ci.m3]);
+  ci.nf=_colNF(headers,[ci.chave,ci.ctrc,ci.pesocub]);
+  ci.cidade=F(COL_MAP.cidade,[],/cod|ibge/);
+  ci.cep=F(COL_MAP.cep);
+  ci.endereco=F(COL_MAP.endereco,[],/email/);
+  ci.bairro=F(COL_MAP.bairro);
+  ci.uf=F(COL_MAP.uf,[ci.cidade]);
+  ci.dest=F(tipo==='coleta'?['remetente',...COL_MAP.dest]:COL_MAP.dest,[ci.cidade,ci.cep,ci.endereco,ci.bairro,ci.uf],
+    /cnpj|cpf|inscr|fone|telef|email|cidade|munic|cep|bairro|ender|logr|codigo|setor|numero/);
+  ci.itens=_findCol(headers,COL_MAP.itens);
+  // "Volume (m³)" também casa com "vol" dos volumes: a coluna de m³ não é a de volumes
+  if(ci.itens>=0&&(ci.itens===ci.m3||ci.itens===ci.pesocub)){ const h=headers.map(_norm); ci.itens=-1;
+    for(const k of COL_MAP.itens){ const i=h.findIndex((x,j)=>j!==ci.m3&&j!==ci.pesocub&&x.includes(_norm(k))); if(i>=0){ ci.itens=i; break; } } }
+  ci.tipo=_findCol(headers,COL_MAP.tipo);
+  ci.fone=_findCol(headers,COL_MAP.fone);
+  ci.setor=_findCol(headers,COL_MAP.setor);
+  // coluna só com o número da casa ("Número", "Nº"), diferente da coluna da nota
+  ci.numero=headers.map(h=>_semAcento(h).replace(/[^a-z0-9]/g,'')).findIndex((h,i)=>i!==ci.nf&&['numero','num','nro','no','n'].includes(h));
+  return ci;
+}
+// Campos que a pessoa confere na janela "Conferir colunas", na ordem em que aparecem
+const CAMPOS_PLAN=[['chave','Chave de acesso da NF-e'],['nf','Número da nota'],['ctrc','CT-e / CTRC'],['dest','Cliente'],
+  ['endereco','Endereço (rua)'],['numero','Número da casa'],['bairro','Bairro'],['cidade','Cidade'],['uf','UF'],['cep','CEP'],
+  ['peso','Peso real (kg)'],['pesocub','Peso cubado (kg)'],['m3','Volume (m³)'],['itens','Volumes (caixas)'],['setor','Setor'],
+  ['tipo','Coleta ou entrega'],['fone','Telefone']];
+// Sem coluna da nota (nem chave, nem CT-e) ou sem cidade e sem CEP, a planilha não vira pedido direito
+function _faltamColunas(ci){
+  const f=[];
+  if(!(ci.chave>=0)&&!(ci.nf>=0)&&!(ci.ctrc>=0)) f.push('nota');
+  if(!(ci.cidade>=0)&&!(ci.cep>=0)) f.push('local');
+  return f;
 }
 function _cidadeNorm(raw){
   // Nome da cidade como veio da nota, padronizado (sem "- SP", com maiúsculas
@@ -3451,28 +3655,24 @@ function _cidadeNorm(raw){
 function _pesoNum(v){ const n=_numBR(v); return Number.isFinite(n)&&n>0?Math.max(n,1):100; }
 
 function _tipoCelula(v,padrao){ const t=_norm(v); if(t.includes('colet')) return 'coleta'; if(t.includes('entreg')) return 'entrega'; return padrao; }
-function _rowsToOrders(rows,headers,tipoPadrao){
-  const ci={ nf:_findCol(headers,COL_MAP.nf), cidade:_findCol(headers,COL_MAP.cidade), peso:_findCol(headers,COL_MAP.peso), itens:_findCol(headers,COL_MAP.itens), dest:_findCol(headers,COL_MAP.dest), cep:_findCol(headers,COL_MAP.cep), tipo:_findCol(headers,COL_MAP.tipo),
-    endereco:_findCol(headers,COL_MAP.endereco), bairro:_findCol(headers,COL_MAP.bairro), uf:_findCol(headers,COL_MAP.uf),
-    fone:_findCol(headers,COL_MAP.fone), m3:_colM3(headers) };
-  if(ci.dest===ci.endereco) ci.dest=-1;
-  // "Volume (m³)" também casa com "vol" dos volumes: a coluna de m³ não é a de volumes
-  if(ci.m3>=0&&ci.itens===ci.m3){ const h=headers.map(_norm); ci.itens=-1;
-    for(const k of COL_MAP.itens){ const i=h.findIndex((x,j)=>j!==ci.m3&&x.includes(_norm(k))); if(i>=0){ ci.itens=i; break; } } }
+function _rowsToOrders(rows,headers,tipoPadrao,ciPronto){
+  const ci={...(ciPronto||_colunasAuto(headers,rows,tipoPadrao))};
   ci.comM3=0;
-  // coluna só com o número da casa ("Número", "Nº"), diferente da coluna da nota
-  ci.numero=headers.map(h=>_semAcento(h).replace(/[^a-z0-9]/g,'')).findIndex((h,i)=>i!==ci.nf&&['numero','num','nro','no','n'].includes(h));
   const cel=(k,row)=>ci[k]>=0?String(row[ci[k]]??'').trim():'';
   const orders=[]; let semNumero=0; ci.semPeso=0;
   for(const row of rows){
     if(!row||row.every(c=>!c)) continue;
-    const nfLido=ci.nf>=0?String(row[ci.nf]||'').trim():'';
+    const chaveD=cel('chave',row).replace(/\D/g,''), chave=_chaveValida(chaveD)?chaveD:'';
+    const ctrc=cel('ctrc',row).replace(/[<>"']/g,'').slice(0,30);
+    let nfLido=cel('nf',row).replace(/[<>"']/g,'');
+    if(!nfLido&&chave) nfLido=String(+chave.slice(25,34));   // número da nota dentro da chave
+    if(!nfLido&&ctrc) nfLido=ctrc;
     const nf=nfLido||'S/N';
     const tipo=ci.tipo>=0?_tipoCelula(row[ci.tipo],tipoPadrao):tipoPadrao;
     const cidade=_cidadeNorm(ci.cidade>=0?row[ci.cidade]:'');
     const coord=CITY_COORDS[cidade]||DEPOT;
-    const pesoCel=ci.peso>=0?row[ci.peso]:null;
-    if(!Number.isFinite(_numBR(pesoCel))||_numBR(pesoCel)<=0) ci.semPeso++;
+    const pesoCel=ci.peso>=0?row[ci.peso]:null, pesoN=_numBR(pesoCel), temPeso=Number.isFinite(pesoN)&&pesoN>0;
+    if(!temPeso) ci.semPeso++;
     const fone=_foneNorm(cel('fone',row));
     const cepRaw=ci.cep>=0?String(row[ci.cep]||'').replace(/\D/g,''):'';
     const cep=cepRaw.length===8?cepRaw:'';
@@ -3480,14 +3680,23 @@ function _rowsToOrders(rows,headers,tipoPadrao){
     const num=cel('numero',row);
     if(endereco&&num&&!_partesEndereco(endereco).numero) endereco+=', '+num;
     const uf=cel('uf',row).toUpperCase();
-    const m3=ci.m3>=0?_numBR(cel('m3',row)):0;
+    let m3=ci.m3>=0?_numBR(cel('m3',row)):0, deCub=false;
+    // sem m³ na planilha: o peso cubado maior que o real dá o volume (peso cubado ÷ fator de cubagem).
+    // Igual ou menor que o real pode ser o peso taxado; aí o volume fica sem medida.
+    const cub=ci.pesocub>=0?_numBR(cel('pesocub',row)):0;
+    if(!(m3>0&&m3<=200)&&temPeso&&Number.isFinite(cub)&&cub>pesoN&&FATOR_CUB>0){
+      const v=Math.round(cub/FATOR_CUB*1e4)/1e4; if(v>0&&v<=200){ m3=v; deCub=true; } }
     if(m3>0&&m3<=200) ci.comM3++;
+    const setor=cel('setor',row).replace(/[<>"']/g,'').slice(0,40);
     orders.push({
-      id:_chaveId(nfLido||('SN-'+Date.now().toString(36)+'-'+(++semNumero)),tipo), nf, tipo,
+      id:_chaveId(chave||nfLido||('SN-'+Date.now().toString(36)+'-'+(++semNumero)),tipo), nf, tipo,
       cidade, peso:_pesoNum(pesoCel), ...(fone?{fone}:{}),
       itens:Math.max(1,ci.itens>=0?parseInt(row[ci.itens])||1:1),
-      ...(m3>0&&m3<=200?{m3:Math.round(m3*1e4)/1e4, m3Fonte:'planilha'}:{}),
-      dest:cel('dest',row)||cidade,
+      ...(m3>0&&m3<=200?{m3:Math.round(m3*1e4)/1e4, m3Fonte:'planilha', ...(deCub?{m3DeCubado:true}:{})}:{}),
+      ...(chave?{chave}:{}), ...(ctrc?{ctrc}:{}), ...(setor?{setor}:{}),
+      ...(Number.isFinite(cub)&&cub>0?{pesoCubado:Math.round(cub*10)/10}:{}),
+      ...(temPeso?{}:{_pesoFalta:true}),
+      dest:cel('dest',row).replace(/[<>"']/g,'')||cidade,
       endereco, bairro:cel('bairro',row), uf:/^[A-Z]{2}$/.test(uf)?uf:'',
       cep,
       geoStatus: cep ? 'pendente' : 'sem_cep',
@@ -4627,6 +4836,121 @@ async function _parsePDF(file,tipo){
   return {orders, semPeso, semEndereco};
 }
 
+// ── Planilha e relatório de TMS (ex.: SSW opção 081, que sai em CSV) ─────
+// CSV de verdade: campo entre aspas (com ; ou quebra de linha dentro), separador ; , ou TAB,
+// e o encoding do arquivo: relatório de sistema costuma sair em Windows-1252, não em UTF-8.
+async function _textoCsv(file){
+  const buf=await file.arrayBuffer();
+  let t; try{ t=new TextDecoder('utf-8',{fatal:true}).decode(buf); }catch(e){ t=new TextDecoder('windows-1252').decode(buf); }
+  return t.replace(/^\uFEFF/,'');
+}
+function _linhasCsv(text){
+  // separador: o que mais aparece fora de aspas nas primeiras linhas (pode haver um título antes)
+  const prims=text.split(/\r?\n/).filter(l=>l.trim()).slice(0,15);
+  const conta=c=>Math.max(0,...prims.map(l=>{ let n=0, q=false; for(const ch of l){ if(ch==='"') q=!q; else if(ch===c&&!q) n++; } return n; }));
+  const sep=[';','\t',','].reduce((a,c)=>conta(c)>conta(a)?c:a,';');
+  const out=[]; let row=[], cel='', q=false, aspas=false;
+  const fecha=()=>{ row.push(aspas?cel:cel.trim()); cel=''; aspas=false; };
+  for(let i=0;i<text.length;i++){
+    const ch=text[i];
+    if(q){ if(ch==='"'){ if(text[i+1]==='"'){ cel+='"'; i++; } else q=false; } else cel+=ch; continue; }
+    if(ch==='"'&&!cel.trim()){ q=true; aspas=true; cel=''; continue; }
+    if(ch===sep){ fecha(); continue; }
+    if(ch==='\n'||ch==='\r'){ if(ch==='\r'&&text[i+1]==='\n') i++; fecha(); out.push(row); row=[]; continue; }
+    cel+=ch;
+  }
+  if(cel!==''||row.length){ fecha(); out.push(row); }
+  return out.filter(r=>r.some(c=>String(c).trim()!==''));
+}
+function _linhaCabecalho(linhas){
+  let melhor=0, pts=0;
+  linhas.slice(0,15).forEach((l,i)=>{
+    const ci=_colunasAuto((l||[]).map(h=>String(h??'').trim()),[],'entrega');
+    const n=Object.values(ci).filter(v=>v>=0).length;
+    if(n>pts){ pts=n; melhor=i; } });
+  return melhor;
+}
+// Modelo de colunas: a pessoa confere uma vez e o sistema guarda, pela lista de cabeçalhos
+// (o mesmo relatório do TMS tem sempre os mesmos). Fica no banco da empresa e no aparelho.
+function _sigCab(headers){
+  let h=2166136261; const t=headers.map(_norm).join('|');
+  for(let i=0;i<t.length;i++){ h^=t.charCodeAt(i); h=Math.imul(h,16777619)>>>0; }
+  return 'c'+headers.length+'_'+h.toString(36);
+}
+const _modLS=()=>'rv3_modelos_planilha_'+(EID||'local');
+function _modelosLocais(){ try{ return JSON.parse(localStorage.getItem(_modLS())||'{}')||{}; }catch(e){ return {}; } }
+const _modNoBanco=()=>!!db&&!(contaDemo&&!EID);
+async function _lerModeloPlanilha(sig){
+  if(_modNoBanco()){ try{ const sn=await get(ref(db,TP('config/modelos_planilha/'+sig))); if(sn.exists()) return JSON.parse(sn.val()); }catch(e){} }
+  return _modelosLocais()[sig]||null;
+}
+async function _salvarModeloPlanilha(sig,modelo){
+  try{ const m=_modelosLocais(); m[sig]=modelo; localStorage.setItem(_modLS(),JSON.stringify(m)); }catch(e){}
+  if(!_modNoBanco()) return 'aparelho';
+  try{ await set(ref(db,TP('config/modelos_planilha/'+sig)),JSON.stringify(modelo)); return 'banco'; }catch(e){ return 'aparelho'; }
+}
+function _ciDoModelo(m,headers){
+  const ci={}, i=(m&&m.i)||{};
+  CAMPOS_PLAN.forEach(([k])=>{ const v=i[k]; ci[k]=Number.isInteger(v)&&v>=0&&v<headers.length?v:-1; });
+  return ci;
+}
+let _ultPlan=null;   // última planilha lida, para "Conferir colunas" refazer a importação
+async function _planilhaParaPedidos(file,headers,rows,tipo,forcar){
+  const sig=_sigCab(headers), modelo=forcar?null:await _lerModeloPlanilha(sig);
+  let ci=modelo?_ciDoModelo(modelo,headers):_colunasAuto(headers,rows,tipo), onde=modelo?'salvo':'';
+  const faltam=_faltamColunas(ci);
+  if(forcar||(!modelo&&faltam.length)){
+    const r=await _pedirColunas(headers,rows,forcar?_colunasAuto(headers,rows,tipo):ci,file.name,forcar?[]:faltam,forcar?ci:null);
+    if(!r) throw new Error('importação cancelada na conferência das colunas');
+    ci=r; onde=await _salvarModeloPlanilha(sig,{v:1,i:r});
+  }
+  const {orders,ci:ci2}=_rowsToOrders(rows,headers,tipo,ci);
+  _ultPlan={file, tipo, headers, ci, onde};
+  return {orders, semPeso:ci2.peso<0?orders.length:ci2.semPeso};
+}
+const _TXT_FALTA={nota:'a coluna da nota (ou a da chave de acesso, ou a do CT-e)', local:'a coluna da cidade ou a do CEP'};
+let _colResolver=null;
+function _pedirColunas(headers,rows,ci,nome,faltam,atual){
+  return new Promise(res=>{
+    if(_colResolver) _colResolver(null);
+    _colResolver=res;
+    const ex=j=>{ const r=rows.find(r=>r&&String(r[j]??'').trim()); return r?String(r[j]).trim().slice(0,32):''; };
+    const opc=headers.map((h,j)=>`<option value="${j}">${esc(h||('Coluna '+(j+1)))}${ex(j)?' — ex.: '+esc(ex(j)):''}</option>`).join('');
+    $id('col-intro').textContent=(faltam.length?`Não achei ${faltam.map(f=>_TXT_FALTA[f]).join(' nem ')} pelo nome das colunas de "${nome}". `:`Colunas de "${nome}". `)
+      +'Escolha qual coluna é cada informação. O sistema guarda e usa sozinho nas próximas planilhas com estas mesmas colunas.';
+    $id('col-lista').innerHTML=CAMPOS_PLAN.map(([k,t])=>`<label class="col-linha"><span>${t}</span><select class="field-inp field-inp-text" data-campo="${k}"><option value="-1">Não tem</option>${opc}</select></label>`).join('');
+    const base=atual||ci;
+    $id('col-lista').querySelectorAll('select').forEach(sel=>{ const v=base[sel.dataset.campo]; sel.value=String(Number.isInteger(v)&&v>=0?v:-1); });
+    $id('col-erro').textContent='';
+    $id('modal-colunas').classList.add('open');
+    setTimeout(()=>$id('col-lista').querySelector('select')?.focus(),60);
+  });
+}
+function _colunasResp(v){ $id('modal-colunas').classList.remove('open'); const r=_colResolver; _colResolver=null; if(r) r(v); }
+window._colunasResp=_colunasResp;
+function _colunasOk(){
+  const ci={}; $id('col-lista').querySelectorAll('select').forEach(sel=>{ ci[sel.dataset.campo]=+sel.value; });
+  const f=_faltamColunas(ci);
+  if(f.length){ $id('col-erro').textContent='Falta escolher '+f.map(x=>_TXT_FALTA[x]).join(' e ')+'.'; return; }
+  _colunasResp(ci);
+}
+window._colunasOk=_colunasOk;
+// Mostra as colunas usadas na última planilha, com o botão para conferir e importar de novo
+function _mostrarColunasUsadas(){
+  const el=$id('imp-colunas'); if(!el) return;
+  if(!_ultPlan){ el.hidden=true; el.innerHTML=''; return; }
+  const {headers,ci,file,onde}=_ultPlan;
+  const usadas=CAMPOS_PLAN.filter(([k])=>ci[k]>=0).map(([k,t])=>`${esc(t)}: <b>${esc(headers[ci[k]]||'')}</b>`);
+  el.hidden=false;
+  el.innerHTML=`<span>Colunas usadas em "${esc(file.name)}"${onde==='salvo'?' (as que você conferiu antes)':''}: ${usadas.join(' · ')||'nenhuma'}.</span>
+    <button type="button" class="btn-sm" id="btn-conferir-colunas" onclick="conferirColunas()">Conferir colunas</button>`;
+}
+async function conferirColunas(){
+  if(!_ultPlan) return;
+  await importarArquivo({files:[_ultPlan.file]},_ultPlan.tipo,true);
+}
+window.conferirColunas=conferirColunas;
+
 // XML no encoding que ele declara (nota antiga em ISO-8859-1 não perde os acentos)
 async function _textoXml(file){
   const buf=await file.arrayBuffer();
@@ -4634,27 +4958,22 @@ async function _textoXml(file){
   const enc=(/encoding\s*=\s*["']([\w.-]+)["']/i.exec(ini)||[])[1]||'utf-8';
   try{ return new TextDecoder(enc).decode(buf); }catch(e){ return new TextDecoder('utf-8').decode(buf); }
 }
-async function _lerArquivo(file,tipo){
+async function _lerArquivo(file,tipo,forcarColunas){
   const ext=file.name.split('.').pop().toLowerCase();
   if(ext==='xml'){ const r=_lerXmlNFe(await _textoXml(file),tipo); return {orders:r.orders, semPeso:r.semPeso, cancelamentos:r.cancelamentos||[], ctes:r.ctes||[]}; }
   if(ext==='pdf'){ const r=await _parsePDF(file,tipo); return {orders:r.orders, semPeso:r.semPeso, semEndereco:r.semEndereco}; }
-  if(ext==='csv'){
-    const text=(await file.text()).replace(/^﻿/,'');
-    const sep=text.includes(';')?';':',';
-    const lines=text.split(/\r?\n/).filter(l=>l.trim());
-    if(lines.length<2) throw new Error('arquivo vazio ou sem dados');
-    const headers=lines[0].split(sep).map(h=>h.trim().replace(/^"|"$/g,''));
-    const rows=lines.slice(1).map(l=>l.split(sep).map(v=>v.trim().replace(/^"|"$/g,'')));
-    const {orders,ci}=_rowsToOrders(rows,headers,tipo);
-    return {orders, semPeso:ci.peso<0?orders.length:ci.semPeso};
-  }
-  if(ext==='xlsx'||ext==='xls'){
-    if(!window.XLSX) throw new Error('o leitor de Excel não carregou; recarregue a página');
-    const wb=XLSX.read(await file.arrayBuffer(),{type:'array'});
-    const data=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:''});
-    if(data.length<2) throw new Error('planilha vazia');
-    const {orders,ci}=_rowsToOrders(data.slice(1),data[0].map(h=>String(h||'').trim()),tipo);
-    return {orders, semPeso:ci.peso<0?orders.length:ci.semPeso};
+  if(ext==='csv'||ext==='xlsx'||ext==='xls'){
+    let data;
+    if(ext==='csv') data=_linhasCsv(await _textoCsv(file));
+    else {
+      if(!window.XLSX) throw new Error('o leitor de Excel não carregou; recarregue a página');
+      const wb=XLSX.read(await file.arrayBuffer(),{type:'array'});
+      data=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{header:1,defval:'',raw:false});
+    }
+    // relatório de sistema às vezes tem título antes do cabeçalho: o cabeçalho é a linha com mais nomes conhecidos
+    const ic=_linhaCabecalho(data);
+    if(data.length-ic<2) throw new Error(ext==='csv'?'arquivo vazio ou sem dados':'planilha vazia');
+    return await _planilhaParaPedidos(file,data[ic].map(h=>String(h??'').trim()),data.slice(ic+1),tipo,forcarColunas);
   }
   throw new Error('formato não suportado (use XML, Excel, CSV ou PDF)');
 }
@@ -4669,6 +4988,18 @@ function _mesmoEndereco(a,b){
 }
 function _mesclarReimportada(o,cru){
   const r={...o};
+  // Relatório do TMS (planilha) por cima de uma nota lida do XML, do PDF ou do e-mail: a planilha
+  // só completa. Fica o que a nota tem e a planilha não (produtos, medidas, remetente...).
+  if(o.origem==='planilha'&&cru.origem&&cru.origem!=='planilha'){
+    Object.keys(cru).forEach(k=>{ if(['status','rota_atual','baixa'].includes(k)) return;
+      const v=r[k]; if(v===undefined||v===null||v==='') r[k]=cru[k]; });
+    if(o._pesoFalta&&+cru.peso>0) r.peso=+cru.peso;
+    if(cru.dest&&o.dest===o.cidade) r.dest=cru.dest;
+    // caixas lidas da nota valem mais que o m³ da planilha (o 3D usa as caixas)
+    if(cru.m3Fonte==='medidas'&&+cru.m3>0&&cru.cx){ r.m3=+cru.m3; r.m3Fonte='medidas'; delete r.m3DeCubado; }
+    r.origem=cru.origem;
+  }
+  delete r._pesoFalta;
   if(cru.agendado) _CAMPOS_AGENDA.forEach(k=>{ if(cru[k]!==undefined) r[k]=cru[k]; });
   if(cru.urgente) r.urgente=true;
   // m³ digitado aqui vale mais que a falta dele no arquivo novo
@@ -4677,19 +5008,20 @@ function _mesclarReimportada(o,cru){
     r.m3=+cru.m3; r.m3Fonte=cru.m3Fonte; if(+cru.maiorCm>0) r.maiorCm=+cru.maiorCm; delete r.cx; delete r.medidasAviso;
     ['cteNum','m3Rateio','m3DeCubado'].forEach(k=>{ if(cru[k]!==undefined) r[k]=cru[k]; });
   }
-  r._localMantido = cru.geoStatus==='ok' && Number.isFinite(+cru.lat) && Number.isFinite(+cru.lng) && _mesmoEndereco(o,cru);
+  r._localMantido = cru.geoStatus==='ok' && Number.isFinite(+cru.lat) && Number.isFinite(+cru.lng) && _mesmoEndereco(r,cru);
   if(r._localMantido) _CAMPOS_LOCAL.forEach(k=>{ if(cru[k]!==undefined) r[k]=cru[k]; });
   return r;
 }
-async function importarArquivo(input){
+async function importarArquivo(input,tipoForcado,forcarColunas){
   const files=[...(input.files||[])]; input.value='';
   if(!files.length) return;
-  const tipo=tipoImport;
+  const tipo=tipoForcado||tipoImport;
+  _ultPlan=null; _mostrarColunasUsadas();
   _impMsg('info',`Lendo ${_plural(files.length,'arquivo','arquivos')}...`);
   const lidos=[], erros=[], canc=[], ctes=[]; let semPeso=0, semEndereco=0;
   for(const f of files){
     try{
-      const r=await _lerArquivo(f,tipo);
+      const r=await _lerArquivo(f,tipo,forcarColunas);
       if(!r.orders.length&&!(r.cancelamentos||[]).length&&!(r.ctes||[]).length) throw new Error('nenhuma nota encontrada');
       lidos.push(...r.orders); semPeso+=r.semPeso; semEndereco+=(r.semEndereco||0); canc.push(...(r.cancelamentos||[])); ctes.push(...(r.ctes||[]));
     }catch(e){ erros.push(`${f.name}: ${e.message}`); }
@@ -4715,7 +5047,10 @@ async function importarArquivo(input){
     await _tratarCancelamentos([...new Set(canc)]);
     return;
   }
-  if(semPeso){
+  _mostrarColunasUsadas();
+  // planilha sem peso de uma nota que já veio do XML: fica o peso de lá, sem perguntar
+  semPeso-=lidos.filter(o=>{ const c=o._pesoFalta&&pedidosCrus&&pedidosCrus[o.id]; return c&&+c.peso>0&&c.origem&&c.origem!=='planilha'; }).length;
+  if(semPeso>0){
     const ok=confirm(`⚠️ ${_plural(semPeso,'nota está','notas estão')} sem peso no arquivo.\n\n${semPeso===1?'Ela entra':'Elas entram'} com 100 kg. Confira antes de roteirizar, para não passar da capacidade do veículo.\n\nImportar mesmo assim?`);
     if(!ok){ _impMsg('err','Importação cancelada: notas sem peso.'); return; }
   }
@@ -4735,7 +5070,7 @@ async function importarArquivo(input){
       ((cru.status||'pendente')==='despachado'?voltaram:atualizadas).push(o.id);
       if(!r._localMantido && cru.geoStatus==='ok') mudouEnd.push(o.id);
       delete r._localMantido;
-    } else { payload[o.id]=o; novasL.push(o); }
+    } else { delete o._pesoFalta; payload[o.id]=o; novasL.push(o); }
   });
   const novos=Object.values(payload);
   if(contaDemo && !EID){
@@ -5713,6 +6048,8 @@ function _verNotaHtml(o,varias){
       ${linha('Carga',varias?esc(_verKg(d.peso))+liq+' · '+_verVolumes(d):'')}
       ${linha('Emissão',em?`${em[3]}/${em[2]}/${em[1]}`:'')}
       ${linha('Valor da nota',valor)}
+      ${linha('CT-e / CTRC',d.ctrc?esc(d.ctrc):'')}
+      ${linha('Setor',d.setor?esc(d.setor):'')}
       ${(z=>linha('Produto perigoso',z?`<span class="perig-txt">${esc(_perigTxt(z).replace(/^Produto perigoso,? ?/,'')||'escrito na nota')}</span>. Confira rótulos e placas, kit de emergência, documento fiscal com os dados do produto e motorista com curso MOPP.`:''))(_perigosoDe(d))}
     </dl>
     ${tab}

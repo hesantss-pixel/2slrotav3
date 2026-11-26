@@ -269,6 +269,17 @@
           "cubagem": {
             ".write": "auth != null && ((root.child('acesso').child(auth.uid).val() === true && root.child('membros').child(auth.uid).val() === $eid) || ($eid === 'demo_' + auth.uid && root.child('acesso').child(auth.uid).val() === 'demo' && root.child('demos').child(auth.uid).child('expira').val() > now))",
             ".validate": "newData.hasChildren(['fator']) && newData.child('fator').isNumber() && newData.child('fator').val() >= 50 && newData.child('fator').val() <= 1000"
+          },
+          "modelos_planilha": {
+            ".write": "auth != null && ((root.child('acesso').child(auth.uid).val() === true && root.child('membros').child(auth.uid).val() === $eid) || ($eid === 'demo_' + auth.uid && root.child('acesso').child(auth.uid).val() === 'demo' && root.child('demos').child(auth.uid).child('expira').val() > now))",
+            "$sig": { ".validate": "$sig.matches(/^c[0-9]{1,3}_[0-9a-z]{1,8}$/) && newData.isString() && newData.val().length <= 3000" }
+          },
+          "ssw": {
+            ".write": "auth != null && ((root.child('acesso').child(auth.uid).val() === true && root.child('membros').child(auth.uid).val() === $eid) || ($eid === 'demo_' + auth.uid && root.child('acesso').child(auth.uid).val() === 'demo' && root.child('demos').child(auth.uid).child('expira').val() > now))",
+            "codigos": {
+              "$k": { ".validate": "$k.matches(/^(entregue|coletado|ausente|endereco|recusado|fechado|avaria|tempo|outro)$/) && newData.isString() && newData.val().matches(/^[A-Za-z0-9]{1,6}$/)" }
+            },
+            "$outro": { ".validate": false }
           }
         }
       }

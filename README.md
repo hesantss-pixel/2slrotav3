@@ -884,6 +884,53 @@ encaixe 3D de caixas; "40x30x25" solto no texto da nota (sem saber a quantidade,
 (`firebase/database.rules.json`, nós `produtos` e `config/cubagem`). Sem elas, o resto funciona,
 mas salvar medida de produto ou o fator de cubagem dá "O banco recusou" e a tela explica o motivo.
 
+## SSW: relatório da opção 081 na importação e baixas para o SSW (26/11/2026)
+
+**Ida (SSW → RotaV3).** No SSW, a opção 081 exporta as entregas pendentes da unidade em CSV. Em
+Pedidos → Importar notas, o CSV entra como qualquer planilha:
+- **CSV de verdade:** campo entre aspas (com `;` ou quebra de linha dentro), separador `;`, `,` ou
+  TAB, e o arquivo em UTF-8 ou Windows-1252 (relatório de sistema costuma sair assim; antes os
+  acentos quebravam). Título antes do cabeçalho é pulado: o cabeçalho é a linha com mais nomes
+  conhecidos entre as 15 primeiras. Vale também para Excel.
+- **Colunas novas:** chave da NF-e (pelo nome ou pelo conteúdo: 44 números com dígito verificador
+  certo), CT-e/CTRC, setor e peso cubado. Com a chave, o pedido fica na mesma chave do XML da nota
+  (não duplica) e o número da nota sai de dentro da chave se não houver coluna de NF.
+- **Remetente e destinatário na mesma linha:** na entrega valem as colunas do destinatário (nome,
+  endereço, bairro, cidade, UF, CEP); na coleta, as do remetente. "Valor NF", "CNPJ Destinatário",
+  "Código do município" e "Peso cubado/taxado" não são mais confundidos com nota, cliente, cidade
+  e peso.
+- **Peso cubado:** sem coluna de m³, peso cubado **maior** que o real vira m³ (peso cubado ÷ o fator
+  de cubagem da empresa). Igual ou menor não vira (pode ser o peso taxado).
+- **Conferir colunas:** sem coluna da nota (nem chave, nem CT-e) ou sem cidade e sem CEP, abre a
+  janela para dizer qual coluna é cada informação, com um exemplo de cada. A escolha fica guardada
+  pela lista de cabeçalhos (`config/modelos_planilha/<assinatura>`, e no aparelho) e vale sozinha
+  nas próximas planilhas iguais. Depois de toda planilha, a tela mostra as colunas usadas e o
+  botão **Conferir colunas**, que importa de novo com as colunas escolhidas.
+- **Planilha por cima de nota do XML:** só completa. Ficam produtos, caixas, m³ das medidas, peso
+  e ponto no mapa da nota; entram setor e CTRC.
+- O layout das colunas da 081 **não é público**. O reconhecimento é pelo nome; o arquivo real de um
+  cliente confirma. A 081 traz o pendente da unidade, sem filtro de data: importar de novo não
+  duplica, e nota que já saiu em rota não muda.
+
+**Volta (RotaV3 → SSW).** Relatórios → **Códigos do SSW**: o código de ocorrência que a empresa usa
+no SSW para entregue, coletado e cada motivo de não realizado (`config/ssw/codigos`). Relatórios →
+**Baixas para o SSW**: planilha do período com data, hora, situação, motivo, código, chave da NF-e,
+CNPJ do remetente e série (tirados da chave), NF, CTRC, setor, cliente, quem recebeu, observação,
+rota e motorista. A chave sai como `="…"` para o Excel não cortar os 44 números; texto que começa com
+`=`, `+`, `-` ou `@` sai como texto (não vira fórmula).
+- **O envio direto ao SSW ainda não existe.** O SSW tem a "WebAPI de Recepção de Ocorrências de
+  Parceiro", mas a página dela bloqueia leitura automática e os nomes dos campos não são públicos em
+  outro lugar. Para fazer: a página `ssw.inf.br/ajuda/webapiOcorParceiro.html` salva em PDF, um
+  usuário do SSW só para a integração, o cadastro do programa EDI dessa WebAPI e o token, feitos
+  pela transportadora, e `FIREBASE_SECRET` no Railway (o servidor precisa ler as baixas).
+
+**Regras novas do Firebase:** `config/modelos_planilha` e `config/ssw`. Sem elas, o modelo de colunas
+e os códigos ficam só no aparelho (a tela avisa "neste aparelho").
+
+Testes: `tests/tela/t_ssw081.js` (CSV em Windows-1252 com título, aspas, remetente e destinatário,
+chave, CTRC, setor, peso cubado, mescla com o XML, conferir colunas, modelo guardado, celular),
+`t_ssw_baixas.js` (códigos, planilha, período sem baixa, celular) e `t_regras.js`.
+
 ## Vários veículos de uma vez e carga → rota (26/11/2026)
 
 **Vários veículos de uma vez.** Na Roteirização, o botão **Vários veículos de uma vez** abre a

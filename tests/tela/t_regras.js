@@ -102,6 +102,14 @@ ok(W('empresas/principal/produtos/pabc', PROD, ADMIN), 'administrador grava na e
 ok(W('empresas/emp1/config/cubagem', { fator: 250 }, ANA), 'membro grava o fator de cubagem da empresa');
 ok(!W('empresas/emp1/config/cubagem', { fator: 5 }, ANA) && !W('empresas/emp1/config/cubagem', { fator: '300' }, ANA), 'fator fora de 50 a 1.000, ou em texto, é recusado');
 ok(!W('empresas/emp2/config/cubagem', { fator: 250 }, ANA), 'e não muda o fator de outra empresa');
+// modelo de colunas da planilha (relatório de TMS) e códigos de ocorrência do SSW
+ok(W('empresas/emp1/config/modelos_planilha/c19_9k4qoy', '{"v":1,"i":{"nf":3}}', ANA), 'membro guarda o modelo de colunas da planilha');
+ok(!W('empresas/emp1/config/modelos_planilha/qualquer', '{}', ANA) && !W('empresas/emp1/config/modelos_planilha/c3_abc', { v: 1 }, ANA), 'modelo com nome estranho ou que não é texto é recusado');
+ok(!W('empresas/emp2/config/modelos_planilha/c3_abc', '{}', ANA), 'e não grava modelo de outra empresa');
+ok(W('empresas/emp1/config/ssw', { codigos: { entregue: '01', ausente: '46' } }, ANA), 'membro grava os códigos do SSW');
+ok(!W('empresas/emp1/config/ssw', { codigos: { entregue: '<b>' } }, ANA) && !W('empresas/emp1/config/ssw', { codigos: { hackear: '01' } }, ANA) && !W('empresas/emp1/config/ssw', { senha: 'x' }, ANA),
+  'código com sinal, situação desconhecida ou campo a mais (como senha) é recusado');
+ok(!W('empresas/emp2/config/ssw', { codigos: { entregue: '01' } }, ANA), 'e não muda os códigos de outra empresa');
 ok(!W('empresas/emp1/config/fator_tempo', 1.2, ANA), 'o membro continua sem mexer no ajuste de tempo (só o administrador)');
 
 console.log(falhas ? `${falhas} falha(s)` : 'regras ok');
