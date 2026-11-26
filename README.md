@@ -884,6 +884,33 @@ encaixe 3D de caixas; "40x30x25" solto no texto da nota (sem saber a quantidade,
 (`firebase/database.rules.json`, nós `produtos` e `config/cubagem`). Sem elas, o resto funciona,
 mas salvar medida de produto ou o fator de cubagem dá "O banco recusou" e a tela explica o motivo.
 
+## 3D ao vivo na rota manual e desenho mais legível (25/11/2026)
+
+- **Rota manual:** a tela de montar no mapa tem o painel **Montagem no baú, em 3D**. A cada parada que
+  entra, sai ou muda de lugar, o 3D se refaz (espera 0,12 s depois do último toque). A vista, o
+  "Empilhar" e o momento ("Na saída do CD" / "Ao longo da viagem") ficam como a pessoa deixou. Em tela
+  larga (1.500 px ou mais) o 3D fica ao lado do mapa; em notebook e celular, logo abaixo, para não
+  apertar o mapa. Sem as medidas do baú, o painel diz por quê (mesmo texto do plano de carga). O painel
+  pode ser fechado; fechado, não refaz o desenho.
+- **Cor fixa por parada:** a parada 1 é sempre azul, a 2 laranja, e assim por diante, no 3D, na
+  legenda, no pino do mapa e no número da lista da rota manual. Antes a cor mudava entre "Na saída do
+  CD" e "Ao longo da viagem". A paleta não usa vermelho (é o "não coube") nem dourado (é o centro de
+  gravidade).
+- **Número da parada nas próprias caixas:** cada região de caixas de uma parada leva o número impresso
+  na face mais visível, sem repetir em toda caixa e nunca num lugar que outra caixa cobre. Parada
+  escondida ou com caixas pequenas demais ganha uma etiqueta redonda na cor dela, sem encavalar nas
+  outras. Antes as etiquetas se amontoavam no meio do desenho.
+- **Veículo claro:** cabine e chassi em cinza-claro, com janela e rodas, para a carga colorida
+  aparecer. "Cabine" e "Porta" têm contorno branco, legíveis por cima das caixas.
+- **Centro de gravidade:** virou uma marca dourada no chão, ao lado do baú (a linha tracejada no meio
+  das caixas atrapalhava a leitura).
+- **O que não coube:** fica empilhado numa parede atrás da porta, e não numa fila comprida que
+  encolhia o desenho.
+- **Legenda:** em ordem de parada, com o número na cor da parada e o nome do cliente.
+- Testes: `tests/tela/t_manual3d.js` (3D ao vivo, cores iguais no pino, lista e caixas, câmera
+  mantida, tirar e reordenar, coleta, painel fechado, Fiorino que não comporta, celular, carroceria
+  aberta) e `t_carga3d.js` (cor igual nos dois momentos, toda parada desenhada com número).
+
 ## Vários tamanhos de caixa na mesma observação (25/11/2026)
 
 - A observação da nota ou da ordem de coleta pode ter mais de um tamanho, cada um com a quantidade:

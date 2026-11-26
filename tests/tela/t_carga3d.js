@@ -143,11 +143,15 @@ function confere(bau, res, empilhar) {
     passo: document.getElementById('c3d-ate-txt').textContent,
   }));
   ok(J(pl.abas) === J(['Em 3D:true', 'De lado (m³):false']) && J(pl.cv) === J([true, true, true]) && pl.lado, 'plano abre em 3D, com o desenho de lado na outra aba ' + J([pl.abas, pl.cv]));
-  ok(pl.chips.length === 5 && pl.chips.some((t) => /Parada \d ⚠/.test(t)) && pl.chips.some((t) => /sem medida/.test(t)), 'uma legenda por entrega, com ⚠ no perigoso e "sem medida" ' + J(pl.chips));
+  ok(pl.chips.length === 5 && pl.chips.some((t) => /^\dIndústria B ⚠/.test(t)) && pl.chips.some((t) => /sem medida/.test(t)) && J(pl.chips.map((t) => +t[0])) === J([1, 2, 3, 4, 5]),
+    'uma legenda por entrega, em ordem de parada, com o número, o nome, ⚠ no perigoso e "sem medida" ' + J(pl.chips));
+  const c3a = await p.evaluate(() => ({ e: window.__c3d(), chips: [...document.querySelectorAll('.c3d-chip i')].map((i) => [+i.textContent, i.getAttribute('style')]) }));
+  ok(c3a.chips.every(([n, st]) => st === 'background:' + c3a.e.cores[n - 1]) && c3a.e.naPos.every((k) => c3a.e.marcadas.includes(k)),
+    'cada parada tem a cor da posição dela na rota, e toda parada desenhada tem o número no desenho ' + J([c3a.chips, c3a.e.naPos, c3a.e.marcadas]));
   ok(/4 paradas desenhadas, 32 volumes/.test(pl.resumo) && /Só com o m³.*parada \d/.test(pl.resumo) && /Sem medida, fora do desenho: parada \d/.test(pl.resumo), 'resumo diz o que foi desenhado, o que é só m³ e o que ficou fora: ' + pl.resumo);
   ok(/NF 7002⚠ ONU 3082/.test(pl.tab) && /carga comprida/.test(pl.tab) && /carga leve e volumosa/.test(pl.tab), 'tabela marca o perigoso e o tipo de carga');
   ok(/⚠ Produto perigoso na parada \d \(ONU 3082\)/.test(pl.corpo) && pl.passo === 'tudo carregado', 'plano avisa o perigoso; passo começa com tudo carregado');
-  ok(/Centro de gravidade da carga \(círculo dourado\): a [\d,]+ m da cabine \(\d+% do baú\)/.test(pl.resumo), 'plano mostra o centro de gravidade da carga');
+  ok(/Centro de gravidade da carga \(marca dourada ao lado do baú\): a [\d,]+ m da cabine \(\d+% do baú\)/.test(pl.resumo), 'plano mostra o centro de gravidade da carga');
   await p.click('.c3d-chip:has-text("⚠")'); await p.waitForTimeout(150);
   let info = (await p.textContent('#c3d-info')).replace(/\s+/g, ' ');
   ok(/Parada \d \(\d+º a carregar\) · NF 7002 · Indústria B · 4 volumes de 115 × 115 × 60 cm · 3,17 m³ · 1\.900 kg · carga comum .* ⚠ Produto perigoso ONU 3082, risco 90/.test(info), 'tocar na parada mostra o pedido: ' + info);
@@ -186,7 +190,9 @@ function confere(bau, res, empilhar) {
   await p.click('.c3d-m[data-m="viagem"]'); await p.waitForTimeout(150);
   const mc = await p.evaluate(() => ({ chips: [...document.querySelectorAll('.c3d-chip')].map((x) => x.textContent), res: document.getElementById('c3d-resumo').textContent,
     passo: document.querySelector('.c3d-passo').hidden, lbl: document.querySelector('.c3d-passo label').textContent, max: document.getElementById('c3d-ate').max, txt: document.getElementById('c3d-ate-txt').textContent }));
-  ok(mc.chips.length === 6 && mc.chips[5] === 'Parada 6 · coleta' && /^Parada 1 · entrega/.test(mc.chips[0]) && !mc.passo && mc.lbl === 'Viagem' && mc.max === '6',
+  const c3b = await p.evaluate(() => [...document.querySelectorAll('.c3d-chip i')].map((i) => [+i.textContent, i.getAttribute('style')]));
+  ok(c3a.chips.every(([n, st]) => c3b.some(([m, s2]) => m === n && s2 === st)), 'a parada fica com a mesma cor "Na saída do CD" e "Ao longo da viagem" ' + J(c3b));
+  ok(mc.chips.length === 6 && mc.chips[5] === '6Fornecedor F · coleta' && /^1\D/.test(mc.chips[0]) && !mc.passo && mc.lbl === 'Viagem' && mc.max === '6',
     '"Ao longo da viagem": todas as paradas na ordem, com o passo por parada ' + J(mc.chips));
   ok(/^Ao longo da viagem: cada entrega tira as caixas dela; cada coleta entra no espaço livre/.test(mc.res) && /Agora: [\d,]+ m³ a bordo na saída do CD .*O momento mais cheio é na saída do CD/.test(mc.res) && /saída do CD · mais cheio/.test(mc.txt),
     'começa no momento mais cheio (aqui, a saída: as entregas saem antes da coleta) ' + mc.res.slice(0, 200));
@@ -249,7 +255,7 @@ function confere(bau, res, empilhar) {
   const so = await p.evaluate(() => ({ abas: document.querySelectorAll('.plano-aba').length, modos: document.querySelectorAll('.c3d-m').length, cv: !!document.getElementById('c3d-cv'),
     chips: [...document.querySelectorAll('.c3d-chip')].map((x) => x.textContent), passo: document.getElementById('c3d-ate-txt').textContent,
     corpo: document.getElementById('plano-corpo').textContent.replace(/\s+/g, ' ') }));
-  ok(so.cv && so.abas === 0 && so.modos === 0 && J(so.chips) === J(['Parada 1 · coleta ⚠', 'Parada 2 · coleta']) && so.passo === 'depois da parada 2 (coleta) · mais cheio',
+  ok(so.cv && so.abas === 0 && so.modos === 0 && J(so.chips) === J(['1Fornecedor X · coleta ⚠', '2Fornecedor Y · coleta']) && so.passo === 'depois da parada 2 (coleta) · mais cheio',
     'rota só de coletas abre direto o 3D das coletas, na ordem: ' + J([so.chips, so.passo]));
   ok(/só tem coletas: o veículo sai vazio e o 3D mostra como as coletas entram no baú/.test(so.corpo) && /Ordem das coletas\s*A primeira coleta entra primeiro e vai para o fundo/.test(so.corpo) && /1ª\s*1\s*NF 8101⚠ ONU 3082/.test(so.corpo) && !/junto à cabine/.test(so.corpo) && /Coletas: 3,53 m³ de 25,88 m³ do baú/.test(so.corpo),
     'tabela "Ordem das coletas" e o volume das coletas no baú ' + so.corpo.slice(-900));

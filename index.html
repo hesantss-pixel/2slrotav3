@@ -731,6 +731,18 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
 .btn-modal-alt{width:100%;background:var(--s3);border:1px solid var(--border2);border-radius:12px;padding:13px;font-family:var(--sans);font-weight:700;font-size:13px;color:var(--text);cursor:pointer;margin-top:10px;}
 .man-wrap{max-width:860px;}
+.man-3d{margin:14px 0 6px;border:1px solid var(--border2);border-radius:16px;background:var(--s2);padding:2px 14px 12px;}
+.man-3d>summary{cursor:pointer;font-weight:700;font-size:14.5px;color:var(--text);padding:11px 0 8px;min-height:24px;}
+.man-3d-msg{font-size:12.5px;color:var(--text2);line-height:1.55;margin:2px 0 6px;}
+.man-3d .c3d-cv{height:300px;}
+/* tela larga: mapa e 3D lado a lado, sem apertar o mapa (pinos próximos encavalariam); nas outras, o 3D vem logo abaixo */
+@media(min-width:1500px){
+  .man-wrap{max-width:1500px;}
+  .man-wrap>:not(.man-duo){max-width:860px;}
+  .man-duo{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(420px,1fr);gap:18px;align-items:start;}
+  .man-3d{margin-top:0;}
+  .man-3d .c3d-cv{height:340px;}
+}
 .man-painel{position:sticky;top:8px;z-index:620;background:var(--s2);border:1px solid var(--border2);border-radius:16px;padding:14px 16px;margin-bottom:14px;box-shadow:0 2px 12px rgba(13,27,46,.07);}
 .man-topo{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;}
 .man-paradas{font-family:var(--sans);font-weight:800;font-size:16px;color:var(--text);}
@@ -756,7 +768,8 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
 .man-item{display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;}
 .man-item.pico{border-color:var(--yellow);background:#fffaf0;}
 .man-num{flex:none;width:28px;height:28px;border-radius:28px;background:var(--navy);color:#fff;display:flex;align-items:center;justify-content:center;font:800 12.5px var(--sans);}
-.man-item.col .man-num{background:#fff;color:var(--navy);border:2px solid var(--vv);border-radius:7px;}
+.man-item.col .man-num{background:var(--cor,#fff);color:#fff;border:2px solid var(--vv);border-radius:7px;}
+.man-num{background:var(--cor,var(--navy));}
 .man-txt{flex:1;min-width:0;font-size:13px;line-height:1.45;}
 .man-txt b{font-family:var(--sans);font-weight:700;}
 .man-txt span{display:block;color:var(--text3);font-size:11.5px;}
@@ -814,8 +827,8 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
 .pino.coleta{background:var(--navy);border-color:var(--vv);border-radius:6px;}
 .pino.hoje{background:#d64545;}
 .pino.cd{background:var(--vv2);border-color:#fff;width:18px;height:18px;margin:13px;}
-.pino.sel{width:30px;height:30px;margin:7px;font-size:12px;background:var(--navy);border-color:var(--vv);border-width:3px;}
-.pino.coleta.sel{background:#fff;color:var(--navy);}
+.pino.sel{width:30px;height:30px;margin:7px;font-size:12px;background:var(--cor,var(--navy));border-color:#fff;border-width:3px;box-shadow:0 0 0 1.5px rgba(13,27,46,.55),0 2px 6px rgba(13,27,46,.35);}
+.pino.coleta.sel{background:var(--cor,#fff);color:#fff;border-color:var(--vv);}
 @media(max-width:520px){#mapa-manual{height:340px;}.man-peso{margin-left:0;}}
 @media(prefers-reduced-motion:reduce){.man-trilho>i{transition:none;}}
 /* ── Cubagem (m³) ── */
@@ -876,7 +889,7 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
 .c3d-v{border:1px solid var(--border2);background:#fff;border-radius:7px;padding:5px 10px;font-family:inherit;font-weight:600;font-size:12px;line-height:1.2;color:var(--text2);cursor:pointer;min-height:32px;}
 .c3d-v[aria-pressed="true"]{border-color:var(--navy,#16305a);color:var(--text);box-shadow:inset 0 0 0 1px var(--navy,#16305a);}
 .c3d-emp{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text2);}
-.c3d-cv{display:block;width:100%;height:320px;border:1px solid var(--border2);border-radius:10px;background:linear-gradient(#fbfcfe,#f1f4f9);touch-action:none;cursor:grab;}
+.c3d-cv{display:block;width:100%;height:360px;border:1px solid var(--border2);border-radius:10px;background:linear-gradient(#fbfcfe,#f1f4f9);touch-action:none;cursor:grab;}
 .c3d-cv:active{cursor:grabbing;}
 .c3d-cv:focus-visible{outline:2px solid var(--navy,#16305a);outline-offset:2px;}
 .c3d-passo{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--text2);margin-top:8px;}
@@ -884,13 +897,13 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
 .c3d-passo span{min-width:120px;text-align:right;color:var(--text);font-weight:600;}
 .c3d-info{font-size:12.5px;line-height:1.5;color:var(--text2);margin:8px 0 6px;min-height:19px;}
 .c3d-leg{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0;}
-.c3d-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border2);background:#fff;border-radius:999px;padding:4px 10px;font-family:inherit;font-weight:600;font-size:11.5px;line-height:1.2;color:var(--text2);cursor:pointer;min-height:30px;}
-.c3d-chip i{width:10px;height:10px;border-radius:3px;display:inline-block;}
+.c3d-chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--border2);background:#fff;border-radius:999px;padding:4px 11px 4px 5px;font-family:inherit;font-weight:600;font-size:11.5px;line-height:1.2;color:var(--text2);cursor:pointer;min-height:30px;}
+.c3d-chip i{min-width:20px;height:20px;padding:0 4px;border-radius:5px;display:inline-grid;place-items:center;font-style:normal;font-weight:700;font-size:11px;color:#fff;box-sizing:border-box;}
 .c3d-chip[aria-pressed="true"]{border-color:var(--text);color:var(--text);}
 .perig-tag{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:5px;background:#fff1e8;border:1px solid #f0a476;color:#a8380a;font-family:inherit;font-weight:700;font-size:10.5px;line-height:1.5;white-space:nowrap;vertical-align:1px;}
 .perig-txt{color:#a8380a;}
 .plano-cuid{color:#8a5a06;font-weight:600;}
-@media (max-width:600px){ .c3d-cv{height:260px;} .c3d-passo{flex-wrap:wrap;} .c3d-passo span{min-width:0;flex-basis:100%;text-align:left;} }
+@media (max-width:600px){ .c3d-cv{height:300px;} .c3d-passo{flex-wrap:wrap;} .c3d-passo span{min-width:0;flex-basis:100%;text-align:left;} }
 .prod-sec{max-width:820px;margin:18px 0 26px;}
 .prod-h{font-size:16px;margin:0 0 4px;color:var(--text);}
 .prod-sub{font-size:12.5px;color:var(--text2);line-height:1.55;margin:0 0 10px;}
@@ -1222,13 +1235,21 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
           <div class="man-aviso" id="man-aviso" role="alert"></div>
         </div>
         <p class="sr-only" id="man-anuncio" role="status" aria-live="polite"></p>
-        <div id="mapa-manual"></div>
-        <div class="man-acoes">
-          <button class="btn-sm" type="button" id="man-desfazer" onclick="manDesfazer()">↩ Desfazer</button>
-          <button class="btn-sm" type="button" onclick="manAddVisiveis()">+ Colocar os que estão à vista</button>
-          <button class="btn-sm" type="button" onclick="manLimpar()">Limpar a rota</button>
+        <div class="man-duo">
+          <div class="man-col">
+            <div id="mapa-manual"></div>
+            <div class="man-acoes">
+              <button class="btn-sm" type="button" id="man-desfazer" onclick="manDesfazer()">↩ Desfazer</button>
+              <button class="btn-sm" type="button" onclick="manAddVisiveis()">+ Colocar os que estão à vista</button>
+              <button class="btn-sm" type="button" onclick="manLimpar()">Limpar a rota</button>
+            </div>
+            <p class="man-dica">Toque num ponto para colocar na rota; toque de novo para tirar. Para ver o pedido inteiro (produtos, peso, volumes), segure o dedo no ponto; no computador, botão direito; no teclado, tecla V no ponto. Pedidos no mesmo endereço entram juntos, porque são a mesma parada. A linha pontilhada é o rascunho na ordem que você escolheu; quando você para de tocar, ela vira o caminho pelas ruas. Ponto vermelho: agendado para o dia da viagem.</p>
+          </div>
+          <details class="man-3d" id="man-3d" open ontoggle="if(this.open&&window._man3d) window._man3d(true)">
+            <summary>Montagem no baú, em 3D</summary>
+            <div id="man-3d-in"></div>
+          </details>
         </div>
-        <p class="man-dica">Toque num ponto para colocar na rota; toque de novo para tirar. Para ver o pedido inteiro (produtos, peso, volumes), segure o dedo no ponto; no computador, botão direito; no teclado, tecla V no ponto. Pedidos no mesmo endereço entram juntos, porque são a mesma parada. A linha pontilhada é o rascunho na ordem que você escolheu; quando você para de tocar, ela vira o caminho pelas ruas. Ponto vermelho: agendado para o dia da viagem.</p>
         <div class="man-sec">Ordem das paradas</div>
         <div class="man-lista" id="man-ordem"></div>
         <div id="man-disponiveis"></div>
@@ -5197,6 +5218,10 @@ function _manRotulo(g){
   if(n.every((v,k)=>!k||v===n[k-1]+1)) return `${n[0]}–${n[n.length-1]}`;
   return n.length>3 ? `${n[0]}+${n.length-1}` : n.join('·');
 }
+function _manCorGrupo(g){
+  const n=g.lista.map(o=>_manOrdem(_manId(o))).filter(Boolean);
+  return n.length?_corParada(Math.min(...n)-1):'';
+}
 function _manTipoGrupo(g){
   const c=g.lista.filter(o=>_tipoDe(o)==='coleta').length;
   return c===g.lista.length?'Coleta':c===0?'Entrega':'Entrega e coleta';
@@ -5242,7 +5267,7 @@ function _manIcone(g){
   const txt=rot || (g.lista.length>1?'×'+g.lista.length:'');
   const hoje=g.lista.some(o=>_saiHoje(o,rotaCtxD.data));   // agendado para o dia da viagem
   return L.divIcon({className:'pino-alvo',iconSize:[44,44],iconAnchor:[22,22],
-    html:`<span class="pino${col?' coleta':''}${hoje?' hoje':''}${rot?' sel':''}">${esc(txt)}</span>`});
+    html:`<span class="pino${col?' coleta':''}${hoje?' hoje':''}${rot?' sel':''}"${rot?` style="--cor:${_manCorGrupo(g)}"`:''}>${esc(txt)}</span>`});
 }
 function _manCriarMapa(){
   const el=$id('mapa-manual'); if(!el||!window.L) return;
@@ -5284,6 +5309,8 @@ function _manPintar(g){
     const txt=rot || (g.lista.length>1?'×'+g.lista.length:'');
     if(p.className!==cls) p.className=cls;
     if(p.textContent!==txt) p.textContent=txt;
+    const cor=rot?_manCorGrupo(g):'';
+    if(p.style.getPropertyValue('--cor')!==cor){ if(cor) p.style.setProperty('--cor',cor); else p.style.removeProperty('--cor'); }
   }
   const t=_manTitulo(g);
   if(el.getAttribute('title')!==t) el.setAttribute('title',t);
@@ -5686,13 +5713,33 @@ function _manAtualizar(){
   const bt=$id('man-usar');
   bt.disabled=!manSel.length;
   bt.textContent=manSel.length?`Usar esta rota (${_plural(manSel.length,'parada','paradas')}) →`:'Escolha ao menos uma parada';
+  _man3d();
 }
+// Montagem no baú ao vivo: refaz o 3D a cada toque no mapa, com as medidas de cada pedido, como o plano
+// de carga. Espera um instante depois do último toque, para não refazer no meio de uma sequência.
+let _man3dT=0;
+function _man3d(agora){
+  clearTimeout(_man3dT);
+  if(!agora){ _man3dT=setTimeout(()=>_man3d(true),120); return; }
+  const box=$id('man-3d-in'), det=$id('man-3d'); if(!box||!det) return;
+  const bau=carrocD==='aberta'?null:_bauDaViagemD();
+  const sair=()=>{ if(_c3d&&_c3d.pre==='m3d') _c3d=null; };
+  if(!bau){ box.innerHTML=`<p class="man-3d-msg">Sem o 3D: ${esc(_motivoSem3dD())}</p>`; sair(); return; }
+  if(!manSel.length){ box.innerHTML=`<p class="man-3d-msg">Toque nos pontos do mapa: as caixas de cada parada aparecem aqui, no baú de ${_fmtMed(bau.c)} × ${_fmtMed(bau.l)} × ${_fmtMed(bau.a)} m, com o número da parada. A última entrega vai para o fundo.</p>`; sair(); return; }
+  if(!det.open||$id('rot-step-manual').style.display==='none') return;
+  const n=_contarTipos(manSel), modos=!!(n.entrega&&n.coleta), ant=_c3d&&_c3d.pre==='m3d'?_c3d:null;
+  // refaz o html só quando muda o que aparece (os botões de momento); senão só redesenha, sem piscar
+  if(!ant||!$id('m3d-cv')||ant.comModos!==modos) box.innerHTML=_c3dHtml(n.entrega,n.coleta,'m3d');
+  _c3dIniciar(manSel.slice(),{bau:{c:bau.c,l:bau.l,a:bau.a},capKg:capKgD,carroc:carrocD},'m3d');
+  if(_c3d) _c3d.comModos=modos;
+}
+window._man3d=_man3d;
 function _manListas(carga){
   $id('man-ordem').innerHTML = manSel.length ? manSel.map((p,i)=>{
     const col=_tipoDe(p)==='coleta';
     const apos=carga.apos&&carga.apos[i]!=null?Math.round(carga.apos[i]):null;
     return `<div class="man-item ${col?'col':''} ${carga.pico===i?'pico':''}">
-      <div class="man-num" aria-hidden="true">${i+1}</div>
+      <div class="man-num" aria-hidden="true" style="--cor:${_corParada(i)}">${i+1}</div>
       <div class="man-txt"><b>${col?'Coleta':'Entrega'} · NF ${esc(p.nf)}</b>
         <span>${p.dest&&p.dest!==p.cidade?esc(p.dest)+' · ':''}${p.bairro?esc(p.bairro)+' — ':''}${esc(p.cidade)} · ${(+p.peso||0).toLocaleString('pt-BR')} kg${apos!=null?` · ${apos.toLocaleString('pt-BR')} kg a bordo depois daqui`:''}${_aprox(p)?' · confirmar ponto':''}</span></div>
       <div class="man-bts">
@@ -5730,12 +5777,14 @@ function manUsar(){
   const medida=_manChave&&_manTracCache.get(_manChave);
   if(medida&&medida.fonte==='OSRM'&&_manPontos().length===manSel.length) rotaGeradaD[0].km=medida.km;
   $id('rot-step-manual').style.display='none';
+  if(_c3d&&_c3d.pre==='m3d') _c3d=null;
   renderRotasResultD(rotaGeradaD);
   _agendarAvaliacaoD(0);
 }
 window.manUsar=manUsar;
 function manVoltar(){
   $id('rot-step-manual').style.display='none';
+  if(_c3d&&_c3d.pre==='m3d') _c3d=null;
   $id('rot-step-confirm').style.display='block';
 }
 window.manVoltar=manVoltar;
@@ -7351,14 +7400,17 @@ function _abrirPlano(paradas,o){
   const cx=$id('modal-plano').querySelector('.modal-box'); if(cx) cx.scrollTop=0;
   setTimeout(()=>{ const b=$id('modal-plano').querySelector('.modal-close'); if(b) b.focus({preventScroll:true}); },30);
 }
-function abrirPlanoCargaD(idx){
-  const r=rotaGeradaD[idx]; if(!r) return;
-  const veic=(motoristaSelecionadoD&&_rotuloVeic(motoristaSelecionadoD))||vehSel?.nome||'Veículo';
+function _motivoSem3dD(){
   const bau=_bauDaViagemD();
-  const motivo3d=carrocD==='aberta'?'carroceria aberta não tem baú para desenhar.'
+  return carrocD==='aberta'?'carroceria aberta não tem baú para desenhar.'
     : !_bauSelD?'o veículo não tem as medidas do baú. Cadastre comprimento, largura e altura por dentro em Motoristas → veículo.'
     : !bau?(bauM3D>0?`o volume do baú foi digitado à mão (${_fmtM3(bauM3D)} m³) e não bate com as medidas do veículo (${_fmtM3(_m3Bau(_bauSelD))} m³). Volte e deixe o volume que o sistema preenche.`
       :'o volume do baú ficou vazio na roteirização. Volte e deixe o volume que o sistema preenche ao escolher o veículo.'):'';
+}
+function abrirPlanoCargaD(idx){
+  const r=rotaGeradaD[idx]; if(!r) return;
+  const veic=(motoristaSelecionadoD&&_rotuloVeic(motoristaSelecionadoD))||vehSel?.nome||'Veículo';
+  const bau=_bauDaViagemD(), motivo3d=_motivoSem3dD();
   _abrirPlano(_paradasD(r),{capM3:capM3D, bauM3:bauM3D, capKg:capKgD, ...(bau?{bau:{c:bau.c,l:bau.l,a:bau.a}}:{motivo3d}), carroc:carrocD,
     tituloCurto:rotaGeradaD.length>1?`Plano de carga · Rota ${idx+1}`:'Plano de carga',
     titulo:`${veic} · ${_dataBR(rotaCtxD.data)} saindo ${_hhmm(rotaCtxD.saida)}`});
@@ -7598,35 +7650,42 @@ function _avisosCg(cg,bau,capKg){
 window.__arrumarCarga=_arrumarCarga;
 
 // cores bem diferentes entre paradas vizinhas (12 antes de repetir)
-const _COR_PARADA=['#2a4f86','#d4a12a','#2f8a7e','#7a5a9e','#c0623a','#4f8a3a','#5aa0d8','#a8475f','#6b7a90','#8c6a2e','#2aa6a6','#b07ac0'];
+// Cor de cada parada: a mesma em todas as vistas e na legenda, presa ao número da parada. Vizinhas
+// bem diferentes; sem vermelho (é o "não coube") e sem dourado (é o centro de gravidade)
+const _COR_PARADA=['#2f6fd0','#f08a24','#2e9e5b','#8e5cc7','#13a5b9','#d6548e','#8b6b3d','#8aa11f','#3f4fa8','#5f8f89','#c27ac4','#6c7a8e'];
+const _corParada=i=>_COR_PARADA[i%_COR_PARADA.length];
 let _c3d=null;
 function _planoPode3D(o){ const b=o&&o.bau; return !!(b&&+b.c>0&&+b.l>0&&+b.a>0); }
-function _c3dHtml(nEnt,nCol){
-  return `<div class="c3d">
+function _c3dHtml(nEnt,nCol,pre){
+  pre=pre||'c3d';
+  return `<div class="c3d" data-pre="${pre}">
     ${nEnt&&nCol?`<div class="c3d-modos" role="group" aria-label="Momento da viagem"><button type="button" class="c3d-m" data-m="saida" aria-pressed="true" onclick="_c3dModo('saida')">Na saída do CD</button><button type="button" class="c3d-m" data-m="viagem" aria-pressed="false" onclick="_c3dModo('viagem')">Ao longo da viagem</button></div>`:''}
     <div class="c3d-bar">
       <div class="c3d-vistas" role="group" aria-label="Ponto de vista">
         ${[['3d','3D'],['porta','Pela porta'],['lado','De lado'],['cima','De cima']].map(([v,t])=>`<button type="button" class="c3d-v" data-v="${v}" aria-pressed="${v==='3d'}" onclick="_c3dVista('${v}')">${t}</button>`).join('')}
       </div>
-      <label class="c3d-emp"><input type="checkbox" id="c3d-emp" checked onchange="_c3dEmpilhar(this.checked)"> Empilhar</label>
+      <label class="c3d-emp"><input type="checkbox" id="${pre}-emp" checked onchange="_c3dEmpilhar(this.checked)"> Empilhar</label>
     </div>
-    <canvas id="c3d-cv" class="c3d-cv" tabindex="0" role="img" aria-label="Baú em 3D com as caixas de cada parada. Use as setas para girar; a lista abaixo do desenho tem cada parada."></canvas>
-    <div class="c3d-passo" hidden><label for="c3d-ate">Carregar até</label><input type="range" id="c3d-ate" min="1" max="1" value="1" step="1" oninput="_c3dAte(+this.value)"><span id="c3d-ate-txt" aria-live="polite"></span></div>
-    <p class="c3d-info" id="c3d-info" aria-live="polite">Arraste para girar. Toque numa caixa (ou numa parada abaixo) para ver o pedido.</p>
-    <div class="c3d-leg" id="c3d-leg"></div>
-    <p class="plano-p" id="c3d-resumo"></p>
+    <canvas id="${pre}-cv" class="c3d-cv" tabindex="0" role="img" aria-label="Baú em 3D com as caixas de cada parada, cada uma com o número da parada. Use as setas para girar; a lista abaixo do desenho tem cada parada."></canvas>
+    <div class="c3d-passo" hidden><label for="${pre}-ate">Carregar até</label><input type="range" id="${pre}-ate" min="1" max="1" value="1" step="1" oninput="_c3dAte(+this.value)"><span id="${pre}-ate-txt" aria-live="polite"></span></div>
+    <p class="c3d-info" id="${pre}-info" aria-live="polite">Arraste para girar. Toque numa caixa (ou numa parada abaixo) para ver o pedido.</p>
+    <div class="c3d-leg" id="${pre}-leg" role="group" aria-label="Paradas: toque para destacar"></div>
+    <p class="plano-p" id="${pre}-resumo"></p>
   </div>`;
 }
-const _VISTAS={'3d':[-0.9,0.5],porta:[-0.3,0.3],lado:[-Math.PI/2,0.12],cima:[-Math.PI/2,1.55]};
+const _VISTAS={'3d':[-0.8,0.6],porta:[-0.3,0.3],lado:[-Math.PI/2,0.12],cima:[-Math.PI/2,1.55]};
+// elementos do 3D que está na tela (o do plano ou o da rota manual)
+function _c3dEl(k){ return $id((_c3d?_c3d.pre:'c3d')+'-'+k); }
+function _c3dTodos(sel){ return (_c3d&&_c3d.root||document).querySelectorAll(sel); }
 function _grupoDe(p,i,k,cor){ return {n:i+1, nf:p.nf, p, k, tipo:_tipoDe(p), cor, caixas:_caixasDe(p), perig:_perigosoDe(p), kg:+p.peso||0, regras:_regrasCarga(p)}; }
 // Grupos de uma arrumação: "saida" = entregas, da última para a primeira (a última vai no fundo);
 // "coletas" = coletas na ordem em que são feitas (a primeira vai no fundo), com o baú vazio
 function _gruposCarga(paradas,modo){
   const l=paradas.map((p,i)=>({p,i})).filter(x=>_tipoDe(x.p)===(modo==='coletas'?'coleta':'entrega'));
-  return (modo==='coletas'?l:l.reverse()).map((c,k)=>_grupoDe(c.p,c.i,k,_COR_PARADA[k%_COR_PARADA.length]));
+  return (modo==='coletas'?l:l.reverse()).map((c,k)=>_grupoDe(c.p,c.i,k,_corParada(c.i)));
 }
 // Todas as paradas na ordem da rota (para a viagem): a cor é a da parada
-function _gruposViagem(paradas){ return paradas.map((p,i)=>_grupoDe(p,i,i,_COR_PARADA[i%_COR_PARADA.length])); }
+function _gruposViagem(paradas){ return paradas.map((p,i)=>_grupoDe(p,i,i,_corParada(i))); }
 // O baú depois de cada parada: sai do CD com as entregas (a última no fundo); cada entrega tira
 // as caixas dela; cada coleta entra no espaço livre na frente do que já está a bordo (não dá para
 // pôr carga atrás da que já entrou). O que não cabe naquele momento fica de fora, em vermelho.
@@ -7649,14 +7708,25 @@ function _estadosViagem(bau,grupos,empilhar){
   return est;
 }
 window.__estadosViagem=(bau,paradas,emp)=>_estadosViagem(bau,_gruposViagem(paradas),emp!==false);
-function _c3dIniciar(paradas,o){
+// para os testes: o 3D que está na tela, sem o desenho
+window.__c3d=()=>_c3d&&{pre:_c3d.pre, modo:_c3d.modo, yaw:_c3d.yaw, pitch:_c3d.pitch, empilhar:_c3d.empilhar, marcadas:_c3d.marcadas||[], foraAte:_c3d.foraAte||0,
+  bau:_c3d.bau, naPos:[...new Set(_c3d.res.pos.map(b=>b.g))].sort((a,b)=>a-b), grupos:_c3d.grupos.map(g=>({k:g.k,n:g.n,cor:g.cor,caixas:g.caixas.length})), cores:_COR_PARADA.slice()};
+function _c3dIniciar(paradas,o,pre){
+  pre=pre||'c3d';
+  const ant=_c3d&&_c3d.pre===pre?_c3d:null;
   _c3d=null;
-  const cv=$id('c3d-cv'); if(!cv||!_planoPode3D(o)) return;
+  const cv=$id(pre+'-cv'); if(!cv||!_planoPode3D(o)) return;
   const tipos=paradas.map(_tipoDe), temEnt=tipos.includes('entrega');
   // coleta antes de alguma entrega: a carga coletada entra na frente das entregas que ainda vão sair
   const i1=tipos.indexOf('coleta'), misturada=i1>=0&&tipos.slice(i1).includes('entrega');
-  _c3d={paradas, bau:{c:+o.bau.c,l:+o.bau.l,a:+o.bau.a}, capKg:+o.capKg||0, aberta:o.carroc==='aberta', modo:temEnt?'saida':'viagem', misturada,
-    empilhar:true, yaw:_VISTAS['3d'][0], pitch:_VISTAS['3d'][1], foco:-1, sel:null, faces:[]};
+  _c3d={pre, root:cv.closest('.c3d')||document, paradas, bau:{c:+o.bau.c,l:+o.bau.l,a:+o.bau.a}, capKg:+o.capKg||0, aberta:o.carroc==='aberta',
+    modo:ant&&(ant.modo==='viagem'||temEnt)?ant.modo:(temEnt?'saida':'viagem'), misturada,
+    empilhar:ant?ant.empilhar:true, yaw:ant?ant.yaw:_VISTAS['3d'][0], pitch:ant?ant.pitch:_VISTAS['3d'][1], foco:-1, sel:null, faces:[]};
+  if(ant){   // refazendo o mesmo 3D (rota manual a cada toque): fica como a pessoa deixou
+    const e=_c3dEl('emp'); if(e) e.checked=_c3d.empilhar;
+    const v=Object.keys(_VISTAS).find(k=>Math.abs(_VISTAS[k][0]-_c3d.yaw)<1e-9&&Math.abs(_VISTAS[k][1]-_c3d.pitch)<1e-9);
+    _c3dTodos('.c3d-v').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===v)));
+  }
   _c3dEventos(cv);
   _c3dModo(_c3d.modo);
 }
@@ -7665,16 +7735,17 @@ function _c3dModo(m){
   st.modo=m==='viagem'?'viagem':'saida';
   st.grupos=st.modo==='viagem'?_gruposViagem(st.paradas):_gruposCarga(st.paradas,'saida');
   st.ate=st.grupos.length; st.foco=-1; st.sel=null; st.passo=null;
-  document.querySelectorAll('.c3d-m').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.m===st.modo)));
+  _c3dTodos('.c3d-m').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.m===st.modo)));
   _c3dArrumar();
-  const r=$id('c3d-ate'), box=r&&r.closest('.c3d-passo');
+  const r=_c3dEl('ate'), box=r&&r.closest('.c3d-passo');
   if(r){
     if(st.modo==='viagem'){ r.min='0'; r.max=String(st.estados.length-1); r.value=String(st.passo); box.hidden=st.estados.length<2; }
     else { r.min='1'; r.max=String(Math.max(1,st.grupos.length)); r.value=r.max; box.hidden=st.grupos.length<2; }
     box.querySelector('label').textContent=st.modo==='viagem'?'Viagem':'Carregar até';
   }
-  const rot=g=>st.modo==='viagem'?`Parada ${g.n} · ${g.tipo}`:`${g.k+1}º · Parada ${g.n}`;
-  $id('c3d-leg').innerHTML=st.grupos.map(g=>`<button type="button" class="c3d-chip" data-g="${g.k}" aria-pressed="false" onclick="_c3dFoco(${g.k})"><i style="background:${g.cor}"></i>${rot(g)}${g.perig?' ⚠':''}${g.regras&&(g.regras.fragil||g.regras.naoEmp)?' · frágil':''}${g.caixas.length?'':' (sem medida)'}</button>`).join('');
+  const nome=g=>{ const t=String(g.p.dest||('NF '+g.p.nf)||'').trim(); return t.length>18?t.slice(0,17).trim()+'…':t; };
+  $id(st.pre+'-leg').innerHTML=st.grupos.slice().sort((a,b)=>a.n-b.n).map(g=>`<button type="button" class="c3d-chip" data-g="${g.k}" aria-pressed="false" onclick="_c3dFoco(${g.k})"
+    aria-label="Parada ${g.n}, ${esc(g.p.dest||'NF '+g.p.nf)}${st.modo==='viagem'?', '+g.tipo:', '+(g.k+1)+'º a carregar'}"><i style="background:${g.cor}">${g.n}</i>${esc(nome(g))}${g.tipo==='coleta'?' · coleta':''}${g.perig?' ⚠':''}${g.regras&&(g.regras.fragil||g.regras.naoEmp)?' · frágil':''}${g.caixas.length?'':' (sem medida)'}</button>`).join('');
   _c3dAteTxt(); _c3dInfo(); _c3dDesenhar();
 }
 window._c3dModo=_c3dModo;
@@ -7700,21 +7771,21 @@ function _c3dResumo(){
   const nVol=desenh.reduce((s,g)=>s+vol(g),0), bauM3=st.bau.c*st.bau.l*st.bau.a;
   const e=viagem?st.estados[st.passo]:null, pico=viagem?st.estados[st.pico]:null;
   const quando=i=>i===0?'na saída do CD':`depois da parada ${st.estados[i].apos}`;
-  $id('c3d-resumo').innerHTML=[
+  _c3dEl('resumo').innerHTML=[
     viagem?`<b>Ao longo da viagem:</b> cada entrega tira as caixas dela; cada coleta entra no espaço livre, na frente do que já está a bordo. Agora: <b>${_fmtM3(e.vol)} m³ a bordo</b> ${quando(st.passo)} (${Math.round(e.vol/bauM3*100)}% do baú). O momento mais cheio é ${quando(st.pico)} (${_fmtM3(pico.vol)} m³).`:'',
     viagem&&st.misturada?'<b class="plano-err">Esta rota faz coleta antes de entrega:</b> a carga coletada entra na frente das entregas que ainda vão sair, e vai ser preciso tirar carga para entregar.':'',
     !st.grupos.length?'':desenh.length?(viagem?'':`${_plural(desenh.length,'parada desenhada','paradas desenhadas')}${nVol?`, ${_plural(nVol,'volume','volumes')}`:''}. A carga vai até <b>${_fmtMed(comp)} m</b> dos ${_fmtMed(st.bau.c)} m do baú.`):'Nenhuma parada tem medida para desenhar.',
     aprox.length?`Só com o m³, sem o formato das caixas (bloco tracejado): parada ${aprox.map(g=>g.n).join(', ')}.`:'',
     semMed.length?`Sem medida, fora do desenho: parada ${semMed.map(g=>g.n).join(', ')}. Reserve espaço.`:'',
-    foraG.length?`<b class="plano-err">${viagem?`Não cabem ${quando(st.passo)}`:`Não couberam ${st.empilhar?'':'sem empilhar '}`} pelo formato: parada ${foraG.map(g=>g.n).join(', ')}</b> (em vermelho, atrás da porta).${viagem?'':' Pelo m³ pode até caber: o que sobra são vãos entre as caixas.'}`:'',
+    foraG.length?`<b class="plano-err">${viagem?`Não cabem ${quando(st.passo)}`:`Não couberam${st.empilhar?'':' sem empilhar'}`} pelo formato: parada ${foraG.map(g=>g.n).join(', ')}</b> (em vermelho, atrás da porta).${viagem?'':' Pelo m³ pode até caber: o que sobra são vãos entre as caixas.'}`:'',
     (()=>{ const r=st.grupos.filter(g=>_regrasTxt(g.regras).length); return r.length?`Cuidados escritos na nota: ${r.map(g=>`parada ${g.n} (${_regrasTxt(g.regras).join(', ')})`).join('; ')}. Nada vai em cima de frágil ou de "não empilhar".`:''; })(),
     (()=>{ const cg=_cgCarga(st.res.pos); if(!cg) return '';
       const dl=cg.y-st.bau.l/2, av=_avisosCg(cg,st.bau,st.capKg);
-      return `Centro de gravidade da carga (círculo dourado): a <b>${_fmtMed(cg.x)} m</b> da cabine (${Math.round(cg.x/st.bau.c*100)}% do baú)${Math.abs(dl)>=0.05?`, ${Math.round(Math.abs(dl)*100)} cm para a ${dl>0?'direita':'esquerda'} do meio`:', no meio da largura'}. O peso de cada volume é o da nota dividido pelo tamanho.${av.length?` <b class="plano-err">Atenção: ${av.join('; ')}.</b>`:''}`; })(),
+      return `Centro de gravidade da carga (marca dourada ao lado do baú): a <b>${_fmtMed(cg.x)} m</b> da cabine (${Math.round(cg.x/st.bau.c*100)}% do baú)${Math.abs(dl)>=0.05?`, ${Math.round(Math.abs(dl)*100)} cm para a ${dl>0?'direita':'esquerda'} do meio`:', no meio da largura'}. O peso de cada volume é o da nota dividido pelo tamanho.${av.length?` <b class="plano-err">Atenção: ${av.join('; ')}.</b>`:''}`; })(),
   ].filter(Boolean).join(' ');
 }
 function _c3dAteTxt(){
-  const el=$id('c3d-ate-txt'); if(!el||!_c3d) return;
+  const el=_c3dEl('ate-txt'); if(!el||!_c3d) return;
   const st=_c3d;
   if(st.modo==='viagem'){ const e=st.estados[st.passo], g=st.grupos.find(x=>x.n===e.apos);
     el.textContent=(st.passo===0?'saída do CD':`depois da parada ${e.apos} (${g?g.tipo:''})`)+(st.passo===st.pico?' · mais cheio':''); return; }
@@ -7724,7 +7795,7 @@ function _c3dAteTxt(){
 function _c3dVista(v){
   if(!_c3d||!_VISTAS[v]) return;
   [_c3d.yaw,_c3d.pitch]=_VISTAS[v];
-  document.querySelectorAll('.c3d-v').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===v)));
+  _c3dTodos('.c3d-v').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.v===v)));
   _c3dDesenhar();
 }
 function _c3dEmpilhar(on){ if(!_c3d) return; _c3d.empilhar=!!on; _c3dArrumar(); _c3dAteTxt(); _c3dDesenhar(); _c3dInfo(); }
@@ -7737,13 +7808,13 @@ function _c3dAte(n){
 function _c3dFoco(k){
   if(!_c3d) return;
   _c3d.foco=_c3d.foco===k?-1:k; _c3d.sel=null;
-  document.querySelectorAll('.c3d-chip').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.g===_c3d.foco)));
+  _c3dTodos('.c3d-chip').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.g===_c3d.foco)));
   _c3dDesenhar(); _c3dInfo(_c3d.foco>=0?{g:_c3d.foco}:null);
 }
 Object.assign(window,{_c3dVista,_c3dEmpilhar,_c3dAte,_c3dFoco});
 function st3dOrd(g){ return _c3d&&_c3d.modo==='viagem'?g.tipo:`${g.k+1}º a carregar`; }
 function _c3dInfo(obj){
-  const el=$id('c3d-info'); if(!el||!_c3d) return;
+  const el=_c3dEl('info'); if(!el||!_c3d) return;
   if(!obj){ el.textContent='Arraste para girar. Toque numa caixa (ou numa parada abaixo) para ver o pedido.'; return; }
   const g=_c3d.grupos.find(x=>x.k===obj.g); if(!g) return;
   const p=g.p, med=g.caixas.filter(c=>!c.aprox);
@@ -7794,95 +7865,163 @@ function _c3dOrdem(objs,cam){
 }
 const _C3D_FACES=[[0,[1,3,7,5],[0,4,6,2]],[1,[2,6,7,3],[0,1,5,4]],[2,[4,5,7,6],[0,2,3,1]]];
 function _c3dDesenhar(){
-  const st=_c3d, cv=$id('c3d-cv'); if(!st||!cv||!cv.clientWidth) return;
+  const st=_c3d, cv=_c3dEl('cv'); if(!st||!cv||!cv.clientWidth) return;
   const dpr=Math.min(2,window.devicePixelRatio||1), w=cv.clientWidth, h=cv.clientHeight;
   if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){ cv.width=Math.round(w*dpr); cv.height=Math.round(h*dpr); }
   const ctx=cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,w,h);
   const {cam,r,u}=_c3dCam(st.yaw,st.pitch), {c:C,l:W,a:H}=st.bau, tudo=st.ate>=st.grupos.length;
-  // cabine, chassi e o que não coube (atrás da porta)
+  // O veículo é claro e discreto: o que importa no desenho é a carga, com a cor e o número de cada parada.
   // utilitário (Fiorino, van): cabine baixa com capô e assoalho fino; caminhão: cabine alta e chassi
-  const util=H<=1.6||C<=2.6;
-  const cabC=util?0.9:Math.min(1.7,Math.max(1,W*0.6)), cabH=util?H*0.9:Math.min(H,2.4)*0.85, cabZ=util?-0.18:-0.4;
-  const objs=util?[{x:-cabC-0.04,y:0,z:cabZ,dx:cabC,dy:W,dz:cabH-cabZ,cor:'#16243a',fixo:true},
-      {x:-cabC-0.74,y:0.05,z:cabZ,dx:0.7,dy:Math.max(0.1,W-0.1),dz:H*0.4-cabZ,cor:'#1f3150',fixo:true},
-      {x:-cabC-0.74,y:0.1,z:-0.2,dx:C+cabC+0.74,dy:Math.max(0.1,W-0.2),dz:0.16,cor:'#2b3a52',fixo:true}]
-    :[{x:-cabC-0.08,y:0,z:cabZ,dx:cabC,dy:W,dz:cabH-cabZ,cor:'#16243a',fixo:true},
-      {x:-cabC-0.08,y:0.12,z:-0.4,dx:C+cabC+0.08,dy:Math.max(0.1,W-0.24),dz:0.36,cor:'#2b3a52',fixo:true}];
-  const corDe=g=>(st.grupos.find(x=>x.k===g)||{}).cor||'#6b7a90';
+  const util=H<=1.6||C<=2.6, VEI='#dfe5ee', CHASSI='#c5cedb';
+  const cabC=util?0.85:Math.min(1.5,Math.max(0.9,W*0.55)), cabH=util?H*0.9:Math.min(H,2.4)*0.82, cabZ=util?-0.18:-0.4;
+  const objs=util?[{x:-cabC-0.04,y:0,z:cabZ,dx:cabC,dy:W,dz:cabH-cabZ,cor:VEI,fixo:true,cab:true},
+      {x:-cabC-0.74,y:0.05,z:cabZ,dx:0.7,dy:Math.max(0.1,W-0.1),dz:H*0.4-cabZ,cor:VEI,fixo:true},
+      {x:-cabC-0.74,y:0.1,z:-0.2,dx:C+cabC+0.74,dy:Math.max(0.1,W-0.2),dz:0.16,cor:CHASSI,fixo:true}]
+    :[{x:-cabC-0.08,y:0,z:cabZ,dx:cabC,dy:W,dz:cabH-cabZ,cor:VEI,fixo:true,cab:true},
+      {x:-cabC-0.08,y:0.12,z:-0.4,dx:C+cabC+0.08,dy:Math.max(0.1,W-0.24),dz:0.36,cor:CHASSI,fixo:true}];
+  const grupoDe=k=>st.grupos.find(x=>x.k===k)||null;
+  const corDe=k=>(grupoDe(k)||{}).cor||'#6b7a90';
   st.res.pos.forEach((b,i)=>{ if(b.g<st.ate) objs.push({...b, id:'p'+i, cor:corDe(b.g)}); });
-  if(tudo){ let fx=C+0.5; st.res.fora.forEach((f,i)=>{ objs.push({x:fx,y:0,z:0,dx:f.ori[0],dy:f.ori[1],dz:f.ori[2],g:f.g,q:f.q,grid:f.grid,aprox:f.aprox,fora:true,id:'f'+i,cor:'#d64545'}); fx+=f.ori[0]+0.2; }); }
+  // o que não coube: empilhado atrás da porta, numa parede do tamanho da porta (não numa fila comprida)
+  if(tudo){ let x0=C+0.45, y=0, z=0, alt=0, prof=0;
+    st.res.fora.forEach((f,i)=>{ const [dx,dy,dz]=f.ori;
+      if(y>0&&y+dy>W+1e-6){ y=0; z+=alt+0.03; alt=0; }
+      if(z>0&&z+dz>H+1e-6){ x0+=prof+0.12; y=0; z=0; alt=0; prof=0; }
+      objs.push({x:x0,y,z,dx,dy,dz,g:f.g,q:f.q,grid:f.grid,aprox:f.aprox,fora:true,id:'f'+i,cor:'#d64545'});
+      y+=dy+0.03; alt=Math.max(alt,dz); prof=Math.max(prof,dx); }); }
+  // rodas no lado do baú que está virado para a câmera
+  const yN=cam[1]>0?W:0, rr=util?0.27:0.42, zr=util?-0.3:-0.46;
+  const rodas=[util?-cabC-0.38:-cabC*0.5-0.08, util?C*0.78:C*0.74];
   // enquadra tudo no desenho
   const pr=(x,y,z)=>[x*r[0]+y*r[1]+z*r[2], -(x*u[0]+y*u[1]+z*u[2])];
   const cantos=b=>[0,1,2,3,4,5,6,7].map(k=>pr(b.x+(k&1)*b.dx,b.y+(k>>1&1)*b.dy,b.z+(k>>2&1)*b.dz));
   let mnx=Infinity,mny=Infinity,mxx=-Infinity,mxy=-Infinity;
-  [{x:0,y:0,z:0,dx:C,dy:W,dz:H},...objs].forEach(b=>cantos(b).forEach(([a,c])=>{ mnx=Math.min(mnx,a); mxx=Math.max(mxx,a); mny=Math.min(mny,c); mxy=Math.max(mxy,c); }));
-  const pad=22, s=Math.min((w-2*pad)/Math.max(0.1,mxx-mnx),(h-2*pad-10)/Math.max(0.1,mxy-mny));
-  const ox=(w-(mxx-mnx)*s)/2-mnx*s, oy=(h-(mxy-mny)*s)/2-mny*s+4;
+  [{x:0,y:0,z:0,dx:C,dy:W,dz:H},...objs,...rodas.map(x=>({x:x-rr,y:yN,z:zr-rr,dx:2*rr,dy:0,dz:2*rr}))]
+    .forEach(b=>cantos(b).forEach(([a,c])=>{ mnx=Math.min(mnx,a); mxx=Math.max(mxx,a); mny=Math.min(mny,c); mxy=Math.max(mxy,c); }));
+  const pad=16, topo=18, s=Math.min((w-2*pad)/Math.max(0.1,mxx-mnx),(h-2*pad-topo)/Math.max(0.1,mxy-mny));
+  const ox=(w-(mxx-mnx)*s)/2-mnx*s, oy=(h-(mxy-mny)*s)/2-mny*s+topo/2;
   const P=(x,y,z)=>{ const [a,c]=pr(x,y,z); return [ox+a*s, oy+c*s]; };
   const poly=(pts,fill,stroke,lw,dash)=>{ ctx.beginPath(); pts.forEach(([a,c],i)=>i?ctx.lineTo(a,c):ctx.moveTo(a,c)); ctx.closePath();
     if(fill){ ctx.fillStyle=fill; ctx.fill(); } if(stroke){ ctx.strokeStyle=stroke; ctx.lineWidth=lw||1; ctx.setLineDash(dash||[]); ctx.stroke(); ctx.setLineDash([]); } };
   const linha=(a,b,cor,lw,dash)=>{ ctx.beginPath(); ctx.moveTo(...a); ctx.lineTo(...b); ctx.strokeStyle=cor; ctx.lineWidth=lw||1; ctx.setLineDash(dash||[]); ctx.stroke(); ctx.setLineDash([]); };
-  // chão (uma linha a cada metro) e as paredes do fundo: entram logo depois do assoalho
-  const parede=(q,fill)=>poly(q.map(v=>P(...v)),fill,'rgba(91,107,130,.55)',1);
+  // chão (uma linha a cada metro), paredes do fundo e rodas: entram logo depois do assoalho
+  const parede=(q,fill)=>poly(q.map(v=>P(...v)),fill,'rgba(91,107,130,.45)',1);
   const fundo=()=>{
-    for(let k=1;k<C;k++) linha(P(k,0,0),P(k,W,0),'rgba(141,157,181,.4)',1);
+    for(let k=1;k<C;k++) linha(P(k,0,0),P(k,W,0),'rgba(120,136,160,.32)',1);
     const paredes=[[[0,0,0],[0,W,0],[0,W,H],[0,0,H],0,1],[[0,0,0],[C,0,0],[C,0,H],[0,0,H],1,1],[[0,W,0],[C,W,0],[C,W,H],[0,W,H],1,-1]];
-    if(!st.aberta) paredes.forEach(([a,b,c,d,eixo,lado])=>{ if(cam[eixo]*lado>0) parede([a,b,c,d],'rgba(42,79,134,.06)'); });
-    else if(cam[0]>0) parede([[0,0,0],[0,W,0],[0,W,H*0.5],[0,0,H*0.5]],'rgba(42,79,134,.06)');
+    if(!st.aberta) paredes.forEach(([a,b,c,d,eixo,lado])=>{ if(cam[eixo]*lado>0) parede([a,b,c,d],'rgba(42,79,134,.045)'); });
+    else if(cam[0]>0) parede([[0,0,0],[0,W,0],[0,W,H*0.5],[0,0,H*0.5]],'rgba(42,79,134,.045)');
+    rodas.forEach(x=>{ const roda=(raio)=>Array.from({length:22},(_,t)=>{ const a=t/22*Math.PI*2; return P(x+Math.cos(a)*raio,yN,zr+Math.sin(a)*raio); });
+      poly(roda(rr),'#3a4352','#262d38',1); poly(roda(rr*0.42),'#aab4c3',null); });
   };
-  objs.push({x:0,y:0,z:-0.04,dx:C,dy:W,dz:0.04,cor:'#dfe6f0',fixo:true,chao:true});
-  // caixas
+  objs.push({x:0,y:0,z:-0.04,dx:C,dy:W,dz:0.04,cor:'#e9eef5',fixo:true,chao:true});
   objs.forEach(b=>{ const cs=cantos(b).map(([a,c])=>[ox+a*s,oy+c*s]); b.cs=cs;
     b.bb=[Math.min(...cs.map(p=>p[0])),Math.min(...cs.map(p=>p[1])),Math.max(...cs.map(p=>p[0])),Math.max(...cs.map(p=>p[1]))]; });
+  // número da parada impresso na face mais visível de cada caixa (de cada caixa de um bloco, se couber):
+  // é desenhado junto com a caixa, então some atrás do que está na frente, como a própria caixa
+  const pxM=k=>Math.hypot(r[k],u[k])*s, rotulados=new Set();
+  const lugares=b=>{   // onde cabe o número nesta caixa: a face mais visível, no meio de cada caixa do bloco
+    let m=null;
+    for(const [eixo] of _C3D_FACES){
+      if(Math.abs(cam[eixo])<0.12) continue;
+      const [i,j]=[0,1,2].filter(k=>k!==eixo), g=b.grid||[1,1,1], d=[b.dx,b.dy,b.dz], ci=d[i]/g[i], cj=d[j]/g[j];
+      const hm=Math.abs(r[j]*u[i]-r[i]*u[j])*s*s*ci*cj/Math.max(ci*pxM(i),cj*pxM(j));
+      if(!m||hm>m.hm) m={eixo,i,j,g,ci,cj,hm};
+    }
+    if(!m||m.hm<11) return null;
+    const {eixo,i,j,g,ci,cj,hm}=m, d=[b.dx,b.dy,b.dz], pts=[];
+    const em=(ti,tj)=>{ const v=[b.x,b.y,b.z]; v[eixo]+=cam[eixo]>0?d[eixo]:0; v[i]+=ti; v[j]+=tj; pts.push(P(...v)); };
+    if(g[i]*g[j]<=48) for(let x=0;x<g[i];x++) for(let y=0;y<g[j];y++) em((x+0.5)*ci,(y+0.5)*cj);
+    else em(d[i]/2,d[j]/2);
+    return {fs:Math.round(Math.max(9,Math.min(16,hm*0.52))), pts};
+  };
   const ordem=_c3dOrdem(objs,cam), faces=[];
+  // um número por região de cada parada, não em toda caixa: escolhe da frente para trás (o da frente
+  // nunca fica escondido) e pula o que estaria a menos de ~2 números de outro da mesma parada
+  // e nunca num lugar que uma caixa desenhada depois (mais perto da câmera) vai cobrir
+  const facesDe=o=>_C3D_FACES.filter(([e])=>Math.abs(cam[e])>=1e-6).map(([e,fMax,fMin])=>(cam[e]>0?fMax:fMin).map(k=>o.cs[k]));
+  const dentro=(pts,px,py)=>{ let d=false; for(let i=0,j=pts.length-1;i<pts.length;j=i++){ const [xi,yi]=pts[i],[xj,yj]=pts[j];
+    if((yi>py)!==(yj>py)&&px<(xj-xi)*(py-yi)/(yj-yi)+xi) d=!d; } return d; };
+  const coberto=(px,py,t)=>{ for(let k=t+1;k<ordem.length;k++){ const o=ordem[k]; if(o.chao) continue; const bb=o.bb;
+    if(px<bb[0]||px>bb[2]||py<bb[1]||py>bb[3]) continue; if((o.fc||(o.fc=facesDe(o))).some(f=>dentro(f,px,py))) return true; } return false; };
+  const escolhidos=new Map();
+  for(let t=ordem.length-1;t>=0;t--){ const b=ordem[t]; if(b.fixo||(st.foco>=0&&b.g!==st.foco)) continue;
+    const L=lugares(b); if(!L) continue;
+    const ja=escolhidos.get(b.g)||[], dist=Math.max(30,L.fs*2.6), m=L.fs*0.5;
+    const ok=L.pts.filter(([a,c])=>!ja.some(([x,y])=>Math.hypot(x-a,y-c)<dist)&&![[a,c],[a-m,c],[a+m,c]].some(([x,y])=>coberto(x,y,t)));
+    if(ok.length){ b.num={fs:L.fs,pts:ok}; escolhidos.set(b.g,ja.concat(ok)); rotulados.add(b.g); } }
+  const numero=(b,txt)=>{ if(!b.num) return; const {fs,pts}=b.num;
+    ctx.font=`700 ${fs}px system-ui,sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.lineJoin='round';
+    ctx.lineWidth=Math.max(2,fs*0.22); ctx.strokeStyle=_c3dTom(b.cor,-0.5);
+    pts.forEach(([a,c])=>{ ctx.strokeText(txt,a,c+0.5); ctx.fillStyle='#fff'; ctx.fillText(txt,a,c+0.5); }); };
   for(const b of ordem){
     const apag=st.foco>=0&&!b.fixo&&b.g!==st.foco, sel=st.sel&&st.sel===b.id;
-    ctx.globalAlpha=apag?0.16:(b.aprox?0.55:1);
+    ctx.globalAlpha=apag?0.13:(b.aprox?0.6:1);
+    const borda=b.fixo?'rgba(110,125,148,.7)':(b.fora?'#8f1d1d':_c3dTom(b.cor,-0.42));
     for(const [eixo,fMax,fMin] of _C3D_FACES){
       if(Math.abs(cam[eixo])<1e-6) continue;
       const f=cam[eixo]>0?fMax:fMin, pts=f.map(k=>b.cs[k]);
-      const cor=eixo===2?_c3dTom(b.cor,0.2):eixo===1?_c3dTom(b.cor,-0.18):b.cor;
-      poly(pts,cor,b.fixo?'rgba(0,0,0,.25)':(b.fora?'#8f1d1d':'rgba(13,27,46,.6)'),b.fixo?0.8:1,b.aprox||b.fora?[4,3]:null);
+      const cor=eixo===2?_c3dTom(b.cor,0.22):eixo===1?_c3dTom(b.cor,-0.14):b.cor;
+      poly(pts,cor,borda,b.fixo?0.8:1,b.aprox||b.fora?[4,3]:null);
       // linhas de cada caixa dentro da pilha ou da fileira
       if(!b.fixo&&b.grid){ const g=b.grid, out=[0,1,2].filter(i=>i!==eixo);
         for(const i of out) for(let t=1;t<g[i];t++){ const fr=t/g[i];
           const pt=(sel2)=>{ const v=[b.x,b.y,b.z], dd=[b.dx,b.dy,b.dz]; v[eixo]+=cam[eixo]>0?dd[eixo]:0; v[i]+=dd[i]*fr; const o2=out.find(j=>j!==i); v[o2]+=dd[o2]*sel2; return P(...v); };
-          linha(pt(0),pt(1),'rgba(255,255,255,.55)',0.8); } }
+          linha(pt(0),pt(1),'rgba(255,255,255,.42)',0.8); } }
       if(!b.fixo) faces.push({pts,b});
     }
+    // janela da cabine, no lado virado para a câmera
+    if(b.cab&&Math.abs(cam[1])>0.05){ const x0=b.x+b.dx*0.12, x1=b.x+b.dx*0.88, z0=b.z+b.dz*0.55, z1=b.z+b.dz*0.86;
+      poly([[x0,yN,z0],[x1,yN,z0],[x1,yN,z1],[x0,yN,z1]].map(v=>P(...v)),'rgba(118,148,188,.55)','rgba(90,110,140,.6)',0.8); }
     if(b.chao){ ctx.globalAlpha=1; fundo(); }
+    if(!b.fixo&&!apag){ const g=grupoDe(b.g); if(g) numero(b,String(g.n)); }
     if(sel){ ctx.globalAlpha=1; for(const [eixo,fMax,fMin] of _C3D_FACES){ if(Math.abs(cam[eixo])<1e-6) continue; poly((cam[eixo]>0?fMax:fMin).map(k=>b.cs[k]),null,'#e0a91b',2.6); } }
   }
   ctx.globalAlpha=1;
   // contorno de cima e das paredes da frente (vidro)
   if(!st.aberta){
     const t=[[0,0,H],[C,0,H],[C,W,H],[0,W,H]].map(v=>P(...v));
-    for(let i=0;i<4;i++) linha(t[i],t[(i+1)%4],'rgba(91,107,130,.75)',1.1);
-    [[0,0],[C,0],[C,W],[0,W]].forEach(([x,y])=>linha(P(x,y,0),P(x,y,H),'rgba(91,107,130,.75)',1.1));
+    for(let i=0;i<4;i++) linha(t[i],t[(i+1)%4],'rgba(91,107,130,.7)',1.1);
+    [[0,0],[C,0],[C,W],[0,W]].forEach(([x,y])=>linha(P(x,y,0),P(x,y,H),'rgba(91,107,130,.7)',1.1));
   }
-  // centro de gravidade do que está carregado (muda no passo a passo)
-  const cgD=_cgCarga(objs.filter(b=>!b.fixo&&!b.fora));
-  if(cgD){ const a0=P(cgD.x,cgD.y,0), a1=P(cgD.x,cgD.y,H*0.95);
-    linha(a0,a1,'rgba(201,154,46,.95)',1.6,[4,3]);
-    ctx.beginPath(); ctx.arc(a0[0],a0[1],6.5,0,Math.PI*2); ctx.fillStyle='#e0a91b'; ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle='#0d1b2e'; ctx.stroke();
-    ctx.font='700 10.5px system-ui,sans-serif'; ctx.textAlign='center'; ctx.fillStyle='#8a6514'; ctx.fillText('CG',a1[0],a1[1]-7); }
-  // número da parada em cima da peça mais alta de cada uma; ⚠ no produto perigoso
-  ctx.font='700 11px system-ui,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-  const rot={};
-  ordem.forEach(b=>{ if(b.fixo||b.fora) return; const r0=rot[b.g]; if(!r0||b.z+b.dz>r0.z+r0.dz+1e-6||(Math.abs(b.z+b.dz-r0.z-r0.dz)<1e-6&&b.dx*b.dy>r0.dx*r0.dy)) rot[b.g]=b; });
-  Object.values(rot).forEach(b=>{
-    const g=st.grupos.find(x=>x.k===b.g); if(!g||(st.foco>=0&&b.g!==st.foco)) return;
-    const [a,c]=P(b.x+b.dx/2,b.y+b.dy/2,b.z+b.dz);
-    ctx.beginPath(); ctx.arc(a,c,10,0,Math.PI*2); ctx.fillStyle='#0d1b2e'; ctx.fill(); ctx.lineWidth=1.5; ctx.strokeStyle='#fff'; ctx.stroke();
-    ctx.fillStyle='#fff'; ctx.fillText(String(g.n),a,c+0.5);
-    if(g.perig){ const x=a+17, y=c; ctx.beginPath(); ctx.moveTo(x,y-9); ctx.lineTo(x+9,y); ctx.lineTo(x,y+9); ctx.lineTo(x-9,y); ctx.closePath();
-      ctx.fillStyle='#e8590c'; ctx.fill(); ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke(); ctx.fillStyle='#fff'; ctx.fillText('!',x,y+0.5); }
+  // parada sem nenhuma caixa grande o bastante para o número: etiqueta em cima, sem encavalar nas outras
+  const topoG={};
+  ordem.forEach(b=>{ if(b.fixo||b.fora) return; const r0=topoG[b.g]; if(!r0||b.z+b.dz>r0.z+r0.dz+1e-6||(Math.abs(b.z+b.dz-r0.z-r0.dz)<1e-6&&b.dx*b.dy>r0.dx*r0.dy)) topoG[b.g]=b; });
+  const etq=[], etqG=new Set();
+  Object.values(topoG).forEach(b=>{
+    const g=grupoDe(b.g); if(!g||(st.foco>=0&&b.g!==st.foco)) return;
+    const [a0,c0]=P(b.x+b.dx/2,b.y+b.dy/2,b.z+b.dz);
+    if(!rotulados.has(b.g)){
+      let a=a0, c=c0-14;
+      for(let t=0;t<14&&etq.some(([x,y])=>Math.abs(x-a)<22&&Math.abs(y-c)<22);t++) c-=22;
+      etq.push([a,c]); etqG.add(b.g);
+      linha([a0,c0],[a,c+9],'rgba(13,27,46,.45)',1);
+      ctx.beginPath(); ctx.arc(a,c,10,0,Math.PI*2); ctx.fillStyle=g.cor; ctx.fill(); ctx.lineWidth=2; ctx.strokeStyle='#fff'; ctx.stroke();
+      ctx.font='700 11px system-ui,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle='#fff'; ctx.fillText(String(g.n),a,c+0.5);
+      if(g.perig) _c3dPerigo(ctx,a+18,c);
+    } else if(g.perig) _c3dPerigo(ctx,a0+15,c0-12);
   });
-  ctx.font='600 11px system-ui,sans-serif'; ctx.fillStyle='#5b6b82';
-  const [cx0,cy0]=P(-cabC/2-0.06,W/2,cabH); ctx.fillText('cabine',cx0,cy0-10);
-  const [px0,py0]=P(C,W/2,H); ctx.fillText('porta',px0,py0-10);
-  if(tudo&&st.res.fora.length){ const f=objs.find(b=>b.fora); if(f){ const [a,c]=P(f.x+f.dx/2,f.y+f.dy/2,f.z+f.dz); ctx.fillStyle='#b42323'; ctx.fillText('não coube',a,c-12); } }
+  // centro de gravidade: marca dourada no chão, ao lado do baú (o número está no texto abaixo)
+  const cgD=_cgCarga(objs.filter(b=>!b.fixo&&!b.fora));
+  if(cgD){ const off=cam[1]>0?0.2:-0.2, [a,c]=P(cgD.x,yN+off,0);
+    ctx.beginPath(); ctx.moveTo(a,c-7); ctx.lineTo(a+7,c); ctx.lineTo(a,c+7); ctx.lineTo(a-7,c); ctx.closePath();
+    ctx.fillStyle='#e0a91b'; ctx.fill(); ctx.lineWidth=1.5; ctx.strokeStyle='#5c4209'; ctx.stroke();
+    ctx.font='700 10.5px system-ui,sans-serif'; ctx.textAlign='left'; ctx.textBaseline='middle'; ctx.fillStyle='#7a5a10'; ctx.fillText('CG',a+10,c+0.5); }
+  // nomes com contorno branco: ficam legíveis mesmo em cima de uma caixa
+  const nomeEm=(txt,a,c,cor)=>{ ctx.font='600 11.5px system-ui,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='alphabetic'; ctx.lineJoin='round';
+    ctx.lineWidth=3.5; ctx.strokeStyle='rgba(255,255,255,.92)'; ctx.strokeText(txt,a,c); ctx.fillStyle=cor; ctx.fillText(txt,a,c); };
+  const [cx0,cy0]=P(-cabC/2-0.06,W/2,cabH); nomeEm('Cabine',cx0,cy0-8,'#46546a');
+  const [px0,py0]=P(C,W/2,H); nomeEm('Porta',px0,py0-9,'#46546a');
+  if(tudo&&st.res.fora.length){ const f=objs.find(b=>b.fora); if(f){ const [a,c]=P(f.x+f.dx/2,f.y+f.dy/2,f.z+f.dz); nomeEm('não coube',a,c-12,'#b42323'); } }
   st.faces=faces;
+  st.marcadas=[...new Set([...rotulados,...Object.keys(topoG).map(Number)])].filter(k=>rotulados.has(k)||etqG.has(k)).sort((x,y)=>x-y);
+  st.foraAte=objs.filter(b=>b.fora).reduce((m,b)=>Math.max(m,b.x+b.dx),0);
+}
+// produto perigoso: losango laranja com "!"
+function _c3dPerigo(ctx,x,y){
+  ctx.beginPath(); ctx.moveTo(x,y-9); ctx.lineTo(x+9,y); ctx.lineTo(x,y+9); ctx.lineTo(x-9,y); ctx.closePath();
+  ctx.fillStyle='#e8590c'; ctx.fill(); ctx.strokeStyle='#fff'; ctx.lineWidth=1.5; ctx.stroke();
+  ctx.font='700 11px system-ui,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle='#fff'; ctx.fillText('!',x,y+0.5);
 }
 function _c3dTocar(px,py){
   const st=_c3d; if(!st) return;
@@ -7893,6 +8032,7 @@ function _c3dTocar(px,py){
   _c3dDesenhar(); _c3dInfo(f?f.b:null);
 }
 function _c3dEventos(cv){
+  if(cv._c3dLigado) return; cv._c3dLigado=true;
   let ini=null;
   cv.addEventListener('pointerdown',e=>{ ini={x:e.clientX,y:e.clientY,yaw:_c3d?.yaw,pitch:_c3d?.pitch,mov:false}; try{ cv.setPointerCapture(e.pointerId); }catch(_){} });
   cv.addEventListener('pointermove',e=>{
@@ -7901,7 +8041,7 @@ function _c3dEventos(cv){
     if(!ini.mov&&Math.abs(dx)+Math.abs(dy)<5) return;
     ini.mov=true;
     _c3d.yaw=ini.yaw-dx*0.01; _c3d.pitch=Math.max(0.05,Math.min(1.55,ini.pitch+dy*0.01));
-    document.querySelectorAll('.c3d-v').forEach(b=>b.setAttribute('aria-pressed','false'));
+    _c3dTodos('.c3d-v').forEach(b=>b.setAttribute('aria-pressed','false'));
     _c3dDesenhar();
   });
   cv.addEventListener('pointerup',e=>{ if(ini&&!ini.mov){ const r=cv.getBoundingClientRect(); _c3dTocar(e.clientX-r.left,e.clientY-r.top); } ini=null; });
