@@ -964,6 +964,23 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
 .prod-sub{font-size:12.5px;color:var(--text2);line-height:1.55;margin:0 0 10px;}
 .prod-busca{max-width:420px;margin-bottom:10px;font-family:var(--body);}
 .prod-fator{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text2);}
+.cub-h3{font-size:13.5px;margin:18px 0 8px;color:var(--text);}
+.cub-ex{background:var(--s3);border:1px solid var(--border2);border-radius:10px;padding:9px 12px;}
+.cub-total{font-size:15px;color:var(--text);margin:0 0 8px;line-height:1.5;}
+.cub-barra{display:flex;height:10px;border-radius:6px;overflow:hidden;background:var(--s3);border:1px solid var(--border2);margin:0 0 8px;max-width:560px;}
+.cub-barra span{display:block;height:100%;}
+.cub-barra .com{background:#1f9d6b;} .cub-barra .est{background:#e0a82e;} .cub-barra .sem{background:transparent;}
+.cub-leg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--text2);margin:0 0 12px;padding:0;list-style:none;}
+.cub-leg li::before{content:"";display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:0;background:var(--k);border:1px solid var(--border2);}
+.cub-ped{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;background:var(--s2);border:1px solid var(--border2);border-radius:12px;padding:9px 12px;margin-bottom:6px;}
+.cub-ped b{font-size:13px;color:var(--text);} .cub-ped span{display:block;font-size:11.5px;color:var(--text3);margin-top:2px;overflow-wrap:anywhere;}
+.cub-origens{display:grid;gap:8px;max-width:820px;}
+.cub-or{background:var(--s2);border:1px solid var(--border2);border-radius:12px;padding:11px 13px;}
+.cub-or-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
+.cub-or b{font-size:13.5px;color:var(--text);} .cub-or .n{font-size:12px;color:var(--text3);white-space:nowrap;}
+.cub-or p{font-size:12.5px;color:var(--text2);line-height:1.5;margin:4px 0 0;}
+.cub-or .acts{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:8px;font-size:12.5px;color:var(--text2);}
+.cub-or .acts input[type=text]{width:84px;text-align:center;}
 .prod-fator input{width:96px;text-align:center;}
 .prod-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;background:var(--s2);border:1px solid var(--border2);border-radius:12px;padding:10px 12px;margin-bottom:8px;}
 .prod-info{min-width:0;}
@@ -1050,7 +1067,7 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
     </div>
     <div class="sb-item" data-page="produtos">
       <svg viewBox="0 0 24 24"><path d="M3 8.5 12 4l9 4.5v7L12 20l-9-4.5z"/><path d="M3 8.5 12 13l9-4.5M12 13v7"/><path d="M7.5 6.2l9 4.6"/></svg>
-      Produtos
+      Cubagem
     </div>
     <div class="sb-item" data-page="mapa">
       <svg viewBox="0 0 24 24"><path d="M9 4 3 6.5v13L9 17l6 2.5 6-2.5v-13L15 6.5 9 4z"/><path d="M9 4v13M15 6.5v13"/></svg>
@@ -1469,28 +1486,39 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
   <div class="page" id="page-produtos" style="display:none">
     <button class="btn-voltar-topo" onclick="irParaPagina('dashboard')"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Voltar ao Dashboard</button>
     <div class="page-head">
-      <div class="page-title">Medidas e cubagem</div>
-      <div class="page-sub">Com a medida de cada produto, o sistema calcula o m³ dos pedidos que chegam pelo XML da nota</div>
+      <div class="page-title">Cubagem (volume)</div>
+      <div class="page-sub">O caminhão enche por peso ou por espaço. Com o m³ de cada pedido, a rota não passa do baú e o plano de carga sai em 3D.</div>
     </div>
     <div class="import-msg" id="prod-msg" role="status"></div>
-    <section class="prod-sec">
-      <h2 class="prod-h">Fator de cubagem</h2>
-      <p class="prod-sub">Peso cubado = m³ × fator. O frete costuma ser cobrado pelo maior entre o peso real e o cubado (o peso taxado). No rodoviário o costume é 300 kg por m³, mas cada contrato pode ter o seu.</p>
+    <section class="prod-sec" aria-labelledby="cub-h-pend">
+      <h2 class="prod-h" id="cub-h-pend">Pedidos pendentes</h2>
+      <div id="cub-resumo"></div>
+      <div id="cub-sem"></div>
+    </section>
+    <section class="prod-sec" aria-labelledby="cub-h-orig">
+      <h2 class="prod-h" id="cub-h-orig">De onde vem o m³</h2>
+      <p class="prod-sub">Cada pedido tem o m³ de uma destas formas. O número diz quantos pedidos pendentes usam cada uma.</p>
+      <div class="cub-origens" id="cub-origens"></div>
+    </section>
+    <section class="prod-sec" id="cub-sec-prod" aria-labelledby="cub-h-prod">
+      <h2 class="prod-h" id="cub-h-prod">Medidas dos produtos</h2>
+      <p class="prod-sub" id="prod-pend-sub"></p>
+      <div id="prod-pend"></div>
+      <div id="cub-cad">
+        <h3 class="cub-h3">Produtos com medida</h3>
+        <input class="field-inp prod-busca" id="prod-busca" type="search" autocomplete="off" placeholder="Buscar por código, descrição ou fornecedor" aria-label="Buscar produto com medida" oninput="renderProdutosPage()">
+        <div id="prod-lista"></div>
+      </div>
+    </section>
+    <section class="prod-sec" aria-labelledby="cub-h-fator">
+      <h2 class="prod-h" id="cub-h-fator">Fator de cubagem (frete)</h2>
+      <p class="prod-sub">Não muda a rota: é a regra de cobrança. Peso cubado = m³ × fator, e o frete costuma ser cobrado pelo maior entre o peso da balança e o cubado (o peso taxado). O sistema usa no peso taxado e no custo por cliente dos relatórios. No rodoviário o costume é 300 kg por m³, mas cada contrato pode ter o seu.</p>
+      <p class="prod-sub cub-ex" id="cub-exemplo"></p>
       <div class="prod-fator">
         <input class="field-inp" id="prod-fator" inputmode="numeric" autocomplete="off" aria-label="Fator de cubagem em kg por m³">
         <span>kg por m³</span>
         <button type="button" class="btn-sm" onclick="salvarFatorCub()">Salvar</button>
       </div>
-    </section>
-    <section class="prod-sec">
-      <h2 class="prod-h">Sem medida nos pedidos pendentes</h2>
-      <p class="prod-sub" id="prod-pend-sub"></p>
-      <div id="prod-pend"></div>
-    </section>
-    <section class="prod-sec">
-      <h2 class="prod-h">Medidas cadastradas</h2>
-      <input class="field-inp prod-busca" id="prod-busca" type="search" autocomplete="off" placeholder="Buscar por código, descrição ou fornecedor" aria-label="Buscar produto cadastrado" oninput="renderProdutosPage()">
-      <div id="prod-lista"></div>
     </section>
   </div>
 
@@ -2191,6 +2219,7 @@ function carregarPedidos(){
     render();
     if(document.getElementById('page-pedidos')?.style.display==='block'){ renderPedidosPage(); }
     if(document.getElementById('page-mapa')?.style.display==='block'){ atualizarMapaCompleto(); }
+    if(document.getElementById('page-produtos')?.style.display==='block'){ renderProdutosPage(); }
     if(!modoDemo) _avisarChegadas();
     // baixas que chegaram antes dos pedidos carregarem
     Object.entries(baixasPorRota).forEach(([rid,b])=>_aplicarBaixas(rotasFirebase[rid],b));
@@ -8181,6 +8210,67 @@ function _prodLinha(x,extra,cm,mais){
   const meta=[x.c?'Cód. '+esc(x.c):'', x.u?'1 '+esc(x.u):'', esc(x.fn||(x.f&&/^\d{14}$/.test(x.f)?'CNPJ '+x.f:'')), extra].filter(Boolean).join(' · ');
   return `<div class="prod-item" data-k="${x.k}"><div class="prod-info"><b>${esc(x.d)}</b><span>${meta}</span></div>${_medInputs(x.k,cm,mais)}</div>`;
 }
+// De onde vem o m³ de cada pedido pendente, agrupado como a tela de cubagem mostra
+const _CUB_GRUPO={cte:'sistema', planilha:'sistema', nota:'nota', medidas:'nota', produtos:'produtos', digitado:'digitado', exemplo:'exemplo', estimado:'estimado'};
+function _cubagemPendentes(){
+  const cfg=_cfgCubagem(), r={total:0, com:0, est:0, sem:0, m3:0, por:{}, semLista:[]};   // m3: só dos que têm m³ de verdade
+  allOrders.filter(o=>o.status==='pendente').forEach(o=>{
+    const i=_m3Info(o,cfg); r.total++;
+    const g=_CUB_GRUPO[i.fonte]||'';
+    if(i.completo&&i.m3>0){ r.com++; r.m3+=i.m3; }
+    else if(i.fonte==='estimado'){ r.est++; }
+    else { r.sem++; r.semLista.push({o, faltam:i.faltam, parcial:i.fonte==='parcial'}); }
+    if(g) r.por[g]=(r.por[g]||0)+1;
+  });
+  r.semLista.sort((a,b)=>(+b.o.peso||0)-(+a.o.peso||0));
+  return r;
+}
+const _listaE=a=>a.length<2?(a[0]||''):a.slice(0,-1).join(', ')+' e '+a[a.length-1];
+function _renderCubagemResumo(comProdutos){
+  const c=_cubagemPendentes(), pct=v=>c.total?(v/c.total*100).toFixed(1)+'%':'0';
+  const m3=c.m3>0?` (${_fmtM3(c.m3)} m³ ao todo)`:'';
+  $id('cub-resumo').innerHTML = !c.total
+    ? '<p class="prod-sub">Nenhum pedido pendente. Quando os pedidos chegarem, aqui aparece quantos já têm o m³.</p>'
+    : `<p class="cub-total">${!c.sem&&!c.est?`Todos os <b>${c.total}</b> pedidos pendentes têm m³${m3}.`
+        :`Dos <b>${c.total}</b> pedidos pendentes, ${_listaE([`<b>${c.com}</b> ${c.com===1?'tem':'têm'} m³${c.com?m3:''}`,
+            c.est?`<b>${c.est}</b> ${c.est===1?'está estimado':'estão estimados'} pelo peso`:'', c.sem?`<b>${c.sem}</b> ${c.sem===1?'está':'estão'} sem`:''].filter(Boolean))}.`}</p>
+      <div class="cub-barra" aria-hidden="true"><span class="com" style="width:${pct(c.com)}"></span><span class="est" style="width:${pct(c.est)}"></span><span class="sem" style="width:${pct(c.sem)}"></span></div>
+      <ul class="cub-leg"><li style="--k:#1f9d6b">Com m³: ${c.com}</li>${c.est?`<li style="--k:#e0a82e">Estimado pelo peso: ${c.est}</li>`:''}<li style="--k:transparent">Sem m³: ${c.sem}</li></ul>
+      ${c.sem?'<p class="prod-sub">Sem o m³, o pedido só conta pelo peso: a rota pode passar do baú sem o sistema perceber.</p>':''}`;
+  const MAXS=15;
+  $id('cub-sem').innerHTML = c.sem ? `<h3 class="cub-h3">Sem m³${c.sem>MAXS?`: os ${MAXS} mais pesados`:''}</h3>`
+    + c.semLista.slice(0,MAXS).map(({o,faltam,parcial})=>`<div class="cub-ped"><div><b>NF ${esc(o.nf)}${o.dest?' · '+esc(o.dest):''}</b>
+        <span>${esc(o.cidade||'')} · ${(+o.peso||0).toLocaleString('pt-BR')} kg · ${o.itens||1} vol.${parcial||faltam?` · falta a medida de ${_plural(faltam,'produto','produtos')}`:''}</span></div>
+        <button type="button" class="btn-sm" onclick="abrirPedido(${esc(JSON.stringify(o.id))})">Informar m³</button></div>`).join('')
+    + (c.sem>MAXS?`<p class="prod-sub">E mais ${c.sem-MAXS}.</p>`:'') : '';
+  const cfg=_cfgCubagem(), n=g=>c.por[g]||0, qtd=g=>`<span class="n">${_plural(n(g),'pedido','pedidos')}</span>`;
+  const card=(g,tit,txt,acts)=>`<div class="cub-or" data-or="${g}"><div class="cub-or-top"><b>${tit}</b>${c.total?qtd(g):''}</div><p>${txt}</p>${acts?`<div class="acts">${acts}</div>`:''}</div>`;
+  $id('cub-origens').innerHTML=
+      card('sistema','CT-e ou planilha do sistema de transporte','O m³ ou o peso cubado que já vem no XML do CT-e ou na planilha do sistema (como a opção 081 do SSW), quando quem embarcou ou o armazém já mediu a carga. Na transportadora, costuma ser o caminho mais fácil.',
+        `<button type="button" class="btn-sm" onclick="irParaPagina('pedidos')">Importar arquivos</button>`)
+    + card('digitado','Digitado no pedido','No pedido, informe o m³ ou as caixas: comprimento × largura × altura e quantas. Serve para qualquer pedido, de nota, planilha ou PDF.',
+        c.sem?`<button type="button" class="btn-sm" onclick="document.getElementById('cub-sem').scrollIntoView({behavior:'smooth',block:'start'})">Ver os pedidos sem m³</button>`:'')
+    + card('nota','Escrito na nota','Medidas ou m³ escritos nas informações da nota (por exemplo "CX 50X40X30"). O sistema lê sozinho ao importar.','')
+    + card('produtos','Medidas dos produtos','Para nota em XML, que traz a lista de produtos: meça cada produto uma vez e todo pedido que trouxer ele ganha o m³ (medida × quantidade).',
+        comProdutos?`<button type="button" class="btn-sm" onclick="document.getElementById('cub-sec-prod').scrollIntoView({behavior:'smooth',block:'start'})">Medir produtos</button>`:'<span>Aparece quando chegar pedido pelo XML da nota.</span>')
+    + card('estimado','Estimado pelo peso','Para o pedido que não tem nada acima: o sistema divide o peso pelo quanto a sua carga costuma pesar em 1 m³. É aproximado, para a rota não passar do baú.',
+        `<label><input type="checkbox" id="cub-estimar" ${cfg.estimar?'checked':''}> Estimar o m³ pelo peso</label>
+         <label>contando <input type="text" class="field-inp" id="cub-dens" inputmode="numeric" autocomplete="off" value="${cfg.dens}" aria-label="Quantos kg da carga cabem em 1 m³"> kg em cada m³</label>
+         <button type="button" class="btn-sm" onclick="salvarEstimarCub()">Salvar</button>`)
+    + (n('exemplo')?card('exemplo','Dados de exemplo','Pedidos de demonstração, com m³ inventado.',''):'');
+  const F=FATOR_CUB;
+  $id('cub-exemplo').innerHTML=`Exemplo: 10 caixas de 50 × 40 × 30 cm = 0,6 m³. Com ${F} kg por m³, são <b>${_n(0.6*F)} kg cubados</b>, mesmo que na balança deem 40 kg.`;
+}
+function salvarEstimarCub(){
+  const est=$id('cub-estimar').checked, dens=_numBR($id('cub-dens').value);
+  if(est&&!(dens>=50&&dens<=2000)){ $id('cub-dens').setAttribute('aria-invalid','true'); _toast('Informe quantos kg cabem em 1 m³, entre 50 e 2.000.'); return; }
+  $id('cub-dens').removeAttribute('aria-invalid');
+  const cfg=_cfgCubagem();
+  _salvarCfgCubagem({...cfg, estimar:est, dens:est?Math.round(dens):cfg.dens});
+  _toast(est?`O pedido sem medida passa a ter o m³ estimado com ${Math.round(dens)} kg por m³.`:'Estimativa pelo peso desligada.');
+  renderProdutosPage();
+}
+window.salvarEstimarCub=salvarEstimarCub;
 function renderProdutosPage(){
   const pend=_produtosSemMedida(), cat=_catalogo();
   const fi=$id('prod-fator'); if(fi&&document.activeElement!==fi) fi.value=String(FATOR_CUB);
@@ -8188,8 +8278,13 @@ function renderProdutosPage(){
   pend.forEach(x=>{ _prodInfo[x.k]={f:x.f,fn:x.fn,c:x.c,d:x.d,u:x.u}; });
   Object.entries(cat).forEach(([k,x])=>{ if(x&&typeof x==='object') _prodInfo[k]={f:x.f||'',fn:x.fn||'',c:x.c||'',d:x.d||'',u:x.u||''}; });
   const comProdutos=allOrders.some(o=>o.status==='pendente'&&_verLista(_dadosPed(o).produtos).length);
+  const temCad=Object.values(cat).some(x=>x&&_m3Unit(x)>0);
+  _renderCubagemResumo(comProdutos);
+  // só faz sentido com nota em XML (que traz os produtos) ou com produto já medido
+  $id('cub-sec-prod').hidden=!comProdutos&&!temCad;
+  $id('cub-cad').hidden=!temCad&&!$id('prod-busca').value;
   $id('prod-pend-sub').innerHTML = !comProdutos
-    ? 'Nenhum pedido pendente tem a lista de produtos. Ela vem do XML da NF-e (importado ou pela entrada automática). Para pedido de planilha ou PDF, digite o m³ no pedido ou use uma coluna "m³" na planilha.'
+    ? 'Nenhum pedido pendente veio do XML da nota agora, então não há produto para medir.'
     : pend.length ? `Medida de <b>1 unidade</b> como vem na nota (UN, CX, PC...), em centímetros, por dentro da embalagem que vai no caminhão. ${_plural(pend.length,'produto aparece','produtos aparecem')} sem medida.`
     : 'Todos os produtos dos pedidos pendentes têm medida.';
   const MAX=40;
@@ -8239,6 +8334,8 @@ async function salvarFatorCub(){
   catch(e){ _prodMsg('err',/permission/i.test(e.message)?'O banco recusou: falta publicar as regras novas do Firebase (veja o README, "Cubagem").':'Não foi possível salvar: '+e.message); return; }
   FATOR_CUB=f;
   _prodMsg('ok',`Fator salvo: ${f} kg por m³. Vale para o peso cubado de todos os pedidos e dos relatórios.`);
+  _toast(`Fator de cubagem salvo: ${f} kg por m³.`);
+  if(!_frotaDoBanco()) renderProdutosPage();
 }
 window.salvarFatorCub=salvarFatorCub;
 async function excluirProduto(k){

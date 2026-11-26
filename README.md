@@ -884,6 +884,23 @@ encaixe 3D de caixas; "40x30x25" solto no texto da nota (sem saber a quantidade,
 (`firebase/database.rules.json`, nós `produtos` e `config/cubagem`). Sem elas, o resto funciona,
 mas salvar medida de produto ou o fator de cubagem dá "O banco recusou" e a tela explica o motivo.
 
+## Tela Cubagem (volume), reorganizada (26/11/2026)
+
+A antiga "Medidas e cubagem" (menu "Produtos") misturava a regra de frete com o cadastro de
+medidas e ficava vazia para quem importa planilha ou PDF. Agora (menu **Cubagem**), de cima para baixo:
+1. **Pedidos pendentes:** quantos têm m³ (e o total em m³), quantos estão estimados pelo peso e
+   quantos estão sem, com barra e legenda. Lista dos sem m³, do mais pesado para o mais leve (até
+   15), com **Informar m³**, que abre o pedido. O pedido do XML diz quantos produtos faltam medir.
+2. **De onde vem o m³:** cada forma com quantos pedidos usam e a ação: CT-e ou planilha do
+   sistema de transporte (Importar arquivos), digitado no pedido, escrito na nota, medidas dos
+   produtos (Medir produtos, só com nota em XML) e estimado pelo peso (liga e desliga aqui, com os
+   kg em cada m³; é a mesma configuração da Roteirização, guardada no aparelho).
+3. **Medidas dos produtos:** só aparece com pedido vindo do XML ou com produto já medido.
+4. **Fator de cubagem (frete)**, no fim, explicado como regra de cobrança, com um exemplo que usa o
+   fator salvo (10 caixas de 50 × 40 × 30 cm = 0,6 m³ = 180 kg cubados com 300 kg por m³).
+
+Nada mudou na conta do m³ nem no banco. Teste: `tests/tela/t_cubagem_tela.js`.
+
 ## Km estimado: aviso neutro e "Medir pelas ruas" (26/11/2026)
 
 Quando o cálculo pelas ruas não fica pronto na hora (o OSRM público não responde) ou junta mais de
