@@ -190,8 +190,14 @@ async function mockServicos(ctx, reg) {
   // servidor sem resposta: estimativa em linha reta, com aviso
   reg.avaliarFalha = true;
   await p.click('#rota-detail-d .delivery-mini >> nth=2 >> [aria-label^="Subir"]'); await p.waitForTimeout(800);
-  ok((await p.textContent('#rota-detail-d')).includes('Servidor de rotas sem resposta'), '/avaliar falhou: avisa que km e horários são estimados em linha reta');
+  const est = await p.textContent('#rota-detail-d');
+  ok(est.includes('Km e horários estimados em linha reta') && !/servidor/i.test(est) && await p.isVisible('#rota-detail-d .km-est >> text=Medir pelas ruas'),
+    '/avaliar falhou: diz que km e horários são estimados, sem falar de servidor, e oferece medir pelas ruas');
+  await p.click('#rota-detail-d .km-est >> text=Medir pelas ruas'); await p.waitForTimeout(900);
+  ok(/Não deu para medir pelas ruas agora/.test(await p.textContent('body')), 'medir de novo sem resposta: avisa para tentar depois');
   reg.avaliarFalha = false;
+  await p.click('#rota-detail-d .km-est >> text=Medir pelas ruas'); await p.waitForTimeout(900);
+  ok(!(await p.isVisible('#rota-detail-d .km-est')), 'medir de novo com resposta: o km volta a ser pelas ruas');
   // otimizar a ordem (motor recebe só estas paradas, com capacidade para todas)
   const antesOt = await seq();
   await p.click('[data-foco="otimizar"]'); await p.waitForTimeout(700);

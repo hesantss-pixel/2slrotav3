@@ -114,10 +114,10 @@ const seed = () => { window.__FAKE = { user:{uid:'u',email:'a@b.c',getIdToken:as
   await p2.evaluate(() => { document.querySelector('#rel-periodo button[data-p="30"]').click(); });
   await p2.waitForTimeout(400);
   const f = await p2.evaluate(() => document.getElementById('rel-corpo').textContent.replace(/\s+/g,' '));
-  ok(/1 rota teve o km medido em linha reta/.test(f), 'avisa quantas rotas foram medidas em linha reta');
-  ok(/18,2 dos 60,7 km/.test(f), 'diz quantos km do relatório vieram de linha reta: ' +
-     (f.match(/são [^.]*km deste relatório/) || ['(não achei)'])[0]);
-  ok(/pelas ruas/.test(f) && /linha reta \(servidor fora do ar\)/.test(f),
+  ok(/18,2 dos 60,7 km deste relatório \(1 rota\) estão estimados em linha reta/.test(f), 'diz quantos km do relatório são estimados em linha reta: ' +
+     (f.match(/📏[^.]*\./) || ['(não achei)'])[0]);
+  ok(!/servidor|fora do ar|sem resposta/i.test(f), 'o relatório não fala de servidor fora do ar: ' + (f.match(/.{60}(servidor|fora do ar|sem resposta).{60}/i) || [''])[0]);
+  ok(/pelas ruas/.test(f) && /estimado \(linha reta\)/.test(f),
      'a tabela mostra como cada rota foi medida');
   const csv2 = await p2.evaluate(async () => {
     let cap=null; const o=URL.createObjectURL; URL.createObjectURL=b=>{cap=b;return 'blob:x';};
@@ -125,7 +125,7 @@ const seed = () => { window.__FAKE = { user:{uid:'u',email:'a@b.c',getIdToken:as
     document.getElementById('rel-csv').click();
     HTMLAnchorElement.prototype.click=c; URL.createObjectURL=o;
     return cap ? cap.text() : null; });
-  ok(csv2 && csv2.includes('Distância medida') && csv2.includes('linha reta (servidor fora do ar)'),
+  ok(csv2 && csv2.includes('Distância medida') && csv2.includes('estimado (linha reta)'),
      'a planilha traz a coluna de como foi medido');
 
   // celular

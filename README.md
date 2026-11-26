@@ -884,6 +884,28 @@ encaixe 3D de caixas; "40x30x25" solto no texto da nota (sem saber a quantidade,
 (`firebase/database.rules.json`, nós `produtos` e `config/cubagem`). Sem elas, o resto funciona,
 mas salvar medida de produto ou o fator de cubagem dá "O banco recusou" e a tela explica o motivo.
 
+## Km estimado: aviso neutro e "Medir pelas ruas" (26/11/2026)
+
+Quando o cálculo pelas ruas não fica pronto na hora (o OSRM público não responde) ou junta mais de
+100 paradas, o km e os horários saem estimados em linha reta. Os avisos agora dizem só isso, sem
+falar de servidor fora do ar, e oferecem a correção:
+- **Relatórios:** "📏 X dos Y km deste relatório (N rotas) estão estimados em linha reta. Pelas
+  ruas, o km costuma ser maior." com o botão **Medir pelas ruas**. A coluna Medida e a planilha
+  dizem "estimado (linha reta)" ou "estimado (mais de 100 paradas)".
+- **Rotas:** selo neutro "km estimado" com "medir pelas ruas".
+- **Roteirização (resultado):** o aviso da rota tem "Medir pelas ruas", que mede de novo a rota na
+  ordem em que está.
+- **Medir pelas ruas numa rota confirmada:** chama `/avaliar` com as paradas na mesma ordem, a saída
+  e a volta da rota (uma rota por vez, 1,1 s entre elas, pelo limite do OSRM público). Só grava se
+  vier pelas ruas: `km`, `tempo_min`, `fonte_dist: 'OSRM'`, o horário previsto de cada parada e o
+  custo refeito com as mesmas taxas da rota (parte do km × km novo ÷ km antigo; parte das horas ×
+  tempo novo ÷ tempo antigo; diária igual). Guarda `km_reta` (o km estimado) e `medida_ruas_em`.
+  Rota com mais de 100 paradas ou parada sem ponto no mapa continua estimada, sem botão.
+- A causa de fundo continua: o OSRM público não tem garantia. A solução definitiva é um OSRM
+  próprio (ou o Google Routes) antes do primeiro cliente pagante.
+
+Teste: `tests/tela/t_km_estimado.js` (e `t_relatorios.js`, `t_ajuste.js`, `t_manual.js`).
+
 ## Reentrega com prioridade e custo da rota em reais (26/11/2026)
 
 **Reentrega.** Quando o motorista marca "não realizado", o pedido volta para os pendentes, a

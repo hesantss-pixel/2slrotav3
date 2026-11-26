@@ -357,8 +357,8 @@ const centro = (p, nf) => p.evaluate((n) => {
     aviso: document.getElementById('man-aviso').textContent,
     desfazerTravado: document.getElementById('man-desfazer').disabled,
   }));
-  ok(/≈ \d+(,\d)? km em linha reta/.test(umaSo.tempo) && /servidor de rotas não mediu/.test(umaSo.tempo),
-    'sem o servidor de rotas, mostra a linha reta e diz por quê → ' + umaSo.tempo);
+  ok(/≈ \d+(,\d)? km em linha reta/.test(umaSo.tempo) && /medido pelas ruas de novo ao usar a rota/.test(umaSo.tempo) && !/servidor/.test(umaSo.tempo),
+    'sem a medição pelas ruas, mostra a linha reta e diz que mede ao usar a rota → ' + umaSo.tempo);
   ok(!/h\d\d|hora|viagem/.test(umaSo.tempo), 'e não mostra quanto a viagem vai demorar → ' + umaSo.tempo);
   ok(/≈/.test(umaSo.tempo) && /estimativa/.test(umaSo.tempo),
     'deixa claro que é estimativa, não o km de estrada');
