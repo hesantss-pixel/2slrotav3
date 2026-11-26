@@ -884,6 +884,54 @@ encaixe 3D de caixas; "40x30x25" solto no texto da nota (sem saber a quantidade,
 (`firebase/database.rules.json`, nós `produtos` e `config/cubagem`). Sem elas, o resto funciona,
 mas salvar medida de produto ou o fator de cubagem dá "O banco recusou" e a tela explica o motivo.
 
+## Reentrega com prioridade e custo da rota em reais (26/11/2026)
+
+**Reentrega.** Quando o motorista marca "não realizado", o pedido volta para os pendentes, a
+tentativa é contada (`tentativas`) e ele ganha uma situação (`reentrega`) conforme o motivo:
+
+| Motivo | Situação | Prioridade | Responsável |
+|---|---|---|---|
+| Cliente ausente, Estabelecimento fechado, Outro | volta na próxima rota | 2 | destinatário (outro) |
+| Não deu tempo na rota | volta na próxima rota | 3 | transportadora |
+| Endereço não encontrado | aguarda correção do endereço | 2 | destinatário |
+| Recusado pelo cliente, Mercadoria com avaria | aguarda instrução do embarcador | 1 | destinatário / transportadora |
+
+- Na 3ª tentativa sem sucesso, mesmo "cliente ausente" para e aguarda instrução (o mais comum no
+  setor são até 3 tentativas). "Liberar para a próxima rota", no pedido, dá mais uma tentativa.
+  Corrigir o endereço ou o ponto no mapa e salvar libera "aguarda endereço".
+- Quem aguarda endereço ou instrução **não entra** na roteirização; a confirmação diz quantos ficaram
+  de fora. Quem está na fila vai ao motor de rotas com `prioridade` (urgente vale 2): a penalidade de
+  deixar o pedido de fora é multiplicada por 1 + 2 × prioridade. Quando não cabe tudo, o motor deixa
+  para depois um pedido novo antes de uma reentrega.
+- Pedidos e rota mostram "↻ 2ª tentativa", "Aguarda endereço" ou "Aguarda instrução". O pedido
+  mostra quantas vezes falhou, a última ocorrência e o que fazer. Relatórios → "Reentregas": o que
+  espera agora e as tentativas do período por responsável (as do destinatário ou do embarcador
+  costumam ser cobradas como reentrega, se o contrato prevê). O sistema não calcula a taxa: não tem o frete.
+
+**Custo da rota.** custo = km × R$/km + horas × R$/hora + diária.
+- R$/km = preço do combustível ÷ consumo + pneus e manutenção; R$/hora = (salário do motorista +
+  ajudantes × salário do ajudante) × (1 + encargos) ÷ 220 h; diária = custos fixos do veículo no dia.
+- Valores de partida (Relatórios → **Custos dos veículos**, editáveis, `config/custos`):
+  - diesel S10 R$ 7,30 (ANP, síntese semanal nº 45/2026, média Brasil);
+  - gasolina R$ 6,67 (IPTL, 1ª quinzena de nov/2026);
+  - salários = pisos de maio/2026 do SINDICARGAS Guarulhos e Arujá (SETCESP): motorista B
+    R$ 2.660,40 (Fiorino), C e D R$ 2.956,92 (VUC, 3/4, Toco, Bitruck), carreta R$ 3.245,96,
+    ajudante R$ 2.108,03;
+  - consumo (km/l), estimativa de mercado para entrega urbana: Fiorino 10 (gasolina), VUC 6,5,
+    3/4 6, Toco 4,5, Bitruck 3, Carreta 2,2;
+  - encargos e benefícios: 70% (estimativa).
+  - **Pneus e manutenção e a diária vêm zerados**: não há referência pública confiável por tipo de
+    veículo; a tela avisa até a empresa preencher.
+- O resultado da roteirização mostra o custo de cada rota, o total e o custo por parada. A rota
+  confirmada guarda `veiculo_tipo` e `custo`. Relatórios: custo total, coluna por rota, custo por
+  cliente (a rota é dividida pelo peso taxado, o maior entre o real e o cubado, como no frete-peso) e
+  na planilha. Rotas antigas sem custo guardado são calculadas pelo nome do veículo.
+- O custo ainda **não** decide a escolha dos veículos no motor de rotas (continua o custo de uso em
+  segundos da frota mista). Próximo passo, depois de as empresas preencherem os custos reais.
+
+**Regras novas do Firebase:** `config/custos`. Testes: `backend/tests/test_vrp_prioridade.py`,
+`tests/tela/t_reentrega.js`, `t_custo.js` e `t_regras.js`.
+
 ## SSW: relatório da opção 081 na importação e baixas para o SSW (26/11/2026)
 
 **Ida (SSW → RotaV3).** No SSW, a opção 081 exporta as entregas pendentes da unidade em CSV. Em

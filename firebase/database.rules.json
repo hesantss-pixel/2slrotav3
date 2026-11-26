@@ -274,6 +274,29 @@
             ".write": "auth != null && ((root.child('acesso').child(auth.uid).val() === true && root.child('membros').child(auth.uid).val() === $eid) || ($eid === 'demo_' + auth.uid && root.child('acesso').child(auth.uid).val() === 'demo' && root.child('demos').child(auth.uid).child('expira').val() > now))",
             "$sig": { ".validate": "$sig.matches(/^c[0-9]{1,3}_[0-9a-z]{1,8}$/) && newData.isString() && newData.val().length <= 3000" }
           },
+          "custos": {
+            ".write": "auth != null && ((root.child('acesso').child(auth.uid).val() === true && root.child('membros').child(auth.uid).val() === $eid) || ($eid === 'demo_' + auth.uid && root.child('acesso').child(auth.uid).val() === 'demo' && root.child('demos').child(auth.uid).child('expira').val() > now))",
+            ".validate": "newData.hasChildren(['diesel', 'gasolina', 'encargos', 'ajudSal', 'tipos'])",
+            "v": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 99" },
+            "diesel": { ".validate": "newData.isNumber() && newData.val() >= 0.01 && newData.val() <= 50" },
+            "gasolina": { ".validate": "newData.isNumber() && newData.val() >= 0.01 && newData.val() <= 50" },
+            "encargos": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 300" },
+            "ajudSal": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000" },
+            "horasMes": { ".validate": "newData.isNumber() && newData.val() >= 100 && newData.val() <= 400" },
+            "tipos": {
+              "$t": {
+                ".validate": "$t.matches(/^(fiorino|vuc|tres4|toco|bitruck|carreta)$/)",
+                "cons": { ".validate": "newData.isNumber() && newData.val() >= 0.5 && newData.val() <= 50" },
+                "comb": { ".validate": "newData.val() === 'diesel' || newData.val() === 'gasolina'" },
+                "manut": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 50" },
+                "sal": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000" },
+                "ajud": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 5" },
+                "diaria": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000" },
+                "$outro": { ".validate": false }
+              }
+            },
+            "$outro": { ".validate": false }
+          },
           "ssw": {
             ".write": "auth != null && ((root.child('acesso').child(auth.uid).val() === true && root.child('membros').child(auth.uid).val() === $eid) || ($eid === 'demo_' + auth.uid && root.child('acesso').child(auth.uid).val() === 'demo' && root.child('demos').child(auth.uid).child('expira').val() > now))",
             "codigos": {

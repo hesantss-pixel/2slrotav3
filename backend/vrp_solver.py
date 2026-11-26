@@ -452,6 +452,14 @@ def _maior_cm(p: dict) -> float:
         return 0.0
 
 
+def _prioridade(p: dict) -> int:
+    """0 (normal) a 3: reentrega na fila e pedido urgente."""
+    try:
+        return min(3, max(0, int(p.get("prioridade") or 0)))
+    except (TypeError, ValueError):
+        return 0
+
+
 def _comp_cm(v: dict) -> float | None:
     try:
         c = float(v.get("compCm") or 0)
@@ -851,8 +859,10 @@ def _resolver(pywrapcp, routing_enums_pb2, pedidos, tipos, janelas, saida_min, v
                 routing.SetAllowedVehiclesForIndex(ok, manager.NodeToIndex(node))
 
     # ── Penalidade por pedido não atendido ────────────────────────────────────
+    # Reentrega e urgente (prioridade 1 a 3) custam mais para ficar de fora: quando não cabe
+    # tudo, o motor deixa para depois um pedido novo antes de uma reentrega.
     for node in range(1, n_nodes):
-        routing.AddDisjunction([manager.NodeToIndex(node)], penalidade)
+        routing.AddDisjunction([manager.NodeToIndex(node)], penalidade * (1 + 2 * _prioridade(pedidos[node - 1])))
 
     # ── Parâmetros do solver ──────────────────────────────────────────────────
     params = pywrapcp.DefaultRoutingSearchParameters()

@@ -265,6 +265,28 @@ label.fm-item{cursor:pointer;}
 .fm-resumo{margin-top:10px;font-size:12.5px;color:var(--text2);}
 .fm-resumo.err{color:#b3263f;font-weight:700;}
 .fm-lista{margin:2px 0 0;padding-left:18px;line-height:1.7;}
+/* Custos dos veículos */
+.cus-modal{max-width:640px;}
+.cus-grupo{border:1px solid var(--border2);border-radius:12px;padding:10px 12px 12px;margin:0 0 10px;}
+.cus-grupo legend{font:800 13px var(--sans);padding:0 6px;}
+.cus-grupo legend small{font:600 11.5px var(--body);color:var(--text2);margin-left:6px;}
+.cus-grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px 12px;}
+.cus-campo{display:flex;flex-direction:column;gap:3px;font-size:12px;color:var(--text2);}
+.cus-inp{display:flex;align-items:center;gap:6px;}
+.cus-inp input{min-width:0;flex:1;}
+.cus-inp small{font-size:11px;color:var(--text3);white-space:nowrap;}
+.cus-fontes{font-size:11px;color:var(--text3);line-height:1.5;margin:12px 0 0;}
+.btn-link{background:none;border:0;padding:0;color:var(--ac);font:inherit;font-weight:700;text-decoration:underline;cursor:pointer;}
+.custo-nota{font-size:12px;color:var(--text2);margin:-6px 0 14px;max-width:640px;}
+.custo-nota button{background:none;border:0;padding:0;color:var(--ac);font:inherit;font-weight:700;text-decoration:underline;cursor:pointer;}
+/* Reentrega */
+.tipo-tag.r{background:#e8f0fe;color:#1b3a8a;border:1px solid #c9d7f0;}
+.tipo-tag.w{background:#fff4d6;color:#7a4b00;border:1px solid #f0d48a;}
+.tipo-tag+.tipo-tag{margin-left:4px;}
+.ped-reent{margin:0 0 12px;padding:10px 12px;border-radius:10px;background:#eef3fb;border:1px solid #c9d7f0;font-size:12.5px;line-height:1.5;color:var(--text);}
+.ped-reent.espera{background:#fff8e6;border-color:#f0d48a;}
+.ped-reent span{display:block;margin-top:2px;color:var(--text2);}
+.ped-reent .btn-sm{margin-top:8px;}
 /* Conferir colunas da planilha / relatório de TMS */
 .col-modal{max-width:560px;}
 .col-intro{font-size:13px;color:var(--text2);line-height:1.5;margin:0 0 12px;}
@@ -1350,6 +1372,7 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
       <div class="rel-acoes">
         <button class="btn-sm" id="rel-csv" type="button">Baixar planilha</button>
         <button class="btn-sm" id="rel-imp" type="button">Imprimir / PDF</button>
+        <button class="btn-sm" id="rel-custos" type="button" onclick="abrirCustos()">Custos dos veículos</button>
         <button class="btn-sm" id="rel-ssw" type="button">Baixas para o SSW</button>
         <button class="btn-sm" id="rel-ssw-cod" type="button">Códigos do SSW</button>
       </div>
@@ -1531,6 +1554,7 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
   <div class="modal-box ped-modal" role="dialog" aria-modal="true" aria-labelledby="ped-tit">
     <div class="modal-head"><div class="modal-title" id="ped-tit">Novo pedido</div><button type="button" class="ped-lixo" id="ped-lixo" onclick="excluirPedido()" aria-label="Excluir pedido" title="Excluir pedido" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/><path d="M10 11v6M14 11v6"/></svg><span>Excluir</span></button><button type="button" class="modal-close" onclick="fecharPedido()" aria-label="Fechar">✕</button></div>
     <div class="ped-aviso" id="ped-aviso" hidden></div>
+    <div class="ped-reent" id="ped-reent" hidden></div>
     <form id="ped-form" class="ped-form" novalidate onsubmit="event.preventDefault();salvarPedido()">
       <span class="field-lbl" id="ped-tipo-lbl" style="margin-top:0">Tipo</span>
       <div class="seg" id="ped-tipo" role="group" aria-labelledby="ped-tipo-lbl">
@@ -1602,6 +1626,19 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
     <p class="col-erro" id="col-erro" role="alert"></p>
     <button type="button" class="btn-modal-primary" onclick="_colunasOk()">Importar com estas colunas</button>
     <button type="button" class="btn-modal-sec" onclick="_colunasResp(null)">Cancelar</button>
+  </div>
+</div>
+
+<!-- ── MODAL: custos dos veículos (custo da rota em reais) ── -->
+<div class="modal-overlay" id="modal-custos" onclick="if(event.target===this)fecharCustos()">
+  <div class="modal-box cus-modal" role="dialog" aria-modal="true" aria-labelledby="cus-tit">
+    <div class="modal-head"><h2 class="modal-title" id="cus-tit">Custos dos veículos</h2><button type="button" class="modal-close" onclick="fecharCustos()" aria-label="Fechar">✕</button></div>
+    <p class="col-intro">O custo da rota é <b>km × R$/km + horas × R$/hora + diária</b>. Os valores que vêm preenchidos são de referência (fontes abaixo). Troque pelos da sua operação, principalmente <b>pneus e manutenção</b> e a <b>diária</b>, que só a empresa sabe.</p>
+    <div id="cus-corpo"></div>
+    <p class="col-erro" id="cus-erro" role="alert"></p>
+    <button type="button" class="btn-modal-primary" onclick="salvarCustos()">Salvar custos</button>
+    <button type="button" class="btn-modal-sec" onclick="fecharCustos()">Cancelar</button>
+    <p class="cus-fontes">Diesel S10: R$ 7,30/l, ANP, síntese semanal nº 45 de 2026, média Brasil. Gasolina: R$ 6,67/l, IPTL, média nacional da 1ª quinzena de novembro de 2026. Salários: pisos de maio de 2026 da convenção do SINDICARGAS Guarulhos e Arujá (SETCESP): motorista categoria B R$ 2.660,40, C e D R$ 2.956,92, carreta (E) R$ 3.245,96, ajudante R$ 2.108,03. Consumo: faixas de mercado para entrega urbana (estimativa). Encargos de 70% sobre o salário: estimativa; confira com a sua contabilidade. Horas por mês: 220.</p>
   </div>
 </div>
 
@@ -1980,7 +2017,39 @@ function _janelaAviso(chegada_min){
   const ini=Math.max(0,Math.floor((+chegada_min-15)/30)*30);
   return {ini, fim:Math.min(1439,ini+120)};
 }
-function _tag(o){ return _tipoDe(o)==='coleta'?'<span class="tipo-tag c">Coleta</span>':'<span class="tipo-tag e">Entrega</span>'; }
+function _tag(o){ return (_tipoDe(o)==='coleta'?'<span class="tipo-tag c">Coleta</span>':'<span class="tipo-tag e">Entrega</span>')+_tagReent(o); }
+// ── Reentrega ─────────────────────────────────────────────────────────────
+// "Não realizado" volta para os pendentes com a situação certa para o motivo (prática do setor:
+// até 3 tentativas; recusa e avaria esperam a instrução do embarcador; endereço não encontrado
+// espera a correção). Quem está "na fila" entra na próxima rota com prioridade no motor de rotas.
+// sit: fila | endereco | instrucao · prio: 1 a 3 · resp: dest (destinatário/embarcador) | transp | outro
+const REENT_MAX=3;
+const REENT_REGRA={'cliente ausente':['fila',2,'dest'], 'estabelecimento fechado':['fila',2,'dest'],
+  'nao deu tempo na rota':['fila',3,'transp'], 'endereco nao encontrado':['endereco',2,'dest'],
+  'recusado pelo cliente':['instrucao',1,'dest'], 'mercadoria com avaria':['instrucao',1,'transp']};
+function _regraReent(motivo,tent,liberado){
+  const r=REENT_REGRA[_semAcento(motivo).trim()]||['fila',2,'outro'];
+  if(r[0]==='fila'&&tent>=REENT_MAX&&!liberado) return {sit:'instrucao', prio:r[1], resp:r[2], limite:true};
+  return {sit:r[0], prio:r[1], resp:r[2]};
+}
+function _ordinal(n){ return n+'ª'; }
+// Situação para a tela: null quando o pedido nunca falhou
+function _reentInfo(o){
+  const r=o&&o.reentrega; if(!r||!r.sit) return null;
+  const t=+o.tentativas||0, col=_tipoDe(o)==='coleta', nova=col?'nova coleta':'reentrega';
+  if(r.sit==='endereco') return {sit:'endereco', tag:'Aguarda endereço', txt:'Endereço não encontrado: corrija o endereço ou o ponto no mapa e salve. Aí o pedido volta para a próxima rota.'};
+  if(r.sit==='instrucao') return {sit:'instrucao', tag:'Aguarda instrução', txt:r.limite
+    ? `${t} tentativas sem sucesso. Confirme com o ${col?'cliente':'embarcador'} antes de tentar de novo (ou devolver).`
+    : `${r.motivo||'Ocorrência'}: confirme com o ${col?'cliente':'embarcador'} o que fazer antes de tentar de novo (ou devolver).`};
+  return {sit:'fila', tag:`↻ ${_ordinal(t+1)} tentativa`, txt:`Volta na próxima rota com prioridade (${nova}, ${_ordinal(t+1)} tentativa).`};
+}
+function _tagReent(o){
+  const i=_reentInfo(o); if(!i) return '';
+  return `<span class="tipo-tag ${i.sit==='fila'?'r':'w'}" title="${esc(i.txt)}">${esc(i.tag)}</span>`;
+}
+// prioridade que vai para o motor de rotas: reentrega na fila (1 a 3) e urgente (2)
+function _prioridadeDe(o){ const r=o&&o.reentrega; return Math.max(r&&r.sit==='fila'?(+r.prio||1):0, o&&o.urgente?2:0); }
+const _emEspera=o=>!!(o&&o.reentrega&&(o.reentrega.sit==='endereco'||o.reentrega.sit==='instrucao'));
 // Marca de agendamento no pedido. Vermelha quando tem de sair no dia (ou está
 // atrasado), cinza quando está guardado para outro dia — esse não aparece no mapa
 // até chegar o dia dele.
@@ -2078,6 +2147,7 @@ function carregarPedidos(){
         geoFonte:p.geoFonte||'', geoEm:+p.geoEm||0, geoG:+p.geoG||0,
         m3:+p.m3>0?+p.m3:0, m3Fonte:p.m3Fonte||'', maiorCm:+p.maiorCm>0?+p.maiorCm:0,
         lat:p.lat||(CITY_COORDS[p.cidade]?.lat??DEPOT.lat), lng:p.lng||(CITY_COORDS[p.cidade]?.lng??DEPOT.lng),
+        tentativas:+p.tentativas>0?+p.tentativas:0, reentrega:p.reentrega&&typeof p.reentrega==='object'?p.reentrega:null,
       })).filter(o=>o.status!=='entregue'&&o.status!=='coletado');
     } else if(!contaDemo){
       // Empresa de verdade sem nenhuma nota (21/11/2026): tela vazia. Antes entravam os 86
@@ -2477,7 +2547,10 @@ function _relCalcular(){
     // ocupação: o máximo a bordo contra o que o veículo leva (peso) e o que a viagem podia usar do baú (m³)
     const ps=_verLista(r.paradas).filter(Boolean), cg=_perfilCarga(ps), vl=_perfilVolume(ps);
     const capKg=+r.cap_kg||0, capM3=+r.cap_m3||0;
-    return { id:r.id, data:r.data||'', veiculo:r.veiculo||'', motorista:(r.motorista||'').trim()||'—',
+    // custo: o guardado na confirmação; rota antiga: calculado agora pelo tipo do veículo
+    const cus=r.custo&&Number.isFinite(+r.custo.total)?+r.custo.total
+      :(x=>x?x.total:null)(_custoRota(Number(r.km)||0,Number(r.tempo_min)||0,r.veiculo_tipo||_tipoPeloNome(r.veiculo)));
+    return { id:r.id, data:r.data||'', veiculo:r.veiculo||'', motorista:(r.motorista||'').trim()||'—', custo:cus, ps,
       paradas:par, feitos:c.feitos, falhas:c.falhas, semBaixa:Math.max(0,par-c.feitos-c.falhas),
       km:Number(r.km)||0, min:Number(r.tempo_min)||0, peso:Number(r.peso_total)||0,
       devolvida:r.status==='devolvida', fonte:r.fonte_dist||'—', reta:_eReta(r.fonte_dist),
@@ -2496,6 +2569,16 @@ function _relCalcular(){
     kmReta:a.kmReta+(r.reta?r.km:0), rotasReta:a.rotasReta+(r.reta?1:0),
     semFonte:a.semFonte+(r.fonte==='—'?1:0)}),
     {rotas:0,paradas:0,feitos:0,falhas:0,km:0,peso:0,min:0,kmReta:0,rotasReta:0,semFonte:0});
+  // custo do período e rateio por cliente pelo peso taxado (o maior entre o real e o cubado), como o frete-peso
+  const cusR=linhas.filter(r=>r.custo!=null), cli={};
+  cusR.forEach(r=>{
+    const pt=r.ps.map(p=>Math.max(+p.peso||0,(+p.m3||0)*FATOR_CUB)), soma=pt.reduce((a,b)=>a+b,0);
+    r.ps.forEach((p,i)=>{ const nome=String(p.dest||p.cidade||'Sem nome').trim()||'Sem nome';
+      const c=cli[nome]=cli[nome]||{nome,custo:0,paradas:0};
+      c.custo+=soma>0?r.custo*pt[i]/soma:r.custo/Math.max(1,r.ps.length); c.paradas++; });
+  });
+  const custo={total:cusR.reduce((a,r)=>a+r.custo,0), rotas:cusR.length, paradas:cusR.reduce((a,r)=>a+r.paradas,0),
+    clientes:Object.values(cli).sort((a,b)=>b.custo-a.custo)};
   const mot={};
   linhas.forEach(r=>{
     const m=mot[r.motorista]=mot[r.motorista]||{nome:r.motorista,rotas:0,paradas:0,feitos:0,falhas:0,km:0};
@@ -2508,7 +2591,7 @@ function _relCalcular(){
     if(r.kmGps!=null){ real.kmGps+=r.kmGps; real.kmPlanGps+=r.km; real.rotasGps++; }
   });
   real.rz=_mediana(real.razoes);
-  return { ini, fim, linhas, tot, motivos, real,
+  return { ini, fim, linhas, tot, motivos, real, custo,
     motoristas:Object.values(mot).sort((a,b)=>b.paradas-a.paradas) };
 }
 // "1,3×" e "+12%": como o relatório mostra a comparação com o planejado
@@ -2517,6 +2600,42 @@ function _difPct(real,plan){
   if(!plan) return '';
   const d=Math.round((real/plan-1)*100);
   return d===0?'igual ao planejado':(d>0?'+':'')+d+'% em relação ao planejado';
+}
+// Reentregas: o que está esperando agora e o que aconteceu no período
+function _relBlocoReentrega(d){
+  const agora={fila:0,endereco:0,instrucao:0}, per={dest:0,transp:0,outro:0}; let depois=0;
+  Object.values(pedidosCrus||{}).forEach(p=>{
+    if(!p) return;
+    const r=p.reentrega;
+    if((p.status||'pendente')==='pendente'&&r&&agora[r.sit]!=null) agora[r.sit]++;
+    const oc=p.ocorrencia;
+    if(oc&&+oc.hora>=+d.ini&&+oc.hora<+d.fim){ const rg=REENT_REGRA[_semAcento(oc.motivo).trim()]; per[rg?rg[2]:'outro']++; }
+    if(p.baixa&&+p.tentativas>0&&+p.baixa.hora>=+d.ini&&+p.baixa.hora<+d.fim) depois++;
+  });
+  const tot=per.dest+per.transp+per.outro;
+  if(!tot&&!depois&&!agora.fila&&!agora.endereco&&!agora.instrucao) return '';
+  const L=[];
+  if(agora.fila||agora.endereco||agora.instrucao) L.push(`<div>↻ <b>Agora:</b> ${[agora.fila?_plural(agora.fila,'pedido na fila da próxima rota (com prioridade)','pedidos na fila da próxima rota (com prioridade)'):'',
+    agora.endereco?_plural(agora.endereco,'aguarda correção do endereço','aguardam correção do endereço'):'',
+    agora.instrucao?_plural(agora.instrucao,'aguarda instrução do embarcador','aguardam instrução do embarcador'):''].filter(Boolean).join(' · ')}.</div>`);
+  if(tot) L.push(`<div>📋 <b>No período, ${_plural(tot,'tentativa sem sucesso','tentativas sem sucesso')}</b> (a última de cada pedido):
+    ${per.dest?`${per.dest} por motivo do destinatário ou do embarcador (ausente, fechado, recusa, endereço)`:''}${per.dest&&(per.transp||per.outro)?'; ':''}${per.transp?`${per.transp} da transportadora (não deu tempo, avaria)`:''}${per.transp&&per.outro?'; ':''}${per.outro?`${per.outro} por outro motivo`:''}.
+    <span class="rz-sub">As do destinatário ou do embarcador costumam ser cobradas como reentrega, se o contrato prevê.</span></div>`);
+  if(depois) L.push(`<div>✅ ${_plural(depois,'pedido concluído','pedidos concluídos')} no período depois de pelo menos uma tentativa sem sucesso.</div>`);
+  return `<div class="card rel-sec"><h3>Reentregas</h3><div class="rel-real">${L.join('')}</div></div>`;
+}
+function _relBlocoCusto(d){
+  const c=d.custo;
+  if(!c.rotas) return `<div class="card rel-sec"><h3>Custo das rotas</h3><div class="rel-vazio" style="padding:14px">Sem custo: as rotas do período não têm o tipo do veículo. As próximas rotas confirmadas já guardam o custo.</div></div>`;
+  const cfg=_custos(), falta=VEICULOS.some(v=>{ const x=cfg.tipos[v.id]; return !x||!x.manut||!x.diaria; });
+  const top=c.clientes.slice(0,10);
+  return `<div class="card rel-sec"><h3>Custo das rotas</h3>
+    <div class="rel-real"><div>💰 <b>${_brl(c.total)}</b> em ${_plural(c.rotas,'rota','rotas')}, ${_brl(c.total/Math.max(1,c.paradas))} por parada planejada.
+      <span class="rz-sub">Estimativa: km × R$/km + horas × R$/hora + diária. ${falta?'Pneus, manutenção ou diária ainda sem valor em algum veículo: o custo real é maior. ':''}<button type="button" class="btn-link" onclick="abrirCustos()">Custos dos veículos</button></span></div></div>
+    ${top.length?`<div class="rel-wrap"><table class="rel-tab"><thead><tr><th>Cliente</th><th class="num">Paradas</th><th class="num">Custo</th><th class="num">Por parada</th></tr></thead>
+      <tbody>${top.map(x=>`<tr><td>${esc(x.nome)}</td><td class="num">${x.paradas}</td><td class="num">${_brl(x.custo)}</td><td class="num">${_brl(x.custo/Math.max(1,x.paradas))}</td></tr>`).join('')}</tbody></table></div>
+      <div class="rel-nota" style="margin-top:8px">Cada rota é dividida entre as paradas pelo peso taxado (o maior entre o peso real e o cubado), como no frete-peso.${c.clientes.length>10?` Mostrando os 10 de maior custo, de ${c.clientes.length}.`:''}</div>`:''}
+  </div>`;
 }
 function _relBlocoRealizado(d){
   const x=d.real, L=[];
@@ -2607,6 +2726,7 @@ function renderRelatorios(){
        ['Não realizados',_n(d.tot.falhas),d.tot.falhas?'ruim':''],
        ['Sucesso nas baixas',pct===null?'—':pct+'%',''],
        ['Km planejado',_n(d.tot.km,1),''],
+       ...(d.custo.rotas?[['Custo estimado',`<span style="font-size:20px">${_brl(d.custo.total)}</span>`,'']]:[]),
        ['Peso',_n(d.tot.peso)+'<small style="font-size:14px;font-weight:700;margin-left:3px">kg</small>','']]
       .map(([l,v,c])=>`<div class="kpi"><div class="kpi-val${c?' ':''}" ${c?'style="color:#b02a2a"':''}>${v}</div>
         <div class="kpi-lbl">${l.toUpperCase()}</div></div>`).join('')}
@@ -2625,7 +2745,7 @@ function renderRelatorios(){
     <thead><tr><th>Data</th><th>Veículo</th><th>Motorista</th><th class="num">Paradas</th>
       <th class="num">Feitas</th><th class="num">Não feitas</th><th class="num">Sem baixa</th>
       <th class="num">Km</th><th>Medida</th>
-      <th class="num">Km painel</th><th class="num">Km GPS</th><th class="num">Tempo real</th><th class="num">Fora da ordem</th><th class="num">Ocupação</th></tr></thead>
+      <th class="num">Km painel</th><th class="num">Km GPS</th><th class="num">Tempo real</th><th class="num">Fora da ordem</th><th class="num">Ocupação</th><th class="num">Custo</th></tr></thead>
     <tbody>${d.linhas.map(r=>`<tr><td>${esc(_dataBR(r.data))}${r.devolvida?' <span style="color:var(--text3)">(devolvida)</span>':''}</td>
       <td>${esc(r.veiculo)}</td><td>${esc(r.motorista)}</td>
       <td class="num">${r.paradas}</td><td class="num">${r.feitos}</td>
@@ -2636,7 +2756,8 @@ function renderRelatorios(){
       <td class="num">${r.kmGps==null?'—':_n(r.kmGps,1)}</td>
       <td class="num">${_vezes(r.rz)}</td>
       <td class="num${r.fora?' ruim':''}">${r.feitasMed>=2?r.fora:'—'}</td>
-      <td class="num${(r.pctKg||0)>100.5||(r.pctM3||0)>100.5?' ruim':''}">${r.pctKg==null?'—':Math.round(r.pctKg)+'% peso'}${r.pctM3!=null?'<br>'+Math.round(r.pctM3)+'% vol.':''}</td></tr>`).join('')}</tbody>
+      <td class="num${(r.pctKg||0)>100.5||(r.pctM3||0)>100.5?' ruim':''}">${r.pctKg==null?'—':Math.round(r.pctKg)+'% peso'}${r.pctM3!=null?'<br>'+Math.round(r.pctM3)+'% vol.':''}</td>
+      <td class="num">${r.custo==null?'—':_brl(r.custo)}</td></tr>`).join('')}</tbody>
   </table></div></div>`;
 
   const tabMot=`<div class="card rel-sec"><h3>Por motorista</h3><div class="rel-rola">Arraste a tabela para o lado para ver o resto.</div><div class="rel-wrap"><table class="rel-tab">
@@ -2661,7 +2782,7 @@ function renderRelatorios(){
     ${modoDemo?'<br>· <b>Atenção: estes são pedidos de exemplo</b>, não a sua operação.':''}
   </div>`;
 
-  alvo.innerHTML=cab+kpis+alertaReta+_relBlocoRealizado(d)+_relBlocoOcupacao(d)+blocoMotivos+tabRotas+_relBlocoCubado(d)+tabMot+notas;
+  alvo.innerHTML=cab+kpis+alertaReta+_relBlocoRealizado(d)+_relBlocoOcupacao(d)+blocoMotivos+_relBlocoReentrega(d)+tabRotas+_relBlocoCusto(d)+_relBlocoCubado(d)+tabMot+notas;
 }
 
 function _relCSV(){
@@ -2674,17 +2795,22 @@ function _relCSV(){
   lin.push([]);
   const km1=v=>v==null?'':num(v.toFixed(1)), rz2=v=>v==null?'':num(v.toFixed(2));
   lin.push(['Data','Veículo','Motorista','Paradas','Feitas','Não feitas','Sem baixa','Km planejado','Tempo (min)','Peso (kg)','Distância medida',
-    'Km painel','Km GPS','% do GPS casado com as ruas','Tempo real ÷ planejado','Paradas fora da ordem']);
+    'Km painel','Km GPS','% do GPS casado com as ruas','Tempo real ÷ planejado','Paradas fora da ordem','Custo estimado (R$)']);
   d.linhas.forEach(r=>lin.push([_dataBR(r.data),r.veiculo,r.motorista,r.paradas,r.feitos,r.falhas,
     r.semBaixa,num(r.km.toFixed(1)),Math.round(r.min),Math.round(r.peso),_rotuloFonte(r.fonte),
-    km1(r.kmPainel),km1(r.kmGps),r.gpsCob==null?'':Math.round(r.gpsCob*100),rz2(r.rz),r.feitasMed>=2?r.fora:'']));
+    km1(r.kmPainel),km1(r.kmGps),r.gpsCob==null?'':Math.round(r.gpsCob*100),rz2(r.rz),r.feitasMed>=2?r.fora:'',r.custo==null?'':num(r.custo.toFixed(2))]));
   lin.push(['TOTAL','','',d.tot.paradas,d.tot.feitos,d.tot.falhas,
     d.tot.paradas-d.tot.feitos-d.tot.falhas,num(d.tot.km.toFixed(1)),Math.round(d.tot.min),Math.round(d.tot.peso),'',
-    d.real.rotasPainel?km1(d.real.kmPainel):'',d.real.rotasGps?km1(d.real.kmGps):'','',rz2(d.real.rz),d.real.feitas>=2?d.real.fora:'']);
+    d.real.rotasPainel?km1(d.real.kmPainel):'',d.real.rotasGps?km1(d.real.kmGps):'','',rz2(d.real.rz),d.real.feitas>=2?d.real.fora:'',d.custo.rotas?num(d.custo.total.toFixed(2)):'']);
   lin.push([]);
   lin.push(['Não realizados por motivo','Quantidade']);
   Object.entries(d.motivos).sort((a,b)=>b[1]-a[1]).forEach(([m,q])=>lin.push([m,q]));
   lin.push([]);
+  if(d.custo.clientes.length){
+    lin.push(['Custo por cliente (rateio pelo peso taxado)','Paradas','Custo estimado (R$)']);
+    d.custo.clientes.forEach(c=>lin.push([c.nome,c.paradas,num(c.custo.toFixed(2))]));
+    lin.push([]);
+  }
   lin.push(['Motorista','Rotas','Paradas','Feitas','Não feitas','Km planejado']);
   d.motoristas.forEach(m=>lin.push([m.nome,m.rotas,m.paradas,m.feitos,m.falhas,num(m.km.toFixed(1))]));
 
@@ -2700,6 +2826,70 @@ function _relCSV(){
   setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); },0);
   _toast('Planilha baixada: '+nome);
 }
+
+// ── Custos dos veículos (janela) ────────────────────────────────────────────
+function abrirCustos(){
+  const c=_custos(), f=v=>String(+v||0).replace('.',','), f2=v=>(+v||0).toFixed(2).replace('.',',');
+  const inp=(id,val,lbl,suf,extra)=>`<label class="cus-campo"><span>${lbl}</span><span class="cus-inp"><input type="text" inputmode="decimal" class="field-inp" id="${id}" value="${esc(val)}" autocomplete="off" ${extra||''}>${suf?`<small>${suf}</small>`:''}</span></label>`;
+  $id('cus-corpo').innerHTML=`<fieldset class="cus-grupo"><legend>Da empresa</legend><div class="cus-grade">
+      ${inp('cus-diesel',f2(c.diesel),'Diesel','R$/litro')}${inp('cus-gasolina',f2(c.gasolina),'Gasolina','R$/litro')}
+      ${inp('cus-encargos',f(c.encargos),'Encargos e benefícios','% do salário')}${inp('cus-ajudsal',f2(c.ajudSal),'Salário do ajudante','R$/mês')}</div></fieldset>
+    ${VEICULOS.map(v=>{ const x=c.tipos[v.id]||CUSTO_PADRAO.tipos[v.id];
+      return `<fieldset class="cus-grupo" data-t="${v.id}"><legend>${esc(v.nome)} <small id="cus-res-${v.id}"></small></legend><div class="cus-grade">
+        ${inp('cus-'+v.id+'-cons',f(x.cons),'Consumo',`km/l de ${x.comb==='gasolina'?'gasolina':'diesel'}`)}
+        ${inp('cus-'+v.id+'-manut',f2(x.manut),'Pneus e manutenção','R$/km')}
+        ${inp('cus-'+v.id+'-sal',f2(x.sal),'Salário do motorista','R$/mês')}
+        ${inp('cus-'+v.id+'-ajud',f(x.ajud),'Ajudantes','na rota','inputmode="numeric"')}
+        ${inp('cus-'+v.id+'-diaria',f2(x.diaria),'Diária do veículo','R$/dia')}</div></fieldset>`; }).join('')}`;
+  $id('cus-corpo').oninput=_custosPrevia;
+  $id('cus-erro').textContent='';
+  _custosPrevia();
+  $id('modal-custos').classList.add('open');
+  setTimeout(()=>$id('cus-diesel')?.focus(),60);
+}
+window.abrirCustos=abrirCustos;
+function fecharCustos(){ $id('modal-custos').classList.remove('open'); }
+window.fecharCustos=fecharCustos;
+// lê a janela; null e a mensagem quando algum número não serve
+function _custosDaJanela(){
+  // campo vazio vale 0 (pneus, ajudantes, diária); texto que não é número não vale
+  const num=id=>{ const t=$id(id).value.trim(); return t?_numBR(t):0; };
+  const c={v:1, diesel:num('cus-diesel'), gasolina:num('cus-gasolina'), encargos:num('cus-encargos'), ajudSal:num('cus-ajudsal'), horasMes:220, tipos:{}};
+  if(!(c.diesel>0&&c.diesel<50)) return [null,'Diesel: informe o preço do litro, como 7,30.'];
+  if(!(c.gasolina>0&&c.gasolina<50)) return [null,'Gasolina: informe o preço do litro, como 6,67.'];
+  if(!(c.encargos>=0&&c.encargos<=300)) return [null,'Encargos: um percentual entre 0 e 300.'];
+  if(!(c.ajudSal>=0&&c.ajudSal<=100000)) return [null,'Salário do ajudante: valor por mês, como 2.108,03.'];
+  for(const v of VEICULOS){
+    const g=k=>num(`cus-${v.id}-${k}`), x={cons:g('cons'), comb:CUSTO_PADRAO.tipos[v.id].comb, manut:g('manut'), sal:g('sal'), ajud:Math.round(g('ajud')), diaria:g('diaria')};
+    if(!(x.cons>=0.5&&x.cons<=50)) return [null,`${v.nome}: consumo em km por litro, entre 0,5 e 50.`];
+    if(!(x.manut>=0&&x.manut<=50)) return [null,`${v.nome}: pneus e manutenção em R$ por km (até 50).`];
+    if(!(x.sal>=0&&x.sal<=100000)) return [null,`${v.nome}: salário do motorista por mês.`];
+    if(!(x.ajud>=0&&x.ajud<=5)) return [null,`${v.nome}: ajudantes de 0 a 5.`];
+    if(!(x.diaria>=0&&x.diaria<=100000)) return [null,`${v.nome}: diária em R$ por dia.`];
+    c.tipos[v.id]=x;
+  }
+  return [c,''];
+}
+function _custosPrevia(){
+  const [c]=_custosDaJanela();
+  VEICULOS.forEach(v=>{ const el=$id('cus-res-'+v.id); if(!el) return;
+    const t=c&&_taxasTipo(v.id,c);
+    el.textContent=t?`${_brl(t.rkm)}/km · ${_brl(t.rh)}/hora${t.diaria?' · '+_brl(t.diaria)+'/dia':''}`:''; });
+}
+async function salvarCustos(){
+  const [c,erro]=_custosDaJanela();
+  if(!c){ $id('cus-erro').textContent=erro; return; }
+  try{ localStorage.setItem(_custLS(),JSON.stringify(c)); }catch(e){}
+  let onde='neste aparelho';
+  if(_modNoBanco()){ try{ await set(ref(db,TP('config/custos')),c); onde='para a empresa'; }catch(e){} }
+  custosEmp=c;
+  fecharCustos(); _toast(`Custos salvos ${onde}.`);
+  if($id('rot-step-results')?.style.display==='block'&&rotaGeradaD.length) _renderResultadoD();
+  if($id('page-relatorios')?.style.display==='block') renderRelatorios();
+}
+window.salvarCustos=salvarCustos;
+// custo da rota do resultado (com o veículo dela)
+function _custoRotaD(r){ const v=_vD(r); return _custoRota(+r.km||+r.distancia_km||0, +r.mins||+r.tempo_min||0, v.tipo); }
 
 // ── Baixas para o SSW ───────────────────────────────────────────────────────
 // Ida: o relatório da opção 081 entra pela importação (CSV). Volta: cada baixa do motorista
@@ -3092,6 +3282,7 @@ function abrirPedido(id){
   else if(!o&&contaDemo&&!EID) avisos.push('Conta de demonstração: o pedido fica só nesta tela.');
   else if(!o&&modoDemo) avisos.push('Ao salvar, os pedidos de exemplo saem da tela e passam a aparecer só os seus.');
   const av=$id('ped-aviso'); av.hidden=!avisos.length; av.textContent=avisos.join(' ');
+  _pedReentBox(o,bloq);
   $id('ped-form').querySelectorAll('input,#ped-tipo button,#ped-buscar').forEach(el=>{ el.disabled=bloq; });
   $id('ped-salvar').hidden=bloq; $id('ped-salvar').disabled=false; $id('ped-salvar').textContent=o?'Salvar alterações':'Cadastrar pedido';
   $id('ped-excluir').hidden=!podeExcluir; $id('ped-lixo').hidden=!podeExcluir;
@@ -3101,6 +3292,29 @@ function abrirPedido(id){
   setTimeout(()=>{ _pedDesenharMapa(); (bloq?document.querySelector('#modal-pedido .modal-close'):$id('ped-nf')).focus(); },40);
 }
 window.abrirPedido=abrirPedido;
+// Caixa de reentrega no pedido: quantas tentativas, a última ocorrência e o que acontece agora
+function _pedReentBox(o,bloq){
+  const box=$id('ped-reent'), i=_reentInfo(o), t=+(o&&o.tentativas)||0;
+  if(!o||(!i&&!t)){ box.hidden=true; box.innerHTML=''; return; }
+  const oc=(pedidosCrus&&pedidosCrus[o.id]&&pedidosCrus[o.id].ocorrencia)||null;
+  const quando=oc&&+oc.hora?new Date(+oc.hora).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+  box.hidden=false;
+  box.className='ped-reent'+(i&&i.sit!=='fila'?' espera':'');
+  box.innerHTML=`<b>${t?`Não realizado ${t===1?'1 vez':t+' vezes'}`:'Reentrega'}</b>${oc?` · última: ${esc(oc.motivo||'sem motivo')}${quando?' em '+esc(quando):''}${oc.obs?` (“${esc(oc.obs)}”)`:''}`:''}.
+    ${i?`<span>${esc(i.txt)}</span>`:''}
+    ${i&&i.sit!=='fila'&&!bloq?`<button type="button" class="btn-sm" id="ped-liberar" onclick="liberarReentrega()">Liberar para a próxima rota</button>`:''}`;
+}
+async function liberarReentrega(){
+  const o=_pedEdit; if(!o||!o.reentrega) return;
+  const novo={...o.reentrega, sit:'fila', liberado:true}; delete novo.limite;
+  try{
+    if(_pedSoNaTela(o)) o.reentrega=novo;
+    else await set(ref(db,TP('pedidos_rota/'+o.id+'/reentrega')),novo);
+    o.reentrega=novo; _pedReentBox(o,false); _toast(`NF ${o.nf} volta na próxima rota.`);
+    if($id('page-pedidos')?.style.display==='block') renderPedidosPage();
+  }catch(e){ _toast('Não foi possível liberar: '+e.message); }
+}
+window.liberarReentrega=liberarReentrega;
 function novoPedido(){ abrirPedido(null); }
 window.novoPedido=novoPedido;
 function fecharPedido(){
@@ -3224,6 +3438,8 @@ async function salvarPedido(){
   // Local: o que a pessoa achou ou marcou vale; sem isso, endereço igual mantém o
   // local salvo; endereço novo volta para o centro da cidade e é localizado pelo CEP.
   const endMudou=!o || (o.cep||'')!==cep || (o.endereco||'')!==dados.endereco || o.cidade!==cidade;
+  // endereço não encontrado: corrigir o endereço ou o ponto libera para a próxima rota
+  if(o&&o.reentrega&&o.reentrega.sit==='endereco'&&(endMudou||(_pedGeo&&_pedGeo.fonte!=='salvo'))) dados.reentrega={...o.reentrega, sit:'fila'};
   if(_pedGeo&&_pedGeo.fonte!=='salvo'){
     Object.assign(dados,{lat:_pedGeo.lat,lng:_pedGeo.lng,geoStatus:'ok',geoManual:_pedGeo.fonte==='manual',geoPrec:_pedGeo.fonte,geoV:GEO_VERSAO});
   } else if(!(o&&!endMudou)){
@@ -5132,6 +5348,54 @@ let capM3D=0, bauM3D=0;
 let frotaModoD=false, frotaD=[], frotaSelD={iniciado:false, tipos:{}, mots:{}};
 const CUSTO_VEIC={fiorino:1800, vuc:2700, tres4:3300, toco:3900, bitruck:4800, carreta:6000};
 const MAX_FROTA=40, MAX_POR_TIPO=10;
+// ── Custo da rota em reais ─────────────────────────────────────────────────
+// custo = km × R$/km + horas × R$/hora + diária. R$/km = combustível (preço ÷ consumo) + pneus e
+// manutenção; R$/hora = motorista (+ ajudantes) com encargos ÷ horas do mês; diária = custos fixos do
+// veículo por dia (parcela ou depreciação, seguro, IPVA, rastreador). Valores de partida (26/11/2026):
+// diesel S10 R$ 7,30 (ANP, síntese semanal 45/2026, média Brasil); gasolina R$ 6,67 (IPTL, média
+// nacional, 1ª quinzena de nov/2026); salários = pisos de maio/2026 da convenção SINDICARGAS
+// Guarulhos e Arujá (SETCESP); consumo = faixas de mercado para entrega urbana (estimativa);
+// encargos 70% (estimativa). Pneus/manutenção e diária ficam para a empresa preencher.
+const CUSTO_PADRAO={ v:1, diesel:7.30, gasolina:6.67, encargos:70, ajudSal:2108.03, horasMes:220, tipos:{
+  fiorino:{cons:10,  comb:'gasolina', manut:0, sal:2660.40, ajud:0, diaria:0},
+  vuc:    {cons:6.5, comb:'diesel',   manut:0, sal:2956.92, ajud:0, diaria:0},
+  tres4:  {cons:6,   comb:'diesel',   manut:0, sal:2956.92, ajud:0, diaria:0},
+  toco:   {cons:4.5, comb:'diesel',   manut:0, sal:2956.92, ajud:0, diaria:0},
+  bitruck:{cons:3,   comb:'diesel',   manut:0, sal:2956.92, ajud:0, diaria:0},
+  carreta:{cons:2.2, comb:'diesel',   manut:0, sal:3245.96, ajud:0, diaria:0} } };
+let custosEmp=null;
+const _custLS=()=>'rv3_custos_'+(EID||'local');
+function _custosValidos(c){
+  if(!c||typeof c!=='object'||!c.tipos) return null;
+  const n=(v,a,b)=>Number.isFinite(+v)&&+v>=a&&+v<=b;
+  if(!n(c.diesel,0.01,50)||!n(c.gasolina,0.01,50)||!n(c.encargos,0,300)||!n(c.ajudSal,0,100000)) return null;
+  const tipos={};
+  Object.keys(CUSTO_PADRAO.tipos).forEach(k=>{ const x=c.tipos[k], d=CUSTO_PADRAO.tipos[k];
+    tipos[k]=x&&typeof x==='object'?{cons:n(x.cons,0.5,50)?+x.cons:d.cons, comb:x.comb==='gasolina'?'gasolina':'diesel', manut:n(x.manut,0,50)?+x.manut:0,
+      sal:n(x.sal,0,100000)?+x.sal:d.sal, ajud:n(x.ajud,0,5)?Math.round(+x.ajud):0, diaria:n(x.diaria,0,100000)?+x.diaria:0}:{...d}; });
+  return {v:1, diesel:+c.diesel, gasolina:+c.gasolina, encargos:+c.encargos, ajudSal:+c.ajudSal, horasMes:n(c.horasMes,100,400)?+c.horasMes:220, tipos};
+}
+function _custosLocais(){ try{ return _custosValidos(JSON.parse(localStorage.getItem(_custLS())||'null')); }catch(e){ return null; } }
+function _custos(){ return custosEmp||_custosLocais()||CUSTO_PADRAO; }
+// R$/km, R$/hora e diária de um tipo de veículo
+function _taxasTipo(tipo,cfg){
+  const c=cfg||_custos(), x=c.tipos[tipo]; if(!x) return null;
+  const comb=x.cons>0?(x.comb==='gasolina'?c.gasolina:c.diesel)/x.cons:0;
+  return { comb, rkm:comb+(+x.manut||0), rh:((+x.sal||0)+(+x.ajud||0)*(+c.ajudSal||0))*(1+(+c.encargos||0)/100)/(+c.horasMes||220),
+    diaria:+x.diaria||0, manut:+x.manut||0 };
+}
+function _custoRota(km,mins,tipo,cfg){
+  const t=_taxasTipo(tipo,cfg); if(!t||!(km>=0)) return null;
+  const k=km*t.rkm, h=(mins||0)/60*t.rh, c2=x=>Math.round(x*100)/100;
+  return {total:c2(k+h+t.diaria), km:c2(k), hora:c2(h), diaria:c2(t.diaria), rkm:Math.round(t.rkm*1000)/1000, rh:c2(t.rh), semFixo:!t.diaria, semManut:!t.manut};
+}
+// tipo do veículo de uma rota confirmada antiga (antes de guardar veiculo_tipo): pelo nome
+function _tipoPeloNome(nome){
+  const n=_semAcento(nome);
+  const v=VEICULOS.find(x=>n===_semAcento(x.nome)||n.startsWith(_semAcento(x.nome)+' '));
+  return v?v.id:'';
+}
+const _brl=v=>(+v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 // Ajuste feito pelo formato das caixas depois da primeira divisão: {mudancas:[texto], ainda:n}
 let ajusteFmtD=null, longosCmD=0, longosPadraoD=false;
 
@@ -5264,13 +5528,14 @@ let rotaCtxD={data:'',saida:420,volta:false}, naoAlocD=[], foraJanelaD=[];
 function _cidadeDe(o){ return String((o&&o.cidade)||'Sem cidade').trim()||'Sem cidade'; }
 function _pedidosDaViagem(cfgCub){
   const d=rotaCtxD.data||_hojeISO(), cfg=cfgCub||_cfgCubagem();
-  return _filtrar(allOrders.filter(o=>o.status==='pendente'),rotTipoD)
+  return _filtrar(allOrders.filter(o=>o.status==='pendente'&&!_emEspera(o)),rotTipoD)
     .filter(o=>rotCidadeD==='todas'||_cidadeDe(o)===rotCidadeD)
     .filter(o=>!(o.agendado&&o.dataAgendada&&o.dataAgendada>d))
     .map(o=>{ const j=o.agendado&&o.dataAgendada===d?_janelaDe(o):null;
       // m³ já resolvido (pedido, produtos ou estimativa): é ele que vai para o motor de rotas
       const mi=_m3Info(o,cfg), c={...o, m3:Math.round(mi.m3*1000)/1000, m3Fonte:mi.fonte, m3Ok:mi.completo};
       if(j){ c.janela_ini=j[0]; c.janela_fim=j[1]; }
+      const pr=_prioridadeDe(o); if(pr) c.prioridade=pr;
       return c; });
 }
 function _pendPorTipo(){ return _contarTipos(allOrders.filter(o=>o.status==='pendente')); }
@@ -5609,8 +5874,10 @@ function irConfirmD(){
   const n=_pendPorTipo();
   if(!n[rotTipoD]){ alert(rotTipoD==='coleta'?'Não há coletas pendentes.':rotTipoD==='entrega'?'Não há entregas pendentes.':'Não há pedidos pendentes.'); return; }
   const viagem=_pedidosDaViagem();
-  const outroDia=_filtrar(allOrders.filter(o=>o.status==='pendente'),rotTipoD).length-viagem.length;
-  if(!viagem.length){ alert('Todos os pedidos pendentes estão agendados para outro dia.'); return; }
+  const pendT=_filtrar(allOrders.filter(o=>o.status==='pendente'),rotTipoD), espera=pendT.filter(_emEspera).length;
+  const outroDia=pendT.length-espera-viagem.length;
+  if(!viagem.length){ alert(espera&&!outroDia?'Os pedidos pendentes estão aguardando endereço ou instrução do embarcador. Veja em Pedidos.':'Todos os pedidos pendentes estão agendados para outro dia.'); return; }
+  const reent=viagem.filter(o=>o.reentrega&&o.reentrega.sit==='fila').length;
   const nV=_contarTipos(viagem);
   const oque = rotTipoD==='coleta' ? _plural(nV.coleta,'coleta','coletas')
     : rotTipoD==='entrega' ? _plural(nV.entrega,'entrega','entregas')
@@ -5622,7 +5889,7 @@ function irConfirmD(){
   const cabVeic = frotaModoD
     ? `Veículos que podem sair <span style="color:var(--text3)">(o sistema usa só os que precisar, dando preferência aos menores)</span>:<ul class="fm-lista">${frotaD.map(v=>`<li><b>${esc(v.nome)}</b> · ${v.capKg.toLocaleString('pt-BR')} kg${v.capM3?` · ${_fmtM3(v.capM3)} m³ (${aprov}% do baú)`:v.carroc==='aberta'?' · aberta':''}${v.motorista?.nome?' · '+esc(v.motorista.nome):''}</li>`).join('')}</ul>Máx. de paradas por veículo: <b>${maxPedD}</b>`
     : `Capacidade: <b style="color:var(--ac)">${kg.toLocaleString('pt-BR')} kg</b><br>${carrocD!=='bau'?`Carroceria: <b>${esc(_CARROC[carrocD])}</b><br>`:''}${capM3D?`Volume: <b style="color:var(--ac)">${_fmtM3(capM3D)} m³</b> <span style="color:var(--text3)">(${Math.round(capM3D/bauM3D*100)}% do baú de ${_fmtM3(bauM3D)} m³)</span><br>`:''}Máx. de paradas: <b>${maxPedD}</b>`;
-  document.getElementById('confirm-details-d').innerHTML=`${cabVeic}${rotCidadeD!=='todas'?`<br>Só de: <b>${esc(rotCidadeD)}</b>`:''}<br>Nesta viagem: <b>${oque} pendentes</b>${rotTipoD==='todos'?' <span style="color:var(--text3)">(entregas primeiro, coletas depois)</span>':''}<br>Saída: <b>${esc(DEPOT.name)}</b> às <b>${_hhmm(rotaCtxD.saida)}</b> de <b>${_dataBR(rotaCtxD.data)}</b><br>Fim: <b>${rotaCtxD.volta?'volta ao CD':'na última parada'}</b>${FATOR_TEMPO!==1?`<br>Tempos ajustados ao trânsito: <b>×${FATOR_TEMPO.toLocaleString('pt-BR',{maximumFractionDigits:2})}</b> <span style="color:var(--text3)">(calibrado pelas suas rotas)</span>`:''}${comHora?`<br>Com horário marcado: <b>${comHora}</b>`:''}${outroDia?`<br><span style="color:var(--text3)">${_plural(outroDia,'agendado para outro dia fica','agendados para outro dia ficam')} de fora.</span>`:''}${semLocal?`<br><span style="color:var(--text3)">📍 ${_plural(semLocal,'pedido com ponto a confirmar','pedidos com ponto a confirmar')} no mapa.</span>`:''}`;
+  document.getElementById('confirm-details-d').innerHTML=`${cabVeic}${rotCidadeD!=='todas'?`<br>Só de: <b>${esc(rotCidadeD)}</b>`:''}<br>Nesta viagem: <b>${oque} pendentes</b>${rotTipoD==='todos'?' <span style="color:var(--text3)">(entregas primeiro, coletas depois)</span>':''}<br>Saída: <b>${esc(DEPOT.name)}</b> às <b>${_hhmm(rotaCtxD.saida)}</b> de <b>${_dataBR(rotaCtxD.data)}</b><br>Fim: <b>${rotaCtxD.volta?'volta ao CD':'na última parada'}</b>${FATOR_TEMPO!==1?`<br>Tempos ajustados ao trânsito: <b>×${FATOR_TEMPO.toLocaleString('pt-BR',{maximumFractionDigits:2})}</b> <span style="color:var(--text3)">(calibrado pelas suas rotas)</span>`:''}${comHora?`<br>Com horário marcado: <b>${comHora}</b>`:''}${outroDia?`<br><span style="color:var(--text3)">${_plural(outroDia,'agendado para outro dia fica','agendados para outro dia ficam')} de fora.</span>`:''}${semLocal?`<br><span style="color:var(--text3)">📍 ${_plural(semLocal,'pedido com ponto a confirmar','pedidos com ponto a confirmar')} no mapa.</span>`:''}${reent?`<br>Reentregas: <b>${reent}</b> <span style="color:var(--text3)">(entram com prioridade)</span>`:''}${espera?`<br><span style="color:var(--text3)">${_plural(espera,'pedido aguarda','pedidos aguardam')} endereço ou instrução e ${espera===1?'fica':'ficam'} de fora (veja em Pedidos).</span>`:''}`;
   document.getElementById('rot-step-cap').style.display='none';
   document.getElementById('rot-step-confirm').style.display='block';
 }
@@ -6623,13 +6890,18 @@ function _renderResultadoD(){
     : ajustada ? `<div class="import-msg show info" style="max-width:640px;margin:0 0 16px">${_plural(fora,'pedido pendente ficou','pedidos pendentes ficaram')} fora desta viagem. ${fora===1?'Ele continua':'Eles continuam'} na lista para a próxima.</div>`
     : frotaVarios ? `<div class="import-msg show info" style="max-width:640px;margin:0 0 16px">Os veículos levaram <b>${totalE} de ${totalE+naoAlocD.length}</b> pedidos: o limite foi de ${maxPedD} paradas por veículo e a capacidade de cada um. Os outros ${naoAlocD.length} continuam pendentes para a próxima viagem.${foraJanelaD.length?` Atenção: ${_plural(foraJanelaD.length,'pedido tem','pedidos têm')} horário que não dá para cumprir saindo às ${_hhmm(rotaCtxD.saida)} (NF ${foraJanelaD.slice(0,8).map(esc).join(', ')}).`:''}</div>`
     : `<div class="import-msg show info" style="max-width:640px;margin:0 0 16px">Esta viagem levou <b>${totalE} de ${totalE+naoAlocD.length}</b> pedidos: o limite foi de ${maxPedD} paradas e ${capKgD.toLocaleString('pt-BR')} kg. Os outros ${naoAlocD.length} continuam pendentes para a próxima viagem (gere outra com o próximo veículo).${foraJanelaD.length?` Atenção: ${_plural(foraJanelaD.length,'pedido tem','pedidos têm')} horário que não dá para cumprir saindo às ${_hhmm(rotaCtxD.saida)} (NF ${foraJanelaD.slice(0,8).map(esc).join(', ')}).`:''}</div>`;
+  // custo estimado de todas as rotas (só se todas tiverem o tipo do veículo)
+  const cs=rotas.map(_custoRotaD);
+  const cTot=cs.length&&cs.every(Boolean)?{total:cs.reduce((a,c)=>a+c.total,0), semFixo:cs.some(c=>c.semFixo), semManut:cs.some(c=>c.semManut)}:null;
   res.innerHTML=`
     <button class="btn-voltar-topo" onclick="renderVeiculosD()"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Gerar outra rota</button>
     <div class="kpis" style="max-width:640px;margin-bottom:18px">
       <div class="kpi"><div class="kpi-lbl">${frotaVarios?'VEÍCULOS':'VIAGENS'}</div><div class="kpi-val">${rotas.length}</div>${frotaVarios?`<div class="kpi-split">de ${frotaD.length} ${frotaD.length===1?'escolhido':'escolhidos'}</div>`:''}</div>
       <div class="kpi"><div class="kpi-lbl">PARADAS</div><div class="kpi-val">${totalE}</div><div class="kpi-split">${_resumoTipos(tT)}</div></div>
       <div class="kpi"><div class="kpi-lbl">KM TOTAL</div><div class="kpi-val">${totalKm.toFixed(0)}</div></div>
+      ${cTot?`<div class="kpi"><div class="kpi-lbl">CUSTO ESTIMADO</div><div class="kpi-val" style="font-size:22px">${_brl(cTot.total)}</div><div class="kpi-split">${_brl(cTot.total/Math.max(1,totalE))} por parada</div></div>`:''}
     </div>
+    ${cTot?`<p class="custo-nota">Combustível, mão de obra${cTot.semManut?'':', pneus e manutenção'}${cTot.semFixo?'':' e diária do veículo'}.${cTot.semManut||cTot.semFixo?` Faltam ${[cTot.semManut?'pneus e manutenção':'',cTot.semFixo?'a diária do veículo':''].filter(Boolean).join(' e ')}:`:''} <button type="button" onclick="abrirCustos()">${cTot.semManut||cTot.semFixo?'preencher':'ajustar'} os custos</button>.</p>`:''}
     ${regraCargaD==='soma_entregas_e_coletas'&&!ajustada?'<div class="import-msg show warn" style="max-width:640px;margin:0 0 16px">Nesta rota o peso das entregas e das coletas foi somado para caber no veículo (regra mais conservadora).</div>':''}
     ${msgLongos}${msgFmt}${msgFora}
     <div class="rota-tabs-d" id="rota-tabs-d" role="tablist">${rotas.map((r,i)=>`<div class="rota-tab-d ${i===rotaSelD?'active':''}" role="tab" tabindex="0" aria-selected="${i===rotaSelD}" onclick="selRotaTabD(${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selRotaTabD(${i})}">Rota ${i+1}${r._v&&r._v.frota?` · ${esc(r._v.nome)}${r._v.motorista?.nome?' · '+esc(r._v.motorista.nome):''}`:''} · ${_plural(_paradasD(r).length,'parada','paradas')}${r._manual?' · montada no mapa':''}${r._ajustada?' · ajustada':''}</div>`).join('')}</div>
@@ -6695,6 +6967,8 @@ async function confirmarRotaD(){
         veiculo:v.nome||'', motorista:v.motorista?.nome||'', cap_kg:v.capKg,
         ...(v.motorista?.placa?{placa:_placaNorm(v.motorista.placa)}:{}),
         km:r.km||r.distancia_km||0, tempo_min:r.mins||r.tempo_min||0,
+        ...(v.tipo?{veiculo_tipo:v.tipo}:{}),
+        ...((c=>c?{custo:{total:c.total, km:c.km, hora:c.hora, diaria:c.diaria}}:{})(_custoRotaD(r))),
         peso_total:r.peso_total||paradas.reduce((s,p)=>s+(p.peso||0),0),
         ...(m3Tot>0?{m3_total:m3Tot}:{}),
         ...(v.capM3>0?{cap_m3:v.capM3, bau_m3:v.bauM3}:{}),
@@ -6859,10 +7133,15 @@ function _aplicarBaixas(rota, baixas){
     if(!reg||reg.rota_atual!==rota.id) return;
     if(b.status==='feito'){
       const novo=_tipoDe(p)==='coleta'?'coletado':'entregue';
-      if(reg.status!==novo){ upd[TP('pedidos_rota/'+id+'/status')]=novo; upd[TP('pedidos_rota/'+id+'/baixa')]={hora:b.hora||Date.now(),rota:rota.id,recebedor:b.recebedor||''}; }
+      if(reg.status!==novo){ upd[TP('pedidos_rota/'+id+'/status')]=novo; upd[TP('pedidos_rota/'+id+'/baixa')]={hora:b.hora||Date.now(),rota:rota.id,recebedor:b.recebedor||''};
+        upd[TP('pedidos_rota/'+id+'/reentrega')]=null; }
     } else if(b.status==='nao_feito' && reg.status!=='pendente'){
+      const cru=pedidosCrus&&pedidosCrus[id]||{}, t=(+cru.tentativas||0)+1;
+      const rg=_regraReent(b.motivo,t,cru.reentrega&&cru.reentrega.liberado);
       upd[TP('pedidos_rota/'+id+'/status')]='pendente';
       upd[TP('pedidos_rota/'+id+'/ocorrencia')]={motivo:b.motivo||'',obs:b.obs||'',hora:b.hora||Date.now(),rota:rota.id};
+      upd[TP('pedidos_rota/'+id+'/tentativas')]=t;
+      upd[TP('pedidos_rota/'+id+'/reentrega')]={sit:rg.sit, prio:rg.prio, resp:rg.resp, motivo:b.motivo||'', desde:b.hora||Date.now(), ...(rg.limite?{limite:true}:{})};
     }
   });
   if(Object.keys(upd).length){
@@ -7860,7 +8139,7 @@ function selRotaTabD(idx){
   document.getElementById('rota-detail-d').innerHTML=`
     <div id="rota-map"></div>
     ${paradas.length?`<div class="nav-btns-d"><a href="${gmaps}" target="_blank" rel="noopener" class="btn-nav-d gmaps">📍 Google Maps</a>${last?`<a href="https://waze.com/ul?ll=${last.lat},${last.lng}&navigate=yes" target="_blank" rel="noopener" class="btn-nav-d waze">🚗 Waze</a>`:''}</div>`:''}
-    <div class="card" style="margin-bottom:14px"><div style="display:flex;gap:20px;font-size:13px;color:var(--text2);flex-wrap:wrap">${vr.frota?`<span>🚚 <b style="color:var(--text)">${esc(vr.nome)}</b>${vr.motorista?.nome?' · '+esc(vr.motorista.nome):''}</span>`:''}<span>📦 <b style="color:var(--text)">${peso.toLocaleString('pt-BR')} kg</b></span><span>📍 <b style="color:var(--text)">${paradas.length}</b> paradas</span>${nT.coleta&&nT.entrega?`<span>🚚 sai com <b style="color:var(--text)">${carga.saida.toLocaleString('pt-BR')} kg</b> · no máximo <b style="color:var(--text)">${carga.max.toLocaleString('pt-BR')} kg</b> a bordo</span>`:''}<span>🛣️ <b style="color:var(--text)">${_x(km)}</b> km</span></div>
+    <div class="card" style="margin-bottom:14px"><div style="display:flex;gap:20px;font-size:13px;color:var(--text2);flex-wrap:wrap">${vr.frota?`<span>🚚 <b style="color:var(--text)">${esc(vr.nome)}</b>${vr.motorista?.nome?' · '+esc(vr.motorista.nome):''}</span>`:''}<span>📦 <b style="color:var(--text)">${peso.toLocaleString('pt-BR')} kg</b></span><span>📍 <b style="color:var(--text)">${paradas.length}</b> paradas</span>${nT.coleta&&nT.entrega?`<span>🚚 sai com <b style="color:var(--text)">${carga.saida.toLocaleString('pt-BR')} kg</b> · no máximo <b style="color:var(--text)">${carga.max.toLocaleString('pt-BR')} kg</b> a bordo</span>`:''}<span>🛣️ <b style="color:var(--text)">${_x(km)}</b> km</span>${(c=>c?`<span title="${esc(`${_brl(c.km)} de km (${_brl(c.rkm)}/km) + ${_brl(c.hora)} de mão de obra (${_brl(c.rh)}/hora) + ${_brl(c.diaria)} de diária`)}">💰 <b style="color:var(--text)">${_brl(c.total)}</b> · ${_brl(c.total/Math.max(1,paradas.length))} por parada</span>`:'')(_custoRotaD(r))}</div>
       ${notaFonte}
     </div>
     ${paradas.length?_blocoCargaD(paradas,idx):''}
@@ -8725,7 +9004,7 @@ async function enviarChatD(){
 window.enviarChatD=enviarChatD;
 
 // ── Início (só depois do login com acesso liberado) ─────────────────────
-let _fatorUnsub=null, _cubUnsub=null;
+let _fatorUnsub=null, _cubUnsub=null, _custUnsub=null;
 const _fatorValido=f=>Number.isFinite(+f)&&+f>=0.5&&+f<=3 ? +f : 1;
 async function carregarConfig(){
   try{
@@ -8734,6 +9013,8 @@ async function carregarConfig(){
     // o administrador pode mudar o ajuste com a página aberta: segue o valor do banco
     if(_fatorUnsub){ try{ _fatorUnsub(); }catch(e){} }
     _fatorUnsub=onValue(ref(db,TP('config/fator_tempo')),sn=>{ FATOR_TEMPO=_fatorValido(sn.val()); },()=>{});
+    if(_custUnsub){ try{ _custUnsub(); }catch(e){} }
+    _custUnsub=onValue(ref(db,TP('config/custos')),sn=>{ custosEmp=_custosValidos(sn.val()); },()=>{ custosEmp=null; });
     if(_cubUnsub){ try{ _cubUnsub(); }catch(e){} }
     _cubUnsub=onValue(ref(db,TP('config/cubagem')),sn=>{
       FATOR_CUB=_fatorCubValido(sn.val()&&sn.val().fator);

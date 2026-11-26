@@ -110,6 +110,13 @@ ok(W('empresas/emp1/config/ssw', { codigos: { entregue: '01', ausente: '46' } },
 ok(!W('empresas/emp1/config/ssw', { codigos: { entregue: '<b>' } }, ANA) && !W('empresas/emp1/config/ssw', { codigos: { hackear: '01' } }, ANA) && !W('empresas/emp1/config/ssw', { senha: 'x' }, ANA),
   'código com sinal, situação desconhecida ou campo a mais (como senha) é recusado');
 ok(!W('empresas/emp2/config/ssw', { codigos: { entregue: '01' } }, ANA), 'e não muda os códigos de outra empresa');
+// custos dos veículos
+const CUS = { v: 1, diesel: 7.3, gasolina: 6.67, encargos: 70, ajudSal: 2108.03, horasMes: 220, tipos: { vuc: { cons: 6.5, comb: 'diesel', manut: 0.4, sal: 2956.92, ajud: 1, diaria: 300 } } };
+ok(W('empresas/emp1/config/custos', CUS, ANA), 'membro grava os custos dos veículos');
+ok(!W('empresas/emp1/config/custos', { ...CUS, diesel: -1 }, ANA) && !W('empresas/emp1/config/custos', { ...CUS, tipos: { onibus: CUS.tipos.vuc } }, ANA)
+  && !W('empresas/emp1/config/custos', { ...CUS, tipos: { vuc: { ...CUS.tipos.vuc, comb: 'alcool' } } }, ANA) && !W('empresas/emp1/config/custos', { ...CUS, senha: 'x' }, ANA),
+  'preço negativo, tipo desconhecido, combustível estranho ou campo a mais são recusados');
+ok(!W('empresas/emp2/config/custos', CUS, ANA), 'e não muda os custos de outra empresa');
 ok(!W('empresas/emp1/config/fator_tempo', 1.2, ANA), 'o membro continua sem mexer no ajuste de tempo (só o administrador)');
 
 console.log(falhas ? `${falhas} falha(s)` : 'regras ok');

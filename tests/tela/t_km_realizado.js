@@ -160,11 +160,12 @@ const seedCliente = (arg) => {
     'relatório compara o km do painel com o planejado das mesmas rotas');
   ok(rel.includes('Km pelo GPS: 41,2 km') && rel.includes('Tempo entre as paradas: 2,3× o planejado') && rel.includes('1 parada feita fora da ordem planejada'), 'relatório traz GPS, tempo e ordem');
   const linha = await p.evaluate(() => [...document.querySelectorAll('#rel-corpo table.rel-tab')[0].querySelectorAll('tbody tr td')].map((t) => t.textContent.trim()));
-  ok(linha.slice(-5, -1).join('|') === '42,5|41,2|2,3×|1', 'tabela de rotas com km painel, km GPS, tempo real e fora da ordem: ' + linha.slice(-5, -1).join('|'));
+  // as últimas colunas são Ocupação e Custo (26/11/2026)
+  ok(linha.slice(-6, -2).join('|') === '42,5|41,2|2,3×|1', 'tabela de rotas com km painel, km GPS, tempo real e fora da ordem: ' + linha.slice(-6, -2).join('|'));
   const [dl] = await Promise.all([p.waitForEvent('download'), p.click('#rel-csv')]);
   const csv = fs.readFileSync(await dl.path(), 'utf8');
   const cab = csv.split('\r\n').find((l) => l.startsWith('Data;'));
-  ok(cab && cab.endsWith('Km painel;Km GPS;% do GPS casado com as ruas;Tempo real ÷ planejado;Paradas fora da ordem'), 'planilha tem as colunas novas');
+  ok(cab && cab.endsWith('Km painel;Km GPS;% do GPS casado com as ruas;Tempo real ÷ planejado;Paradas fora da ordem;Custo estimado (R$)'), 'planilha tem as colunas novas');
   ok(csv.includes(';42,5;41,2;80;2,33;1'), 'e os números da rota (2,33 com duas casas, para conta)');
   ok(!errs.length, 'escritório sem erros no console: ' + JSON.stringify(errs.slice(0, 3)));
   await ctx.close(); await dctx.close();
