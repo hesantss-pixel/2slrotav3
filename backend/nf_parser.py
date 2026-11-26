@@ -140,6 +140,8 @@ def _findtext(elem, path: str, default: str = "") -> str:
 
 def parse_xml(content: bytes, filename: str = "") -> list[dict]:
     """Aceita um XML de NF-e (nfeProc, NFe ou lote com <nfeProc> repetido)."""
+    if re.search(rb"<!\s*(DOCTYPE|ENTITY)", content, re.I):   # nota não usa; ver entrada.xml_seguro
+        raise ValueError(f"XML com DOCTYPE ou ENTITY não é aceito em {filename}")
     text = content.decode("utf-8", errors="ignore")
     try:
         root = ET.fromstring(text)

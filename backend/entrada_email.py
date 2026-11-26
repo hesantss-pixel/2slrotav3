@@ -17,6 +17,7 @@ Variáveis de ambiente (Railway):
 from __future__ import annotations
 
 import email
+import email.utils
 import imaplib
 import io
 import logging
@@ -128,7 +129,13 @@ def processar_mensagem(bruto: bytes, usuario: str, banco: entrada.Banco) -> dict
     if not arquivos and not erros:
         erros.append("e-mail sem anexo XML")
     return entrada.receber(banco, eid, pedidos, canc, "email", arquivos=len(arquivos),
-                           erros=erros, sem_peso=sem_peso)
+                           erros=erros, sem_peso=sem_peso, de=remetente(msg))
+
+
+def remetente(msg) -> str:
+    """Endereço de quem mandou (só o endereço, curto e sem caracteres estranhos)."""
+    end = email.utils.parseaddr(str(msg.get("From", "") or ""))[1].strip().lower()
+    return end[:120] if re.fullmatch(r"[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}", end) else ""
 
 
 def conectar_imap(usuario: str, senha: str, servidor: str = "imap.gmail.com"):

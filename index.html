@@ -2,6 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="base-uri 'self'; object-src 'none'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0d1b2e">
 <meta name="robots" content="noindex">
@@ -3820,7 +3821,7 @@ function _linhaRec(r){
   if(r.sem_peso) partes.push(`${_plural(r.sem_peso,'sem peso (entrou com 100 kg)','sem peso (entraram com 100 kg)')}`);
   if(r.erros&&r.erros.length) partes.push(`<span class="err">${r.erros.slice(0,3).map(esc).join(' · ')}</span>`);
   if(!partes.length) partes.push('nada novo');
-  return `<li><time>${_dataHora(r.em)}</time>${como} · ${partes.join(' · ')}</li>`;
+  return `<li><time>${_dataHora(r.em)}</time>${como}${r.de?' de '+esc(r.de):''} · ${partes.join(' · ')}</li>`;
 }
 function _renderIntegracao(){
   const c=$id('auto-ent-corpo'), d=_aeInfo; if(!c||!d) return;
@@ -6471,6 +6472,11 @@ async function calcularKmGps(rid,auto){
   if(document.getElementById('page-rotas')?.style.display==='block') renderRotasConfirmadas();
 }
 window.calcularKmGps=calcularKmGps;
+// Foto que veio do link do motorista (sem senha): só vale se for MESMO um JPEG em base64. Conferir só o
+// começo deixava passar 'data:image/jpeg;base64,x" onerror="..."', que rodava código na tela do escritório.
+const _FOTO_OK=/^data:image\/jpeg;base64,[A-Za-z0-9+\/]+={0,2}$/;
+function _fotoOk(d){ return typeof d==='string'&&d.length<400000&&_FOTO_OK.test(d); }
+window.__fotoOk=_fotoOk;
 async function verFotosHod(rid){
   const r=_rotaPorId(rid); if(!r||!r.token) return;
   const h=hodPorRota[rid]||{}, hp=r.km_painel||{};
@@ -6482,7 +6488,7 @@ async function verFotosHod(rid){
     const f=(await get(ref(db,'entregador/'+r.token+'/fotos_hod'))).val()||{};
     const bloco=(q,rot)=>{ const km=h[q]?.km??(q==='ini'?hp.ini:hp.fim); const img=f[q];
       return `<div class="foto-info"><b>${rot}: ${km!=null?_n(km)+' km':'—'}</b>${h[q]?.hora?' às '+_horaTs(h[q].hora):''}</div>`
-        + (typeof img==='string'&&img.startsWith('data:image/jpeg;base64,')?`<img src="${img}" alt="Painel na ${rot.toLowerCase()}">`:'<div class="empty-mini">Sem foto.</div>'); };
+        + (_fotoOk(img)?`<img src="${esc(img)}" alt="Painel na ${rot.toLowerCase()}">`:'<div class="empty-mini">Sem foto.</div>'); };
     corpo.innerHTML=bloco('ini','Saída')+bloco('fim','Chegada');
   }catch(e){ corpo.innerHTML='<div class="empty-mini">Não foi possível carregar as fotos (o link do motorista pode ter expirado).</div>'; }
 }
@@ -6498,8 +6504,8 @@ async function verFotoCanhoto(rid,i){
   try{
     const d=(await get(ref(db,'entregador/'+r.token+'/fotos/'+i))).val();
     const info=`<div class="foto-info">${b.status==='feito'?'Feito':'Não realizado'} às ${_horaTs(b.hora)}${b.recebedor?' · recebido por '+esc(b.recebedor):''}${b.motivo?' · '+esc(b.motivo):''}${Number.isFinite(b.lat)?` · <a href="https://www.google.com/maps?q=${b.lat},${b.lng}" target="_blank" rel="noopener">onde foi dada a baixa</a>`:''}</div>`;
-    corpo.innerHTML = typeof d==='string'&&d.startsWith('data:image/jpeg;base64,')
-      ? `<img src="${d}" alt="Foto enviada pelo motorista">${info}` : `<div class="empty-mini">Foto não encontrada.</div>${info}`;
+    corpo.innerHTML = _fotoOk(d)
+      ? `<img src="${esc(d)}" alt="Foto enviada pelo motorista">${info}` : `<div class="empty-mini">Foto não encontrada.</div>${info}`;
   }catch(e){ corpo.innerHTML='<div class="empty-mini">Não foi possível carregar a foto.</div>'; }
 }
 window.verFotoCanhoto=verFotoCanhoto;

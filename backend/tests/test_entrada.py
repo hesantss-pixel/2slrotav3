@@ -364,7 +364,7 @@ class TesteEmail(unittest.TestCase):
                            ("danfe.pdf", b"%PDF", "application/pdf")])
         r = entrada_email.processar_mensagem(bruto, self.CAIXA, self.b)
         pr = self.b.d["empresas"]["e1"]["pedidos_rota"]
-        self.assertEqual((r["novos"], r["arquivos"], r["origem"]), (2, 2, "email"))
+        self.assertEqual((r["novos"], r["arquivos"], r["origem"], r["de"]), (2, 2, "email", "fornecedor@exemplo.com"))
         self.assertEqual(set(pr), {CH1, "3" * 44})
         self.assertEqual(pr[CH1]["origem"], "email")
 

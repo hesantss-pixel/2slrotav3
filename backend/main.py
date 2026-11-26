@@ -19,6 +19,7 @@ Docs:   http://localhost:8000/docs  (Swagger automático do FastAPI)
 """
 
 import os
+import re
 import logging
 import platform
 import uuid
@@ -46,6 +47,36 @@ except Exception:
         raise RuntimeError("Sync TOTVS indisponivel neste ambiente.")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
+
+
+class _SemSegredo(logging.Filter):
+    """Tira do log o segredo do banco e tokens. As chamadas ao Firebase levam ?auth=<segredo> na
+    URL, e um erro de rede do requests repete a URL inteira na mensagem e no traceback."""
+    _RE = re.compile(r"(auth=|Bearer\s+)[^&\s'\"]+")
+
+    def filter(self, rec: logging.LogRecord) -> bool:
+        try:
+            msg = rec.getMessage()
+        except Exception:
+            return True
+        limpo = self._RE.sub(r"\1***", msg)
+        if limpo != msg:
+            rec.msg, rec.args = limpo, ()
+        if rec.exc_info and not rec.exc_text:
+            rec.exc_text = self._RE.sub(r"\1***", logging.Formatter().formatException(rec.exc_info))
+        return True
+
+
+def _proteger_logs() -> None:
+    filtro = _SemSegredo()
+    for nome in ("", "uvicorn", "uvicorn.error", "uvicorn.access"):
+        lg = logging.getLogger(nome)
+        lg.addFilter(filtro)
+        for h in lg.handlers:
+            h.addFilter(filtro)
+
+
+_proteger_logs()
 
 # Segredos que podem aparecer dentro de mensagens de erro: a chave do banco vai na URL
 # (?auth=...), e o requests repete a URL inteira quando a conexão falha.
@@ -98,17 +129,38 @@ app = FastAPI(
 
 ALLOWED_ORIGINS = [o.strip() for o in os.getenv(
     "ALLOWED_ORIGINS",
-    "https://hesantss-pixel.github.io,https://app.rotav3.com.br,"
-    "http://localhost:8080,http://127.0.0.1:8080,http://127.0.0.1:5500"
+    "https://hesantss-pixel.github.io,https://app.rotav3.com.br"
 ).split(",") if o.strip()]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_credentials=False,          # o login vai no cabeçalho Authorization, não em cookie
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
+
+# Tamanho máximo do pedido: arquivos têm limite próprio (60 MB); o resto é JSON e não passa de 8 MB.
+MAX_CORPO_ARQUIVOS = 64 * 1024 * 1024
+MAX_CORPO_JSON = 8 * 1024 * 1024
+
+
+@app.middleware("http")
+async def _limites_e_cabecalhos(request: Request, call_next):
+    try:
+        tam = int(request.headers.get("content-length") or 0)
+    except ValueError:
+        tam = 0
+    teto = MAX_CORPO_ARQUIVOS if request.url.path in ("/upload-nf", "/entrada/xml") else MAX_CORPO_JSON
+    if tam > teto:
+        from fastapi.responses import JSONResponse
+        return JSONResponse({"detail": "Envio grande demais."}, status_code=413)
+    resp = await call_next(request)
+    resp.headers.setdefault("X-Content-Type-Options", "nosniff")
+    resp.headers.setdefault("Referrer-Policy", "no-referrer")
+    resp.headers.setdefault("X-Frame-Options", "DENY")
+    resp.headers.setdefault("Cache-Control", "no-store")
+    return resp
 
 # ── Firebase helpers ──────────────────────────────────────────────────────────
 
@@ -144,7 +196,8 @@ def _salvar_pedido_firebase(pedido: dict) -> str:
     Retorna: 'novo', 'atualizado', 'preservado' ou 'erro'.
     """
     nf = str(pedido.get("nf", "")).strip()
-    if not nf:
+    # o número vira parte do endereço no banco: só letras, números, _ e - (nada de / ? & ou ..)
+    if not re.fullmatch(r"[A-Za-z0-9_-]{1,60}", nf):
         return "erro"
     try:
         atual = req_lib.get(_fb(f"pedidos_rota/{nf}"), timeout=5)
@@ -238,14 +291,26 @@ def exigir_login_ou_demo(authorization: Optional[str] = Header(None)) -> tuple[s
         raise HTTPException(status_code=e.status, detail=e.mensagem)
 
 
-def _limite_demo(quem: tuple[str, str], acao: str, maximo: int) -> None:
+def _limite_demo(quem: tuple[str, str], acao: str, maximo: int, janela_s: int = 3600) -> None:
     uid, papel = quem
     if papel != "demo":
         return
     try:
-        auth_firebase.limitar_demo(uid, acao, maximo)
+        auth_firebase.limitar_demo(uid, acao, maximo, janela_s)
     except auth_firebase.AuthError as e:
         raise HTTPException(status_code=e.status, detail=e.mensagem)
+
+
+def _limite_conta(quem: tuple[str, str], acao: str, maximo: int, janela_s: int = 3600) -> None:
+    """Teto por usuário também para contas completas: uma senha vazada ou um script não
+    esgota sozinho a cota do assistente nem a do Google, que é de todos os clientes."""
+    uid, papel = quem
+    if papel == "demo":
+        return
+    try:
+        auth_firebase.limitar_demo(uid, "conta:" + acao, maximo, janela_s)
+    except auth_firebase.AuthError:
+        raise HTTPException(status_code=429, detail="Muitos pedidos seguidos. Espere alguns minutos e tente de novo.")
 
 
 class Deposito(BaseModel):
@@ -316,13 +381,13 @@ class SolveRequest(BaseModel):
         )
 
 class ChatRequest(BaseModel):
-    mensagem:   str
-    session_id: str = ""
+    mensagem:   str = Field(..., max_length=2000)
+    session_id: str = Field("", max_length=100)
     # Contexto opcional para atualizar o agente antes de responder
-    rotas:      Optional[list[dict]] = None
-    veiculo:    Optional[str] = None
+    rotas:      Optional[list[dict]] = Field(None, max_length=60)
+    veiculo:    Optional[str] = Field(None, max_length=80)
     cap_kg:     Optional[int] = None
-    pedidos:    Optional[list[dict]] = None
+    pedidos:    Optional[list[dict]] = Field(None, max_length=5000)
 
 class SyncRequest(BaseModel):
     # Corpo vazio — apenas POST para disparar
@@ -428,6 +493,7 @@ def solve(body: SolveRequest, quem: tuple = Depends(exigir_login_ou_demo)):
     5. Retorna rotas + análise
     """
     _limite_demo(quem, "solve", 30)
+    _limite_conta(quem, "solve", 300)
     demo = quem[1] == "demo"
     if demo and not body.pedidos:
         raise HTTPException(status_code=422, detail="Na conta de demonstração, envie os pedidos.")
@@ -613,12 +679,18 @@ class GeocodeRequest(BaseModel):
     cep: str = Field("", max_length=12)
 
 
+GEO_LIMITE_DEMO = int(os.getenv("GOOGLE_GEOCODING_LIMITE_DEMO", "500") or 500)
+
+
 @app.post("/geocode")
 def geocode(body: GeocodeRequest, quem: tuple = Depends(exigir_login_ou_demo)):
     """Ponto do endereço pelo Google (número da casa ou meio da rua), já conferido pela
     cidade. {configurado: false} quando a chave não está no servidor. Não grava o banco."""
-    # sem limite por conta de demonstração (21/11/2026): o teto é o diário do servidor inteiro
-    # (GOOGLE_GEOCODING_LIMITE_DIA)
+    # Demonstração: teto por conta em 24 h (GOOGLE_GEOCODING_LIMITE_DEMO, padrão 500), folgado para
+    # testar com as notas de um dia; antes (21/11) não tinha, e uma conta sozinha podia gastar o teto
+    # diário do servidor inteiro (GOOGLE_GEOCODING_LIMITE_DIA) e deixar os clientes sem o Google.
+    _limite_demo(quem, "geocode", GEO_LIMITE_DEMO, 86400)
+    _limite_conta(quem, "geocode", 3000, 86400)
     if not geocode_google.configurado():
         return {"configurado": False, "resultado": None}
     try:
@@ -636,6 +708,7 @@ def chat(body: ChatRequest, quem: tuple = Depends(exigir_login_ou_demo)):
     Se session_id vazio, cria nova sessão e retorna o ID.
     """
     _limite_demo(quem, "chat", 40)
+    _limite_conta(quem, "chat", 150)
     try:
         sid = body.session_id or str(uuid.uuid4())
         session = _get_session(f"{quem[0]}:{sid}")   # conversa de um usuário não serve para outro

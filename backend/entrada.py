@@ -452,10 +452,22 @@ def _detalhes_nota(inf) -> dict:
     return r
 
 
+_XML_PERIGOSO = re.compile(rb"<!\s*(DOCTYPE|ENTITY)", re.I)
+
+
+def xml_seguro(conteudo) -> None:
+    """Nota fiscal (NF-e, CT-e, evento) não usa DOCTYPE nem ENTITY. Um XML com eles pode
+    multiplicar entidades até travar o servidor ou tentar ler arquivo de fora: recusa sem ler."""
+    dados = conteudo if isinstance(conteudo, bytes) else str(conteudo).encode("utf-8", "ignore")
+    if _XML_PERIGOSO.search(dados):
+        raise ValueError("XML com DOCTYPE ou ENTITY não é aceito (nota fiscal não usa isso)")
+
+
 def ler_xml_nfe(conteudo, tipo: str = "entrega") -> dict:
     """XML da NF-e (layout 4.00) -> {"pedidos": [...], "sem_peso": n, "cancelamentos": [chaves]}.
     Levanta ValueError com a mesma mensagem da tela para XML que não é nota."""
     tipo = tipo if tipo in TIPOS else "entrega"
+    xml_seguro(conteudo)
     try:
         if isinstance(conteudo, bytes):
             raiz = ET.fromstring(conteudo.lstrip(b"\xef\xbb\xbf"))
@@ -621,7 +633,7 @@ def _id_log(agora_ms: int) -> str:
 
 def receber(banco: Banco, eid: str, pedidos: list, cancelamentos: list, origem: str,
             arquivos: int = 0, erros: list | None = None, sem_peso: int = 0,
-            agora_ms: int | None = None) -> dict:
+            agora_ms: int | None = None, de: str = "") -> dict:
     """Grava pedidos novos e aplica cancelamentos em empresas/<eid>. Devolve o resumo."""
     agora_ms = agora_ms or int(time.time() * 1000)
     erros = list(erros or [])
@@ -670,6 +682,8 @@ def receber(banco: Banco, eid: str, pedidos: list, cancelamentos: list, origem: 
         "cancelados": cancelados[:40], "cancelados_em_rota": canc_em_rota[:40],
         "cancelamentos_fora": len(canc_fora), "sem_peso": sem_peso, "erros": erros[:15],
     }
+    if de:   # quem mandou o e-mail: no registro, um remetente estranho chama a atenção
+        resumo["de"] = de
     _registrar(banco, eid, resumo, agora_ms)
     return resumo
 

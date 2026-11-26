@@ -32,6 +32,12 @@ def _instalar_substitutos():
         def add_middleware(self, *a, **k):
             pass
 
+        def middleware(self, _tipo):
+            def deco(f):
+                self.mws = getattr(self, "mws", []) + [f]
+                return f
+            return deco
+
         def on_event(self, _ev):
             return lambda f: f
 
@@ -55,8 +61,14 @@ def _instalar_substitutos():
     fa.UploadFile = object
     cors = types.ModuleType("fastapi.middleware.cors")
     cors.CORSMiddleware = object
+    respostas = types.ModuleType("fastapi.responses")
+
+    class JSONResponse:
+        def __init__(self, content, status_code=200):
+            self.content, self.status_code, self.headers = content, status_code, {}
+    respostas.JSONResponse = JSONResponse
     sys.modules.update({"fastapi": fa, "fastapi.middleware": types.ModuleType("fastapi.middleware"),
-                        "fastapi.middleware.cors": cors})
+                        "fastapi.middleware.cors": cors, "fastapi.responses": respostas})
     ga = types.ModuleType("groq_agent")
     ga.GroqChat = object
     ga.consulta_unica = ga.analisar_rotas_geradas = lambda *a, **k: ""

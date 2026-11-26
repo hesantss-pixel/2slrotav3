@@ -884,6 +884,38 @@ encaixe 3D de caixas; "40x30x25" solto no texto da nota (sem saber a quantidade,
 (`firebase/database.rules.json`, nós `produtos` e `config/cubagem`). Sem elas, o resto funciona,
 mas salvar medida de produto ou o fator de cubagem dá "O banco recusou" e a tela explica o motivo.
 
+## Segurança: revisão de 26/11/2026 (os 14 pontos de "app feito com IA")
+
+**Achado e corrigido (grave): foto do link do motorista rodava código no escritório.** O link do
+motorista não tem senha; quem tiver o link grava as fotos. A tela do escritório só conferia se o texto
+*começava* como foto JPEG e montava `<img src="${foto}">`: um texto como
+`data:image/jpeg;base64,x" onerror="..."` rodava código na sessão de quem abriu a foto, com o acesso
+da empresa. Agora a foto só aparece se for JPEG em base64 de verdade (`_fotoOk`), com o texto escapado, e a
+regra do banco (`entregador/$token/fotos` e `fotos_hod`) recusa na gravação o que não for base64.
+
+Também nesta revisão:
+- **Teste de injeção em tudo** (`tests/tela/t_xss_tudo.js`): código malicioso em todos os campos de
+  texto do pedido, da rota, do link do motorista (baixa, motivo, quem recebeu, fotos), de motoristas,
+  produtos e locais, e na resposta da IA. Passa por todas as páginas, janelas, busca, rota manual,
+  plano de carga, fotos e a tela do motorista e cobra que nada rodou.
+- **Regras do banco:** `geo_cache` (endereço por CEP, de todas as empresas) só aceita CEP de 8
+  números, coordenada dentro do Brasil e os campos conhecidos; não dá mais para apagar o nó inteiro.
+  **As regras só valem depois de coladas no console do Firebase.**
+- **Servidor:** o segredo do banco (`?auth=`) e tokens saem do log; CORS só com o site de verdade e sem
+  cookie; resposta com `nosniff`, `DENY` e `no-store`; envio acima de 8 MB recusado (arquivos: 64 MB);
+  pergunta ao assistente até 2.000 caracteres e 5.000 pedidos de contexto; teto por usuário também
+  para contas completas (assistente 150/h, rotas 300/h, Google 3.000/dia) e Google para demonstração
+  em 500 por conta a cada 24 h (`GOOGLE_GEOCODING_LIMITE_DEMO`); XML com `DOCTYPE` ou `ENTITY` recusado
+  antes de ler (nota fiscal não usa: é o jeito de travar o servidor ou tentar ler arquivo); número da
+  nota não vira caminho no banco.
+- **Assistente:** as regras dizem que o que vem da nota é dado, nunca instrução; o texto de nota entra
+  curto e numa linha. Ele não tem ferramenta para gravar nada, e a resposta aparece como texto.
+- **Entrada por e-mail:** o registro mostra quem mandou cada e-mail.
+- **Tela:** `Content-Security-Policy` com `base-uri 'self'; object-src 'none'; form-action 'self'`.
+- Histórico do Git inteiro (216 commits) sem senha, `.env` ou chave de servidor. As duas chaves do
+  Google no código são as públicas (identificação do Firebase e a dos mapas, restrita ao site).
+- Testes do servidor: `backend/tests/test_seguranca.py`.
+
 ## 3D ao vivo na rota manual e desenho mais legível (25/11/2026)
 
 - **Rota manual:** a tela de montar no mapa tem o painel **Montagem no baú, em 3D**. A cada parada que

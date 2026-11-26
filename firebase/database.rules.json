@@ -83,7 +83,17 @@
     },
     "geo_cache": {
       ".read": "auth != null && root.child('acesso').child(auth.uid).val() === true",
-      ".write": "auth != null && root.child('acesso').child(auth.uid).val() === true"
+      "$cep": {
+        ".write": "auth != null && root.child('acesso').child(auth.uid).val() === true && newData.exists()",
+        ".validate": "$cep.matches(/^[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]$/) && newData.hasChildren(['lat', 'lng']) && newData.child('lat').isNumber() && newData.child('lat').val() >= -34 && newData.child('lat').val() <= 6 && newData.child('lng').isNumber() && newData.child('lng').val() >= -75 && newData.child('lng').val() <= -28",
+        "bairro": { ".validate": "newData.isString() && newData.val().length <= 120" },
+        "cidade": { ".validate": "newData.isString() && newData.val().length <= 120" },
+        "uf": { ".validate": "newData.isString() && newData.val().length <= 2" },
+        "rua": { ".validate": "newData.isString() && newData.val().length <= 200" },
+        "prec": { ".validate": "newData.isString() && newData.val().length <= 20" },
+        "v": { ".validate": "newData.isNumber()" },
+        "$outro": { ".validate": false }
+      }
     },
     "sync_log": {
       ".read": "auth != null && auth.uid === 'PGblgW7V26SJ6W8UYPFj3dqlDGm2'",
@@ -131,7 +141,7 @@
         "fotos": {
           "$i": {
             ".write": "root.child('entregador').child($token).child('expira').val() > now && root.child('entregador').child($token).child('paradas').child($i).exists()",
-            ".validate": "newData.isString() && newData.val().beginsWith('data:image/jpeg;base64,') && newData.val().length < 400000"
+            ".validate": "newData.isString() && newData.val().length < 400000 && newData.val().matches(/^data:image\\/jpeg;base64,[A-Za-z0-9+\\/]+=*$/)"
           }
         },
         "posicao": {
@@ -174,7 +184,7 @@
         "fotos_hod": {
           "$qual": {
             ".write": "root.child('entregador').child($token).child('expira').val() > now && ($qual === 'ini' || $qual === 'fim')",
-            ".validate": "newData.isString() && newData.val().beginsWith('data:image/jpeg;base64,') && newData.val().length < 400000"
+            ".validate": "newData.isString() && newData.val().length < 400000 && newData.val().matches(/^data:image\\/jpeg;base64,[A-Za-z0-9+\\/]+=*$/)"
           }
         },
         "trilha": {
