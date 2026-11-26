@@ -117,6 +117,17 @@ ok(!W('empresas/emp1/config/custos', { ...CUS, diesel: -1 }, ANA) && !W('empresa
   && !W('empresas/emp1/config/custos', { ...CUS, tipos: { vuc: { ...CUS.tipos.vuc, comb: 'alcool' } } }, ANA) && !W('empresas/emp1/config/custos', { ...CUS, senha: 'x' }, ANA),
   'preço negativo, tipo desconhecido, combustível estranho ou campo a mais são recusados');
 ok(!W('empresas/emp2/config/custos', CUS, ANA), 'e não muda os custos de outra empresa');
+ok(W('empresas/emp1/config/custos', { ...CUS, etanol: 4.15 }, ANA) && !W('empresas/emp1/config/custos', { ...CUS, etanol: 0 }, ANA) && !W('empresas/emp1/config/custos', { ...CUS, etanol: '4,15' }, ANA),
+  'preço do etanol: número de 0,01 a 50');
+// custo de cada veículo do cadastro: combustível, consumo e agregado
+const VEI = { id: 'm1', nome: 'Motorista', veiculo_id: 'fiorino', veiculo_nome: 'Fiorino', cap_kg: 650, placa: 'TST1A11' };
+ok(W('empresas/emp1/motoristas/m1', { ...VEI, comb: 'etanol', cons: 7.5 }, ANA) && W('empresas/emp1/motoristas/m2', { ...VEI, id: 'm2', vinculo: 'agregado', ag_saida: 350, ag_km: 1.2 }, ANA),
+  'membro grava o veículo próprio (etanol, 7,5 km/l) e o agregado (valor por saída e por km)');
+ok(W('empresas/emp1/motoristas/m3', VEI, ANA), 'veículo sem os campos de custo continua valendo');
+ok(!W('empresas/emp1/motoristas/m1', { ...VEI, comb: 'querosene' }, ANA) && !W('empresas/emp1/motoristas/m1', { ...VEI, cons: 0.1 }, ANA)
+  && !W('empresas/emp1/motoristas/m1', { ...VEI, vinculo: 'socio' }, ANA) && !W('empresas/emp1/motoristas/m1', { ...VEI, ag_saida: -5 }, ANA) && !W('empresas/emp1/motoristas/m1', { ...VEI, ag_km: '1,2' }, ANA),
+  'combustível estranho, consumo fora da faixa, vínculo desconhecido e valor negativo ou em texto são recusados');
+ok(!W('empresas/emp2/motoristas/m1', { ...VEI, comb: 'etanol' }, ANA), 'e não grava veículo em outra empresa');
 ok(!W('empresas/emp1/config/fator_tempo', 1.2, ANA), 'o membro continua sem mexer no ajuste de tempo (só o administrador)');
 
 console.log(falhas ? `${falhas} falha(s)` : 'regras ok');

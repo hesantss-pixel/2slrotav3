@@ -912,8 +912,9 @@ tentativa é contada (`tentativas`) e ele ganha uma situação (`reentrega`) con
 - R$/km = preço do combustível ÷ consumo + pneus e manutenção; R$/hora = (salário do motorista +
   ajudantes × salário do ajudante) × (1 + encargos) ÷ 220 h; diária = custos fixos do veículo no dia.
 - Valores de partida (Relatórios → **Custos dos veículos**, editáveis, `config/custos`):
-  - diesel S10 R$ 7,30 (ANP, síntese semanal nº 45/2026, média Brasil);
-  - gasolina R$ 6,67 (IPTL, 1ª quinzena de nov/2026);
+  - combustíveis da ANP, síntese semanal nº 45/2026 (1 a 7/11), média Brasil: diesel S10 R$ 7,30,
+    gasolina comum R$ 6,47 e etanol hidratado R$ 4,15 (a gasolina era R$ 6,67 do IPTL até 26/11;
+    passou para a ANP para os três virem da mesma pesquisa);
   - salários = pisos de maio/2026 do SINDICARGAS Guarulhos e Arujá (SETCESP): motorista B
     R$ 2.660,40 (Fiorino), C e D R$ 2.956,92 (VUC, 3/4, Toco, Bitruck), carreta R$ 3.245,96,
     ajudante R$ 2.108,03;
@@ -931,6 +932,28 @@ tentativa é contada (`tentativas`) e ele ganha uma situação (`reentrega`) con
 
 **Regras novas do Firebase:** `config/custos`. Testes: `backend/tests/test_vrp_prioridade.py`,
 `tests/tela/t_reentrega.js`, `t_custo.js` e `t_regras.js`.
+
+**Custo de cada veículo do cadastro (26/11/2026).** Em Motoristas, cada veículo tem agora:
+- **Vínculo:** próprio da empresa ou agregado/terceiro.
+- **Próprio:** combustível conforme o tipo (Fiorino/utilitário: gasolina, etanol ou diesel de van;
+  VUC para cima: só diesel) e o consumo da placa em km/l. Em branco, vale o consumo do tipo em
+  Custos dos veículos; com etanol, 70% do que o tipo faz com gasolina. Salário, encargos,
+  ajudantes, pneus e manutenção e diária continuam os do tipo.
+- **Agregado:** valor por saída e/ou por km, o que a empresa paga a ele. Combustível e motorista
+  são dele e não entram na conta. Sem nenhum dos dois valores, o cadastro não salva.
+- Campos no veículo (`motoristas/<id>`): `comb`, `cons`, `vinculo: 'agregado'`, `ag_saida`, `ag_km`.
+  Veículo sem esses campos continua como antes (o padrão do tipo).
+- A rota usa o veículo dela (um só ou a frota do dia). O 💰 da rota diz o combustível ou
+  "agregado", e a dica mostra o consumo usado. A nota do resultado separa próprio e agregado e
+  avisa agregado sem valor. A rota confirmada guarda `custo.comb` ou `custo.agregado`.
+- Relatórios → Custo das rotas: tabela **por veículo** (placa), com viagens, km planejado, km
+  realizado (painel ou GPS, e em quantas viagens houve registro), custo e custo por km. Na planilha,
+  a seção "Custo por veículo".
+- Isto não é controle de frota: não registra abastecimento, manutenção, pneus nem documentos. O
+  consumo é o que a empresa informa.
+
+**Regras novas do Firebase:** `config/custos/etanol` e a validação de `comb`, `cons`, `vinculo`,
+`ag_saida` e `ag_km` em `motoristas`. Teste: `tests/tela/t_custo_veiculo.js` (e `t_regras.js`).
 
 ## SSW: relatório da opção 081 na importação e baixas para o SSW (26/11/2026)
 

@@ -277,6 +277,7 @@ label.fm-item{cursor:pointer;}
 .cus-inp small{font-size:11px;color:var(--text3);white-space:nowrap;}
 .cus-fontes{font-size:11px;color:var(--text3);line-height:1.5;margin:12px 0 0;}
 .btn-link{background:none;border:0;padding:0;color:var(--ac);font:inherit;font-weight:700;text-decoration:underline;cursor:pointer;}
+.frota-custo{font-size:12px;color:var(--text2);margin-top:3px;}
 .custo-nota{font-size:12px;color:var(--text2);margin:-6px 0 14px;max-width:640px;}
 .custo-nota button{background:none;border:0;padding:0;color:var(--ac);font:inherit;font-weight:700;text-decoration:underline;cursor:pointer;}
 /* Reentrega */
@@ -1432,6 +1433,29 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
         <option value="aberta">Aberta (sem teto)</option>
       </select>
       <div class="frota-dica">Na aberta, o volume e o comprimento do baú não limitam a rota.</div>
+      <label class="field-lbl" for="mot-vinc">Vínculo</label>
+      <select class="field-inp field-inp-text" id="mot-vinc" onchange="_motCustoUi()">
+        <option value="proprio">Próprio da empresa</option>
+        <option value="agregado">Agregado ou terceiro</option>
+      </select>
+      <div id="mot-proprio-box">
+        <div class="frota-2col">
+          <div><label class="field-lbl" for="mot-comb">Combustível</label>
+            <select class="field-inp field-inp-text" id="mot-comb" onchange="_motCustoUi()"></select></div>
+          <div><label class="field-lbl" for="mot-cons">Consumo (km/l)</label>
+            <input type="text" class="field-inp" id="mot-cons" inputmode="decimal" autocomplete="off" oninput="_motCustoUi()"></div>
+        </div>
+        <div class="frota-dica" id="mot-cons-nota"></div>
+      </div>
+      <div id="mot-agreg-box" style="display:none">
+        <div class="frota-2col">
+          <div><label class="field-lbl" for="mot-ag-saida">Valor por saída (R$)</label>
+            <input type="text" class="field-inp" id="mot-ag-saida" inputmode="decimal" autocomplete="off" placeholder="Ex: 350,00"></div>
+          <div><label class="field-lbl" for="mot-ag-km">Valor por km (R$)</label>
+            <input type="text" class="field-inp" id="mot-ag-km" inputmode="decimal" autocomplete="off" placeholder="Ex: 1,20"></div>
+        </div>
+        <div class="frota-dica">O que a empresa paga a ele: a diária ou o frete combinado por saída, um valor por km, ou os dois. O combustível e o motorista são dele e não entram na conta.</div>
+      </div>
       <label class="field-lbl" for="mot-nome">Motorista (opcional)</label>
       <input type="text" class="field-inp field-inp-text" id="mot-nome" placeholder="Ex: João Silva">
       <button class="btn-modal-primary" onclick="salvarMotorista()">Salvar veículo</button>
@@ -1633,12 +1657,12 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
 <div class="modal-overlay" id="modal-custos" onclick="if(event.target===this)fecharCustos()">
   <div class="modal-box cus-modal" role="dialog" aria-modal="true" aria-labelledby="cus-tit">
     <div class="modal-head"><h2 class="modal-title" id="cus-tit">Custos dos veículos</h2><button type="button" class="modal-close" onclick="fecharCustos()" aria-label="Fechar">✕</button></div>
-    <p class="col-intro">O custo da rota é <b>km × R$/km + horas × R$/hora + diária</b>. Os valores que vêm preenchidos são de referência (fontes abaixo). Troque pelos da sua operação, principalmente <b>pneus e manutenção</b> e a <b>diária</b>, que só a empresa sabe.</p>
+    <p class="col-intro">O custo da rota é <b>km × R$/km + horas × R$/hora + diária</b>. Os valores que vêm preenchidos são de referência (fontes abaixo). Troque pelos da sua operação, principalmente <b>pneus e manutenção</b> e a <b>diária</b>, que só a empresa sabe. O combustível e o consumo de cada placa, e o valor dos agregados, ficam no cadastro do veículo, em Motoristas; aqui fica o padrão de cada tipo.</p>
     <div id="cus-corpo"></div>
     <p class="col-erro" id="cus-erro" role="alert"></p>
     <button type="button" class="btn-modal-primary" onclick="salvarCustos()">Salvar custos</button>
     <button type="button" class="btn-modal-sec" onclick="fecharCustos()">Cancelar</button>
-    <p class="cus-fontes">Diesel S10: R$ 7,30/l, ANP, síntese semanal nº 45 de 2026, média Brasil. Gasolina: R$ 6,67/l, IPTL, média nacional da 1ª quinzena de novembro de 2026. Salários: pisos de maio de 2026 da convenção do SINDICARGAS Guarulhos e Arujá (SETCESP): motorista categoria B R$ 2.660,40, C e D R$ 2.956,92, carreta (E) R$ 3.245,96, ajudante R$ 2.108,03. Consumo: faixas de mercado para entrega urbana (estimativa). Encargos de 70% sobre o salário: estimativa; confira com a sua contabilidade. Horas por mês: 220.</p>
+    <p class="cus-fontes">Combustíveis: ANP, síntese semanal nº 45 de 2026 (1 a 7 de novembro), média Brasil: diesel S10 R$ 7,30/l, gasolina comum R$ 6,47/l, etanol hidratado R$ 4,15/l. Salários: pisos de maio de 2026 da convenção do SINDICARGAS Guarulhos e Arujá (SETCESP): motorista categoria B R$ 2.660,40, C e D R$ 2.956,92, carreta (E) R$ 3.245,96, ajudante R$ 2.108,03. Consumo: faixas de mercado para entrega urbana (estimativa). Encargos de 70% sobre o salário: estimativa; confira com a sua contabilidade. Horas por mês: 220.</p>
   </div>
 </div>
 
@@ -2550,7 +2574,8 @@ function _relCalcular(){
     // custo: o guardado na confirmação; rota antiga: calculado agora pelo tipo do veículo
     const cus=r.custo&&Number.isFinite(+r.custo.total)?+r.custo.total
       :(x=>x?x.total:null)(_custoRota(Number(r.km)||0,Number(r.tempo_min)||0,r.veiculo_tipo||_tipoPeloNome(r.veiculo)));
-    return { id:r.id, data:r.data||'', veiculo:r.veiculo||'', motorista:(r.motorista||'').trim()||'—', custo:cus, ps,
+    return { id:r.id, data:r.data||'', veiculo:r.veiculo||'', placa:_placaNorm(r.placa), agregado:!!(r.custo&&r.custo.agregado),
+      motorista:(r.motorista||'').trim()||'—', custo:cus, ps,
       paradas:par, feitos:c.feitos, falhas:c.falhas, semBaixa:Math.max(0,par-c.feitos-c.falhas),
       km:Number(r.km)||0, min:Number(r.tempo_min)||0, peso:Number(r.peso_total)||0,
       devolvida:r.status==='devolvida', fonte:r.fonte_dist||'—', reta:_eReta(r.fonte_dist),
@@ -2577,8 +2602,18 @@ function _relCalcular(){
       const c=cli[nome]=cli[nome]||{nome,custo:0,paradas:0};
       c.custo+=soma>0?r.custo*pt[i]/soma:r.custo/Math.max(1,r.ps.length); c.paradas++; });
   });
+  // por veículo (a placa; sem placa, o nome): viagens, km planejado e realizado (painel ou GPS) e custo
+  const vei={};
+  linhas.forEach(r=>{
+    const k=r.placa||_semAcento(r.veiculo)||'—';
+    const x=vei[k]=vei[k]||{nome:r.veiculo||'Veículo', placa:r.placa, rotas:0, km:0, custo:0, comCusto:0, kmReal:0, kmPlanReal:0, comReal:0, agregado:false};
+    x.rotas++; x.km+=r.km; if(r.agregado) x.agregado=true;
+    if(r.custo!=null){ x.custo+=r.custo; x.comCusto++; }
+    const kr=r.kmPainel!=null?r.kmPainel:r.kmGps; if(kr!=null){ x.kmReal+=kr; x.kmPlanReal+=r.km; x.comReal++; }
+  });
   const custo={total:cusR.reduce((a,r)=>a+r.custo,0), rotas:cusR.length, paradas:cusR.reduce((a,r)=>a+r.paradas,0),
-    clientes:Object.values(cli).sort((a,b)=>b.custo-a.custo)};
+    clientes:Object.values(cli).sort((a,b)=>b.custo-a.custo),
+    veiculos:Object.values(vei).sort((a,b)=>b.custo-a.custo||b.rotas-a.rotas)};
   const mot={};
   linhas.forEach(r=>{
     const m=mot[r.motorista]=mot[r.motorista]||{nome:r.motorista,rotas:0,paradas:0,feitos:0,falhas:0,km:0};
@@ -2628,10 +2663,15 @@ function _relBlocoCusto(d){
   const c=d.custo;
   if(!c.rotas) return `<div class="card rel-sec"><h3>Custo das rotas</h3><div class="rel-vazio" style="padding:14px">Sem custo: as rotas do período não têm o tipo do veículo. As próximas rotas confirmadas já guardam o custo.</div></div>`;
   const cfg=_custos(), falta=VEICULOS.some(v=>{ const x=cfg.tipos[v.id]; return !x||!x.manut||!x.diaria; });
-  const top=c.clientes.slice(0,10);
+  const top=c.clientes.slice(0,10), vs=c.veiculos;
+  const tabV=vs.length>1||vs.some(v=>v.placa)?`<div class="rel-wrap" style="margin-bottom:12px"><table class="rel-tab"><thead><tr><th>Veículo</th><th class="num">Viagens</th><th class="num">Km planejado</th><th class="num">Km realizado</th><th class="num">Custo</th><th class="num">Por km</th></tr></thead>
+      <tbody>${vs.map(x=>`<tr><td>${esc(x.nome)}${x.placa&&!_placaNorm(x.nome).includes(x.placa)?' · '+esc(_placaFmt(x.placa)):''}${x.agregado?' <small>(agregado)</small>':''}</td><td class="num">${x.rotas}</td><td class="num">${_n(x.km,0)}</td>
+        <td class="num">${x.comReal?`${_n(x.kmReal,0)}${x.comReal<x.rotas?` <small>(${x.comReal} de ${x.rotas} viagens)</small>`:''}`:'—'}</td>
+        <td class="num">${x.comCusto?_brl(x.custo):'—'}</td><td class="num">${x.comCusto&&x.km>0&&x.comCusto===x.rotas?_brl(x.custo/x.km):'—'}</td></tr>`).join('')}</tbody></table></div>`:'';
   return `<div class="card rel-sec"><h3>Custo das rotas</h3>
     <div class="rel-real"><div>💰 <b>${_brl(c.total)}</b> em ${_plural(c.rotas,'rota','rotas')}, ${_brl(c.total/Math.max(1,c.paradas))} por parada planejada.
       <span class="rz-sub">Estimativa: km × R$/km + horas × R$/hora + diária. ${falta?'Pneus, manutenção ou diária ainda sem valor em algum veículo: o custo real é maior. ':''}<button type="button" class="btn-link" onclick="abrirCustos()">Custos dos veículos</button></span></div></div>
+    ${tabV}
     ${top.length?`<div class="rel-wrap"><table class="rel-tab"><thead><tr><th>Cliente</th><th class="num">Paradas</th><th class="num">Custo</th><th class="num">Por parada</th></tr></thead>
       <tbody>${top.map(x=>`<tr><td>${esc(x.nome)}</td><td class="num">${x.paradas}</td><td class="num">${_brl(x.custo)}</td><td class="num">${_brl(x.custo/Math.max(1,x.paradas))}</td></tr>`).join('')}</tbody></table></div>
       <div class="rel-nota" style="margin-top:8px">Cada rota é dividida entre as paradas pelo peso taxado (o maior entre o peso real e o cubado), como no frete-peso.${c.clientes.length>10?` Mostrando os 10 de maior custo, de ${c.clientes.length}.`:''}</div>`:''}
@@ -2806,6 +2846,12 @@ function _relCSV(){
   lin.push(['Não realizados por motivo','Quantidade']);
   Object.entries(d.motivos).sort((a,b)=>b[1]-a[1]).forEach(([m,q])=>lin.push([m,q]));
   lin.push([]);
+  if(d.custo.veiculos.length){
+    lin.push(['Custo por veículo','Placa','Vínculo','Viagens','Km planejado','Km realizado (painel ou GPS)','Viagens com km realizado','Custo estimado (R$)']);
+    d.custo.veiculos.forEach(x=>lin.push([x.nome,x.placa?_placaFmt(x.placa):'',x.agregado?'agregado':'próprio',x.rotas,num(x.km.toFixed(1)),
+      x.comReal?num(x.kmReal.toFixed(1)):'',x.comReal,x.comCusto?num(x.custo.toFixed(2)):'']));
+    lin.push([]);
+  }
   if(d.custo.clientes.length){
     lin.push(['Custo por cliente (rateio pelo peso taxado)','Paradas','Custo estimado (R$)']);
     d.custo.clientes.forEach(c=>lin.push([c.nome,c.paradas,num(c.custo.toFixed(2))]));
@@ -2832,7 +2878,7 @@ function abrirCustos(){
   const c=_custos(), f=v=>String(+v||0).replace('.',','), f2=v=>(+v||0).toFixed(2).replace('.',',');
   const inp=(id,val,lbl,suf,extra)=>`<label class="cus-campo"><span>${lbl}</span><span class="cus-inp"><input type="text" inputmode="decimal" class="field-inp" id="${id}" value="${esc(val)}" autocomplete="off" ${extra||''}>${suf?`<small>${suf}</small>`:''}</span></label>`;
   $id('cus-corpo').innerHTML=`<fieldset class="cus-grupo"><legend>Da empresa</legend><div class="cus-grade">
-      ${inp('cus-diesel',f2(c.diesel),'Diesel','R$/litro')}${inp('cus-gasolina',f2(c.gasolina),'Gasolina','R$/litro')}
+      ${inp('cus-diesel',f2(c.diesel),'Diesel','R$/litro')}${inp('cus-gasolina',f2(c.gasolina),'Gasolina','R$/litro')}${inp('cus-etanol',f2(c.etanol||CUSTO_PADRAO.etanol),'Etanol','R$/litro')}
       ${inp('cus-encargos',f(c.encargos),'Encargos e benefícios','% do salário')}${inp('cus-ajudsal',f2(c.ajudSal),'Salário do ajudante','R$/mês')}</div></fieldset>
     ${VEICULOS.map(v=>{ const x=c.tipos[v.id]||CUSTO_PADRAO.tipos[v.id];
       return `<fieldset class="cus-grupo" data-t="${v.id}"><legend>${esc(v.nome)} <small id="cus-res-${v.id}"></small></legend><div class="cus-grade">
@@ -2854,9 +2900,10 @@ window.fecharCustos=fecharCustos;
 function _custosDaJanela(){
   // campo vazio vale 0 (pneus, ajudantes, diária); texto que não é número não vale
   const num=id=>{ const t=$id(id).value.trim(); return t?_numBR(t):0; };
-  const c={v:1, diesel:num('cus-diesel'), gasolina:num('cus-gasolina'), encargos:num('cus-encargos'), ajudSal:num('cus-ajudsal'), horasMes:220, tipos:{}};
+  const c={v:1, diesel:num('cus-diesel'), gasolina:num('cus-gasolina'), etanol:num('cus-etanol'), encargos:num('cus-encargos'), ajudSal:num('cus-ajudsal'), horasMes:220, tipos:{}};
   if(!(c.diesel>0&&c.diesel<50)) return [null,'Diesel: informe o preço do litro, como 7,30.'];
-  if(!(c.gasolina>0&&c.gasolina<50)) return [null,'Gasolina: informe o preço do litro, como 6,67.'];
+  if(!(c.gasolina>0&&c.gasolina<50)) return [null,'Gasolina: informe o preço do litro, como 6,47.'];
+  if(!(c.etanol>0&&c.etanol<50)) return [null,'Etanol: informe o preço do litro, como 4,15.'];
   if(!(c.encargos>=0&&c.encargos<=300)) return [null,'Encargos: um percentual entre 0 e 300.'];
   if(!(c.ajudSal>=0&&c.ajudSal<=100000)) return [null,'Salário do ajudante: valor por mês, como 2.108,03.'];
   for(const v of VEICULOS){
@@ -2889,7 +2936,22 @@ async function salvarCustos(){
 }
 window.salvarCustos=salvarCustos;
 // custo da rota do resultado (com o veículo dela)
-function _custoRotaD(r){ const v=_vD(r); return _custoRota(+r.km||+r.distancia_km||0, +r.mins||+r.tempo_min||0, v.tipo); }
+function _custoRotaD(r){ const v=_vD(r); return _custoRota(+r.km||+r.distancia_km||0, +r.mins||+r.tempo_min||0, v.tipo, null, v.motorista); }
+// O que entra no custo estimado do resultado e o que falta preencher
+function _notaCustoD(t,n){
+  const proprios=n-t.agregados, L=[];
+  if(proprios) L.push(`${t.agregados?'Veículos próprios: c':'C'}ombustível, mão de obra${t.semManut?'':', pneus e manutenção'}${t.semFixo?'':' e diária do veículo'}.${t.semManut||t.semFixo?` Faltam ${[t.semManut?'pneus e manutenção':'',t.semFixo?'a diária do veículo':''].filter(Boolean).join(' e ')}:`:''} <button type="button" onclick="abrirCustos()">${t.semManut||t.semFixo?'preencher':'ajustar'} os custos</button>.`);
+  if(t.agregados) L.push(t.agSemValor.length
+    ? `${esc(t.agSemValor.join(', '))} ${t.agSemValor.length===1?'é agregado e está':'são agregados e estão'} sem o valor combinado: preencha em <button type="button" onclick="irParaPagina('motoristas')">Motoristas</button>.`
+    : `${t.agregados===1?'Agregado':'Agregados'}: o valor combinado no cadastro (por saída e por km).`);
+  return L.join(' ');
+}
+// combustível e consumo usados na conta, para a dica do custo
+function _custoDica(c){
+  if(!c) return '';
+  if(c.agregado) return c.semValor?'Agregado sem valor combinado no cadastro':`Agregado: ${_brl(c.diaria)} por saída${c.rkm?` + ${_brl(c.rkm)}/km`:''}`;
+  return `${_brl(c.km)} de km (${_brl(c.rkm)}/km${c.comb?`, ${(_COMB_NOME[c.comb]||'').toLowerCase()} a ${_n(c.cons,1)} km/l${c.consEstimado?' estimado':''}`:''}) + ${_brl(c.hora)} de mão de obra (${_brl(c.rh)}/hora) + ${_brl(c.diaria)} de diária`;
+}
 
 // ── Baixas para o SSW ───────────────────────────────────────────────────────
 // Ida: o relatório da opção 081 entra pela importação (CSV). Volta: cada baixa do motorista
@@ -5356,7 +5418,7 @@ const MAX_FROTA=40, MAX_POR_TIPO=10;
 // nacional, 1ª quinzena de nov/2026); salários = pisos de maio/2026 da convenção SINDICARGAS
 // Guarulhos e Arujá (SETCESP); consumo = faixas de mercado para entrega urbana (estimativa);
 // encargos 70% (estimativa). Pneus/manutenção e diária ficam para a empresa preencher.
-const CUSTO_PADRAO={ v:1, diesel:7.30, gasolina:6.67, encargos:70, ajudSal:2108.03, horasMes:220, tipos:{
+const CUSTO_PADRAO={ v:1, diesel:7.30, gasolina:6.47, etanol:4.15, encargos:70, ajudSal:2108.03, horasMes:220, tipos:{
   fiorino:{cons:10,  comb:'gasolina', manut:0, sal:2660.40, ajud:0, diaria:0},
   vuc:    {cons:6.5, comb:'diesel',   manut:0, sal:2956.92, ajud:0, diaria:0},
   tres4:  {cons:6,   comb:'diesel',   manut:0, sal:2956.92, ajud:0, diaria:0},
@@ -5369,25 +5431,52 @@ function _custosValidos(c){
   if(!c||typeof c!=='object'||!c.tipos) return null;
   const n=(v,a,b)=>Number.isFinite(+v)&&+v>=a&&+v<=b;
   if(!n(c.diesel,0.01,50)||!n(c.gasolina,0.01,50)||!n(c.encargos,0,300)||!n(c.ajudSal,0,100000)) return null;
+  if(c.etanol!=null&&!n(c.etanol,0.01,50)) return null;
   const tipos={};
   Object.keys(CUSTO_PADRAO.tipos).forEach(k=>{ const x=c.tipos[k], d=CUSTO_PADRAO.tipos[k];
     tipos[k]=x&&typeof x==='object'?{cons:n(x.cons,0.5,50)?+x.cons:d.cons, comb:x.comb==='gasolina'?'gasolina':'diesel', manut:n(x.manut,0,50)?+x.manut:0,
       sal:n(x.sal,0,100000)?+x.sal:d.sal, ajud:n(x.ajud,0,5)?Math.round(+x.ajud):0, diaria:n(x.diaria,0,100000)?+x.diaria:0}:{...d}; });
-  return {v:1, diesel:+c.diesel, gasolina:+c.gasolina, encargos:+c.encargos, ajudSal:+c.ajudSal, horasMes:n(c.horasMes,100,400)?+c.horasMes:220, tipos};
+  return {v:1, diesel:+c.diesel, gasolina:+c.gasolina, etanol:c.etanol!=null?+c.etanol:CUSTO_PADRAO.etanol, encargos:+c.encargos, ajudSal:+c.ajudSal, horasMes:n(c.horasMes,100,400)?+c.horasMes:220, tipos};
 }
 function _custosLocais(){ try{ return _custosValidos(JSON.parse(localStorage.getItem(_custLS())||'null')); }catch(e){ return null; } }
 function _custos(){ return custosEmp||_custosLocais()||CUSTO_PADRAO; }
-// R$/km, R$/hora e diária de um tipo de veículo
-function _taxasTipo(tipo,cfg){
-  const c=cfg||_custos(), x=c.tipos[tipo]; if(!x) return null;
-  const comb=x.cons>0?(x.comb==='gasolina'?c.gasolina:c.diesel)/x.cons:0;
-  return { comb, rkm:comb+(+x.manut||0), rh:((+x.sal||0)+(+x.ajud||0)*(+c.ajudSal||0))*(1+(+c.encargos||0)/100)/(+c.horasMes||220),
-    diaria:+x.diaria||0, manut:+x.manut||0 };
+// Combustível de cada veículo do cadastro. Caminhão é a diesel; o utilitário leve pode ser a gasolina, etanol (flex) ou diesel (van).
+const COMBS_LEVE=['gasolina','etanol','diesel'];
+function _combsDoTipo(tipo){ return tipo==='fiorino'?COMBS_LEVE:['diesel']; }
+const _COMB_NOME={diesel:'Diesel',gasolina:'Gasolina',etanol:'Etanol'};
+// o etanol rende menos: sem o consumo do veículo, conta 70% do km/l da gasolina (a mesma régua do "etanol compensa abaixo de 70%")
+const ETANOL_RENDE=0.7;
+const _rendeComb=k=>k==='etanol'?ETANOL_RENDE:1;
+function _precoComb(c,comb){ return comb==='gasolina'?+c.gasolina:comb==='etanol'?(+c.etanol>0?+c.etanol:CUSTO_PADRAO.etanol):+c.diesel; }
+const _numEntre=(v,a,b)=>v!=null&&v!==''&&Number.isFinite(+v)&&+v>=a&&+v<=b;
+// km/l que vale quando o veículo não tem o dele: o do tipo, convertido se o combustível é outro
+function _consPadrao(tipo,comb,cfg){
+  const x=(cfg||_custos()).tipos[tipo]; if(!x) return 0;
+  return Math.round(x.cons*_rendeComb(comb)/_rendeComb(x.comb)*10)/10;
 }
-function _custoRota(km,mins,tipo,cfg){
-  const t=_taxasTipo(tipo,cfg); if(!t||!(km>=0)) return null;
+// R$/km, R$/hora e diária de um tipo de veículo. Com m (o veículo do cadastro): o combustível e o consumo dele;
+// agregado: só o que a empresa paga a ele (por saída e por km), porque o diesel e o motorista são dele.
+function _taxasTipo(tipo,cfg,m){
+  const c=cfg||_custos(), x=c.tipos[tipo]; if(!x) return null;
+  if(m&&m.vinculo==='agregado'){
+    const saida=_numEntre(m.ag_saida,0,100000)?+m.ag_saida:0, porKm=_numEntre(m.ag_km,0,50)?+m.ag_km:0;
+    return { agregado:true, comb:0, rkm:porKm, rh:0, diaria:saida, manut:0, semValor:!saida&&!porKm };
+  }
+  const combV=m&&_combsDoTipo(tipo).includes(m.comb)?m.comb:x.comb;
+  const temCons=!!(m&&_numEntre(m.cons,0.5,50));
+  const cons=temCons?+m.cons:_consPadrao(tipo,combV,c);
+  const comb=cons>0?_precoComb(c,combV)/cons:0;
+  return { comb, rkm:comb+(+x.manut||0), rh:((+x.sal||0)+(+x.ajud||0)*(+c.ajudSal||0))*(1+(+c.encargos||0)/100)/(+c.horasMes||220),
+    diaria:+x.diaria||0, manut:+x.manut||0, combUsado:combV, cons, consEstimado:!temCons };
+}
+function _custoRota(km,mins,tipo,cfg,m){
+  const t=_taxasTipo(tipo,cfg,m); if(!t||!(km>=0)) return null;
   const k=km*t.rkm, h=(mins||0)/60*t.rh, c2=x=>Math.round(x*100)/100;
-  return {total:c2(k+h+t.diaria), km:c2(k), hora:c2(h), diaria:c2(t.diaria), rkm:Math.round(t.rkm*1000)/1000, rh:c2(t.rh), semFixo:!t.diaria, semManut:!t.manut};
+  const out={total:c2(k+h+t.diaria), km:c2(k), hora:c2(h), diaria:c2(t.diaria), rkm:Math.round(t.rkm*1000)/1000, rh:c2(t.rh),
+    semFixo:!t.agregado&&!t.diaria, semManut:!t.agregado&&!t.manut};
+  if(t.agregado){ out.agregado=true; out.semValor=t.semValor; }
+  else { out.comb=t.combUsado; out.cons=t.cons; out.consEstimado=t.consEstimado; }
+  return out;
 }
 // tipo do veículo de uma rota confirmada antiga (antes de guardar veiculo_tipo): pelo nome
 function _tipoPeloNome(nome){
@@ -6892,7 +6981,8 @@ function _renderResultadoD(){
     : `<div class="import-msg show info" style="max-width:640px;margin:0 0 16px">Esta viagem levou <b>${totalE} de ${totalE+naoAlocD.length}</b> pedidos: o limite foi de ${maxPedD} paradas e ${capKgD.toLocaleString('pt-BR')} kg. Os outros ${naoAlocD.length} continuam pendentes para a próxima viagem (gere outra com o próximo veículo).${foraJanelaD.length?` Atenção: ${_plural(foraJanelaD.length,'pedido tem','pedidos têm')} horário que não dá para cumprir saindo às ${_hhmm(rotaCtxD.saida)} (NF ${foraJanelaD.slice(0,8).map(esc).join(', ')}).`:''}</div>`;
   // custo estimado de todas as rotas (só se todas tiverem o tipo do veículo)
   const cs=rotas.map(_custoRotaD);
-  const cTot=cs.length&&cs.every(Boolean)?{total:cs.reduce((a,c)=>a+c.total,0), semFixo:cs.some(c=>c.semFixo), semManut:cs.some(c=>c.semManut)}:null;
+  const cTot=cs.length&&cs.every(Boolean)?{total:cs.reduce((a,c)=>a+c.total,0), semFixo:cs.some(c=>c.semFixo), semManut:cs.some(c=>c.semManut),
+    agregados:cs.filter(c=>c.agregado).length, agSemValor:rotas.filter((r,i)=>cs[i].semValor).map(r=>_vD(r).nome)}:null;
   res.innerHTML=`
     <button class="btn-voltar-topo" onclick="renderVeiculosD()"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>Gerar outra rota</button>
     <div class="kpis" style="max-width:640px;margin-bottom:18px">
@@ -6901,7 +6991,7 @@ function _renderResultadoD(){
       <div class="kpi"><div class="kpi-lbl">KM TOTAL</div><div class="kpi-val">${totalKm.toFixed(0)}</div></div>
       ${cTot?`<div class="kpi"><div class="kpi-lbl">CUSTO ESTIMADO</div><div class="kpi-val" style="font-size:22px">${_brl(cTot.total)}</div><div class="kpi-split">${_brl(cTot.total/Math.max(1,totalE))} por parada</div></div>`:''}
     </div>
-    ${cTot?`<p class="custo-nota">Combustível, mão de obra${cTot.semManut?'':', pneus e manutenção'}${cTot.semFixo?'':' e diária do veículo'}.${cTot.semManut||cTot.semFixo?` Faltam ${[cTot.semManut?'pneus e manutenção':'',cTot.semFixo?'a diária do veículo':''].filter(Boolean).join(' e ')}:`:''} <button type="button" onclick="abrirCustos()">${cTot.semManut||cTot.semFixo?'preencher':'ajustar'} os custos</button>.</p>`:''}
+    ${cTot?`<p class="custo-nota">${_notaCustoD(cTot,rotas.length)}</p>`:''}
     ${regraCargaD==='soma_entregas_e_coletas'&&!ajustada?'<div class="import-msg show warn" style="max-width:640px;margin:0 0 16px">Nesta rota o peso das entregas e das coletas foi somado para caber no veículo (regra mais conservadora).</div>':''}
     ${msgLongos}${msgFmt}${msgFora}
     <div class="rota-tabs-d" id="rota-tabs-d" role="tablist">${rotas.map((r,i)=>`<div class="rota-tab-d ${i===rotaSelD?'active':''}" role="tab" tabindex="0" aria-selected="${i===rotaSelD}" onclick="selRotaTabD(${i})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();selRotaTabD(${i})}">Rota ${i+1}${r._v&&r._v.frota?` · ${esc(r._v.nome)}${r._v.motorista?.nome?' · '+esc(r._v.motorista.nome):''}`:''} · ${_plural(_paradasD(r).length,'parada','paradas')}${r._manual?' · montada no mapa':''}${r._ajustada?' · ajustada':''}</div>`).join('')}</div>
@@ -6968,7 +7058,7 @@ async function confirmarRotaD(){
         ...(v.motorista?.placa?{placa:_placaNorm(v.motorista.placa)}:{}),
         km:r.km||r.distancia_km||0, tempo_min:r.mins||r.tempo_min||0,
         ...(v.tipo?{veiculo_tipo:v.tipo}:{}),
-        ...((c=>c?{custo:{total:c.total, km:c.km, hora:c.hora, diaria:c.diaria}}:{})(_custoRotaD(r))),
+        ...((c=>c?{custo:{total:c.total, km:c.km, hora:c.hora, diaria:c.diaria, ...(c.agregado?{agregado:true}:{}), ...(c.comb?{comb:c.comb}:{})}}:{})(_custoRotaD(r))),
         peso_total:r.peso_total||paradas.reduce((s,p)=>s+(p.peso||0),0),
         ...(m3Tot>0?{m3_total:m3Tot}:{}),
         ...(v.capM3>0?{cap_m3:v.capM3, bau_m3:v.bauM3}:{}),
@@ -7874,6 +7964,14 @@ function toggleFormMotorista(editId){
   ['c','l','a'].forEach(k=>{ const i=$id('mot-bau-'+k); i.value=bau?String(bau[k]).replace('.',','):''; i.dataset.tipico=bau&&bau.padrao?'1':''; });
   $id('mot-carroc').value=_carrocDe(m);
   _motBauNota();
+  // custo: próprio (combustível e consumo) ou agregado (valor combinado)
+  const br=(v,d)=>d?(+v).toFixed(d).replace('.',','):String(+v).replace('.',',');
+  $id('mot-vinc').value=m?.vinculo==='agregado'?'agregado':'proprio';
+  $id('mot-cons').value=m&&_numEntre(m.cons,0.5,50)?br(m.cons):'';
+  $id('mot-ag-saida').value=m&&_numEntre(m.ag_saida,0.01,100000)?br(m.ag_saida,2):'';
+  $id('mot-ag-km').value=m&&_numEntre(m.ag_km,0.01,50)?br(m.ag_km,2):'';
+  const combSel=$id('mot-comb'); combSel.innerHTML=''; combSel.dataset.tipo=''; combSel.dataset.quer=m?.comb||'';
+  _motCustoUi();
   document.getElementById('mot-veh-desc').textContent='';
   document.getElementById('mot-veh-grid').innerHTML=VEICULOS.map(v=>
     `<div class="veh-card" style="--vc:${v.cor};padding:12px" onclick="selVeicMotorista('${v.id}',this)" title="${esc(v.desc)}">
@@ -7902,7 +8000,31 @@ function selVeicMotorista(id,el){
   const typ=BAU_PADRAO[_vehMotoristaSel.id];
   if(typ&&(ins.every(i=>!i.value.trim())||ins.every(i=>i.dataset.tipico==='1'))) ins.forEach((i,k)=>{ i.value=String(typ[k]).replace('.',','); i.dataset.tipico='1'; });
   _motBauNota();
+  _motCustoUi();
 }
+// Campos de custo do formulário: próprio ou agregado, combustível conforme o tipo e o consumo que vale em branco
+function _motCustoUi(){
+  const ag=$id('mot-vinc').value==='agregado';
+  $id('mot-proprio-box').style.display=ag?'none':'';
+  $id('mot-agreg-box').style.display=ag?'':'none';
+  const tipo=_vehMotoristaSel?.id||'', sel=$id('mot-comb'), cons=$id('mot-cons'), nota=$id('mot-cons-nota');
+  const combs=tipo?_combsDoTipo(tipo):['diesel'];
+  if(sel.dataset.tipo!==tipo||!sel.options.length){
+    // o do cadastro (ao editar), ou o que a pessoa escolheu num tipo que também tinha escolha; senão, o padrão do tipo
+    const quer=sel.dataset.quer||(sel.options.length>1?sel.value:''), pad=(_custos().tipos[tipo]||{}).comb||combs[0];
+    sel.innerHTML=combs.map(k=>`<option value="${k}">${_COMB_NOME[k]}${k==='diesel'&&tipo==='fiorino'?' (van)':''}</option>`).join('');
+    sel.value=combs.includes(quer)?quer:(combs.includes(pad)?pad:combs[0]);
+    sel.dataset.tipo=tipo; if(tipo) sel.dataset.quer='';
+  }
+  sel.disabled=combs.length<2;
+  if(!tipo){ cons.placeholder=''; nota.textContent='Escolha o tipo de veículo acima.'; return; }
+  const pad=_consPadrao(tipo,sel.value), t=cons.value.trim(), v=_numBR(t);
+  cons.placeholder=_n(pad,1);
+  nota.textContent = t&&!(v>=0.5&&v<=50) ? 'Consumo em km por litro, entre 0,5 e 50 (como 6,5).'
+    : (t?'':`Em branco, a conta usa ${_n(pad,1)} km/l, a estimativa para ${_vehMotoristaSel.nome}${sel.value==='etanol'?' com etanol (70% do que faz com gasolina)':''}. `)
+      +'Com o consumo real deste veículo a conta fica mais certa. O preço do litro fica em Relatórios, Custos dos veículos.';
+}
+window._motCustoUi=_motCustoUi;
 function _motBauNota(){
   const ins=['c','l','a'].map(k=>$id('mot-bau-'+k)), v=ins.map(i=>_numBR(i.value));
   const typ=_vehMotoristaSel&&BAU_PADRAO[_vehMotoristaSel.id];
@@ -7932,6 +8054,15 @@ async function salvarMotorista(){
   const bauTipico=!bauVazio&&typB&&bauV.every((x,k)=>Math.abs(x-typB[k])<1e-9);
   const outro=placa && _listaFrota().find(x=>x.id!==_motEditId && _placaNorm(x.placa)===placa);
   if(outro){ alert(`A placa ${_placaFmt(placa)} já está cadastrada (${_rotuloVeic(outro)}).`); return; }
+  // custo: agregado precisa do valor combinado; próprio, consumo em branco ou entre 0,5 e 50 km/l
+  const agreg=$id('mot-vinc').value==='agregado', txt=id=>$id(id).value.trim();
+  const agSaida=txt('mot-ag-saida')?_numBR(txt('mot-ag-saida')):0, agKm=txt('mot-ag-km')?_numBR(txt('mot-ag-km')):0;
+  const consV=txt('mot-cons')?_numBR(txt('mot-cons')):0, combV=$id('mot-comb').value;
+  if(agreg){
+    if(!(agSaida>=0&&agSaida<=100000)){ alert('Valor por saída: em reais, como 350,00.'); return; }
+    if(!(agKm>=0&&agKm<=50)){ alert('Valor por km: em reais por km, como 1,20 (até 50).'); return; }
+    if(!agSaida&&!agKm){ alert('Agregado: informe o valor por saída, o valor por km ou os dois.'); return; }
+  } else if(txt('mot-cons')&&!(consV>=0.5&&consV<=50)){ alert('Consumo: em km por litro, entre 0,5 e 50 (como 6,5). Ou deixe em branco para usar a estimativa do tipo.'); return; }
 
   const id=_motEditId||('mot_'+Date.now());
   const anterior=_listaFrota().find(x=>x.id===id)||{};
@@ -7943,6 +8074,14 @@ async function salvarMotorista(){
   if(bauVazio||bauTipico){ delete motorista.bau_c; delete motorista.bau_l; delete motorista.bau_a; }
   else { motorista.bau_c=Math.round(bauV[0]*100)/100; motorista.bau_l=Math.round(bauV[1]*100)/100; motorista.bau_a=Math.round(bauV[2]*100)/100; }
   if(placa) motorista.placa=placa; else delete motorista.placa;
+  ['vinculo','ag_saida','ag_km','comb','cons'].forEach(k=>delete motorista[k]);
+  const r2=x=>Math.round(x*100)/100;
+  if(agreg){ motorista.vinculo='agregado'; if(agSaida) motorista.ag_saida=r2(agSaida); if(agKm) motorista.ag_km=r2(agKm); }
+  else {
+    const combs=_combsDoTipo(_vehMotoristaSel.id);
+    if(combs.length>1&&combs.includes(combV)) motorista.comb=combV;
+    if(consV) motorista.cons=r2(consV);
+  }
 
   if(_frotaDoBanco()){
     await update(ref(db,TP('motoristas')),{[id]:motorista});
@@ -7985,6 +8124,7 @@ function renderMotoristasPage(){
           <div class="frota-topo"><div class="rc-card-name">${esc(m.modelo||m.veiculo_nome||'Veículo')}</div>${placaHtml(m.placa)}</div>
           <div class="rc-card-sub">${esc(v?.nome||m.veiculo_nome||'')} · ${(m.cap_kg||0).toLocaleString('pt-BR')} kg${_carrocDe(m)==='aberta'?' · carroceria aberta':_bauDe(m)?` · ${_fmtM3(_m3Bau(_bauDe(m)))} m³${_bauDe(m).padrao?' (típico)':''}`:''}${_carrocDe(m)==='sider'?' · sider':''}</div>
           <div class="frota-mot${m.nome?'':' vazio'}">${m.nome?'Motorista: '+esc(m.nome):'Sem motorista definido'}</div>
+          <div class="frota-custo">${esc(_resumoCustoVeic(m))}</div>
         </div>
       </div>
       <div class="frota-acoes">
@@ -7995,6 +8135,12 @@ function renderMotoristasPage(){
   }).join('');
 }
 window.renderMotoristasPage=renderMotoristasPage;
+// "Próprio · gasolina · 10 km/l (estimado)" ou "Agregado · R$ 350,00 por saída + R$ 1,20/km"
+function _resumoCustoVeic(m){
+  const t=_taxasTipo(m.veiculo_id,null,m); if(!t) return '';
+  if(t.agregado) return t.semValor?'Agregado · sem valor combinado':`Agregado · ${[t.diaria?_brl(t.diaria)+' por saída':'',t.rkm?_brl(t.rkm)+'/km':''].filter(Boolean).join(' + ')}`;
+  return `Próprio · ${_COMB_NOME[t.combUsado].toLowerCase()} · ${_n(t.cons,1)} km/l${t.consEstimado?' (estimado)':''} · ${_brl(t.rkm)}/km`;
+}
 
 // ── PRODUTOS: medidas para a cubagem ─────────────────────────────────────────
 let _prodInfo={}, _produtosNegado=false;
@@ -8139,7 +8285,7 @@ function selRotaTabD(idx){
   document.getElementById('rota-detail-d').innerHTML=`
     <div id="rota-map"></div>
     ${paradas.length?`<div class="nav-btns-d"><a href="${gmaps}" target="_blank" rel="noopener" class="btn-nav-d gmaps">📍 Google Maps</a>${last?`<a href="https://waze.com/ul?ll=${last.lat},${last.lng}&navigate=yes" target="_blank" rel="noopener" class="btn-nav-d waze">🚗 Waze</a>`:''}</div>`:''}
-    <div class="card" style="margin-bottom:14px"><div style="display:flex;gap:20px;font-size:13px;color:var(--text2);flex-wrap:wrap">${vr.frota?`<span>🚚 <b style="color:var(--text)">${esc(vr.nome)}</b>${vr.motorista?.nome?' · '+esc(vr.motorista.nome):''}</span>`:''}<span>📦 <b style="color:var(--text)">${peso.toLocaleString('pt-BR')} kg</b></span><span>📍 <b style="color:var(--text)">${paradas.length}</b> paradas</span>${nT.coleta&&nT.entrega?`<span>🚚 sai com <b style="color:var(--text)">${carga.saida.toLocaleString('pt-BR')} kg</b> · no máximo <b style="color:var(--text)">${carga.max.toLocaleString('pt-BR')} kg</b> a bordo</span>`:''}<span>🛣️ <b style="color:var(--text)">${_x(km)}</b> km</span>${(c=>c?`<span title="${esc(`${_brl(c.km)} de km (${_brl(c.rkm)}/km) + ${_brl(c.hora)} de mão de obra (${_brl(c.rh)}/hora) + ${_brl(c.diaria)} de diária`)}">💰 <b style="color:var(--text)">${_brl(c.total)}</b> · ${_brl(c.total/Math.max(1,paradas.length))} por parada</span>`:'')(_custoRotaD(r))}</div>
+    <div class="card" style="margin-bottom:14px"><div style="display:flex;gap:20px;font-size:13px;color:var(--text2);flex-wrap:wrap">${vr.frota?`<span>🚚 <b style="color:var(--text)">${esc(vr.nome)}</b>${vr.motorista?.nome?' · '+esc(vr.motorista.nome):''}</span>`:''}<span>📦 <b style="color:var(--text)">${peso.toLocaleString('pt-BR')} kg</b></span><span>📍 <b style="color:var(--text)">${paradas.length}</b> paradas</span>${nT.coleta&&nT.entrega?`<span>🚚 sai com <b style="color:var(--text)">${carga.saida.toLocaleString('pt-BR')} kg</b> · no máximo <b style="color:var(--text)">${carga.max.toLocaleString('pt-BR')} kg</b> a bordo</span>`:''}<span>🛣️ <b style="color:var(--text)">${_x(km)}</b> km</span>${(c=>c?`<span title="${esc(_custoDica(c))}">💰 <b style="color:var(--text)">${_brl(c.total)}</b> · ${_brl(c.total/Math.max(1,paradas.length))} por parada${c.agregado?' · agregado':c.comb&&c.comb!=='diesel'?' · '+_COMB_NOME[c.comb].toLowerCase():''}</span>`:'')(_custoRotaD(r))}</div>
       ${notaFonte}
     </div>
     ${paradas.length?_blocoCargaD(paradas,idx):''}

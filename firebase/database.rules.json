@@ -254,7 +254,14 @@
           ".write": "auth != null && ((root.child('acesso').child(auth.uid).val() === true && root.child('membros').child(auth.uid).val() === $eid) || ($eid === 'demo_' + auth.uid && root.child('acesso').child(auth.uid).val() === 'demo' && root.child('demos').child(auth.uid).child('expira').val() > now))"
         },
         "motoristas": {
-          ".write": "auth != null && ((root.child('acesso').child(auth.uid).val() === true && root.child('membros').child(auth.uid).val() === $eid) || ($eid === 'demo_' + auth.uid && root.child('acesso').child(auth.uid).val() === 'demo' && root.child('demos').child(auth.uid).child('expira').val() > now))"
+          ".write": "auth != null && ((root.child('acesso').child(auth.uid).val() === true && root.child('membros').child(auth.uid).val() === $eid) || ($eid === 'demo_' + auth.uid && root.child('acesso').child(auth.uid).val() === 'demo' && root.child('demos').child(auth.uid).child('expira').val() > now))",
+          "$mid": {
+            "comb": { ".validate": "newData.val() === 'diesel' || newData.val() === 'gasolina' || newData.val() === 'etanol'" },
+            "cons": { ".validate": "newData.isNumber() && newData.val() >= 0.5 && newData.val() <= 50" },
+            "vinculo": { ".validate": "newData.val() === 'agregado'" },
+            "ag_saida": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000" },
+            "ag_km": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 50" }
+          }
         },
         "produtos": {
           ".write": "auth != null && ((root.child('acesso').child(auth.uid).val() === true && root.child('membros').child(auth.uid).val() === $eid) || ($eid === 'demo_' + auth.uid && root.child('acesso').child(auth.uid).val() === 'demo' && root.child('demos').child(auth.uid).child('expira').val() > now))",
@@ -280,6 +287,7 @@
             "v": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 99" },
             "diesel": { ".validate": "newData.isNumber() && newData.val() >= 0.01 && newData.val() <= 50" },
             "gasolina": { ".validate": "newData.isNumber() && newData.val() >= 0.01 && newData.val() <= 50" },
+            "etanol": { ".validate": "newData.isNumber() && newData.val() >= 0.01 && newData.val() <= 50" },
             "encargos": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 300" },
             "ajudSal": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100000" },
             "horasMes": { ".validate": "newData.isNumber() && newData.val() >= 100 && newData.val() <= 400" },
