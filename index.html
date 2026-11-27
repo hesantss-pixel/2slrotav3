@@ -1886,15 +1886,20 @@ function _vigiarPrazo(user){
 async function apiPost(path, body, metodo='POST'){
   const u=auth.currentUser;
   const tok=u ? await u.getIdToken() : '';
-  const resp=await fetch(`${BACKEND_URL}${path}`,metodo==='GET'?{headers:{'Authorization':'Bearer '+tok}}:{
-    method:metodo,
-    headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},
-    body:JSON.stringify(body),
-  });
+  let resp;
+  try{
+    resp=await fetch(`${BACKEND_URL}${path}`,metodo==='GET'?{headers:{'Authorization':'Bearer '+tok}}:{
+      method:metodo,
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok},
+      body:JSON.stringify(body),
+    });
+  }catch(e){ const x=new Error('sem conexão agora; confira a internet'); x.rede=true; throw x; }
   if(!resp.ok){
     const err=await resp.json().catch(()=>({}));
     if(resp.status===401) throw new Error('sua sessão expirou — saia e entre de novo');
     if(resp.status===403) throw new Error('este usuário não tem acesso liberado');
+    if(resp.status===429) throw new Error(err.detail || 'muitos pedidos seguidos; espere um minuto');
+    if(resp.status>=500&&!err.detail) throw new Error('o cálculo não respondeu agora');
     throw new Error(err.detail || 'erro '+resp.status);
   }
   return resp.json();
@@ -2845,7 +2850,7 @@ function renderRelatorios(){
     <b>Como ler estes números.</b><br>
     · <b>Km planejado</b> é a distância que o sistema calculou ao montar a rota. <b>Km painel</b> é a diferença entre as leituras do odômetro que o motorista registrou com foto; <b>Km GPS</b> é o caminho gravado pelo celular dele, casado com as ruas.<br>
     · <b>Tempo real</b> compara o tempo entre duas baixas seguidas com o previsto, sem os 15 min de atendimento: 1,3× quer dizer 30% mais demorado. <b>Fora da ordem</b> conta as paradas feitas numa sequência diferente da planejada.<br>
-    · <b>Medida</b> diz como aquele km foi obtido: "pelas ruas" segue o mapa das ruas; "estimado" é a distância em linha reta, usada quando a medição pelas ruas não fica pronta na hora ou quando o cálculo junta mais de 100 paradas. "Medir pelas ruas" refaz a conta na mesma ordem e corrige o km, os horários e o custo.<br>
+    · <b>Medida</b> diz como aquele km foi obtido: "pelas ruas" segue o mapa das ruas; "estimado" é a distância em linha reta, usada quando a medição pelas ruas não fica pronta na hora ou quando um cálculo junta mais de ${LIMITE_RUAS} pedidos. "Medir pelas ruas" refaz a conta na mesma ordem e corrige o km, os horários e o custo.<br>
     · <b>Sucesso</b> considera só as paradas que receberam baixa pelo link do motorista. "Sem baixa" são as paradas em que ninguém marcou nada.<br>
     · Cada pedido guarda a <b>última</b> ocorrência. Se a mesma nota falhou mais de uma vez, ela conta uma vez aqui.<br>
     · Rotas apagadas ficam de fora; devolvidas aparecem marcadas.
@@ -4347,7 +4352,7 @@ async function carregarIntegracao(silencioso){
   try{ _aeInfo=await apiPost('/integracao',null,'GET'); _renderIntegracao(); }
   catch(e){
     c.innerHTML=/não configurada/i.test(e.message)
-      ? '<p>A entrada automática ainda não foi ligada no servidor da ROTAV3. Enquanto isso, use <b>Importar notas</b>.</p>'
+      ? '<p>A entrada automática é ligada pela equipe da ROTAV3 na implantação. Até lá, use <b>Importar notas</b>.</p>'
       : `<p class="ae-aviso">Não foi possível carregar agora: ${esc(e.message)}. Tente de novo em instantes.</p>`;
   }
 }
@@ -4371,7 +4376,7 @@ function _renderIntegracao(){
   const cod=(txt)=>`<span class="ae-cod">${esc(txt)}</span><button type="button" class="ae-bt" onclick="_aeCopiar(${codN++},this)">Copiar</button>`;
   const em=d.email||{}, en=em.enderecos||{};
   let h='<div class="ae-bloco"><h4>Por e-mail</h4>';
-  if(!em.ligado) h+='<p>A caixa de entrada de e-mail ainda não foi ligada no servidor da ROTAV3.</p>';
+  if(!em.ligado) h+='<p>A caixa de entrada de e-mail é ligada pela equipe da ROTAV3 na implantação.</p>';
   else if(en.entregas){
     h+=`<div class="ae-linha"><span>Entregas</span>${cod(en.entregas)}</div><div class="ae-linha"><span>Coletas</span>${cod(en.coletas)}</div>
       <p>Mande o XML da nota (pode ser em .zip, várias por e-mail) para o endereço de entregas ou de coletas. Dá para pedir aos seus clientes que copiem esse endereço ao enviar a nota, ou criar no seu e-mail uma regra que <b>encaminhe</b> os e-mails com XML. Em cerca de 1 minuto o pedido aparece aqui e é localizado no mapa.</p>
@@ -4750,7 +4755,9 @@ async function _processarFilaGeo(){
   }
   _geoRodando = false; _geoAtual = null;
   const det=[n.numero&&`${n.numero} pelo número`, n.lembrado&&`${n.lembrado} pelo ponto que você já tinha marcado`, n.aprox&&`${n.aprox} com ponto a confirmar`].filter(Boolean);
-  _geoStatusUI(n.ok||n.falhou||n.conf ? `Mapa atualizado: ${_plural(n.ok,'pedido localizado','pedidos localizados')}${det.length?' ('+det.join(', ')+')':''}${n.falhou?`, ${n.falhou} para marcar no mapa`:''}.` : '');
+  // só conferiu pontos antigos (nada novo): não há o que avisar
+  const partes=[n.ok&&`${_plural(n.ok,'pedido localizado','pedidos localizados')}${det.length?' ('+det.join(', ')+')':''}`, n.falhou&&`${n.falhou} para marcar no mapa`].filter(Boolean);
+  _geoStatusUI(partes.length ? `Mapa atualizado: ${partes.join(', ')}.` : '');
   _atualizarTelasPedidos();
   setTimeout(()=>_geoStatusUI(''), 9000);
 }
@@ -5440,6 +5447,10 @@ let capM3D=0, bauM3D=0;
 let frotaModoD=false, frotaD=[], frotaSelD={iniciado:false, tipos:{}, mots:{}};
 const CUSTO_VEIC={fiorino:1800, vuc:2700, tres4:3300, toco:3900, bitruck:4800, carreta:6000};
 const MAX_FROTA=40, MAX_POR_TIPO=10;
+// Agregado entra só quando os próprios não dão conta: custo fixo a mais no motor (em segundos de rota,
+// a mesma unidade do CUSTO_VEIC). Fica abaixo da multa por pedido não atendido (100.000 no motor),
+// então o motor ainda chama o agregado para não deixar pedido de fora.
+const CUSTO_AGREGADO=20000;
 // ── Custo da rota em reais ─────────────────────────────────────────────────
 // custo = km × R$/km + horas × R$/hora + diária. R$/km = combustível (preço ÷ consumo) + pneus e
 // manutenção; R$/hora = motorista (+ ajudantes) com encargos ÷ horas do mês; diária = custos fixos do
@@ -5635,13 +5646,16 @@ function _perfilVolume(seq){
   return {saida, max, pico};
 }
 // Cidade dos pedidos que entram no cálculo. Importa para o km: o servidor de
-// rotas mede pelas ruas até LIMITE_RUAS pontos de uma vez; acima disso a conta
+// rotas mede pelas ruas até LIMITE_RUAS pedidos de uma vez; acima disso a conta
 // sai em linha reta. Escolhendo a cidade, a viagem quase sempre fica abaixo.
+// 439 pedidos + o CD = 440 pontos: o OSRM público aceita 100 × 100 = 10.000 células por
+// consulta e o servidor faz no máximo 20 (OSRM_LIMIT e OSRM_MAX_BLOCOS em backend/vrp_solver.py):
+// com 440 pontos são 22 linhas por consulta, 20 consultas; com 441, seriam 21.
 let rotCidadeD='todas';
-const LIMITE_RUAS=450;
+const LIMITE_RUAS=439;
 let rotasConfirmadasDemo=[];
 let rotTipoD='todos', regraCargaD='';
-let rotaCtxD={data:'',saida:420,volta:false}, naoAlocD=[], foraJanelaD=[];
+let rotaCtxD={data:'',saida:420,volta:false}, naoAlocD=[], foraJanelaD=[], cortadosD=[];
 // Pedidos que entram nesta viagem: tipo escolhido, sem agendados de outro dia;
 // os agendados do dia levam a janela de horário para o motor de rotas.
 function _cidadeDe(o){ return String((o&&o.cidade)||'Sem cidade').trim()||'Sem cidade'; }
@@ -5702,7 +5716,7 @@ function renderRotCidadeD(inicial){
   const n=rotCidadeD==='todas'?total:(cidades.find(([c])=>c===rotCidadeD)||[,0])[1];
   const nota=document.getElementById('rot-cidade-nota');
   if(nota) nota.innerHTML = n>LIMITE_RUAS
-    ? `⚠️ <b>${_plural(n,'pedido entra','pedidos entram')} neste cálculo.</b> Acima de ${LIMITE_RUAS} o km sai em <b>linha reta</b>, não pelas ruas. Escolha uma cidade, ou confirme as primeiras rotas antes de montar as próximas.`
+    ? `📏 <b>${_plural(n,'pedido pendente','pedidos pendentes')}${rotCidadeD==='todas'?'':' em '+esc(rotCidadeD)}.</b> O km pelas ruas é medido com até ${LIMITE_RUAS} por vez, então o cálculo usa os ${LIMITE_RUAS} mais perto do CD (reentregas e agendados de hoje primeiro) e os outros ficam para as próximas viagens. Se as viagens forem levar mais de ${LIMITE_RUAS} paradas juntas, ${rotCidadeD==='todas'?'escolha uma cidade':(rotTipoD==='todos'?'separe entregas e coletas':'monte em duas vezes')}.`
     : rotCidadeD==='todas' ? `${_plural(n,'pedido entra','pedidos entram')} neste cálculo, de ${_plural(cidades.length,'cidade','cidades')}.`
     : `Só os ${n===1?'pedidos':''}${n===1?'':_plural(n,'pedido','pedidos')} de ${esc(rotCidadeD)}. Os outros continuam pendentes para a próxima viagem.`;
   if($id('cap-m3-nota')&&(vehSel||frotaModoD)) _renderCubNota();
@@ -5847,7 +5861,7 @@ function _renderFrotaD(){
   const mot=m=>{
     const v=veicMap[m.veiculo_id], sem=!(+m.cap_kg>0);
     return `<label class="fm-item"><input type="checkbox" data-id="${esc(m.id)}" ${frotaSelD.mots[m.id]&&!sem?'checked':''} ${sem?'disabled':''} onchange="frotaMotD(this.dataset.id,this.checked)">
-      <span class="t"><b>${esc(_rotuloVeic(m)||v?.nome||'Veículo')}</b><small>${esc(v?.nome||m.veiculo_nome||'')}${sem?' · sem capacidade cadastrada':` · ${(+m.cap_kg).toLocaleString('pt-BR')} kg · ${_txtBauV(_carrocDe(m),_bauDe(m))}`}${m.nome?' · '+esc(m.nome):''}</small></span></label>`;
+      <span class="t"><b>${esc(_rotuloVeic(m)||v?.nome||'Veículo')}</b><small>${esc(v?.nome||m.veiculo_nome||'')}${sem?' · sem capacidade cadastrada':` · ${(+m.cap_kg).toLocaleString('pt-BR')} kg · ${_txtBauV(_carrocDe(m),_bauDe(m))}`}${m.nome?' · '+esc(m.nome):''}${m.vinculo==='agregado'?' · agregado':''}</small></span></label>`;
   };
   const tipo=v=>{
     const n=frotaSelD.tipos[v.id]||0, b=_bauDe(null,v.id);
@@ -5881,7 +5895,8 @@ function _montarFrotaD(aprov,maxPed){
     const bau=o.carroc==='aberta'?null:o.bau, bauM3=bau?_m3Bau(bau):0;
     return { id:o.id, tipo:o.tipo, tipoNome:o.tipoNome, nome:o.nome, capKg:o.capKg, maxPed,
       bauSel:bau, bauM3, capM3:bauM3?Math.floor(bauM3*aprov)/100:0, carroc:o.carroc, compCm:bau?Math.round(bau.c*100):0,
-      custoFixo:(CUSTO_VEIC[o.tipo]||2700)+Math.round(o.capKg/100), motorista:o.motorista||null, frota:true };
+      custoFixo:(CUSTO_VEIC[o.tipo]||2700)+Math.round(o.capKg/100)+(o.motorista&&o.motorista.vinculo==='agregado'?CUSTO_AGREGADO:0),
+      agregado:!!(o.motorista&&o.motorista.vinculo==='agregado'), motorista:o.motorista||null, frota:true };
   };
   _frotaOrdenada(_listaFrota()).filter(m=>frotaSelD.mots[m.id]&&+m.cap_kg>0).forEach(m=>{
     const v=veicMap[m.veiculo_id];
@@ -6006,7 +6021,7 @@ function irConfirmD(){
   document.getElementById('confirm-veh-name').textContent=frotaModoD?`Vários veículos (${frotaD.length})`:vehSel.nome;
   $id('confirm-manual-d').hidden=frotaModoD;   // montar no mapa é com um veículo só
   const cabVeic = frotaModoD
-    ? `Veículos que podem sair <span style="color:var(--text3)">(o sistema usa só os que precisar, dando preferência aos menores)</span>:<ul class="fm-lista">${frotaD.map(v=>`<li><b>${esc(v.nome)}</b> · ${v.capKg.toLocaleString('pt-BR')} kg${v.capM3?` · ${_fmtM3(v.capM3)} m³ (${aprov}% do baú)`:v.carroc==='aberta'?' · aberta':''}${v.motorista?.nome?' · '+esc(v.motorista.nome):''}</li>`).join('')}</ul>Máx. de paradas por veículo: <b>${maxPedD}</b>`
+    ? `Veículos que podem sair <span style="color:var(--text3)">(o sistema usa só os que precisar, dando preferência ${frotaD.some(v=>v.agregado)?'aos próprios, e depois ':''}aos menores${frotaD.some(v=>v.agregado)?'; o agregado entra quando os próprios não dão conta':''})</span>:<ul class="fm-lista">${frotaD.map(v=>`<li><b>${esc(v.nome)}</b> · ${v.capKg.toLocaleString('pt-BR')} kg${v.capM3?` · ${_fmtM3(v.capM3)} m³ (${aprov}% do baú)`:v.carroc==='aberta'?' · aberta':''}${v.motorista?.nome?' · '+esc(v.motorista.nome):''}</li>`).join('')}</ul>Máx. de paradas por veículo: <b>${maxPedD}</b>`
     : `Capacidade: <b style="color:var(--ac)">${kg.toLocaleString('pt-BR')} kg</b><br>${carrocD!=='bau'?`Carroceria: <b>${esc(_CARROC[carrocD])}</b><br>`:''}${capM3D?`Volume: <b style="color:var(--ac)">${_fmtM3(capM3D)} m³</b> <span style="color:var(--text3)">(${Math.round(capM3D/bauM3D*100)}% do baú de ${_fmtM3(bauM3D)} m³)</span><br>`:''}Máx. de paradas: <b>${maxPedD}</b>`;
   document.getElementById('confirm-details-d').innerHTML=`${cabVeic}${rotCidadeD!=='todas'?`<br>Só de: <b>${esc(rotCidadeD)}</b>`:''}<br>Nesta viagem: <b>${oque} pendentes</b>${rotTipoD==='todos'?' <span style="color:var(--text3)">(entregas primeiro, coletas depois)</span>':''}<br>Saída: <b>${esc(DEPOT.name)}</b> às <b>${_hhmm(rotaCtxD.saida)}</b> de <b>${_dataBR(rotaCtxD.data)}</b><br>Fim: <b>${rotaCtxD.volta?'volta ao CD':'na última parada'}</b>${FATOR_TEMPO!==1?`<br>Tempos ajustados ao trânsito: <b>×${FATOR_TEMPO.toLocaleString('pt-BR',{maximumFractionDigits:2})}</b> <span style="color:var(--text3)">(calibrado pelas suas rotas)</span>`:''}${comHora?`<br>Com horário marcado: <b>${comHora}</b>`:''}${outroDia?`<br><span style="color:var(--text3)">${_plural(outroDia,'agendado para outro dia fica','agendados para outro dia ficam')} de fora.</span>`:''}${semLocal?`<br><span style="color:var(--text3)">📍 ${_plural(semLocal,'pedido com ponto a confirmar','pedidos com ponto a confirmar')} no mapa.</span>`:''}${reent?`<br>Reentregas: <b>${reent}</b> <span style="color:var(--text3)">(entram com prioridade)</span>`:''}${espera?`<br><span style="color:var(--text3)">${_plural(espera,'pedido aguarda','pedidos aguardam')} endereço ou instrução e ${espera===1?'fica':'ficam'} de fora (veja em Pedidos).</span>`:''}`;
   document.getElementById('rot-step-cap').style.display='none';
@@ -6076,7 +6091,18 @@ async function executarVRPD(){
     document.getElementById('rot-step-results').innerHTML=`<div class="import-msg show warn">Nenhum pedido desta viagem cabe no comprimento ${base.length>1?'do maior baú escolhido':'do baú'} (${_fmtMed(comp/100)} m). Escolha um veículo maior ou de carroceria aberta.</div><button class="btn-modal-sec" onclick="renderVeiculosD()">← Voltar</button>`;
     return;
   }
-  const pedidos=pend.map(o=>{ const mc=_maiorLadoCm(o); return mc>0?{...o, maiorCm:mc}:o; });
+  // Muitos pedidos e poucas vagas nas viagens: o motor só põe Σ maxPed paradas, então vão ao
+  // cálculo só os LIMITE_RUAS candidatos mais perto do CD (reentregas e agendados de hoje primeiro).
+  // Assim o km sai pelas ruas; os outros ficam pendentes para as próximas viagens.
+  const vagas=base.reduce((s,v)=>s+(+v.maxPed||0),0);
+  let candidatos=pend; cortadosD=[];
+  if(pend.length>LIMITE_RUAS&&vagas>0&&vagas<LIMITE_RUAS){
+    const peso=o=>(+o.prioridade||0)*2+(o.janela_ini!=null?1:0);
+    const ord=pend.map(o=>({o, k:peso(o), d:Number.isFinite(+o.lat)&&Number.isFinite(+o.lng)&&o.lat!==null?_haversineKm({lat:+o.lat,lng:+o.lng},DEPOT):1e9}))
+      .sort((a,b)=>b.k-a.k||a.d-b.d);
+    candidatos=ord.slice(0,LIMITE_RUAS).map(x=>x.o); cortadosD=ord.slice(LIMITE_RUAS).map(x=>String(x.o.id));
+  }
+  const pedidos=candidatos.map(o=>{ const mc=_maiorLadoCm(o); return mc>0?{...o, maiorCm:mc}:o; });
   const resolver=(frota,limite)=>apiPost('/solve',{
       hora_saida: rotaCtxD.saida,
       volta: !!rotaCtxD.volta, fator_tempo: FATOR_TEMPO, analise:false,
@@ -6108,14 +6134,14 @@ async function executarVRPD(){
     rotaGeradaD=rotas;
     fonteDistanciaD=data.fonte_distancia||'—';
     regraCargaD=data.regra_carga||'';
-    naoAlocD=(data.nao_alocados||[]).map(String); foraJanelaD=(data.fora_da_janela||[]).map(String);
+    naoAlocD=(data.nao_alocados||[]).map(String).concat(cortadosD); foraJanelaD=(data.fora_da_janela||[]).map(String);
     // A rota montada fica só na tela até você clicar em "Confirmar saída do veículo".
     // Nada é gravado aqui: o painel só conta rota confirmada.
     renderRotasResultD(rotaGeradaD);
   }catch(e){
     document.getElementById('rot-step-loading').style.display='none';
     document.getElementById('rot-step-results').style.display='block';
-    document.getElementById('rot-step-results').innerHTML=`<div class="import-msg show err">❌ Não foi possível gerar a rota: ${e.message}.<br>Tente de novo em instantes. Se continuar, fale com o suporte.</div><button class="btn-modal-sec" onclick="renderVeiculosD()" style="max-width:300px">← Tentar novamente</button>`;
+    document.getElementById('rot-step-results').innerHTML=`<div class="import-msg show err">Não deu para gerar a rota: ${esc(e.message)}.<br>Tente de novo em instantes. Se continuar, fale com a ROTAV3.</div><button class="btn-modal-sec" onclick="renderVeiculosD()" style="max-width:300px">← Tentar novamente</button>`;
   }
 }
 window.executarVRPD=executarVRPD;
@@ -7015,8 +7041,8 @@ function _renderResultadoD(){
     : `<div class="import-msg show info" style="max-width:640px;margin:0 0 16px">Pelo formato das caixas, a primeira divisão não cabia ${frotaVarios?'nos baús':'no baú'}. O sistema refez a conta${nMud?`: ${esc(ajusteFmtD.mudancas.slice(0,6).join('; '))}${nMud>6?` e mais ${nMud-6}`:''}.`:'.'}${ajusteFmtD.ainda?` ${_plural(ajusteFmtD.ainda,'rota ainda tem','rotas ainda têm')} caixa que não cabe: veja o aviso na rota e o desenho em 3D.`:''}</div>`;
   const msgFora = !fora ? ''
     : ajustada ? `<div class="import-msg show info" style="max-width:640px;margin:0 0 16px">${_plural(fora,'pedido pendente ficou','pedidos pendentes ficaram')} fora desta viagem. ${fora===1?'Ele continua':'Eles continuam'} na lista para a próxima.</div>`
-    : frotaVarios ? `<div class="import-msg show info" style="max-width:640px;margin:0 0 16px">Os veículos levaram <b>${totalE} de ${totalE+naoAlocD.length}</b> pedidos: o limite foi de ${maxPedD} paradas por veículo e a capacidade de cada um. Os outros ${naoAlocD.length} continuam pendentes para a próxima viagem.${foraJanelaD.length?` Atenção: ${_plural(foraJanelaD.length,'pedido tem','pedidos têm')} horário que não dá para cumprir saindo às ${_hhmm(rotaCtxD.saida)} (NF ${foraJanelaD.slice(0,8).map(esc).join(', ')}).`:''}</div>`
-    : `<div class="import-msg show info" style="max-width:640px;margin:0 0 16px">Esta viagem levou <b>${totalE} de ${totalE+naoAlocD.length}</b> pedidos: o limite foi de ${maxPedD} paradas e ${capKgD.toLocaleString('pt-BR')} kg. Os outros ${naoAlocD.length} continuam pendentes para a próxima viagem (gere outra com o próximo veículo).${foraJanelaD.length?` Atenção: ${_plural(foraJanelaD.length,'pedido tem','pedidos têm')} horário que não dá para cumprir saindo às ${_hhmm(rotaCtxD.saida)} (NF ${foraJanelaD.slice(0,8).map(esc).join(', ')}).`:''}</div>`;
+    : frotaVarios ? `<div class="import-msg show info" style="max-width:640px;margin:0 0 16px">Os veículos levaram <b>${totalE} de ${totalE+naoAlocD.length}</b> pedidos: o limite foi de ${maxPedD} paradas por veículo e a capacidade de cada um. Os outros ${naoAlocD.length} continuam pendentes para a próxima viagem.${cortadosD.length?` Para medir o km pelas ruas, o cálculo considerou os ${LIMITE_RUAS} mais perto do CD.`:''}${foraJanelaD.length?` Atenção: ${_plural(foraJanelaD.length,'pedido tem','pedidos têm')} horário que não dá para cumprir saindo às ${_hhmm(rotaCtxD.saida)} (NF ${foraJanelaD.slice(0,8).map(esc).join(', ')}).`:''}</div>`
+    : `<div class="import-msg show info" style="max-width:640px;margin:0 0 16px">Esta viagem levou <b>${totalE} de ${totalE+naoAlocD.length}</b> pedidos: o limite foi de ${maxPedD} paradas e ${capKgD.toLocaleString('pt-BR')} kg. Os outros ${naoAlocD.length} continuam pendentes para a próxima viagem (gere outra com o próximo veículo).${cortadosD.length?` Para medir o km pelas ruas, o cálculo considerou os ${LIMITE_RUAS} mais perto do CD.`:''}${foraJanelaD.length?` Atenção: ${_plural(foraJanelaD.length,'pedido tem','pedidos têm')} horário que não dá para cumprir saindo às ${_hhmm(rotaCtxD.saida)} (NF ${foraJanelaD.slice(0,8).map(esc).join(', ')}).`:''}</div>`;
   // custo estimado de todas as rotas (só se todas tiverem o tipo do veículo)
   const cs=rotas.map(_custoRotaD);
   const cTot=cs.length&&cs.every(Boolean)?{total:cs.reduce((a,c)=>a+c.total,0), semFixo:cs.some(c=>c.semFixo), semManut:cs.some(c=>c.semManut),
@@ -7641,7 +7667,7 @@ async function definirFatorEmpresa(eid,tirar){
   try{ await set(ref(db,`empresas/${eid}/config/fator_tempo`), v===1?null:v); }
   catch(e){ dizer('Não foi possível salvar: '+e.message); return; }
   if(eid===EID) FATOR_TEMPO=v;
-  _toast(v===1?'Ajuste tirado: as rotas usam o tempo do servidor de rotas.'
+  _toast(v===1?'Ajuste tirado: as rotas voltam a usar o tempo padrão do mapa.'
     :`Tempo de viagem ×${v.toLocaleString('pt-BR',{maximumFractionDigits:2})} salvo. Vale para as próximas rotas da empresa.`);
   renderAcessos();
 }
@@ -7774,7 +7800,7 @@ function desenharMiniMapaRota(rota, elId, cor){
   const el = document.getElementById(elId);
   if(!el || !window.L) return;
   const paradas = (rota.paradas||[]).filter(p=>p.lat && p.lng);
-  if(!paradas.length){ el.innerHTML = '<div style="padding:22px;text-align:center;font-size:11.5px;color:var(--text3)">Rota sem coordenadas — mapa indisponível.</div>'; return; }
+  if(!paradas.length){ el.innerHTML = '<div style="padding:22px;text-align:center;font-size:11.5px;color:var(--text3)">Esta rota não tem pontos no mapa.</div>'; return; }
 
   // limpa instância anterior (caso o Firebase re-render dispare)
   if(_miniMaps[elId]){ _miniMaps[elId].remove(); delete _miniMaps[elId]; }
@@ -8351,13 +8377,13 @@ window.excluirProduto=excluirProduto;
 function _eReta(f){ return String(f||'').startsWith('Haversine'); }
 function _motivoReta(f){
   return String(f)==='Haversine:limite'
-    ? 'O cálculo juntou mais de 100 paradas, então o km e os horários ficaram estimados em linha reta. Pelas ruas, o km costuma ser maior.'
+    ? `O cálculo juntou mais de ${LIMITE_RUAS} pedidos, então o km e os horários ficaram estimados em linha reta. Pelas ruas, o km costuma ser maior.`
     : 'Km e horários estimados em linha reta. Pelas ruas, o km costuma ser maior.';
 }
 function _rotuloFonte(f){
   if(!f||f==='—') return 'não registrado';
   if(f==='OSRM') return 'pelas ruas';
-  return f==='Haversine:limite' ? 'estimado (mais de 100 paradas)' : 'estimado (linha reta)';
+  return f==='Haversine:limite' ? 'estimado (cálculo grande)' : 'estimado (linha reta)';
 }
 // Rota confirmada com o km estimado: dá para medir de novo pelas ruas, na mesma ordem (até 100 paradas)
 const MAX_PARADAS_REMEDIR=100;
@@ -9301,7 +9327,7 @@ async function enviarChatD(){
     chatSessionId=data.session_id||chatSessionId;
     document.getElementById(loadingId).textContent=data.resposta||'(sem resposta)';
   }catch(e){
-    document.getElementById(loadingId).textContent='A IA não respondeu agora ('+e.message+'). Tente de novo em instantes.';
+    document.getElementById(loadingId).textContent=/sessão|acesso|espere/.test(e.message||'')?`O assistente não respondeu: ${e.message}.`:'O assistente não respondeu agora. Tente de novo em instantes.';
   }
   box.scrollTop=box.scrollHeight;
 }

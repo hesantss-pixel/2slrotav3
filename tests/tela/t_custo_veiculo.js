@@ -40,11 +40,12 @@ function motor(body) {
     nao_alocados: [], fonte_distancia: 'OSRM', maior_que_bau: [] };
 }
 
+let ultimo = null;
 (async () => {
   const b = await chromium.launch();
   const rotas = async (c) => {
     await c.route(/nominatim|viacep|maps\.googleapis/, (r) => r.fulfill({ status: 500, contentType: 'application/json', body: '{}' }));
-    await c.route(/railway\.app\/solve/, (r) => r.fulfill({ contentType: 'application/json', body: J(motor(JSON.parse(r.request().postData()))) }));
+    await c.route(/railway\.app\/solve/, (r) => { const body = JSON.parse(r.request().postData()); ultimo = body; r.fulfill({ contentType: 'application/json', body: J(motor(body)) }); });
   };
   const { ctx, p, errs } = await open(b, 'index.html', 1280, 900, init, false, seed, rotas);
   const dialogs = []; p.on('dialog', (d) => { dialogs.push(d.message()); d.accept(); });
@@ -97,7 +98,10 @@ function motor(body) {
   await p.evaluate(() => window.irParaPagina('roteirizacao')); await p.waitForTimeout(300);
   await p.click('#btn-frota-d'); await p.waitForTimeout(200);
   await p.click('text=Continuar →'); await p.waitForTimeout(150);
+  ok(/preferência aos próprios, e depois aos menores; o agregado entra quando os próprios não dão conta/.test(sem(await p.textContent('#confirm-details-d'))), 'a confirmação diz que o agregado só entra quando os próprios não dão conta');
   await p.click('text=Gerar Rota Agora'); await p.waitForTimeout(1500);
+  const cf = Object.fromEntries(ultimo.veiculos.map((v) => [v.id, v.custoFixo]));
+  ok(cf.m_mT >= 20000 + cf.m_mV && cf.m_mV < 10000 && cf.m_mF < 10000, 'no motor, o agregado custa bem mais para entrar que os próprios: ' + J(cf));
   const rh = (sal) => sal * 1.7 / 220;
   const cF = c2(10 * 4.15 / 7.5 + rh(2660.40)), cV = c2(10 * 7.30 / 8 + rh(2956.92)), cT = c2(350 + 10 * 1.2);
   const res = sem(await p.textContent('#rot-step-results'));

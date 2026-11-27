@@ -884,6 +884,32 @@ encaixe 3D de caixas; "40x30x25" solto no texto da nota (sem saber a quantidade,
 (`firebase/database.rules.json`, nós `produtos` e `config/cubagem`). Sem elas, o resto funciona,
 mas salvar medida de produto ou o fator de cubagem dá "O banco recusou" e a tela explica o motivo.
 
+## Dias grandes, agregado por último e textos revisados (27/11/2026)
+
+- **Limite de pedidos por cálculo: 439, não 450.** O OSRM público aceita 100 × 100 células por
+  consulta e o servidor faz no máximo 20 consultas (`OSRM_LIMIT`, `OSRM_MAX_BLOCOS`): 439 pedidos
+  + o CD = 440 pontos, 22 linhas por consulta, 20 consultas. Acima disso o km sai em linha reta.
+- **Recorte automático:** quando há mais de 439 pedidos e as viagens enviadas não comportam mais
+  que 439 paradas juntas (soma do máximo de paradas dos veículos), vão ao cálculo só os 439 mais
+  perto do CD, com as reentregas e os agendados de hoje primeiro. O km sai pelas ruas e os outros
+  ficam pendentes (o resumo conta todos e diz o recorte). Com vários veículos que juntos levam mais
+  de 439, nada é cortado e a nota pede para escolher uma cidade ou separar entregas e coletas.
+- **Agregado por último:** na frota do dia, o veículo cadastrado como agregado leva 20.000 a mais no
+  custo fixo do motor (`CUSTO_AGREGADO`, em segundos de rota, abaixo da multa de 100.000 por pedido
+  não atendido). O motor usa primeiro os próprios e chama o agregado quando eles não dão conta.
+  Depende do servidor com o `custoFixo` (commit df65095); o servidor antigo ignora o campo.
+- **Limites reais de uma viagem (não mudaram):** até 20 paradas por viagem (tela), 15 min por parada
+  e jornada de 8 h no motor. Um veículo = uma viagem por cálculo; na frota do dia, até 40 veículos
+  (10 por tipo).
+- **Textos:** erro de rede vira "sem conexão agora; confira a internet" (antes "Failed to fetch"),
+  erro 5xx vira "o cálculo não respondeu agora", "Mapa atualizado: 0 pedidos localizados" não
+  aparece mais quando só houve conferência, e as mensagens de entrada automática, ajuste de tempo,
+  mapa da rota e assistente ficaram sem falar de servidor.
+- **Carga com 2.000 pedidos** (`tests/tela/carga_2000.js`, roda à mão: `node carga_2000.js 2000 20`):
+  abrir o sistema ~0,9 s; Pedidos ~0,2 s; Mapa com 2.001 marcadores, Cubagem, Relatórios e
+  Roteirização abaixo de 0,1 s; memória ~43 MB; sem erros (Chromium sem tela, notebook do teste).
+  Testes: `tests/tela/t_limite_ruas.js` e `t_custo_veiculo.js`.
+
 ## Tela Cubagem (volume), reorganizada (26/11/2026)
 
 A antiga "Medidas e cubagem" (menu "Produtos") misturava a regra de frete com o cadastro de
