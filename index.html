@@ -561,6 +561,19 @@ body:not(.autorizado)>.sidebar,body:not(.autorizado)>.main,body:not(.autorizado)
 .parada-chip button{border:none;background:none;padding:0;font:inherit;color:inherit;text-decoration:underline;cursor:pointer;}
 .foto-modal img{display:block;max-width:100%;max-height:68vh;margin:0 auto;border-radius:10px;}
 .foto-info{font-size:12.5px;color:var(--text2);margin-top:10px;line-height:1.5;}
+/* janela da parada: abre ao clicar ou tocar num ponto do mapa */
+.parada-modal{max-width:460px;}
+.par-sub{font-size:12.5px;color:var(--text3);margin:-8px 0 12px;}
+.par-lista{display:flex;flex-direction:column;gap:10px;max-height:64vh;overflow-y:auto;}
+.par-item{border:1px solid var(--border);border-radius:12px;padding:12px 14px;background:var(--s1);}
+.par-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font:700 13.5px var(--body);color:var(--text);}
+.par-num{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 6px;border-radius:12px;background:var(--navy);color:#fff;font:800 11.5px var(--body);}
+.par-num.c{background:#fff;color:var(--navy);border:2px solid var(--navy);}
+.par-l{font-size:12.5px;color:var(--text2);margin-top:4px;line-height:1.45;overflow-wrap:anywhere;}
+.par-baixa{margin-top:8px;font-size:12.5px;font-weight:600;padding:6px 10px;border-radius:8px;background:var(--s3);color:var(--text2);}
+.par-baixa.ok{background:#e8f7ef;color:#0f7a4c;}
+.par-baixa.nok{background:#fdecec;color:#b91c1c;}
+.par-acoes{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
 @media(max-width:520px){.dup{grid-template-columns:1fr;}}
 .faixa-demo{display:flex;align-items:center;justify-content:center;gap:6px 12px;flex-wrap:wrap;padding:9px 16px;background:#fff3df;border-bottom:1px solid #f6dca6;color:#7a4f05;font-size:13px;font-weight:600;text-align:center;}
 .faixa-demo a,.faixa-demo button.lk{color:var(--navy);font-weight:800;}
@@ -1594,6 +1607,14 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
   </div>
 </div>
 
+<!-- ── MODAL: parada clicada no mapa (antes da foto, para a foto abrir por cima) ── -->
+<div class="modal-overlay" id="modal-parada" onclick="if(event.target===this)fecharParada()">
+  <div class="modal-box parada-modal" role="dialog" aria-modal="true" aria-labelledby="par-tit">
+    <div class="modal-head"><div class="modal-title" id="par-tit">Parada</div><button type="button" class="modal-close" onclick="fecharParada()" aria-label="Fechar">✕</button></div>
+    <div id="par-corpo"></div>
+  </div>
+</div>
+
 <!-- ── MODAL: foto do canhoto ── -->
 <div class="modal-overlay" id="modal-foto" onclick="if(event.target===this)fecharFoto()">
   <div class="modal-box foto-modal">
@@ -2473,8 +2494,8 @@ function atualizarMapa(regioes){
     const coord={lat:r.lat,lng:r.lng};
     const radius=6+Math.min(18,n*0.7);
     L.circleMarker([coord.lat,coord.lng],{radius,color:r.cor,weight:2,fillColor:r.cor,fillOpacity:.35}).addTo(mapLayer)
-      .bindTooltip(`${esc(r.nome)}: ${n} pedido(s)`);
-    L.polyline([[DEPOT.lat,DEPOT.lng],[coord.lat,coord.lng]],{color:'#0d1b2e',weight:1.4,opacity:.45,dashArray:'4,6'}).addTo(mapLayer);
+      .bindTooltip(`${esc(r.nome)}: ${n} pedido(s)`).on('click',()=>_irParaCidade(r));
+    L.polyline([[DEPOT.lat,DEPOT.lng],[coord.lat,coord.lng]],{color:'#0d1b2e',weight:1.4,opacity:.45,dashArray:'4,6',interactive:false}).addTo(mapLayer);   // a linha não rouba o toque da bolha
   });
 }
 
@@ -2520,8 +2541,9 @@ function atualizarMapaCompleto(){
     const coord={lat:r.lat,lng:r.lng};
     const radius=9+Math.min(28,n*1.1);
     L.circleMarker([coord.lat,coord.lng],{radius,color:r.cor,weight:2,fillColor:r.cor,fillOpacity:.4}).addTo(mapLayerFull)
-      .bindTooltip(`<b>${esc(r.nome)}</b><br>${_plural(n,'pedido com ponto a confirmar','pedidos com ponto a confirmar')} (${_plural(_contarTipos(lista).entrega,'entrega','entregas')}, ${_plural(_contarTipos(lista).coleta,'coleta','coletas')})<br>${lista.reduce((s,o)=>s+(o.peso||0),0).toLocaleString('pt-BR')} kg total`);
-    L.polyline([[DEPOT.lat,DEPOT.lng],[coord.lat,coord.lng]],{color:r.cor,weight:1.4,opacity:.4,dashArray:'4,6'}).addTo(mapLayerFull);
+      .bindTooltip(`<b>${esc(r.nome)}</b><br>${_plural(n,'pedido com ponto a confirmar','pedidos com ponto a confirmar')} (${_plural(_contarTipos(lista).entrega,'entrega','entregas')}, ${_plural(_contarTipos(lista).coleta,'coleta','coletas')})<br>${lista.reduce((s,o)=>s+(o.peso||0),0).toLocaleString('pt-BR')} kg total`)
+      .on('click',()=>_cliqueBolhaCidade(r));
+    L.polyline([[DEPOT.lat,DEPOT.lng],[coord.lat,coord.lng]],{color:r.cor,weight:1.4,opacity:.4,dashArray:'4,6',interactive:false}).addTo(mapLayerFull);
   });
 
   // O mapa esconde duas coisas, e calado isso parece defeito: pedido sem endereço exato
@@ -7519,6 +7541,91 @@ window.verFotoCanhoto=verFotoCanhoto;
 function fecharFoto(){ document.getElementById('modal-foto').classList.remove('open'); document.getElementById('foto-corpo').innerHTML=''; }
 window.fecharFoto=fecharFoto;
 
+// ── Clicar ou tocar num ponto do mapa (27/11/2026) ───────────────────────
+// Em qualquer mapa, o ponto leva ao pedido. Um pedido só abre direto; várias notas no
+// mesmo endereço (o "×2") abrem uma lista curta para escolher. Nas rotas confirmadas a
+// janela mostra também a baixa do motorista e a foto, quando houver. Pedido já entregue
+// sai da lista de pedidos: a janela mostra o que ficou guardado na rota.
+const MAX_LISTA_PARADA=50;
+let _parFoco=null;
+function _acharPedido(id){ if(id==null||id==='') return null; const s=String(id); return allOrders.find(o=>String(o.id)===s)||null; }
+function _itemParada(p,num,ctx){
+  const col=_tipoDe(p)==='coleta', o=_acharPedido(p.id);
+  const cid=p.cidade&&p.cidade!=='Sem cidade'?p.cidade:'';
+  const end=[p.endereco, p.bairro, [cid,p.uf].filter(Boolean).join('/')].filter(Boolean).join(', ');
+  const meta=[+p.peso>0?`${(+p.peso).toLocaleString('pt-BR')} kg`:'', _plural(+p.itens||1,'volume','volumes'),
+    p.cep?'CEP '+_fmtCep(p.cep):'', Number.isFinite(+p.chegada_min)&&p.chegada_min!=null?'chega ~'+_hhmm(p.chegada_min):''].filter(Boolean).join(' · ');
+  let baixa='', foto='';
+  if(ctx&&ctx.rid){
+    const b=(baixasPorRota[ctx.rid]||{})[ctx.i];
+    baixa = b ? `<div class="par-baixa ${b.status==='feito'?'ok':'nok'}">${b.status==='feito'?`✓ ${col?'Coletada':'Entregue'}`:'✗ Não realizada'}${b.hora?' às '+_horaTs(b.hora):''}${b.recebedor?' · recebido por '+esc(b.recebedor):''}${b.status!=='feito'&&b.motivo?' · '+esc(b.motivo):''}</div>`
+      : '<div class="par-baixa">Aguardando a baixa do motorista.</div>';
+    if(b&&b.temFoto) foto=`<button type="button" class="btn-sm" onclick="verFotoCanhoto(${esc(JSON.stringify(ctx.rid))},${ctx.i})">📷 Ver foto</button>`;
+  }
+  const abrir=o?`<button type="button" class="btn-sm" onclick="abrirPedidoDaParada(${esc(JSON.stringify(o.id))})">Abrir pedido completo</button>`:'';
+  return `<div class="par-item">
+    <div class="par-top">${num!=null?`<span class="par-num${col?' c':''}">${num}</span>`:''}${col?'Coleta':'Entrega'} · NF ${esc(p.nf)}</div>
+    ${p.dest&&p.dest!==p.cidade?`<div class="par-l"><b>${esc(p.dest)}</b></div>`:''}
+    ${end?`<div class="par-l">${esc(end)}</div>`:''}
+    ${meta?`<div class="par-l">${esc(meta)}</div>`:''}
+    ${baixa}
+    ${foto||abrir?`<div class="par-acoes">${foto}${abrir}</div>`:''}
+  </div>`;
+}
+function _mostrarParada(titulo,sub,itens,resto){
+  _parFoco=document.activeElement;
+  $id('par-tit').textContent=titulo;
+  $id('par-corpo').innerHTML=(sub?`<div class="par-sub">${esc(sub)}</div>`:'')
+    +`<div class="par-lista">${itens.join('')}</div>`
+    +(resto?`<div class="par-sub" style="margin:10px 0 0">${esc(resto)}</div>`:'');
+  $id('modal-parada').classList.add('open');
+  setTimeout(()=>{ const b=$id('modal-parada').querySelector('.modal-close'); if(b) b.focus({preventScroll:true}); },30);
+}
+function fecharParada(){
+  $id('modal-parada').classList.remove('open'); $id('par-corpo').innerHTML='';
+  const f=_parFoco; _parFoco=null; if(f&&f.focus&&document.contains(f)) try{ f.focus({preventScroll:true}); }catch(e){}
+}
+window.fecharParada=fecharParada;
+function abrirPedidoDaParada(id){ $id('modal-parada').classList.remove('open'); $id('par-corpo').innerHTML=''; abrirPedido(id); }
+window.abrirPedidoDaParada=abrirPedidoDaParada;
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&$id('modal-parada').classList.contains('open')&&!$id('modal-foto').classList.contains('open')) fecharParada(); });
+
+// Rota em montagem (Roteirização): os pontos são os próprios pedidos.
+function _cliqueParadas(paradas,idxs){
+  if(idxs.length===1){ const o=_acharPedido(paradas[idxs[0]].id); if(o){ abrirPedido(o.id); return; } }
+  _mostrarParada(idxs.length>1?`${idxs.length} notas no mesmo ponto`:`Parada ${idxs[0]+1}`,
+    idxs.length>1?'Escolha qual pedido abrir.':'', idxs.map(i=>_itemParada(paradas[i],i+1)));
+}
+// Rota confirmada (página Rotas): pedido, baixa do motorista e foto.
+function _cliqueParadaRota(rid,idxs){
+  const r=_rotaPorId(rid); if(!r) return;
+  const ps=r.paradas||[], ok=idxs.filter(i=>ps[i]);
+  if(!ok.length) return;
+  _mostrarParada(ok.length>1?`${ok.length} notas no mesmo ponto`:`Parada ${ok[0]+1}`,
+    [r.veiculo,r.motorista].filter(Boolean).join(' · '), ok.map(i=>_itemParada(ps[i],i+1,{rid,i})));
+}
+// Bolha de cidade no Mapa (pedidos com ponto a confirmar): lista para abrir e marcar o ponto.
+function _cliqueBolhaCidade(r){
+  const lista=r.lista||[];
+  if(!lista.length) return;
+  if(lista.length===1){ abrirPedido(lista[0].id); return; }
+  const mostra=lista.slice(0,MAX_LISTA_PARADA), resto=lista.length-mostra.length;
+  _mostrarParada(r.nome, `${_plural(lista.length,'pedido com ponto a confirmar','pedidos com ponto a confirmar')}. Abra um para marcar o ponto no mapa.`,
+    mostra.map(o=>_itemParada(o,null)), resto>0?`E mais ${_plural(resto,'pedido','pedidos')} nesta cidade, na página Pedidos.`:'');
+}
+// Bolha do Dashboard: leva ao Mapa já mostrando a cidade.
+function _irParaCidade(r){
+  irParaPagina('mapa');
+  setTimeout(()=>{
+    if(!mapInstFull) return;
+    const pts=(r.lista||[]).filter(o=>o.geoStatus==='ok'&&Number.isFinite(+o.lat)&&Number.isFinite(+o.lng)).map(o=>[+o.lat,+o.lng]);
+    try{
+      if(pts.length>1) mapInstFull.fitBounds(L.latLngBounds(pts),{padding:[40,40],maxZoom:14,animate:false});
+      else mapInstFull.setView(pts[0]||[r.lat,r.lng],12,{animate:false});
+    }catch(e){}
+  },150);
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 // ACESSOS — só o administrador: cria acesso de demonstração e libera pedidos
 // ══════════════════════════════════════════════════════════════════════════
@@ -7817,7 +7924,8 @@ function desenharMiniMapaRota(rota, elId, cor){
     .addTo(map).bindTooltip(esc(DEPOT.name));
   // paradas numeradas (coleta: vazado); no mesmo ponto viram um marcador só
   _agruparParadas(paradas).forEach(g=>{
-    L.marker([g.lat,g.lng],{icon:_iconeGrupo(paradas,g,cor,22)}).addTo(map).bindTooltip(_textoGrupo(paradas,g));
+    L.marker([g.lat,g.lng],{icon:_iconeGrupo(paradas,g,cor,22)}).addTo(map).bindTooltip(_textoGrupo(paradas,g))
+      .on('click',()=>_cliqueParadaRota(rota.id, g.idx.map(k=>(rota.paradas||[]).indexOf(paradas[k]))));   // índice na rota, onde estão as baixas
   });
   delete _veicMk[rota.id];
   const pos=posicaoPorRota[rota.id];
@@ -9290,7 +9398,8 @@ function desenharMapaRota(paradas,r){
       : 'Linha reta entre as paradas: o caminho pelas ruas ainda não foi medido.');
   }
   _agruparParadas(paradas).forEach(g=>{
-    L.marker([g.lat,g.lng],{icon:_iconeGrupo(paradas,g,'#0d1b2e',28)}).addTo(rotaMapInst).bindTooltip(_textoGrupo(paradas,g));
+    L.marker([g.lat,g.lng],{icon:_iconeGrupo(paradas,g,'#0d1b2e',28)}).addTo(rotaMapInst).bindTooltip(_textoGrupo(paradas,g))
+      .on('click',()=>_cliqueParadas(paradas,g.idx));
   });
   // sem animação: o mapa é redesenhado a cada ajuste, e apagar um mapa no meio do zoom animado dá erro no Leaflet
   rotaMapInst.fitBounds(L.latLngBounds(pts).extend(L.latLngBounds(linha.pontos)),{padding:[40,40],maxZoom:15,animate:false});

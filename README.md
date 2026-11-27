@@ -884,6 +884,26 @@ encaixe 3D de caixas; "40x30x25" solto no texto da nota (sem saber a quantidade,
 (`firebase/database.rules.json`, nós `produtos` e `config/cubagem`). Sem elas, o resto funciona,
 mas salvar medida de produto ou o fator de cubagem dá "O banco recusou" e a tela explica o motivo.
 
+## Clicar num ponto do mapa abre o pedido (27/11/2026)
+
+Em qualquer mapa, clicar (notebook) ou tocar (celular) num ponto leva ao pedido. Segurar o dedo
+continua mostrando o resumo rápido (a etiqueta do Leaflet).
+
+| Mapa | O que acontece |
+|---|---|
+| Roteirização (resultado) | Parada de um pedido abre o pedido direto. Parada "2–3" (várias notas no mesmo endereço) abre uma lista curta para escolher. |
+| Rotas (mini mapa de cada rota) | Abre a janela da parada: nota, endereço, peso, volumes, horário previsto, **baixa do motorista** (feita, não realizada com o motivo, ou aguardando) e **📷 Ver foto** do canhoto, quando houver. "Abrir pedido completo" aparece enquanto o pedido está na lista de pedidos; entregue, ele sai da lista e a janela mostra o que ficou guardado na rota. |
+| Mapa (página) | Pino continua abrindo o pedido. A bolha da cidade (pedidos com ponto a confirmar) abre a lista desses pedidos, até 50, para abrir um e marcar o ponto. |
+| Dashboard | A bolha da cidade leva ao Mapa já mostrando aquela cidade. |
+
+- Janela nova: `#modal-parada` (`_mostrarParada`, `_itemParada`, `fecharParada`, `abrirPedidoDaParada`).
+  Fica antes de `#modal-foto` no HTML para a foto abrir por cima. Esc fecha.
+- A linha tracejada do CD até a bolha não recebe mais o clique (`interactive:false`), para não
+  roubar o toque do centro da bolha.
+- No mini mapa das Rotas o índice da parada é o da rota (`rota.paradas`), onde estão as baixas,
+  mesmo quando alguma parada não tem ponto no mapa.
+- Teste: `tests/tela/t_clique_mapa.js` (notebook e celular).
+
 ## Dias grandes, agregado por último e textos revisados (27/11/2026)
 
 - **Limite de pedidos por cálculo: 439, não 450.** O OSRM público aceita 100 × 100 células por
