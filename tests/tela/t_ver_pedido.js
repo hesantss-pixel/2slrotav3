@@ -18,8 +18,9 @@ const PED = {
     volumes: [{ q: 2, esp: 'CAIXA' }, { q: 1, esp: 'PALETE' }], produtos: PRODS, produtosTotal: 32, valor: 1234.5,
     obsNota: 'Entregar no portão 2. Pedido 4471', emissao: '2026-11-17', origem: 'xml',
     status: 'pendente', lat: -23.450, lng: -46.530, geoStatus: 'ok', geoPrec: 'numero' },
-  '1002': { nf: '1002', tipo: 'entrega', cidade: 'Guarulhos', dest: 'Loja B', endereco: 'Rua B, 200', bairro: 'Bonsucesso', peso: 1500, itens: 9,
+  '1002': { nf: '1002', tipo: 'entrega', cidade: 'Guarulhos', dest: 'Loja B', endereco: 'Rua B, 200', bairro: 'Bonsucesso', peso: 950, itens: 9,
     status: 'pendente', lat: -23.440, lng: -46.500, geoStatus: 'ok', origem: 'planilha' },
+  '1006': { nf: '1006', tipo: 'entrega', cidade: 'Guarulhos', dest: 'Loja G', endereco: 'Rua G, 9', peso: 1500, itens: 2, status: 'pendente', lat: -23.455, lng: -46.47, geoStatus: 'ok' },
   '1004': { nf: '1004', tipo: 'entrega', cidade: 'Arujá', dest: 'Atacado D', endereco: 'Rua D, 400', peso: 120, itens: 1, status: 'pendente', lat: -23.390, lng: -46.320, geoStatus: 'ok' },
   '1005': { nf: '1005', tipo: 'entrega', cidade: 'Arujá', dest: 'Atacado D', endereco: 'Rua D, 400', peso: 80, itens: 1, status: 'pendente', lat: -23.39004, lng: -46.32004, geoStatus: 'ok' },
   // texto da nota é dado de fora: não pode virar HTML
@@ -109,11 +110,14 @@ const janela = (p) => p.evaluate(() => {
   ok(!aposEsc.aberta, 'Esc fecha a janela');
   ok(/NF 1001/.test(aposEsc.foco), 'ao fechar, o foco volta para o pino');
 
-  // pedido sem lista de produtos, e pesado demais para o veículo
+  // pedido mais pesado que o veículo não aparece no mapa (27/11/2026): fica pendente, com aviso
+  ok(!(await p.$(pino('1006'))) && /1 pedido não cabe neste veículo e não aparece no mapa: 1 com mais de 1\.000 kg/.test(await p.textContent('#man-fora')),
+    'pedido maior que o veículo fica fora do mapa, com aviso');
+  // pedido sem lista de produtos, perto da capacidade
   await p.click(pino('1002'), { button: 'right' });
   await p.waitForTimeout(250);
   j = await janela(p);
-  ok(/Sozinho, já passa da capacidade/.test(j.resumo) && /cheio/.test(j.barra), 'pedido maior que o veículo: avisa em vermelho');
+  ok(/Ocupa 95% da capacidade/.test(j.resumo) && /quase/.test(j.barra), 'pedido perto da capacidade: avisa (95%) → ' + j.resumo);
   ok(j.linhas === 0 && /vem do XML da nota fiscal/.test(j.corpo), 'sem produtos, explica de onde a lista viria');
   ok(!/Telefone|Valor da nota|Emissão/.test(j.corpo), 'não mostra campo vazio');
   // clicar fora fecha

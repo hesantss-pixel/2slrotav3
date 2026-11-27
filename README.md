@@ -884,6 +884,33 @@ encaixe 3D de caixas; "40x30x25" solto no texto da nota (sem saber a quantidade,
 (`firebase/database.rules.json`, nós `produtos` e `config/cubagem`). Sem elas, o resto funciona,
 mas salvar medida de produto ou o fator de cubagem dá "O banco recusou" e a tela explica o motivo.
 
+## Só o que cabe no veículo: limite de volumes por pedido (27/11/2026)
+
+Com **um veículo só** (Gerar rota e Montar eu mesmo no mapa), fica fora da viagem o pedido que
+sozinho não cabe nele. Ele continua pendente para a próxima viagem.
+
+- **Mais peso** que a capacidade informada (kg).
+- **Mais m³** do que o baú leva (só quando o volume do baú está preenchido).
+- **Mais volumes** que o limite novo, "Volumes por pedido, no máximo", na tela da capacidade.
+  Tem botões até 10, 20, 40, 60, 200 e sem limite, e pode ser digitado. Fica guardado **por tipo de
+  veículo, neste aparelho** (`localStorage` `rotav3_volmax`, como as escolhas da cubagem): a
+  Fiorino lembra o 200, o VUC começa sem limite.
+
+Onde aparece:
+
+- A nota embaixo do campo conta na hora quantos ficam fora. Também avisa quantos pedidos não trazem
+  o volume na nota: eles contam como 1.
+- A confirmação, o resultado da rota e o mapa de montar dizem quantos ficaram fora e por quê. O
+  botão "Ver quais" abre a lista com o motivo de cada um e "Abrir pedido completo".
+- O mapa de montar e o cálculo nem recebem esses pedidos. O ajuste da rota também não os oferece.
+- O ponto do mapa de montar mostra os volumes junto com o peso.
+- Se nenhum cabe, a tela avisa e não segue.
+
+**Vários veículos:** o campo some. Limite por veículo dentro da frota precisa do servidor
+(OR-Tools `SetAllowedVehiclesForIndex`) e fica para quando o Railway voltar a atualizar.
+
+Teste: `tests/tela/t_cabe_veiculo.js`.
+
 ## Clicar num ponto do mapa abre o pedido (27/11/2026)
 
 Em qualquer mapa, clicar (notebook) ou tocar (celular) num ponto leva ao pedido. Segurar o dedo
