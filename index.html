@@ -1292,6 +1292,9 @@ button.lk{background:none;border:0;padding:0;font:inherit;color:var(--navy);font
           <label class="field-lbl" for="cap-volmax-d">Volumes por pedido, no máximo</label>
           <div><input type="number" class="field-inp" id="cap-volmax-d" min="1" step="1" inputmode="numeric" autocomplete="off" placeholder="Sem limite" oninput="_renderVolNota()" aria-describedby="cap-volmax-nota"></div>
           <div class="presets-row" id="cap-volmax-chips" role="group" aria-label="Limite de volumes por pedido"></div>
+          <label class="field-lbl" for="cap-volmin-d">Volumes por pedido, a partir de</label>
+          <div><input type="number" class="field-inp" id="cap-volmin-d" min="1" step="1" inputmode="numeric" autocomplete="off" placeholder="Sem mínimo" oninput="_renderVolNota()" aria-describedby="cap-volmin-dica cap-volmax-nota"></div>
+          <div class="rot-nota" id="cap-volmin-dica">Para o caminhão levar só os pedidos grandes e deixar os pequenos para um veículo menor.</div>
           <div class="rot-nota" id="cap-volmax-nota" aria-live="polite"></div>
         </div>
         <label class="field-lbl" for="cap-maxped-d" id="cap-maxped-lbl">Máximo de paradas nesta viagem (1 a 20)</label>
@@ -6021,29 +6024,42 @@ window.setPresetD=setPresetD;
 // pendentes; o mapa de montar e o cálculo nem os veem. O limite de volumes fica guardado por
 // tipo de veículo, neste aparelho (como as outras escolhas da cubagem).
 const VOL_CHIPS=[10,20,40,60,200];
-let volMaxD=0, foraVeicD=[];
-function _volMaxSalvo(tipo){ try{ const v=+((JSON.parse(localStorage.getItem('rotav3_volmax')||'{}')||{})[tipo]); return Number.isInteger(v)&&v>0?v:0; }catch(e){ return 0; } }
-function _salvarVolMax(tipo,v){ try{ const m=JSON.parse(localStorage.getItem('rotav3_volmax')||'{}')||{}; if(v>0) m[tipo]=v; else delete m[tipo]; localStorage.setItem('rotav3_volmax',JSON.stringify(m)); }catch(e){} }
-function _lerVolMax(){ const t=($id('cap-volmax-d').value||'').trim(); if(!t) return 0; const v=+t; return Number.isInteger(v)&&v>=1&&v<=100000?v:NaN; }
+// A faixa tem dois lados: "no máximo" (o pedido grande não vai na Fiorino) e "a partir de" (o
+// caminhão leva só os grandes e deixa os pequenos para um veículo menor).
+let volMaxD=0, volMinD=0, foraVeicD=[];
+const _VOL_LS={max:'rotav3_volmax', min:'rotav3_volmin'};
+function _volSalvo(lado,tipo){ try{ const v=+((JSON.parse(localStorage.getItem(_VOL_LS[lado])||'{}')||{})[tipo]); return Number.isInteger(v)&&v>0?v:0; }catch(e){ return 0; } }
+function _salvarVol(lado,tipo,v){ try{ const m=JSON.parse(localStorage.getItem(_VOL_LS[lado])||'{}')||{}; if(v>0) m[tipo]=v; else delete m[tipo]; localStorage.setItem(_VOL_LS[lado],JSON.stringify(m)); }catch(e){} }
+function _lerVol(id){ const t=($id(id).value||'').trim(); if(!t) return 0; const v=+t; return Number.isInteger(v)&&v>=1&&v<=100000?v:NaN; }
+const _lerVolMax=()=>_lerVol('cap-volmax-d'), _lerVolMin=()=>_lerVol('cap-volmin-d');
+const _vols=n=>`${n.toLocaleString('pt-BR')} ${n===1?'volume':'volumes'}`;
 function _prepararVolD(tipo){
-  $id('cap-volmax-d').value=_volMaxSalvo(tipo)||'';
+  $id('cap-volmax-d').value=_volSalvo('max',tipo)||'';
+  $id('cap-volmin-d').value=_volSalvo('min',tipo)||'';
   $id('cap-volmax-chips').innerHTML=VOL_CHIPS.map(v=>`<button type="button" class="preset-chip" data-v="${v}" onclick="setVolMaxD(${v})">até ${v}</button>`).join('')
     +'<button type="button" class="preset-chip" data-v="0" onclick="setVolMaxD(0)">Sem limite</button>';
   _renderVolNota();
 }
 function setVolMaxD(v){ $id('cap-volmax-d').value=v>0?v:''; _renderVolNota(); }
 window.setVolMaxD=setVolMaxD;
-window._renderVolNota=()=>_renderVolNota();   // oninput do campo
+window._renderVolNota=()=>_renderVolNota();   // oninput dos campos
 function _renderVolNota(){
   const el=$id('cap-volmax-nota'); if(!el||frotaModoD) return;
-  const v=_lerVolMax();
-  document.querySelectorAll('#cap-volmax-chips .preset-chip').forEach(b=>{ const on=+b.dataset.v===(Number.isNaN(v)?-1:v); b.classList.toggle('on',on); b.setAttribute('aria-pressed',String(on)); });
-  if(Number.isNaN(v)){ el.textContent='Escreva um número inteiro de volumes, como 200. Vazio: sem limite.'; return; }
-  if(!v){ el.textContent='Sem limite: entra pedido de qualquer tamanho. Com um limite, o pedido com mais volumes fica fora desta viagem e continua pendente.'; return; }
-  const lista=_pedidosDaViagem(), fora=lista.filter(o=>(+o.itens||1)>v).length, semVol=lista.filter(o=>o.semVol).length;
-  el.textContent=(fora
-    ? `De ${_plural(lista.length,'pedido','pedidos')}, ${fora} ${fora===1?'tem':'têm'} mais de ${v} volumes e ${fora===1?'fica':'ficam'} fora desta viagem. ${fora===1?'Continua pendente':'Continuam pendentes'} para a próxima.`
-    : lista.length===1 ? `O pedido desta viagem tem até ${v} volumes.` : `Os ${lista.length} pedidos desta viagem têm até ${v} volumes.`)
+  const max=_lerVolMax(), min=_lerVolMin();
+  document.querySelectorAll('#cap-volmax-chips .preset-chip').forEach(b=>{ const on=+b.dataset.v===(Number.isNaN(max)?-1:max); b.classList.toggle('on',on); b.setAttribute('aria-pressed',String(on)); });
+  if(Number.isNaN(max)||Number.isNaN(min)){ el.textContent='Escreva um número inteiro de volumes, como 200. Vazio: sem limite.'; return; }
+  if(max&&min&&min>max){ el.textContent=`O mínimo (${min}) passa do máximo (${max}): nenhum pedido entraria. Confira os dois números.`; return; }
+  if(!max&&!min){ el.textContent='Sem limite: entra pedido de qualquer tamanho. Com um máximo ou um mínimo, o pedido fora da faixa fica fora desta viagem e continua pendente.'; return; }
+  const lista=_pedidosDaViagem(), vol=o=>+o.itens||1;
+  const fMax=max?lista.filter(o=>vol(o)>max).length:0, fMin=min?lista.filter(o=>vol(o)<min).length:0, fora=fMax+fMin;
+  const semVol=lista.filter(o=>o.semVol).length;
+  const partes=[fMax?`${fMax} ${fMax===1?'tem':'têm'} mais de ${_vols(max)}`:'', fMin?`${fMin} ${fMin===1?'tem':'têm'} menos de ${_vols(min)}`:''].filter(Boolean);
+  const faixa=max&&min?`de ${min} a ${max} volumes`:max?`até ${max} volumes`:`${_vols(min)} ou mais`;
+  el.textContent=(!fora
+    ? (lista.length===1?`O pedido desta viagem tem ${faixa}.`:`Os ${lista.length} pedidos desta viagem têm ${faixa}.`)
+    : partes.length===1
+      ? `De ${_plural(lista.length,'pedido','pedidos')}, ${partes[0]} e ${fora===1?'fica':'ficam'} fora desta viagem. ${fora===1?'Continua pendente':'Continuam pendentes'} para a próxima.`
+      : `De ${_plural(lista.length,'pedido','pedidos')}, ${partes.join(' e ')}. Esses ${fora} ficam fora desta viagem e continuam pendentes para a próxima.`)
     +(semVol?` ${_plural(semVol,'pedido não traz','pedidos não trazem')} o volume na nota e ${semVol===1?'conta':'contam'} como 1.`:'');
 }
 function _motivoForaVeiculo(o){
@@ -6051,7 +6067,8 @@ function _motivoForaVeiculo(o){
   const kg=+o.peso||0, m3=+o.m3||0, vol=+o.itens||1;
   if(capKgD>0&&kg>capKgD) return {k:'kg', txt:`${kg.toLocaleString('pt-BR')} kg, mais que os ${capKgD.toLocaleString('pt-BR')} kg do veículo`};
   if(capM3D>0&&m3>capM3D+1e-9) return {k:'m3', txt:`${_fmtM3(m3)} m³, mais que os ${_fmtM3(capM3D)} m³ que o baú leva`};
-  if(volMaxD>0&&vol>volMaxD) return {k:'vol', txt:`${vol.toLocaleString('pt-BR')} volumes, mais que o limite de ${volMaxD.toLocaleString('pt-BR')}`};
+  if(volMaxD>0&&vol>volMaxD) return {k:'vol', txt:`${_vols(vol)}, mais que o limite de ${volMaxD.toLocaleString('pt-BR')}`};
+  if(volMinD>0&&vol<volMinD) return {k:'volmin', txt:`${o.semVol?'sem volume na nota (conta como 1)':_vols(vol)}, menos que o mínimo de ${volMinD.toLocaleString('pt-BR')}`};
   return null;
 }
 function _separarPorVeiculo(lista){
@@ -6064,17 +6081,31 @@ function _resumoForaVeic(fora){
   const n=k=>fora.filter(x=>x.m.k===k).length, p=[];
   if(n('kg')) p.push(`${n('kg')} com mais de ${capKgD.toLocaleString('pt-BR')} kg`);
   if(n('m3')) p.push(`${n('m3')} com mais m³ que o baú leva`);
-  if(n('vol')) p.push(`${n('vol')} com mais de ${volMaxD.toLocaleString('pt-BR')} volumes`);
+  if(n('vol')) p.push(`${n('vol')} com mais de ${_vols(volMaxD)}`);
+  if(n('volmin')) p.push(`${n('volmin')} com menos de ${_vols(volMinD)}`);
   return p.join(', ');
 }
+// pedido pequeno demais para o caminhão não "deixa de caber": fica fora por escolha
+function _fraseFora(fora){
+  return fora.some(x=>x.m.k==='volmin') ? `${_plural(fora.length,'pedido fica','pedidos ficam')} fora deste veículo`
+    : `${_plural(fora.length,'pedido não cabe','pedidos não cabem')} neste veículo`;
+}
+function _msgNenhumCabe(fora){
+  const tem=k=>fora.some(x=>x.m.k===k), dicas=[];
+  if(tem('kg')||tem('m3')) dicas.push('escolha um veículo maior');
+  if(tem('vol')) dicas.push('aumente o limite de volumes');
+  if(tem('volmin')) dicas.push('diminua o mínimo de volumes');
+  const d=dicas.join(' ou ');
+  return `Nenhum pedido desta viagem ${tem('volmin')?'entra':'cabe'} neste veículo: ${_resumoForaVeic(fora)}. ${d.charAt(0).toUpperCase()+d.slice(1)}.`;
+}
 function _htmlForaVeic(fora,mapa){
-  return `${_plural(fora.length,'pedido não cabe','pedidos não cabem')} neste veículo${mapa?` e ${fora.length===1?'não aparece':'não aparecem'} no mapa`:''}: ${esc(_resumoForaVeic(fora))}. `
+  return `${_fraseFora(fora)}${mapa?` e ${fora.length===1?'não aparece':'não aparecem'} no mapa`:''}: ${esc(_resumoForaVeic(fora))}. `
     +`${fora.length===1?'Continua pendente':'Continuam pendentes'} para a próxima viagem. <button type="button" class="link-btn" onclick="verForaVeiculoD()">Ver quais</button>`;
 }
 function verForaVeiculoD(){
   if(!foraVeicD.length) return;
   const mostra=foraVeicD.slice(0,MAX_LISTA_PARADA), resto=foraVeicD.length-mostra.length;
-  _mostrarParada(`${_plural(foraVeicD.length,'pedido não cabe','pedidos não cabem')} neste veículo`, 'Continuam pendentes para a próxima viagem.',
+  _mostrarParada(_fraseFora(foraVeicD), 'Continuam pendentes para a próxima viagem.',
     mostra.map(x=>_itemParada(x.o,null,{motivo:x.m.txt})), resto>0?`E mais ${_plural(resto,'pedido','pedidos')}.`:'');
 }
 window.verForaVeiculoD=verForaVeiculoD;
@@ -6087,8 +6118,9 @@ function irConfirmD(){
   if(bauTxt&&!(bau>0&&bau<=200)){ alert('Volume do baú: escreva em m³, como 21,6. Deixe vazio para não limitar pelo volume.'); return; }
   const aprov=+$id('cap-aprov-d').value||85, estimar=$id('cap-estimar-d').checked, dens=_numBR($id('cap-dens-d').value);
   if(estimar&&!(dens>=50&&dens<=2000)){ alert('Para estimar pelo peso, informe quantos kg cabem em 1 m³ (entre 50 e 2.000).'); return; }
-  const volMax=frotaModoD?0:_lerVolMax();
-  if(Number.isNaN(volMax)){ alert('Volumes por pedido: escreva um número inteiro, como 200. Deixe vazio para não limitar.'); return; }
+  const volMax=frotaModoD?0:_lerVolMax(), volMin=frotaModoD?0:_lerVolMin();
+  if(Number.isNaN(volMax)||Number.isNaN(volMin)){ alert('Volumes por pedido: escreva um número inteiro, como 200. Deixe vazio para não limitar.'); return; }
+  if(volMax&&volMin&&volMin>volMax){ alert(`Volumes por pedido: o mínimo (${volMin}) passa do máximo (${volMax}). Confira os dois números.`); return; }
   const maxPed=Math.min(20,Math.max(1,parseInt(document.getElementById('cap-maxped-d').value)||8));
   if(frotaModoD){
     frotaD=_montarFrotaD(aprov,maxPed);
@@ -6099,8 +6131,8 @@ function irConfirmD(){
   bauM3D=bau>0?bau:0; capM3D=bau>0?Math.floor(bau*aprov)/100:0;
   carrocD=frotaModoD?'bau':($id('cap-carroc-d').value||'bau');
   if(frotaModoD) _bauSelD=null;
-  capKgD=kg; maxPedD=maxPed; volMaxD=volMax;
-  if(!frotaModoD&&vehSel) _salvarVolMax(vehSel.id,volMax);
+  capKgD=kg; maxPedD=maxPed; volMaxD=volMax; volMinD=volMin;
+  if(!frotaModoD&&vehSel){ _salvarVol('max',vehSel.id,volMax); _salvarVol('min',vehSel.id,volMin); }
   const saidaTxt=document.getElementById('rot-saida-d').value||'07:00';
   rotaCtxD={ data:document.getElementById('rot-data-d').value||_hojeISO(), saida:_min(saidaTxt)??420,
     volta:!!document.getElementById('rot-volta-d')?.checked };
@@ -6110,7 +6142,7 @@ function irConfirmD(){
   const sep=_separarPorVeiculo(_pedidosDaViagem()), viagem=sep.cabem; foraVeicD=sep.fora;
   const pendT=_filtrar(allOrders.filter(o=>o.status==='pendente'),rotTipoD), espera=pendT.filter(_emEspera).length;
   const outroDia=pendT.length-espera-viagem.length-sep.fora.length;
-  if(!viagem.length&&sep.fora.length){ alert(`Nenhum pedido desta viagem cabe neste veículo: ${_resumoForaVeic(sep.fora)}. Escolha um veículo maior${sep.fora.some(x=>x.m.k==='vol')?' ou aumente o limite de volumes':''}.`); return; }
+  if(!viagem.length&&sep.fora.length){ alert(_msgNenhumCabe(sep.fora)); return; }
   if(!viagem.length){ alert(espera&&!outroDia?'Os pedidos pendentes estão aguardando endereço ou instrução do embarcador. Veja em Pedidos.':'Todos os pedidos pendentes estão agendados para outro dia.'); return; }
   const reent=viagem.filter(o=>o.reentrega&&o.reentrega.sit==='fila').length;
   const nV=_contarTipos(viagem);
@@ -6189,7 +6221,7 @@ async function executarVRPD(){
   if(!pend.length){
     document.getElementById('rot-step-loading').style.display='none';
     document.getElementById('rot-step-results').style.display='block';
-    document.getElementById('rot-step-results').innerHTML=`<div class="import-msg show warn">${!todos.length&&foraVeicD.length?`Nenhum pedido desta viagem cabe neste veículo: ${esc(_resumoForaVeic(foraVeicD))}. Escolha um veículo maior${foraVeicD.some(x=>x.m.k==='vol')?' ou aumente o limite de volumes':''}.`
+    document.getElementById('rot-step-results').innerHTML=`<div class="import-msg show warn">${!todos.length&&foraVeicD.length?esc(_msgNenhumCabe(foraVeicD))
       :`Nenhum pedido desta viagem cabe no comprimento ${base.length>1?'do maior baú escolhido':'do baú'} (${_fmtMed(comp/100)} m). Escolha um veículo maior ou de carroceria aberta.`}</div><button class="btn-modal-sec" onclick="renderVeiculosD()">← Voltar</button>`;
     return;
   }

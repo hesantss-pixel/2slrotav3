@@ -98,6 +98,43 @@ const aberto = (p, id) => p.evaluate((i) => document.getElementById(i).classList
   const titulo = await p.getAttribute('#mapa-manual .leaflet-marker-icon >> nth=1', 'title');
   ok(/kg · \d+ volumes? ·/.test(titulo || ''), 'o ponto mostra os volumes: ' + (titulo || '').slice(0, 120));
 
+  // "a partir de": o caminhão leva só os grandes
+  await p.evaluate(() => window.renderVeiculosD()); await p.waitForTimeout(200);
+  await p.evaluate(() => window.selVeicD('toco')); await p.waitForTimeout(150);
+  ok((await p.inputValue('#cap-volmin-d')) === '' && (await p.getAttribute('#cap-volmin-d', 'placeholder')) === 'Sem mínimo', 'Toco: "a partir de" começa vazio (sem mínimo)');
+  await p.fill('#cap-kg-d', '8000'); await p.fill('#cap-maxped-d', '10');
+  await p.fill('#cap-volmin-d', '20'); await p.waitForTimeout(100);
+  nota = sem(await p.textContent('#cap-volmax-nota'));
+  ok(nota === 'De 5 pedidos, 3 têm menos de 20 volumes e ficam fora desta viagem. Continuam pendentes para a próxima. 1 pedido não traz o volume na nota e conta como 1.', 'mínimo 20: a nota conta os pequenos: ' + nota);
+  await p.fill('#cap-volmax-d', '200'); await p.waitForTimeout(100);
+  nota = sem(await p.textContent('#cap-volmax-nota'));
+  ok(/^De 5 pedidos, 1 tem mais de 200 volumes e 3 têm menos de 20 volumes\. Esses 4 ficam fora desta viagem e continuam pendentes para a próxima\./.test(nota), 'faixa de 20 a 200: conta os dois lados: ' + nota);
+  await p.fill('#cap-volmin-d', '300'); await p.waitForTimeout(100);
+  ok(/^O mínimo \(300\) passa do máximo \(200\)/.test(sem(await p.textContent('#cap-volmax-nota'))), 'mínimo maior que o máximo: avisa na nota');
+  alertas.length = 0;
+  await p.click('text=Continuar →'); await p.waitForTimeout(200);
+  ok(alertas.some((a) => /o mínimo \(300\) passa do máximo \(200\)/.test(a)) && await p.isVisible('#rot-step-cap'), 'e não deixa continuar');
+  await p.fill('#cap-volmax-d', ''); await p.fill('#cap-volmin-d', '20');
+  await p.click('text=Continuar →'); await p.waitForTimeout(250);
+  const confT = sem(await p.textContent('#confirm-details-d'));
+  ok(/Nesta viagem: 2 entregas pendentes/.test(confT) && /3 pedidos ficam fora deste veículo: 3 com menos de 20 volumes\. Continuam pendentes/.test(confT), 'confirmação: 2 grandes entram, 3 pequenos ficam fora: ' + confT.slice(-200));
+  ok(J(await p.evaluate(() => JSON.parse(localStorage.getItem('rotav3_volmin')))) === '{"toco":20}', 'o mínimo fica guardado para o Toco');
+  await p.click('#confirm-details-d button:has-text("Ver quais")'); await p.waitForTimeout(200);
+  corpo = sem(await p.textContent('#par-corpo'));
+  ok(sem(await p.textContent('#par-tit')) === '3 pedidos ficam fora deste veículo' && /NF 5001.*5 volumes, menos que o mínimo de 20/.test(corpo)
+    && /NF 5005.*sem volume na nota \(conta como 1\), menos que o mínimo de 20/.test(corpo), 'lista os pequenos com o motivo, e o sem volume diz que contou 1');
+  await p.keyboard.press('Escape'); await p.waitForTimeout(150);
+  await p.click('text=Gerar Rota Agora'); await p.waitForTimeout(1500);
+  ok(J(enviados.sort()) === J(['P2', 'P3']), 'o cálculo do Toco recebe só os grandes: ' + J(enviados));
+  await p.evaluate(() => window.renderVeiculosD()); await p.waitForTimeout(200);
+  await p.evaluate(() => window.selVeicD('toco')); await p.waitForTimeout(150);
+  await p.fill('#cap-kg-d', '8000'); await p.fill('#cap-volmin-d', '300');
+  alertas.length = 0;
+  await p.click('text=Continuar →'); await p.waitForTimeout(200);
+  ok(alertas.some((a) => a === 'Nenhum pedido desta viagem entra neste veículo: 5 com menos de 300 volumes. Diminua o mínimo de volumes.'), 'mínimo alto demais: avisa e diz o que fazer: ' + J(alertas));
+  await p.evaluate(() => window.selVeicD('fiorino')); await p.waitForTimeout(150);
+  ok((await p.inputValue('#cap-volmin-d')) === '' && (await p.inputValue('#cap-volmax-d')) === '200', 'Fiorino continua com o dela: sem mínimo e até 200');
+
   // nenhum cabe: avisa e não segue
   await p.evaluate(() => window.renderVeiculosD()); await p.waitForTimeout(200);
   await p.evaluate(() => window.selVeicD('fiorino')); await p.waitForTimeout(150);
@@ -111,7 +148,7 @@ const aberto = (p, id) => p.evaluate((i) => document.getElementById(i).classList
   await p.evaluate(() => { window.__FAKE.setAt('empresas/emp1/pedidos_rota/P5/itens', 3); window.__FAKE.fire(); });
   await p.waitForTimeout(300); alertas.length = 0;
   await p.click('text=Continuar →'); await p.waitForTimeout(200);
-  ok(alertas.some((a) => /: 1 com mais de 650 kg, 4 com mais de 1 volumes\. Escolha um veículo maior ou aumente o limite de volumes\.$/.test(a)), 'com volume no meio, sugere aumentar o limite: ' + J(alertas));
+  ok(alertas.some((a) => /: 1 com mais de 650 kg, 4 com mais de 1 volume\. Escolha um veículo maior ou aumente o limite de volumes\.$/.test(a)), 'com volume no meio, sugere aumentar o limite: ' + J(alertas));
   // vários veículos: o limite não aparece (por enquanto é de um veículo só)
   await p.evaluate(() => window.renderVeiculosD()); await p.waitForTimeout(200);
   await p.evaluate(() => window.selFrotaD()); await p.waitForTimeout(200);

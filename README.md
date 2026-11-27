@@ -895,6 +895,10 @@ sozinho não cabe nele. Ele continua pendente para a próxima viagem.
   Tem botões até 10, 20, 40, 60, 200 e sem limite, e pode ser digitado. Fica guardado **por tipo de
   veículo, neste aparelho** (`localStorage` `rotav3_volmax`, como as escolhas da cubagem): a
   Fiorino lembra o 200, o VUC começa sem limite.
+- **Menos volumes** que "Volumes por pedido, a partir de" (`rotav3_volmin`): o caminhão leva só os
+  pedidos grandes e deixa os pequenos para um veículo menor. O pedido sem volume na nota conta como 1
+  e a lista diz isso. Mínimo maior que o máximo não deixa continuar. Pedido pequeno não "deixa de
+  caber": os textos dizem "fica fora deste veículo".
 
 Onde aparece:
 
