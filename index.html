@@ -2078,8 +2078,8 @@ function _janelaDe(o){
 // aparece em vermelho, para saber que ele tem que sair hoje.
 const COR_SAI_HOJE='#d64545';
 // Bolinhas da página Mapa (28/11/2026): cor lisa, sem contorno. Verde esmeralda para entrega,
-// azul-marinho da marca para coleta (o quase preto antigo sumia nas ruas escuras do mapa).
-const COR_PINO_ENTREGA='#0b9c6a', COR_PINO_COLETA='#173a7a';
+// preto limpo para coleta.
+const COR_PINO_ENTREGA='#0b9c6a', COR_PINO_COLETA='#16181d';
 function _agendadoFuturo(o,dia){ return !!(o&&o.agendado&&o.dataAgendada&&o.dataAgendada>(dia||_hojeISO())); }
 function _saiHoje(o,dia){ return !!(o&&o.agendado&&o.dataAgendada&&o.dataAgendada<=(dia||_hojeISO())); }
 function _textoAgenda(o,dia){
