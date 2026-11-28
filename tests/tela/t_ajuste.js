@@ -138,7 +138,7 @@ async function mockServicos(ctx, reg) {
 
   // Mapa: tocar no pino abre o pedido
   await p.evaluate(() => window.irParaPagina('mapa')); await p.waitForTimeout(500);
-  const pin = await p.$('#mapa-completo path.leaflet-interactive[fill="#16a36a"]');
+  const pin = await p.$('#mapa-completo path.leaflet-interactive[fill="#0b9c6a"]');
   if (pin) { await pin.click({ force: true }); await p.waitForTimeout(300); }
   ok(pin && await p.isVisible('#modal-pedido') && (await p.textContent('#ped-tit')).startsWith('Pedido NF'), 'Mapa: tocar no pino abre o pedido para editar');
   await p.keyboard.press('Escape'); await p.waitForTimeout(100);

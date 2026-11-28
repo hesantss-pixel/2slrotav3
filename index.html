@@ -2077,6 +2077,9 @@ function _janelaDe(o){
 // Agendados no mapa: até o dia marcado o pedido não aparece; no dia (ou atrasado)
 // aparece em vermelho, para saber que ele tem que sair hoje.
 const COR_SAI_HOJE='#d64545';
+// Bolinhas da página Mapa (28/11/2026): cor lisa, sem contorno. Verde esmeralda para entrega,
+// azul-marinho da marca para coleta (o quase preto antigo sumia nas ruas escuras do mapa).
+const COR_PINO_ENTREGA='#0b9c6a', COR_PINO_COLETA='#173a7a';
 function _agendadoFuturo(o,dia){ return !!(o&&o.agendado&&o.dataAgendada&&o.dataAgendada>(dia||_hojeISO())); }
 function _saiHoje(o,dia){ return !!(o&&o.agendado&&o.dataAgendada&&o.dataAgendada<=(dia||_hojeISO())); }
 function _textoAgenda(o,dia){
@@ -2538,7 +2541,7 @@ function atualizarMapaCompleto(){
   comGeo.forEach(o=>{
     const col=_tipoDe(o)==='coleta';
     const sai=_saiHoje(o);
-    L.circleMarker([o.lat,o.lng],{radius:sai?7.5:(col?6.5:6),color:col?'#f3b62b':'#fff',weight:col?2:1.5,fillColor:sai?COR_SAI_HOJE:(col?'#0d1b2e':'#16a36a'),fillOpacity:.95}).addTo(mapLayerFull)
+    L.circleMarker([o.lat,o.lng],{radius:sai?7.5:6.5,stroke:false,fillColor:sai?COR_SAI_HOJE:(col?COR_PINO_COLETA:COR_PINO_ENTREGA),fillOpacity:1}).addTo(mapLayerFull)
       .bindTooltip(`${sai?`<b style="color:${COR_SAI_HOJE}">📅 ${esc(_textoAgenda(o))}</b><br>`:''}<b>${col?'Coleta':'Entrega'} · NF ${esc(o.nf)}</b>${o.dest&&o.dest!==o.cidade?'<br>'+esc(o.dest):''}<br>${o.bairro?esc(o.bairro)+' — ':''}${esc(o.cidade)}<br>${(o.peso||0).toLocaleString('pt-BR')} kg · ${o.itens||1} volume(s)<br><span style="color:${_aprox(o)?'#8a5a06':'#1f7a4a'}">📍 ${_origemLocal(o)}</span><br><span style="color:#64748b">Toque para editar ou corrigir o ponto</span>`)
       .on('click',()=>abrirPedido(o.id));
   });
@@ -2573,7 +2576,7 @@ function atualizarMapaCompleto(){
   // mini-mapa individual na aba Rotas (fica mais limpo, sem misturar as duas coisas).
   const legEl = document.getElementById('mapa-completo-legenda');
   _desenharVeiculosMapa();
-  if(legEl) legEl.innerHTML = `<span>🚚 Veículo em rota (localização ao vivo)</span><span><i style="background:#16a36a;border:2px solid #fff;box-shadow:0 0 0 1px #9fd8bb"></i>Entrega</span><span><i style="background:#0d1b2e;border:2px solid #f3b62b"></i>Coleta</span><span><i style="background:${COR_SAI_HOJE};border:2px solid #fff;box-shadow:0 0 0 1px ${COR_SAI_HOJE}"></i>Agendado: sai hoje${hoje?` (${hoje})`:''}</span><span><i style="background:#e09c12;border:2px solid #fff;box-shadow:0 0 0 1px #e09c12"></i>${esc(DEPOT.name)}</span><span><i style="background:rgba(148,163,184,.35);border:2px solid #94a3b8"></i>Cidade (pedidos com ponto a confirmar)</span>${futuros?`<span class="leg-fut">📅 ${_plural(futuros,'agendado para outro dia não aparece','agendados para outros dias não aparecem')} até o dia</span>`:''}`;
+  if(legEl) legEl.innerHTML = `<span>🚚 Veículo em rota (localização ao vivo)</span><span><i style="background:${COR_PINO_ENTREGA};border:0"></i>Entrega</span><span><i style="background:${COR_PINO_COLETA};border:0"></i>Coleta</span><span><i style="background:${COR_SAI_HOJE};border:0"></i>Agendado: sai hoje${hoje?` (${hoje})`:''}</span><span><i style="background:#e09c12;border:2px solid #fff;box-shadow:0 0 0 1px #e09c12"></i>${esc(DEPOT.name)}</span><span><i style="background:rgba(148,163,184,.35);border:2px solid #94a3b8"></i>Cidade (pedidos com ponto a confirmar)</span>${futuros?`<span class="leg-fut">📅 ${_plural(futuros,'agendado para outro dia não aparece','agendados para outros dias não aparecem')} até o dia</span>`:''}`;
 }
 window.atualizarMapaCompleto=atualizarMapaCompleto;
 

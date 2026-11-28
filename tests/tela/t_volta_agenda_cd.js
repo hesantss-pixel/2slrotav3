@@ -65,7 +65,7 @@ async function gerarRota(p) {
     const pins = (await pathsDoMapa(p, '#mapa-completo')).filter((x) => x.fill !== '#e09c12' && !x.dash);
     ok(pins.length === 3, 'mapa mostra 3 pedidos (o agendado para amanhã fica de fora): ' + pins.length);
     ok(pins.filter((x) => x.fill === '#d64545').length === 1, 'o agendado de hoje aparece em vermelho');
-    ok(pins.filter((x) => x.fill === '#16a36a').length === 1 && pins.filter((x) => x.fill === '#0d1b2e').length === 1, 'os outros seguem verde (entrega) e azul (coleta)');
+    ok(pins.filter((x) => x.fill === '#0b9c6a').length === 1 && pins.filter((x) => x.fill === '#173a7a').length === 1, 'os outros seguem verde (entrega) e azul (coleta)');
     const leg = await p.textContent('#mapa-completo-legenda');
     ok(leg.includes('Agendado: sai hoje (1)') && leg.includes('1 agendado para outro dia não aparece'), 'legenda explica o vermelho e o que ficou de fora: ' + leg.replace(/\s+/g, ' ').slice(0, 200));
 

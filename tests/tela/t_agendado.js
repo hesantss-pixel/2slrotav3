@@ -37,7 +37,7 @@ const seed = (a) => {
   // ── mapa grande ───────────────────────────────────────────────────────────
   await p.evaluate(() => window.irParaPagina('mapa')); await p.waitForTimeout(1200);
   ok(await vermelhos() === 2, 'mapa: o que sai hoje e o atrasado ficam vermelhos (2)');
-  ok(await p.evaluate(() => document.querySelectorAll('#mapa-completo path[fill="#16a36a"]').length) === 1, 'mapa: o pedido comum fica verde');
+  ok(await p.evaluate(() => document.querySelectorAll('#mapa-completo path[fill="#0b9c6a"]').length) === 1, 'mapa: o pedido comum fica verde');
   const leg = await p.textContent('#mapa-completo-legenda');
   ok(/Agendado: sai hoje \(2\)/.test(leg), 'legenda conta os que saem hoje: ' + leg.slice(0, 80));
   ok(/1 agendado para outro dia não aparece até o dia/.test(leg), 'legenda explica o que foi guardado para outro dia');

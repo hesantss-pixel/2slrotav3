@@ -19,7 +19,7 @@ const conta = (p) => p.evaluate(() => { const e = document.getElementById('mapa-
 const pinos = (p) => p.evaluate(() => {
   const el = document.getElementById('mapa-completo'); if (!el) return { verdes: -1, azuis: -1 };
   const f = [...el.querySelectorAll('path.leaflet-interactive')].map(x => x.getAttribute('fill'));
-  return { verdes: f.filter(c => c === '#16a36a').length, azuis: f.filter(c => c === '#0d1b2e').length };
+  return { verdes: f.filter(c => c === '#0b9c6a').length, azuis: f.filter(c => c === '#173a7a').length };
 });
 
 async function abrir(b, pedidos) {

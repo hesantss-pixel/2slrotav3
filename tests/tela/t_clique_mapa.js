@@ -83,7 +83,7 @@ const caminhos = (p, mapa, attr, val) => p.evaluate(([m, a, v]) => {
   await p.keyboard.press('Escape'); await p.waitForTimeout(150);
   ok(!(await aberto(p, 'modal-pedido')), 'Esc fecha o pedido');
   // pinos de pedido continuam abrindo o pedido direto
-  cm = await caminhos(p, 'mapa-completo', 'fill', '#16a36a');
+  cm = await caminhos(p, 'mapa-completo', 'fill', '#0b9c6a');
   // pino fora da área do mapa: o Leaflet zera o desenho dele (largura 0)
   const dentro = (c) => c.itens.filter((i) => i.w > 0 && i.x > c.box.x && i.x < c.box.x + c.box.w && i.y > c.box.y && i.y < c.box.y + c.box.h);
 
@@ -94,7 +94,7 @@ const caminhos = (p, mapa, attr, val) => p.evaluate(([m, a, v]) => {
   const camp = bol.itens.slice().sort((x, y) => x.x - y.x)[0];   // Campinas é a mais a oeste
   await p.mouse.click(camp.x, camp.y); await p.waitForTimeout(600);
   ok(await p.evaluate(() => document.getElementById('page-mapa').style.display === 'block'), 'Dashboard: clicar na bolha abre a página Mapa');
-  cm = await caminhos(p, 'mapa-completo', 'fill', '#16a36a');
+  cm = await caminhos(p, 'mapa-completo', 'fill', '#0b9c6a');
   const vis = dentro(cm);
   ok(vis.length === 2, 'Mapa já mostra Campinas: os 2 pinos de lá na tela, os de Guarulhos fora: ' + vis.length + ' de ' + cm.itens.length);
 
